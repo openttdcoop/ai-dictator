@@ -1,0 +1,17 @@
+Building logic:
+
+builder:BuildThatRoute()
+>builder:TryBuildThatRoute()
+>>vehiclebuilder:GetVehicle() (malus on road & false)
+>>builder:FindCompatibleStationExists (set road status to 1, return false)
+>>>builder::FindCompatibleStationExistForAllCases
+>>>>vehiclebuilder:CanAddNewVehicle = here we return false but unset CriticalError first
+>builder:BuildStation = TODO: need a check for station 1 & 2
+>>roadbuilder:BuildRoadStation
+>>trainbuilder:BuildTrainStation
+>>builder:GetStationEntryPoint 
+>>builder:BuildRoadByType : success status=8 / failure status=3 for road
+>>>roadbuilder:BuildRoadROAD: pathfinding&building
+>>>stationbuilder:CreateStationsConnection
+
+
