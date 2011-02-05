@@ -274,6 +274,8 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 DInfo("Tilelist set to "+tilelist.Count(),2);
 //tilelist.Sort(AIList.SORT_BY_VALUE, !isneartown);
 local success = false;
+local depotbuild=false;
+local stationbuild=false;
 local newStation=cStation();
 
 /*if (!istown && isneartown)
@@ -290,15 +292,16 @@ if (isneartown)
 		{
 		statile=cBuilder.BuildAndStickToRoad(tile, stationtype);
 		if (statile >= 0)
-			{ success= true; break; }
+			{ stationbuild = true; break; }
 		}
 	foreach (tile, dummy in tilelist)
 		{
 		if (tile == statile) continue; // don't build on the same place as our new station
 		deptile=cBuilder.BuildAndStickToRoad(tile, AIRoad.ROADVEHTYPE_BUS+100000); // depot
 		if (deptile >= 0)
-			{ success=(success && true); break; }
+			{ depotbuild = true; break; }
 		}
+	success=(depotbuild && stationbuild);
 	if (success) // we have depot + station tile, pathfind to them
 		{ root.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(deptile), AIRoad.GetRoadStationFrontTile(statile));	}
 	}
