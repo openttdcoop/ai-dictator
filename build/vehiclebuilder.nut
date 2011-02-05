@@ -1,4 +1,10 @@
 // 5 rails = 1 train avec 2 loco+6voyager+2mail max
+enum AircraftType {
+	EFFICIENT,
+	BEST,
+	CHOPPER
+}
+
 class cCarrier
 	{
 	root = null;
@@ -12,7 +18,6 @@ static	DEPOT_WAGON = 5;	// to add wagons
 	vehsavelist=null;	// our list of vehicles saved
 	vehsaveactive=null;	// when true, we have some vehicles saved that need a restore
 	vehnextprice=null;	// we just use that to upgrade vehicle
-
 
 	constructor(that)
 		{
@@ -323,10 +328,6 @@ local price = AIEngine.GetPrice(AIVehicle.GetEngineType(veh));
 root.bank.RaiseFundsBy(price);
 local startdepot=true;
 local switcher=true;
-/*if (AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_PASSENGERS || AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_MAIL)
-	{ switcher = true; }
-*/
-
 if (road.ROUTE.vehicule%2 != 0 && switcher) // impair vehicule selection, because impair+1 = pair :)
 	{ startdepot=false; }
 // but it's a good idea to build it at destination, and route it directly to destination station
@@ -345,7 +346,7 @@ return true;
 }
 
 function cCarrier::CreateAirVehicle(roadidx)
-// Build first vehicule of a air route
+// Build first vehicule of an air route
 {
 local road=root.chemin.RListGetItem(roadidx);
 local srcplace = AIStation.GetLocation(root.builder.GetStationID(roadidx,true));
@@ -360,7 +361,10 @@ if (!road.ROUTE.src_entry) // platform use no entry
 DInfo("srcplace="+srcplace+" dstplace="+dstplace,2);
 PutSign(srcplace,"Route "+roadidx+" Source Airport ");
 PutSign(dstplace,"Route "+roadidx+" Destination Airport");
-local veh = root.carrier.ChooseAircraft(road.ROUTE.src_entry,road.ROUTE.cargo_id);
+local modele=AircraftType.EFFICIENT;
+if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST; // top speed/capacity for network
+if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER; // need a chopper
+local veh = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 local price = AIEngine.GetPrice(veh);
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
@@ -374,15 +378,7 @@ else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(firstveh)+" "+AIEn
 // with the fastest engine
 local firstorderflag = null;
 local secondorderflag = null;
-/*if (AICargo.GetTownEffect(cargoid) == AICargo.TE_PASSENGERS || AICargo.GetTownEffect(cargoid) == AICargo.TE_MAIL)
-	{
-	firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	}
-else	{*/
-	//firstorderflag = AIOrder.AIOF_FULL_LOAD_ANY + AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	secondorderflag = AIOrder.AIOF_FULL_LOAD_ANY;
-//	}
+secondorderflag = AIOrder.AIOF_FULL_LOAD_ANY;
 AIOrder.AppendOrder(firstveh, srcplace, secondorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!road.ROUTE.src_entry)	AIOrder.SkipToOrder(firstveh, 1);
@@ -426,7 +422,10 @@ function cCarrier::GetAirVehicle(idx)
 // get an aircraft
 {
 local road= root.chemin.RListGetItem(idx);
-local veh = root.carrier.ChooseAircraft(road.ROUTE.src_entry,road.ROUTE.cargo_id);
+local modele=AircraftType.EFFICIENT;
+if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
+if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
+local veh = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 if (veh == null)	{
 			if (road.ROUTE.src_entry)	DInfo("No suitable aircraft to buy !",1);
 				else	DInfo("No suitable choppers to buy !");
@@ -438,27 +437,30 @@ DInfo("Choosen aircraft: "+AIEngine.GetName(veh),2);
 return true;
 }
 
-function cCarrier::ChooseAircraft(notchopper,cargo)
+function cCarrier::ChooseAircraft(cargo,airtype=0)
+// build an aircraft base on cargo
+// airtype = 0=efficiency, 1=best, 2=chopper
 {
 local vehlist = AIEngineList(AIVehicle.VT_AIR);
 //AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL
 vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
 vehlist.KeepValue(1);
-if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
-	{ // for mail i use fastest engine + best efficiency ratio cargonum/price&running_cost
-	vehlist.Valuate(AIEngine.GetMaxSpeed);
-	vehlist.Sort(AIList.SORT_BY_VALUE,false);
-	local topspeed=vehlist.GetValue(vehlist.Begin()); // get top speed
-	vehlist.KeepValue(topspeed);
-	vehlist.Valuate(cCarrier.GetEngineEfficiency);
-	vehlist.Sort(AIList.SORT_BY_VALUE,true);
-	} 
-else	{ // pickup biggest for passengers
-	vehlist.Valuate(AIEngine.GetCapacity);
-	vehlist.Sort(AIList.SORT_BY_VALUE,false);
-	}
-if (!notchopper) // not not = yes = it's choppers :D
+if (airtype < AircraftType.CHOPPER)
 	{
+	if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
+		// for mail i use fastest engine + best efficiency ratio cargonum/price&running_cost
+		{ vehlist.Valuate(AIEngine.GetMaxSpeed); }
+	else	{ vehlist.Valuate(AIEngine.GetCapacity); } // bigest for passengers
+		vehlist.Sort(AIList.SORT_BY_VALUE,false);
+		local first=vehlist.GetValue(vehlist.Begin()); // get top value (speed or capacity)
+		vehlist.KeepValue(first);
+		if (airtype == AircraftType.EFFICIENT)
+			{
+			vehlist.Valuate(cCarrier.GetEngineEfficiency);
+			vehlist.Sort(AIList.SORT_BY_VALUE,true);
+			}
+	} 
+else	{
 	vehlist.Valuate(AIEngine.GetPlaneType);
 	vehlist.KeepValue(AIAirport.PT_HELICOPTER);
 	DWarn("Building a chopper !!!!");

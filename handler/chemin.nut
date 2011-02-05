@@ -98,22 +98,24 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 	if (road.ROUTE.kind == 1000) continue; // a virtual route is 1000
 	if (!road.ROUTE.src_istown) continue; // only towns can be in it
 	if (!road.ROUTE.dst_istown) continue;
+	local srcstation=root.chemin.GListGetItem(road.ROUTE.src_station);
+	if (srcstation.STATION.railtype == 1) continue; // don't add small airport to network
+	local dststation=root.chemin.GListGetItem(road.ROUTE.dst_station);
+	if (dststation.STATION.railtype == 1) continue; // don't add small airport to network	
 	if (road.ROUTE.kind == AIVehicle.VT_AIR)
 		{
-		// TODO: we shouldn't add the destination airport in it
-		// maybe we have source town with 4+ but not a proof destination town >=4k
+		// TODO: we shouldn't add the destination airport in it, maybe we have source town with 4+ but not a proof destination town >=4k
+		// TODO: add airport station in the network instead of the route itself
 		local population = AITown.GetPopulation(road.ROUTE.src_id);
 		if (population > root.chemin.AIR_NET_CONNECTOR)
 			{ // that town is in our list
 			DInfo("Adding route "+i+" to the aircraft network",1);
 			road.ROUTE.status=999; // setup the route to be in virtual network
-			local stationID=root.chemin.GListGetItem(road.ROUTE.src_station);
 			townlist.AddItem(road.ROUTE.src_id,population);
-			templist.AddItem(stationID.STATION.e_loc,road.ROUTE.src_id);
-			stationID=root.chemin.GListGetItem(road.ROUTE.dst_station);
+			templist.AddItem(srcstation.STATION.e_loc,road.ROUTE.src_id);
 			population = AITown.GetPopulation(road.ROUTE.dst_id);
 			townlist.AddItem(road.ROUTE.dst_id,population);
-			templist.AddItem(stationID.STATION.e_loc,road.ROUTE.dst_id);
+			templist.AddItem(dststation.STATION.e_loc,road.ROUTE.dst_id);
 			root.chemin.RListUpdateItem(i,road);
 			// now moving aircraft in the virtual group id
 			local tomail=null;

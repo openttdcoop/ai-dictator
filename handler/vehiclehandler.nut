@@ -197,6 +197,7 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 			vehlist=AIVehicleList_Group(group);
 			veh=vehlist.Begin();
 			if (AIOrder.GetOrderCount(veh) < 2)
+// TODO: removing order 1 or 2 works only for a route, this fail with the air network
 				{
 				root.carrier.VehicleBuildOrders(group);
 				}
@@ -320,7 +321,7 @@ local homedepot=root.builder.GetDepotID(idx,true);
 DInfo("Depot is at "+homedepot,2);
 PutSign(homedepot,"Depot");
 local money=0;
-if (railtype > 20) railtype-=20;
+//if (railtype > 20) railtype-=20;
 switch (AIVehicle.GetVehicleType(veh))
 	{
 	case AIVehicle.VT_RAIL:
@@ -341,7 +342,10 @@ switch (AIVehicle.GetVehicleType(veh))
 		AIVehicle.RefitVehicle(newveh, road.ROUTE.cargo_id);
 	break;
 	case AIVehicle.VT_AIR:
-		engine = root.carrier.ChooseAircraft(road.ROUTE.src_entry,road.ROUTE.cargo_id);
+		local modele=AircraftType.EFFICIENT;
+		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
+		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
+		engine = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 		root.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
 		newveh = AIVehicle.BuildVehicle(homedepot,engine);
 	break;
@@ -388,7 +392,10 @@ switch (AIVehicle.GetVehicleType(veh))
 	return;
 	break;
 	case AIVehicle.VT_AIR:
-		top = root.carrier.ChooseAircraft(road.ROUTE.src_entry,road.ROUTE.cargo_id);
+		local modele=AircraftType.EFFICIENT;
+		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
+		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
+		top = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 	break;
 	}
 local ourengine=AIVehicle.GetEngineType(veh);

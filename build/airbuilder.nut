@@ -62,6 +62,7 @@ if (!result)	{
 		return false;
 		}
 result=root.builder.BuildAirStation(start,stationfakeid);
+// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
 if (!result) // should have pray a bit more
 	{
 	root.builder.CriticalError=false;
@@ -176,6 +177,7 @@ if (success)
 	else	{
 		newStation.STATION.station_id=AIStation.GetStationID(newStation.STATION.e_loc);
 		newStation.STATION.railtype=2; // 2 for big airport
+		if (airporttype == AIAirport.AT_SMALL)	newStation.STATION.railtype=1;
 		newStation.STATION.type=airporttype;
 		newStation.STATION.size=air_x*air_y;
 		newStation.STATION.e_count=0;

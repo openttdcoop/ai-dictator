@@ -30,11 +30,12 @@ class cStation
 		haveEntry = true,	// station have an usable entry
 		haveExit = true,	// station have an usable exit
 		railtype = -1,		// 0 : boat
-					// 1 : PT_SMALL_PLANE
-					// 2 : PT_BIG_PLANE
+					// 1 : Small airport
+					// 2 : Big airport
 					// 3 : PT_HELICOPTER
 					// 10: BUS_STOP
 					// 11: TRUCK_STOP
+					// 100: a platform
 					// 20+: Trains + railtype value (so >20 railtype=that-20)
 		type = -1,		// type = how our station is configure
 					// -1: invalid station
