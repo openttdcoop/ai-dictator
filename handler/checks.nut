@@ -39,23 +39,23 @@ foreach (i, dummy in airID)
 	{
 	local vehlist=root.carrier.VehicleListBusyAtStation(i);
 	local count=vehlist.Count();
-	DInfo("Airport "+AIStation.GetName(i)+" is busy with "+vehlist.Count(),2);
+	//DInfo("Airport "+AIStation.GetName(i)+" is busy with "+vehlist.Count(),2);
 	if (vehlist.Count() < 2)	continue;
 	local passcargo=root.carrier.GetPassengerCargo(); // i don't care mail
 	local cargowaiting=AIStation.GetCargoWaiting(i,passcargo);
 	if (cargowaiting > 100)
 		{
-		DInfo("Airport is busy but can handle it : "+cargowaiting,2); 
+		DInfo("Airport "+AIStation.GetName(i)+" is busy but can handle it : "+cargowaiting,2); 
 		continue;
 		}
 	foreach (i, dummy in vehlist)
 		{
 		local percent=root.carrier.VehicleGetLoadingPercent(i);
-		DInfo("Vehicle "+i+" load="+percent,2);
+		//DInfo("Vehicle "+i+" load="+percent,2);
 		if (percent > 4 && percent < 90)
 			{ // we have a vehicle with more than 20% cargo in it
 			root.carrier.VehicleOrderSkipCurrent(i);
-			DInfo("Forcing vehicle "+AIVehicle.GetName(i)+" to get out of the station",1);
+			DInfo("Forcing vehicle "+AIVehicle.GetName(i)+" to get out of the station with "+i+"% load",1);
 			break;
 			}
 		}

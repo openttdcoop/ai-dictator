@@ -38,6 +38,7 @@ if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
 	{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",0); return false; }
 
 // find traffic that use that airport & reroute it
+root.chemin.under_upgrade=true;
 root.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,true);
 local oldtype=station.STATION.type;
 local oldplace=station.STATION.e_loc;
@@ -70,6 +71,7 @@ if (!result) // should have pray a bit more
 	}
 if (!result)
 	{ root.chemin.RouteIsNotDoable(root.chemin.nowRoute); }
+root.chemin.under_upgrade=false;
 root.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,false);
 }
 

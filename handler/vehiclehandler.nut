@@ -29,7 +29,7 @@ vehicles.Valuate(AIVehicle.GetLocation);
 foreach (vehicle, location in vehicles)
 	{ if (!tilelist.HasItem(location))	vehicles.SetValue(vehicle, -1); }
 vehicles.RemoveValue(-1);
-DInfo(vehicles.Count()+" vehicles near that station",2);
+//DInfo(vehicles.Count()+" vehicles near that station",2);
 vehicles.Valuate(AIVehicle.GetState);
 vehicles.KeepValue(AIVehicle.VS_AT_STATION);
 return vehicles;
@@ -91,34 +91,12 @@ return toret;
 }
 
 function cCarrier::AirNetworkOrdersHandler()
+// Create orders for aircrafts that run the air network
 {
-/*
-local air=AIVehicleList_Group(root.chemin.virtual_air_group_pass);
-local rabbit=air.Begin();
-local rabbitorders=AIOrder.GetOrderCount(rabbit);
-DInfo("Orders in rabbit aircraft: "+rabbitorders+" orders in network: "+root.chemin.virtual_air.Count(),1);
-if (rabbitorders != root.chemin.virtual_air.Count())
-	{
-	foreach (location, dummy in root.chemin.virtual_air)
-		{
-		if (!AIOrder.AppendOrder(rabbit, location, AIOrder.AIOF_FULL_LOAD_ANY))
-			{ DError("Rabbit order refuse",2); }
-		}
-	// now remove previous rabbit orders, should not make the aircrafts gone too crazy
-	if (rabbitorders > 0)	
-		{ // rabbit got some orders before we add new ones, remove them
-		for (local i=0; i < rabbitorders; i++)	{ AIOrder.RemoveOrder(rabbit, AIOrder.ResolveOrderPosition(rabbit,0)); }
-		}
-	}
-air.RemoveTop(1); // removing rabbit
-foreach (i, dummy in air)	AIOrder.ShareOrders(i, rabbit);
-air=AIVehicleList_Group(root.chemin.virtual_air_group_mail);
-foreach (i, dummy in air)	AIOrder.ShareOrders(i, rabbit);
-*/
 local road=null;
 local isfirst=true;
 local rabbit=null;
-local root.chemin.airnet_count=0;
+root.chemin.airnet_count=0;
 for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	road=root.chemin.RListGetItem(j);
@@ -155,7 +133,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			}
 		}
 	}
-DInfo(root.chemin.airnet_count+" aircrafts run the network",1);
+DInfo(root.chemin.airnet_count+" aircrafts are on the network",1);
 }
 
 function cCarrier::VehicleOrdersReset(veh)
@@ -226,6 +204,21 @@ root.carrier.AirNetworkOrdersHandler(); // re-add network aircraft to route
 return true;
 }
 
+function cCarrier::VehicleFindDestinationInOrders(vehicle, stationID)
+// browse vehicle orders and return index of order that target that destination
+{
+local numorders=AIOrder.GetOrderCount(vehicle);
+if (numorders==0) return -1;
+for (local j=0; j < numorders; j++)
+	{
+	local tiletarget=AIOrder.GetOrderDestination(vehicle,AIOrder.ResolveOrderPosition(vehicle, j));
+	if (!AITile.IsStationTile(tiletarget)) continue;
+	local targetID=AIStation.GetStationID(tiletarget);
+	if (targetID == stationID)	return j;
+	}
+return -1;
+}
+
 function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
 // if reroute this function stop all vehicles that use stationID to goto stationID
 // if !rereroute this function restore vehicles orders
@@ -251,12 +244,8 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 			DInfo("Re-routing traffic on route "+i,0);
 			vehlist=AIVehicleList_Group(group);
 			veh=vehlist.Begin();
-			if (AIOrder.GetOrderCount(veh) < 2)
-// TODO: removing order 1 or 2 works only for a route, this fail with the air network
-				{
-				root.carrier.VehicleBuildOrders(group);
-				}
-			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderpos)))
+			local orderindex=VehicleFindDestinationInOrders(veh, stationID);
+			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
 				{ DError("Fail to remove order for vehicle "+veh,2); }
 			}
 		else	{ root.carrier.VehicleBuildOrders(group); }
@@ -494,6 +483,11 @@ return true;
 
 function cCarrier::VehicleMaintenance()
 {
+if (root.chemin.under_upgrade)
+	{
+	root.bank.busyRoute=true;
+	return;
+	}
 local tlist=AIVehicleList();
 DInfo("Checking "+tlist.Count()+" vehicles",0);
 local age=0;

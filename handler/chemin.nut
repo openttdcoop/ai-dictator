@@ -25,6 +25,7 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 	virtual_air=null;	// this is the list of towns in our virtual air network
 	virtual_air_group_pass=null	// groupid for virtual air for passengers
 	virtual_air_group_mail=null	// groupid for virtual air for mail
+	under_upgrade=null;	// true when we are doing upgrade on something
 	constructor(that)
 		{
 		root = that;
@@ -35,6 +36,7 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		cargo_fav=-1;
 		airnet_count=0;
 		virtual_air={};
+		under_upgrade=false;
 		RList = [];	// this is our routes list
 		DList = [];	// this is our cEndDepot list, use to find a destination station
 		GList = [];	// this is our Station list (rail station only)
@@ -645,6 +647,11 @@ root.chemin.RListUpdateItem(idx,road);
 function cChemin::DutyOnRoute()
 // this is where we add vehicle and tiny other things to max our money
 {
+if (root.chemin.under_upgrade)
+	{
+	root.bank.busyRoute=true;
+	return;
+	}
 root.carrier.VehicleMaintenance();
 local firstveh=false;
 root.bank.busyRoute=false; // setup the flag

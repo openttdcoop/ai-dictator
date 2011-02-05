@@ -18,6 +18,7 @@ static	DEPOT_WAGON = 5;	// to add wagons
 	vehsavelist=null;	// our list of vehicles saved
 	vehsaveactive=null;	// when true, we have some vehicles saved that need a restore
 	vehnextprice=null;	// we just use that to upgrade vehicle
+	AirportTypeLimit=null;  // can't make it a const, squirrel is so weird
 
 	constructor(that)
 		{
@@ -25,6 +26,7 @@ static	DEPOT_WAGON = 5;	// to add wagons
 		vehsavelist=[];
 		vehsaveactive=false;
 		vehnextprice=0;
+		AirportTypeLimit=[10, 20, 100, 200, 400]; // limit per airport type
 		}
 	}
 
@@ -173,14 +175,19 @@ switch (road.ROUTE.kind)
 	if (thatstation.STATION.e_count+1 > root.chemin.water_max) return false;
 	break;
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
-		local thatmax=root.chemin.airnet_max * (root.chemin.virtual_air.Count()-1);
+		local aircraftMax=root.chemin.air_max; // max aircraft for non network airport
+		local aircraftCurrent=thatstation.STATION.e_count+1; // number of aircraft for non network airport
+		local currAirport=root.builder.GetAirportType();
+		local maxperairport=root.carrier.AirportTypeLimit[currAirport];
+		DInfo("currAirportType="+currAirport+" limit/airport="+maxperairport,2);
 		if (road.ROUTE.status==999)
 			{ // in the network
-			if (root.chemin.airnet_count+1 > thatmax)	return false
+			aircraftCurrent=root.chemin.airnet_count+1;
+			aircraftMax=root.chemin.airnet_max * (root.chemin.virtual_air.Count()-1);
 			}
-		else	{ // out of network
-			if (thatstation.STATION.e_count+1 > root.chemin.air_max) return false;
-			}
+		if (aircraftMax > maxperairport)	aircraftMax=maxperairport; // per airport type limitation
+		DInfo("Limit for aircraft "+aircraftCurrent+"/"+aircraftMax,2);
+		if (aircraftCurrent > aircraftMax) return false;
 	break;
 	}
 return true;
