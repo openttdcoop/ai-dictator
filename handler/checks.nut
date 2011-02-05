@@ -31,14 +31,13 @@ DInfo("Montly checks run...",2);
 root.builder.CheckAirportUpgrade();
 }
 
-function cBuilder::StationsBalancing()
+function cBuilder::AirportStationsBalancing()
 // Look at airport for busy loading and if busy & some waiting force the aircraft to move on
 {
 local airID=AIStationList(AIStation.STATION_AIRPORT);
 foreach (i, dummy in airID)
 	{
 	local vehlist=root.carrier.VehicleListBusyAtStation(i);
-	ClearSignsALL();
 	local count=vehlist.Count();
 	DInfo("Airport "+AIStation.GetName(i)+" is busy with "+vehlist.Count(),2);
 	if (vehlist.Count() < 2)	continue;
@@ -66,5 +65,5 @@ foreach (i, dummy in airID)
 function cBuilder::QuickTasks()
 // functions list here should be only function with a vital thing to do
 {
-root.builder.StationsBalancing();
+root.builder.AirportStationsBalancing();
 }

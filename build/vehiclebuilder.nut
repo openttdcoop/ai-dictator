@@ -470,7 +470,7 @@ return vehlist.Begin();
 function cCarrier::GetEngineEfficiency(engine)
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
-// simple formula it's (price+(age*runningcost) / cargoamount
+// simple formula it's (price+(age*runningcost)) / cargoamount
 {
 local price=AIEngine.GetPrice(engine);
 local capacity=AIEngine.GetCapacity(engine);

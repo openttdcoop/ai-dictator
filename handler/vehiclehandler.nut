@@ -463,7 +463,8 @@ foreach (vehicle, dummy in tlist)
 	if (topengine != -1)
 		{
 
-		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
+		if (!root.bank.CanBuyThat((price*0.1)+price+root.carrier.vehnextprice)) continue;
+		// add a 10% to price to avoid try changing an engine and running low on money because of fluctuating money
 		root.carrier.vehnextprice+=price;
 		DInfo("Vehicle "+name+" can be update with a better version, sending it to depot",0);
 		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);

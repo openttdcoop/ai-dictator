@@ -2,11 +2,8 @@
 
 class cChemin
 	{
-static  IDX_HELPER = 256;		// use to create an uniq ID (also use to set handicap value)
-/*static	DEPOTSIZE = 14;			// numbers of variables in depot
-static	ROUTESIZE = 8+(2*14);		// number of variables in route (6 + 2*DEPOTSIZE)
-static	ENDSIZE = 5;
-*/
+static	IDX_HELPER = 256;		// use to create an uniq ID (also use to set handicap value)
+static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that value population
 	root = null;
 	Item = null;            // Item = our values for a route define by CCheminItem class
 	RList = null;		// the array of Starting Item (our routes, because all our route start at producing location)
@@ -106,7 +103,7 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 		// TODO: we shouldn't add the destination airport in it
 		// maybe we have source town with 4+ but not a proof destination town >=4k
 		local population = AITown.GetPopulation(road.ROUTE.src_id);
-		if (population > 2000)
+		if (population > root.chemin.AIR_NET_CONNECTOR)
 			{ // that town is in our list
 			DInfo("Adding route "+i+" to the aircraft network",1);
 			road.ROUTE.status=999; // setup the route to be in virtual network
