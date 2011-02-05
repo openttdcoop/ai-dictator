@@ -423,6 +423,40 @@ if (ourengine == top)	return -1;
 		else	return top;	
 }
 
+function cCarrier::VehicleOrderIsValid(vehicle,orderpos)
+// Really check if a vehicle order is valid
+{
+local ordercount=AIOrder.GetOrderCount(vehicle);
+if (ordercount == 0)	return true;
+local ordercheck=AIOrder.ResolveOrderPosition(vehicle, orderpos);
+if (!AIOrder.IsValidVehicleOrder(vehicle, ordercheck)) return false;
+local tiletarget=AIOrder.GetOrderDestination(vehicle, ordercheck);
+if (!AICompany.IsMine(AITile.GetOwner(tiletarget)))	return false;
+local vehicleType=AIVehicle.GetVehicleType(vehicle);
+if (!AITile.IsStationTile(tiletarget)) return false;
+local stationID=AIStation.GetStationID(tiletarget);
+switch (vehicleType)
+	{
+	case	AIVehicle.VT_RAIL:
+		if (!AIStation.HasStationType(stationID,AIStation.STATION_TRAIN)) return false;
+	break;
+	case	AIVehicle.VT_WATER:
+		if (!AIStation.HasStationType(stationID,AIStation.STATION_DOCK)) return false;
+	break;
+	case	AIVehicle.VT_AIR:
+		if (!AIStation.HasStationType(stationID,AIStation.STATION_AIRPORT)) return false;
+	break;
+	case	AIVehicle.VT_ROAD:
+		local buscheck=true;
+		local truckcheck=true;
+		truckcheck=AIStation.HasStationType(stationID,AIStation.STATION_TRUCK_STOP);
+		buscheck=AIStation.HasStationType(stationID,AIStation.STATION_BUS_STOP);
+		if (!truckcheck && !buscheck) return false;
+	break;
+	}
+return true;
+}
+
 function cCarrier::VehicleMaintenance()
 {
 local tlist=AIVehicleList();
@@ -484,14 +518,16 @@ foreach (vehicle, dummy in tlist)
 		DInfo("Vehicle "+name+" have too few orders, sending it to depot",0);
 		root.carrier.VehicleSendToDepot(vehicle,DEPOT_SELL);
 		}
+	DInfo("About to check invalid orders",2);
+	root.NeedDelay(10);
 	for (local z=AIOrder.GetOrderCount(vehicle)-1; z >=0; z--)
 		{ // I check backward to prevent z index gone wrong if an order is remove
-		local ordercheck=AIOrder.ResolveOrderPosition(vehicle, z);
-		if (!AIOrder.IsValidVehicleOrder(vehicle, ordercheck))
+		if (!root.carrier.VehicleOrderIsValid(vehicle, z))
 			{
-			DInfo("Vehicle "+name+" have invalid order, removing order "+ordercheck,0);
-			AIOrder.RemoveOrder(vehicle, ordercheck);
+			DInfo("Vehicle "+name+" have invalid order, removing order "+z,0);
+			AIOrder.RemoveOrder(vehicle, z);
 			}
+		else	{ DInfo("Order "+z+" is valid",2); }
 		}
 	/*age=root.carrier.VehicleFindRouteIndex(vehicle);
 	if (age < 0)
