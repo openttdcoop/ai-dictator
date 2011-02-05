@@ -7,6 +7,17 @@ local vehlist=root.carrier.VehicleListBusyAtStation(stationID);
 return vehlist.Count();
 }
 
+function cCarrier::VehicleGetBiggestCapacityUsingStation(stationID)
+// return the top capacity vehicles that use that station
+{
+local vehlist=AIVehicleList_Station(stationID);
+vehlist.Valuate(AIEngine.GetCapacity);
+vehlist.Sort(AIList.SORT_BY_VALUE,false);
+local top=0;
+if (!vehlist.IsEmpty())	top=vehlist.GetValue(vehlist.Begin());
+return top;
+}
+
 function cCarrier::VehicleListBusyAtStation(stationID)
 // return the list of vehicles that are waiting at the station
 {
@@ -81,6 +92,7 @@ return toret;
 
 function cCarrier::AirNetworkOrdersHandler()
 {
+/*
 local air=AIVehicleList_Group(root.chemin.virtual_air_group_pass);
 local rabbit=air.Begin();
 local rabbitorders=AIOrder.GetOrderCount(rabbit);
@@ -102,6 +114,44 @@ air.RemoveTop(1); // removing rabbit
 foreach (i, dummy in air)	AIOrder.ShareOrders(i, rabbit);
 air=AIVehicleList_Group(root.chemin.virtual_air_group_mail);
 foreach (i, dummy in air)	AIOrder.ShareOrders(i, rabbit);
+*/
+local road=null;
+local isfirst=true;
+local rabbit=null;
+for (local j=0; j < root.chemin.RListGetSize(); j++)
+	{
+	road=root.chemin.RListGetItem(j);
+	if (road.ROUTE.status!=999) continue; // only check 999 status, it's the "i'm part of network" status
+	local airlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+	if (airlist.IsEmpty()) continue; // no aircrafts on that group
+	local numorders=0;
+	foreach (vehicle, dummy in airlist)
+		{
+		if (isfirst)
+			{
+			rabbit=vehicle;
+			isfirst=false;
+			numorders=AIOrder.GetOrderCount(rabbit);
+			if (numorders != root.chemin.virtual_air.Count())
+				{
+				foreach (location, dummy in root.chemin.virtual_air)
+					{
+					if (!AIOrder.AppendOrder(rabbit, location, AIOrder.AIOF_FULL_LOAD_ANY))
+						{ DError("Aircraft network order refuse",2); }
+					}
+				if (numorders > 0)
+					{
+					// now remove previous rabbit orders, should not make the aircrafts gone too crazy
+					for (local i=0; i < numorders; i++)
+						{ AIOrder.RemoveOrder(rabbit, AIOrder.ResolveOrderPosition(rabbit,0)); }
+					}
+				}
+			} // isfirst
+		else	{
+			AIOrder.ShareOrders(vehicle,rabbit);
+			}
+		}
+	}
 }
 
 function cCarrier::VehicleOrdersReset(veh)
@@ -156,8 +206,8 @@ switch (road.ROUTE.kind)
 	case AIVehicle.VT_WATER:
 	break;
 	case 1000: // it's the air network
-		root.carrier.AirNetworkOrdersHandler();
-		return true;
+		//root.carrier.AirNetworkOrdersHandler();
+		//return true;
 	break;
 	}
 if (srcplace == null) srcplace=-1;
@@ -168,6 +218,7 @@ if (!AIOrder.AppendOrder(veh, srcplace, oneorder))
 	{ DError("First order refuse",2); }
 if (!AIOrder.AppendOrder(veh, dstplace, twoorder))
 	{ DError("Second order refuse",2); }
+root.carrier.AirNetworkOrdersHandler(); // re-add network aircraft to route
 return true;
 }
 
@@ -497,8 +548,6 @@ foreach (vehicle, dummy in tlist)
 		DInfo("Vehicle "+name+" have too few orders, sending it to depot",0);
 		root.carrier.VehicleSendToDepot(vehicle,DEPOT_SELL);
 		}
-	DInfo("About to check invalid orders",2);
-	root.NeedDelay(10);
 	for (local z=AIOrder.GetOrderCount(vehicle)-1; z >=0; z--)
 		{ // I check backward to prevent z index gone wrong if an order is remove
 		if (!root.carrier.VehicleOrderIsValid(vehicle, z))
@@ -506,7 +555,6 @@ foreach (vehicle, dummy in tlist)
 			DInfo("Vehicle "+name+" have invalid order, removing order "+z,0);
 			AIOrder.RemoveOrder(vehicle, z);
 			}
-		else	{ DInfo("Order "+z+" is valid",2); }
 		}
 	}
 local dlist=AIVehicleList();

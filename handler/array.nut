@@ -25,7 +25,6 @@ class cStation
 		STATION = {
 		station_id = -1,	// the real stationID
 		direction = -1,		// the direction of the station
-//		depot_id = -1,		// the real depotID
 		query=-1,		// Last query for a connection, it's our entry or exit point location
 		haveEntry = true,	// station have an usable entry
 		haveExit = true,	// station have an usable exit
@@ -78,7 +77,6 @@ class cCheminItem
 		ROUTE = {
 		uniqID = 0,		// an uniqID to identify the ROUTE
 		isServed = false,	// if true we use that ROUTE
-		//railtype = -1,	// railtype the connection use
 		vehicule= 0,		// number of veh using it
 		kind=-1,		// type of vehicle on road, 1000=aircraft network
 		status=1,		// 0 - undoable

@@ -121,14 +121,14 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 			local tomail=null;
 			tomail=AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_MAIL;
 			local vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
-			foreach (vehicle, dummy in vehlist)
+			/*foreach (vehicle, dummy in vehlist)
 				{
 				root.carrier.VehicleOrdersReset(vehicle);
 				AIOrder.UnshareOrders(vehicle);
 				if (tomail)	AIGroup.MoveVehicle(root.chemin.virtual_air_group_mail,vehicle);
 					else	AIGroup.MoveVehicle(root.chemin.virtual_air_group_pass,vehicle);
 				newadd++;
-				}
+				}*/
 			}
 		}
 	}
@@ -166,6 +166,7 @@ if (newadd > 0)	{ DInfo("Adding "+newadd+" aircrafts to the air network",1); }
 root.chemin.virtual_air=AIList();
 root.chemin.virtual_air=finalList;
 root.NeedDelay(20);
+root.carrier.AirNetworkOrdersHandler();
 }
 
 function cChemin::GetAmountOfCompetitorStationAround(IndustryID)
@@ -645,7 +646,6 @@ function cChemin::DutyOnRoute()
 root.carrier.VehicleMaintenance();
 local firstveh=false;
 root.bank.busyRoute=false; // setup the flag
-local forceveh=false;
 local profit=false;
 local prevprofit=0;
 local vehprofit=0;
@@ -654,10 +654,9 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	local road=root.chemin.RListGetItem(j);
 	if (!road.ROUTE.isServed) continue;
-	if (road.ROUTE.kind == 1000) continue;
+	if (road.ROUTE.kind == 1000) continue; // ignore network route
 	local work=road.ROUTE.kind
 	if (road.ROUTE.vehicule == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
-	//if (road.ROUTE.vehicule < 2)	{ forceveh=true; } // we need 2 vehicules on that road minimum !
 	local maxveh=0;
 	switch (work)
 		{
@@ -672,7 +671,6 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		break;
 		case AIVehicle.VT_RAIL:
 			maxveh=1;
-			forceveh=false; // disable
 			continue; // no train upgrade for now will do later
 		break;
 		}
@@ -696,9 +694,8 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local vehneed=(cargowait / 3 / capacity);
 	if (firstveh) vehneed=2;
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
-		else vehneed=0;
+		//else vehneed=0;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
-	local stationid=root.builder.GetStationID(j,true);
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" Production="+goodprod+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule,2);
 	if (vehprofit <=0)	profit=false;
 		else		profit=true;
@@ -706,9 +703,8 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	vehList.Sort(AIAbstractList.SORT_BY_VALUE,true);
 	if (vehList.GetValue(vehList.Begin()) > 240)	oldveh=true; // ~ 8 months
 						else	oldveh=false;
-	
 	// adding vehicle
-	if (vehneed > 0 || forceveh || firstveh)
+	if (vehneed > 0)
 		{
 		if (root.carrier.vehnextprice > 0)
 			{
@@ -720,9 +716,9 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			}
 		if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true;
 							else	oldveh=false;
-		if (forceveh || firstveh) // special cases where we must build the vehicle
+		if (firstveh) // special cases where we must build the vehicle
 			{ profit=true; oldveh=true; }
-		else	{ if (road.ROUTE.vehicule >= maxveh) continue; }
+
 		if (profit && oldveh)
 			{
 			root.bank.busyRoute=true;
