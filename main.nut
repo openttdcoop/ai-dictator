@@ -233,6 +233,7 @@ vehiclelist.Valuate(AIVehicle.GetVehicleType);
 vehiclelist.KeepValue(AIVehicle.VT_RAIL);
 if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.max_trains")) use_train = false;
 /*
+TODO: find how the internal ttd name vehicle.max_boats vehicle.max_aircrafts
 vehiclelist = AIVehicleList();
 vehiclelist.Valuate(AIVehicle.GetVehicleType);
 vehiclelist.KeepValue(AIVehicle.VT_RAIL);

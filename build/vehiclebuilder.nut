@@ -173,7 +173,14 @@ switch (road.ROUTE.kind)
 	if (thatstation.STATION.e_count+1 > root.chemin.water_max) return false;
 	break;
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
-		if (thatstation.STATION.e_count+1 > root.chemin.air_max) return false;
+		local thatmax=root.chemin.airnet_max * (root.chemin.virtual_air.Count()-1);
+		if (road.ROUTE.status==999)
+			{ // in the network
+			if (root.chemin.airnet_count+1 > thatmax)	return false
+			}
+		else	{ // out of network
+			if (thatstation.STATION.e_count+1 > root.chemin.air_max) return false;
+			}
 	break;
 	}
 return true;
@@ -320,7 +327,7 @@ if (vehlist.IsEmpty())
 // first check we can add one more vehicle to start or ending station
 if (!root.carrier.CanAddNewVehicle(roadidx,true) || !root.carrier.CanAddNewVehicle(roadidx,false))
 	{
-	DInfo("One station on that route is full, cannot add more vehicle",1);
+	DInfo("One airport is full, cannot add more aircrafts",1);
 	return false;
 	}
 local veh=vehlist.Begin();

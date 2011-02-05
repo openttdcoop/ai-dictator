@@ -118,6 +118,7 @@ foreach (i, dummy in air)	AIOrder.ShareOrders(i, rabbit);
 local road=null;
 local isfirst=true;
 local rabbit=null;
+local root.chemin.airnet_count=0;
 for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	road=root.chemin.RListGetItem(j);
@@ -131,6 +132,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			{
 			rabbit=vehicle;
 			isfirst=false;
+			root.chemin.airnet_count++;
 			numorders=AIOrder.GetOrderCount(rabbit);
 			if (numorders != root.chemin.virtual_air.Count())
 				{
@@ -149,9 +151,11 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			} // isfirst
 		else	{
 			AIOrder.ShareOrders(vehicle,rabbit);
+			root.chemin.airnet_count++;
 			}
 		}
 	}
+DInfo(root.chemin.airnet_count+" aircrafts run the network",1);
 }
 
 function cCarrier::VehicleOrdersReset(veh)
