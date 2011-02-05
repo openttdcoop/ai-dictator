@@ -1,18 +1,5 @@
 // main class is in vehiculebuilder
 
-/*
-function cCarrier::VehicleIsBusy(veh)
-{
-function IsOccupied() {
-		 check for vehicles currently loading at the station
-		local vehicles = AIVehicleList_Station(stationID);
-		vehicles.Valuate(AIVehicle.GetLocation);
-		vehicles.KeepValue(GetLocation());
-		vehicles.Valuate(AIVehicle.GetState);
-		vehicles.KeepValue(AIVehicle.VS_AT_STATION);
-		if (vehicles.Count() > 0) return true;
-*/
-
 function cCarrier::VehicleCountAtStation(stationID)
 // return number of vehicle waiting at the station
 {
@@ -24,7 +11,6 @@ function cCarrier::VehicleListBusyAtStation(stationID)
 // return the list of vehicles that are waiting at the station
 {
 local vehicles=AIVehicleList_Station(stationID);
-//DInfo("vehicle using that station="+vehicles.Count(),2);
 local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID)); // grab tiles around the station
 tilelist.Valuate(AIStation.GetStationID); // look all station ID there
 tilelist.KeepValue(stationID); // and keep only tiles with our stationID
@@ -103,7 +89,6 @@ if (rabbitorders != root.chemin.virtual_air.Count())
 	{
 	foreach (location, dummy in root.chemin.virtual_air)
 		{
-		//DInfo("Rabbit location = "+location+" dummy="+dummy,2);
 		if (!AIOrder.AppendOrder(rabbit, location, AIOrder.AIOF_FULL_LOAD_ANY))
 			{ DError("Rabbit order refuse",2); }
 		}
@@ -122,10 +107,8 @@ foreach (i, dummy in air)	AIOrder.ShareOrders(i, rabbit);
 function cCarrier::VehicleOrdersReset(veh)
 // Remove all orders for veh
 {
-//DInfo("Clearing all orders",2);
 while (AIOrder.GetOrderCount(veh) > 0)
 	{
-	//while (AIVehicle.GetState(veh) == AIVehicle.VS_AT_STATION) {} // waiting it to get off the station
 	if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, 0)))
 		{ DError("Cannot remove orders ",2); }
 	}
@@ -219,8 +202,6 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 				}
 			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderpos)))
 				{ DError("Fail to remove order for vehicle "+veh,2); }
-			//DInfo("First veh type "+veh+" "+AIEngine.GetName(AIVehicle.GetEngineType(veh)),2);
-			//root.carrier.VehicleOrdersReset(veh);			}
 			}
 		else	{ root.carrier.VehicleBuildOrders(group); }
 		}
@@ -233,7 +214,6 @@ function cCarrier::VehicleSendToDepot(veh,flag)
 local reason="";
 if (cCarrier.VehicleIsFlag(veh))
 	{
-	//DInfo("Vehicle is already going to depot.",1);
 	return false;
 	}
 if (!cCarrier.VehicleExists(veh))
@@ -341,15 +321,12 @@ DInfo("Depot is at "+homedepot,2);
 PutSign(homedepot,"Depot");
 local money=0;
 if (railtype > 20) railtype-=20;
-//root.bank.RaiseFundsBigTime();
 switch (AIVehicle.GetVehicleType(veh))
 	{
 	case AIVehicle.VT_RAIL:
 		AIRail.SetCurrentRailType(railtype);
 		engine = root.carrier.ChooseTrainEngine();
 		wagon = root.carrier.ChooseWagon(road.ROUTE.cargo_id);
-		//money+=AIVehicle.GetPrice(engine); money+=AIVehicle.GetPrice(wagon)*numwagon;
-		//root.bank.RaiseFundsBy(money);
 		newveh=AIVehicle.BuildVehicle(homedepot,engine);
 		AIVehicle.RefitVehicle(newveh, road.ROUTE.cargo_id);
 		local first=null;
@@ -367,8 +344,6 @@ switch (AIVehicle.GetVehicleType(veh))
 		engine = root.carrier.ChooseAircraft(road.ROUTE.src_entry,road.ROUTE.cargo_id);
 		root.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
 		newveh = AIVehicle.BuildVehicle(homedepot,engine);
-		//root.builder.IsCriticalError();
-		//root.builder.CriticalError=false;
 	break;
 	case AIVehicle.VT_WATER:
 	return;
@@ -417,8 +392,6 @@ switch (AIVehicle.GetVehicleType(veh))
 	break;
 	}
 local ourengine=AIVehicle.GetEngineType(veh);
-//DInfo("ourengine is "+ourengine+" topengine="+top);
-//if (!AIEngine.IsValidEngine(top)) return true;
 if (ourengine == top)	return -1;
 		else	return top;	
 }
@@ -460,7 +433,6 @@ return true;
 function cCarrier::VehicleMaintenance()
 {
 local tlist=AIVehicleList();
-//if (!root.bank.canBuild) return;
 DInfo("Checking "+tlist.Count()+" vehicles",0);
 local age=0;
 local name="";
@@ -529,13 +501,6 @@ foreach (vehicle, dummy in tlist)
 			}
 		else	{ DInfo("Order "+z+" is valid",2); }
 		}
-	/*age=root.carrier.VehicleFindRouteIndex(vehicle);
-	if (age < 0)
-		{
-		DInfo("Vehicle "+name+" is of no use, lost its route ?",0);
-		root.carrier.VehicleToDepotAndSell(vehicle);
-		continue;
-		}*/
 	}
 local dlist=AIVehicleList();
 dlist.Valuate(AIVehicle.IsStoppedInDepot);

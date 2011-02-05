@@ -186,7 +186,6 @@ foreach (i, dummy in tiles)
 	{ // remove duplicate id
 	if (!uniq.HasItem(dummy))	uniq.AddItem(dummy,i);
 	}
-//DInfo("Number of stations at "+AIIndustry.GetName(IndustryID)+": "+tiles.Count()+" different stations: "+uniq.Count(),2);
 uniq.Valuate(AIStation.IsValidStation);
 uniq.KeepValue(0);
 return uniq.Count();
@@ -221,7 +220,6 @@ function cChemin::RouteMalusLower(idx)
 // lower our handicap for that road
 {
 local road=root.chemin.RListGetItem(idx);
-//if (road.ROUTE.isServed) return; // ignore already working route
 road.ROUTE.handicap-=(10*root.chemin.IDX_HELPER);
 if (road.ROUTE.handicap <= 0 && road.ROUTE.status==0)	{ road.ROUTE.handicap=0; road.ROUTE.status=1; }
 // gone to 0, we wait enough, we also reset our doable status to retry the road
@@ -252,7 +250,6 @@ function cChemin::CreateNewRoute(cargoID, industryID, isTown)
 {
 local road=cCheminItem();
 road.ROUTE.isServed=false;
-// Starting depot infos
 road.ROUTE.cargo_id=cargoID;
 road.ROUTE.cargo_name=AICargo.GetCargoLabel(cargoID);
 road.ROUTE.cargo_value=root.chemin.ValuateCargo(cargoID);
@@ -360,7 +357,6 @@ foreach(c, dummy in cargoList)
 		}
 	}
 root.chemin.CreateVirtualRoute();
-//root.job.RouteShowJobs();
 }
 
 function cChemin::RouteCreateEndingList(idx)
@@ -406,8 +402,6 @@ else	{
 		root.chemin.DListAddItem(dstDepot);
 		}
 	}
-//root.chemin.DListDump();
-//root.chemin.RListUpdateItem(idx,who);
 }
 
 function cChemin::RouteRefresh()
@@ -466,66 +460,6 @@ sroad.ROUTE.length=eroad.DEPOT.distance;
 root.chemin.RListUpdateItem(start,sroad);
 DInfo("Route created: "+sroad.ROUTE.cargo_name+" from "+sroad.ROUTE.src_name+" to "+sroad.ROUTE.dst_name+" "+sroad.ROUTE.length+"m",0);
 }
-
-/*
-function cChemin::RouteStartInsertionSort(A)
-// http://en.wikipedia.org/wiki/Insertion_sort
-// Should be enought for our short list
-// Sort our jobs list from highest ranking to lowest
-{
-local value=0;
-local j=0;
-local i=0;
-local done=false;
-for (i=1; i < A.len(); i++)
-	{
-	value=A[i];
-	j=i-1;
-	done=false;
-	do {
-		if (A[j].Item.route_src.depot_ranking < value.Item.route_src.depot_ranking)
-			{ 
-			A[j+1]=A[j];
-			j--;
-			if (j < 0) { done=true; }
-			}
-		else	{
-			done=true;
-			}
-	} while(!done)
-	A[j+1]=value;
-	}
-return A;
-}
-
-function cChemin::RouteSortStartByRanking()
-// Sort our job list by ranking using the insertion sort
-{
-local cl = root.chemin.List.len();
-local ticks = getTiming();
-root.chemin.List=RouteStartInsertionSort(root.chemin.List);
-local affectList=[];
-local cleanList=[];
-// whaooo now what?
-// Now that we have the list sort by ranking, i split out in two lists: one with 0 penalty and the other with penalty
-// At end, we rebuild the no-penalty + yes-penalty list, so all non penality jobs got promote over penalty ones
-foreach(i,val in root.chemin.List)
-	{
-	if (val.Item.route_src.depot_handicap > 0)
-		{ affectList.push(val.Item); }
-	else	{ cleanList.push(val.Item); }
-	}
-root.chemin.List=cleanList
-foreach(t, valitem in affectList)
-	{
-	root.chemin.List.push(valitem);
-	}
-local al = root.chemin.List.len();
-local after=getTiming()-ticks;
-if (al != cl)	{ DInfo("BUG: We've loose some items ! "+al+" < "+cl,0); }
-DInfo("All sorting eat "+after+" tick",1);
-}
-*/
 
 function cChemin::EndingJobFinder(idx)
 {
@@ -604,7 +538,6 @@ else	{ // indudstries have that effect, i won't allow something other than truck
 	}
 root.chemin.DListDump();
 if (root.debug) foreach (i, dummy in tweaklist) { DInfo("tweaklist i="+i+" dummy="+dummy,2); }
-//tweaklist.Valuate(AIBase.RandItem); // shake the hat
 // here we cannot have 0 items in list, but list might have 0 in it when a vehicle is disable/not allow
 tweaklist.RemoveValue(0);
 // now we could :/
@@ -614,7 +547,6 @@ if (tweaklist.IsEmpty())
 	root.chemin.RouteIsNotDoable(idx);
 	return -1;
 	}
-//local res=AIBase.RandRange(tweaklist.Count());
 local res=tweaklist.Begin();
 local roadtype="";
 switch (res)
@@ -673,7 +605,6 @@ do 	{
 		if (bestJob < rnk) 
 			{
 			bestJob=rnk; startidx=i; tasktry=task.ROUTE.src_name;
-			//DInfo("New best job: "+idx+" rank:"+bestJob,2);
 			}
 		}
 	if (startidx==-1)

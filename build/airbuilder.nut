@@ -78,7 +78,6 @@ function cBuilder::GetAirportType()
 local AirType=-1;
 if (AIAirport.IsValidAirportType(AIAirport.AT_SMALL))	{ AirType=AIAirport.AT_SMALL; }
 if (AIAirport.IsValidAirportType(AIAirport.AT_LARGE))	{ AirType=AIAirport.AT_LARGE; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_COMMUTER))	{ AirType=AIAirport.AT_COMMUTER; }
 if (AIAirport.IsValidAirportType(AIAirport.AT_METROPOLITAN))	{ AirType=AIAirport.AT_METROPOLITAN; }
 if (AIAirport.IsValidAirportType(AIAirport.AT_INTERNATIONAL))	{ AirType=AIAirport.AT_INTERNATIONAL; }
 if (AIAirport.IsValidAirportType(AIAirport.AT_INTERCON))	{ AirType=AIAirport.AT_INTERCON; }
@@ -134,7 +133,6 @@ else	{
 		return false;
 		}
 	}
-//showLogic(tilelist);
 if (!helipadonly)
 	{
 	tilelist.Valuate(AITile.IsBuildable);
@@ -143,20 +141,11 @@ if (!helipadonly)
 	tilelist.Valuate(AITile.GetCargoAcceptance, road.ROUTE.cargo_id, 1, 1, rad);
 	tilelist.RemoveBelowValue(8);
 	tilelist.Sort(AIList.SORT_BY_VALUE,false);
-/*	local tileplace=AITileList();
-	tileplace.AddList(tilelist);
-	showLogic(tilelist);
-	tileplace.Valuate(cTileTools.IsBuildableRectangleAtThisPoint,air_x,air_y);
-	tileplace.RemoveValue(-1);*/
-	DInfo("Showing possible places for airport",2);
-	//showLogic(tilelist);
 	root.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 	foreach (i, dummy in tilelist)
 		{
-		//PutSign(i,"X");
 		local bestplace=cTileTools.IsBuildableRectangleAtThisPoint(i, air_x, air_y);
 		if (bestplace > -1) success=root.builder.AirportMaker(bestplace, airporttype);
-		//DInfo("i="+i+" dummy="+dummy+" bestplace="+bestplace,2);
 		if (success) { newStation.STATION.e_loc=bestplace; break; }
 		}
 	}
