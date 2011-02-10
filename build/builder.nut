@@ -39,10 +39,15 @@ root.builder.TilesBlacklist.AddItem(tile,0);
 function cBuilder::RemoveBlacklistTiles(tilelist)
 // remove all blacklist tile from tilelist and return it
 {
+local newTile=AIAbstractList();
+newTile.AddList(tilelist);
+DInfo("newTile size "+newTile.Count(),2);
+if (newTile.IsEmpty()) return;
 foreach (tile, dummy in tilelist)
 	{
-	if (root.builder.TilesBlacklist.HasItem(tile))	tilelist.RemoveItem(tile);
+	if (root.builder.TilesBlacklist.HasItem(tile))	newTile.RemoveItem(tile);
 	}
+tilelist=newTile;
 }
 
 function cBuilder::IsCriticalError()

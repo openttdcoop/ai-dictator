@@ -241,7 +241,7 @@ if (success)	{ newstaloc = slloc; }
 		if (success)	{ newstaloc = srloc; }
 		}
 local test=false;
-if (newstaloc == depot_id)	depotdead=newstaloc; // check if we kill our depot while upgrading
+if (!AIRoad.IsRoadDepotTile(depot_id))	depotdead=newstaloc; // check if we have kill our depot while upgrading
 if (depotdead > -1)
 	{ // depot was destroy, look out possible places to rebuild one, this is safe if stations are there
 	DInfo("Depot has been destroy while upgrading, building a new one.",1);
@@ -250,6 +250,7 @@ if (depotdead > -1)
 	newdepottile.KeepAboveValue(0);
 	newdepottile.Valuate(AITile.GetDistanceManhattanToTile,depotdead);
 	newdepottile.Sort(AIList.SORT_BY_VALUE, true);
+	newdepottile.RemoveAboveValue(50);
 	root.builder.RemoveBlacklistTiles(newdepottile);
 	showLogic(newdepottile);
 	foreach (tile, dummy in newdepottile)

@@ -127,7 +127,7 @@ return true;
 
 function cBuilder::BuildAndStickToRoad(tile, stationtype)
 {
-if (AITile.IsStationTile(tile)) return false; // protect station
+if (AITile.IsStationTile(tile)) return -1; // protect station
 if (!cTileTools.DemolishTile(tile))
 	{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
 

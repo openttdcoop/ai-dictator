@@ -109,3 +109,12 @@ description:
 some vehicle to upgrade
 
 
+changeset:   15:0397a9f19c5d
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 23:22:14 2011 +0100
+files:       Changelog handler/chemin.nut
+description:
+- Sell spare vehicles on too busy stations
+
+

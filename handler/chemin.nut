@@ -778,7 +778,6 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local cargowait=AIStation.GetCargoWaiting(stationid,cargoid);
 	local vehneed=0;
 	if (capacity > 0)	vehneed=cargowait / capacity;
-	vehneed--; // this gave our vehicle a little chance to handle the cargo
 	if (firstveh) vehneed=2;
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
@@ -820,7 +819,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			continue; // skip to next route, we won't check removing for that turn
 			}
 		}
-	if (cargowait == 0) // this happen if we load anything at the station
+	if (cargowait == 0) // this happen if we load everything at the station
 		{
 		local busyList=AIVehicleList_Group(road.ROUTE.groupe_id);
 		local runningList=AIList();
@@ -830,11 +829,16 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		busyList.KeepValue(AIVehicle.VS_AT_STATION); // the loading vehicle
 		runningList.KeepValue(AIVehicle.VS_RUNNING); // healthy vehicle
 		if (busyList.IsEmpty())	continue; // no need to continue if noone is at station
+		runningList.Valuate(AIVehicle.GetLocation);
+		runningList.Valuate(AITile.GetDistanceManhattanToTile,AIStation.GetLocation(stationid));
+		runningList.KeepBelowValue(10); // only keep vehicle position < 10 the station
 		runningList.Valuate(AIVehicle.GetCurrentSpeed);
 		runningList.KeepValue(0); // running but at 0 speed
 		if (runningList.IsEmpty())	continue; // all vehicles are moving
 		runningList.Valuate(AIVehicle.GetProfitThisYear);
+		showLogic(runningList);
 		runningList.Sort(AIList.SORT_BY_VALUE,true);
+		if (runningList.Count() < 4)	continue; // we will not remove 4 last vehicles, upto "profitlost" to remove them
 		// now send that one to depot & sell it
 		local veh=runningList.Begin();
 		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",2);
