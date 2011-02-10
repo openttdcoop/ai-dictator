@@ -68,3 +68,13 @@ description:
 - Add aircraft limit base on airport type
 
 
+changeset:   10:55ceab8abd4e
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 15:15:56 2011 +0100
+files:       TODO.txt handler/chemin.nut
+description:
+Correct bug: don't remove handicap on ranking if handicap isn't
+positive, else we higher ranking instead
+
+

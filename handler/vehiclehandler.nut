@@ -455,14 +455,21 @@ if (ourengine == top)	return -1;
 function cCarrier::VehicleOrderIsValid(vehicle,orderpos)
 // Really check if a vehicle order is valid
 {
+// for now i just disable orders check for chopper, find a better fix if this trouble us later
+local chopper=root.carrier.AircraftIsChopper(vehicle);
+if (chopper) return true;
+
 local ordercount=AIOrder.GetOrderCount(vehicle);
 if (ordercount == 0)	return true;
 local ordercheck=AIOrder.ResolveOrderPosition(vehicle, orderpos);
 if (!AIOrder.IsValidVehicleOrder(vehicle, ordercheck)) return false;
 local tiletarget=AIOrder.GetOrderDestination(vehicle, ordercheck);
-if (!AICompany.IsMine(AITile.GetOwner(tiletarget)))	return false;
 local vehicleType=AIVehicle.GetVehicleType(vehicle);
-if (!AITile.IsStationTile(tiletarget)) return false;
+if (!chopper)
+	{ // Skip this tests for a chopper, well it a start, we never get there with a chopper for now
+	if (!AICompany.IsMine(AITile.GetOwner(tiletarget)))	return false;
+	if (!AITile.IsStationTile(tiletarget)) return false;
+	}
 local stationID=AIStation.GetStationID(tiletarget);
 switch (vehicleType)
 	{

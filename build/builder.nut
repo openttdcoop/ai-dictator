@@ -259,7 +259,6 @@ if (startistown)
 else	{ // check the station is within our industry
 	if (s_start)	tilecheck=AITileList_IndustryProducing(goal, radius);
 		else	tilecheck=AITileList_IndustryAccepting(goal, radius);
-	showLogic(tilecheck);
 	// if the station is in that list, the station touch the industry, nice
 	local touching=tilecheck.HasItem(comparelocation);
 	if (touching)

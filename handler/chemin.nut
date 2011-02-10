@@ -241,7 +241,7 @@ function cChemin::RouteMalusHigher(idx)
 // RETURN road, upto you to save it !
 {
 local road=root.chemin.RListGetItem(idx);
-road.ROUTE.handicap+=(1000*root.chemin.IDX_HELPER);
+road.ROUTE.handicap+=road.ROUTE.ranking;
 root.chemin.RListUpdateItem(idx,road);
 }
 
@@ -389,7 +389,7 @@ else	{ // that's cargo for a town
 	dstlist=AITownList();
 	dstlist.Valuate(AITown.GetDistanceManhattanToTile, who.ROUTE.src_place);
 	}
-dstlist.KeepBetweenValue(15,400); // filter distance <20 >200 are not really doable
+dstlist.KeepBetweenValue(15,400); // filter distance <20 >400 are not really doable
 if (!root.bank.unleash_road)	{ dstlist.KeepBetweenValue(15,100); } // filter again if we are limit by money
 who.ROUTE.isServed=false;
 // we now have a list of distinations id & distance from starting point
@@ -473,6 +473,7 @@ DInfo("Route created: "+sroad.ROUTE.cargo_name+" from "+sroad.ROUTE.src_name+" t
 }
 
 function cChemin::EndingJobFinder(idx)
+// Try find where to drop cargo for a route
 {
 local endroute=root.chemin.RListGetItem(idx);
 DInfo("Finding where to drop cargo ("+endroute.ROUTE.cargo_name+") for service "+idx,0);
@@ -632,7 +633,6 @@ do 	{
 	if (startidx >-1 && endidx >-1)	{ goodRoute=true; }
 	madLoop++;
 	} while (!goodRoute && madLoop < madLoopIter);
-DInfo("We exit route loop "+goodRoute,2);
 if (!goodRoute)	{ return -1; }
 	else	{ root.chemin.RouteIsValid(startidx,endidx); }
 return startidx;
@@ -781,7 +781,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local cargowait=AIStation.GetCargoWaiting(stationid,cargoid);
 	local vehneed=0;
 	if (capacity > 0)	vehneed=cargowait / capacity;
-	vehnedd--; // this gave our vehicle a little chance to handle the cargo
+	vehneed--; // this gave our vehicle a little chance to handle the cargo
 	if (firstveh) vehneed=2;
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;

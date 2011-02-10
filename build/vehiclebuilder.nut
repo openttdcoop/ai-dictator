@@ -456,6 +456,16 @@ DInfo("Choosen aircraft: "+AIEngine.GetName(veh),2);
 return true;
 }
 
+function cCarrier::AircraftIsChopper(vehicle)
+// return true if we are a chopper
+{
+local vehlist = AIEngineList(AIVehicle.VT_AIR);
+vehlist.Valuate(AIEngine.GetPlaneType);
+vehlist.KeepValue(AIAirport.PT_HELICOPTER);
+local vehengine=AIVehicle.GetEngineType(vehicle);
+return vehlist.HasItem(vehengine);
+}
+
 function cCarrier::ChooseAircraft(cargo,airtype=0)
 // build an aircraft base on cargo
 // airtype = 0=efficiency, 1=best, 2=chopper
@@ -482,8 +492,6 @@ if (airtype < AircraftType.CHOPPER)
 else	{
 	vehlist.Valuate(AIEngine.GetPlaneType);
 	vehlist.KeepValue(AIAirport.PT_HELICOPTER);
-	DWarn("Building a chopper !!!!");
-	root.NeedDelay(200);
 	}
 return vehlist.Begin();
 }
