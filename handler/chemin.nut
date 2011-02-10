@@ -794,8 +794,8 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		{
 		if (root.carrier.vehnextprice > 0)
 			{
-			DInfo("We're upgrading something... "+root.carrier.vehnextprice,0);
-			root.carrier.vehnextprice-=5000;
+			DInfo("We're upgrading some vehicles, not adding new vehicle until its done to keep the money... "+root.carrier.vehnextprice,0);
+			root.carrier.vehnextprice-=(root.carrier.vehnextprice / 20);
 			if (root.carrier.vehnextprice < 0) root.carrier.vehnextprice=0;
 			root.bank.busyRoute=true;
 			continue; // no add... while we have an vehicle upgrade on its way
