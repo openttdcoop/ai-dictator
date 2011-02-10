@@ -84,7 +84,8 @@ if (stationrank <= 0) { stationrank=1; }
 // even crowd, let's still give it a chance to be pick
 if (root.chemin.cargo_fav == road.ROUTE.cargo_id) // it's our favorite cargo
 	{ valuerank+=valuerank; }
-road.ROUTE.ranking=(stationrank*valuerank)-road.ROUTE.handicap;
+road.ROUTE.ranking=(stationrank*valuerank);
+if (road.ROUTE.handicap > 0)	road.ROUTE.ranking-=road.ROUTE.handicap;
 return road.ROUTE.ranking;
 }
 
