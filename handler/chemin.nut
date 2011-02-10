@@ -35,7 +35,7 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		buildmode=true;
 		cargo_fav=-1;
 		airnet_count=0;
-		virtual_air={};
+		virtual_air=[];
 		under_upgrade=false;
 		RList = [];	// this is our routes list
 		DList = [];	// this is our cEndDepot list, use to find a destination station
@@ -139,11 +139,13 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 townlist.Sort(AIList.SORT_BY_VALUE,false);
 local first=townlist.Begin();
 local bigdest=AITown.GetLocation(first);
+
 townlist.Valuate(AITown.GetDistanceManhattanToTile,bigdest);
 townlist.Sort(AIList.SORT_BY_VALUE,true);
 local impair=false;
 local pairlist=AIList();
 local impairlist=AIList();
+root.chemin.virtual_air=[];
 foreach (i, dummy in townlist)
 	{
 	if (impair)	impairlist.AddItem(i,dummy);
@@ -162,13 +164,13 @@ foreach (town, townvalue in townlist)
 		{
 		if (town == townid)	
 			{
-			finalList.AddItem(stationloc,0);
+			root.chemin.virtual_air.push(stationloc);
 			}
 		}
 	}
 if (newadd > 0)	{ DInfo("Adding "+newadd+" aircrafts to the air network",1); }
-root.chemin.virtual_air=AIList();
-root.chemin.virtual_air=finalList;
+//root.chemin.virtual_air=AIList();
+//root.chemin.virtual_air=finalList;
 root.NeedDelay(20);
 root.carrier.AirNetworkOrdersHandler();
 }
@@ -286,6 +288,7 @@ road.ROUTE.cargo_value=root.chemin.ValuateCargo(road.ROUTE.cargo_id);
 road.ROUTE.src_id=-10;
 road.ROUTE.dst_id=-10;
 road.ROUTE.kind=1000; // aircraft network
+road.ROUTE.status=999;
 road.ROUTE.uniqID=root.chemin.IDX_HELPER*4;
 road.ROUTE.src_name="Virtual aircraft network";
 road.ROUTE.dst_name="Virtual aircraft network";
@@ -643,6 +646,82 @@ road.ROUTE.status=status;
 root.chemin.RListUpdateItem(idx,road);
 }
 
+function cChemin::DutyOnAirNetwork()
+// handle the traffic for the aircraft network
+{
+if (root.chemin.virtual_air.len()==0) return;
+local vehlist=AIList();
+local totalcapacity=0;
+local mailroute=0;
+local passroute=0;
+local onecapacity=0;
+local passcargo=root.carrier.GetPassengerCargo();
+for (local j=0; j < root.chemin.RListGetSize(); j++)
+	{
+	local road=root.chemin.RListGetItem(j);
+	if (road.ROUTE.kind == 1000)
+		{
+		if (road.ROUTE.cargo_id == passcargo)	passroute=j;
+						else	mailroute=j;
+		//continue;
+		}
+	if (road.ROUTE.status != 999) continue;
+	if (!road.ROUTE.isServed) continue;
+	local vehingroup=AIVehicleList_Group(road.ROUTE.groupe_id);
+	foreach(vehicle, dummy in vehingroup)
+		{
+		totalcapacity+=AIEngine.GetCapacity(AIVehicle.GetEngineType(vehicle));
+		if (onecapacity==0)	onecapacity=AIEngine.GetCapacity(AIVehicle.GetEngineType(vehicle));
+		vehlist.AddItem(vehicle,1);
+		}
+	}
+local vehnumber=vehlist.Count();
+DInfo("Aircrafts in network: "+vehnumber,2);
+DInfo("Total capacity of network: "+totalcapacity,2);
+vehlist.Valuate(AIVehicle.GetAge);
+vehlist.Sort(AIList.SORT_BY_VALUE,true); // younger first
+local age=0;
+if (vehlist.IsEmpty())	age=1000;
+		else	age=vehlist.GetValue(vehlist.Begin());
+if (age < 10) { DInfo("Too young buy "+age+" count="+vehlist.Count(),2); return; }
+local bigairportlocation=root.chemin.virtual_air[0];
+DInfo("bigairportloc:"+bigairportlocation);
+local bigairportID=AIStation.GetStationID(bigairportlocation);
+local cargowaiting=AIStation.GetCargoWaiting(bigairportID,passcargo);
+local vehneed=0;
+cargowaiting-=totalcapacity;
+if (cargowaiting > 0)	vehneed=cargowaiting / onecapacity;
+		else	vehneed=0;
+PutSign(bigairportlocation,"Network Airport "+cargowaiting);
+vehlist.Valuate(AIVehicle.GetProfitThisYear);
+vehlist.Sort(AIList.SORT_BY_VALUE,true);
+local profit=(vehlist.GetValue(vehlist.Begin()) > 0);
+local duplicate=true;
+//if (totalcapacity > 0)	vehneed=cargowaiting / totalcapacity;
+//		else	{ vehneed=1; profit=true; duplicate=false; }
+//if ((cargowaiting % totalcapacity) !=0) vehneed++;
+local vehdelete=vehnumber - vehneed;
+vehdelete-=2; // allow 2 more "unneed" aircrafts
+DInfo("vehdelete="+vehdelete+" vehneed="+vehneed+" cargowait="+cargowaiting+" airportid="+bigairportID+" loc="+bigairportlocation,2);
+if (profit) // making profit
+	{ // adding aircraft
+	if (vehneed > vehnumber)
+		{
+		local thatnetwork=0;
+		for (local k=0; k < vehneed; k++)
+			{
+			if (vehnumber % 6 == 0)	thatnetwork=mailroute;
+					else	thatnetwork=passroute;
+			if (root.carrier.BuildAndStartVehicle(thatnetwork,false))
+				{
+				DInfo("Adding an aircraft to network",0);
+				vehnumber++;
+				}
+			}
+			root.carrier.AirNetworkOrdersHandler();
+		}
+	}
+}
 
 function cChemin::DutyOnRoute()
 // this is where we add vehicle and tiny other things to max our money
@@ -659,14 +738,17 @@ local profit=false;
 local prevprofit=0;
 local vehprofit=0;
 local oldveh=false;
+root.chemin.DutyOnAirNetwork(); // we handle the network load here
 for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	local road=root.chemin.RListGetItem(j);
 	if (!road.ROUTE.isServed) continue;
-	if (road.ROUTE.kind == 1000) continue; // ignore network route
-	local work=road.ROUTE.kind
+	if (road.ROUTE.kind == 1000) continue;	// ignore the network routes
+	if (road.ROUTE.status == 999) continue; // ignore route that are part of the network
+	local work=road.ROUTE.kind;
 	if (road.ROUTE.vehicule == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
 	local maxveh=0;
+	local cargoid=road.ROUTE.cargo_id;
 	switch (work)
 		{
 		case AIVehicle.VT_ROAD:
@@ -674,6 +756,8 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		break;
 		case AIVehicle.VT_AIR:
 			maxveh=root.chemin.air_max;
+			cargoid=root.carrier.GetPassengerCargo(); // for aircraft, force a check vs passenger
+			// so mail aircraft runner will be add if passenger is high enough, this only affect routes not in the network
 		break;
 		case AIVehicle.VT_WATER:
 			maxveh=root.chemin.water_max;
@@ -692,20 +776,15 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local capacity=root.carrier.VehicleGetFullCapacity(vehsample);
 	DInfo("vehicle="+vehsample+" capacity="+capacity+" engine="+AIEngine.GetName(AIVehicle.GetEngineType(vehsample)),2);
 	local stationid=root.builder.GetStationID(j,true);
-	local stationloc=AIStation.GetLocation(stationid);
-	local rad=AIStation.GetCoverageRadius(AIStation.STATION_BUS_STOP);
 	local vehonroute=road.ROUTE.vehicule;
-	local goodprod=0;
-	if (road.ROUTE.src_istown)
-		{ goodprod=AITile.GetCargoAcceptance(stationloc,road.ROUTE.cargo_id,1,1,rad); }
-	else	{ goodprod=AIIndustry.GetLastMonthProduction(road.ROUTE.src_id,road.ROUTE.cargo_id); }
-	local cargowait=AIStation.GetCargoWaiting(stationid,road.ROUTE.cargo_id);
-	local vehneed=(cargowait / 3 / capacity);
+	local cargowait=AIStation.GetCargoWaiting(stationid,cargoid);
+	local vehneed=0;
+	if (capacity > 0)	vehneed=cargowait / capacity;
+	vehnedd--; // this gave our vehicle a little chance to handle the cargo
 	if (firstveh) vehneed=2;
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
-		//else vehneed=0;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
-	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" Production="+goodprod+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule,2);
+	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule,2);
 	if (vehprofit <=0)	profit=false;
 		else		profit=true;
 	vehList.Valuate(AIVehicle.GetAge);
@@ -743,7 +822,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			continue; // skip to next route, we won't check removing for that turn
 			}
 		}
-	// removing vehicle
+/*	// removing vehicle
 	if (!profit && oldveh)
 		{
 		if (prevprofit > 0) continue;
@@ -770,7 +849,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			local tot=AIVehicle.GetProfitThisYear(vehsample);
 			DInfo("Sending a vehicle from route #"+j+" to depot, not making profits : "+tot,0);
 			}
-		}
+		}*/
 	}
 }
 

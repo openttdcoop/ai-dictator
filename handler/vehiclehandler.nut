@@ -101,6 +101,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	road=root.chemin.RListGetItem(j);
 	if (road.ROUTE.status!=999) continue; // only check 999 status, it's the "i'm part of network" status
+	//if (road.ROUTE.kind == 1000) continue;
 	local airlist=AIVehicleList_Group(road.ROUTE.groupe_id);
 	if (airlist.IsEmpty()) continue; // no aircrafts on that group
 	local numorders=0;
@@ -112,10 +113,13 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			isfirst=false;
 			root.chemin.airnet_count++;
 			numorders=AIOrder.GetOrderCount(rabbit);
-			if (numorders != root.chemin.virtual_air.Count())
+			if (numorders != root.chemin.virtual_air.len())
 				{
-				foreach (location, dummy in root.chemin.virtual_air)
+				for (local i=0; i < root.chemin.virtual_air.len(); i++)
+				//foreach (town, location in root.chemin.virtual_air)
 					{
+				local location=root.chemin.virtual_air[i];
+PutSign(location,"NetLoc");
 					if (!AIOrder.AppendOrder(rabbit, location, AIOrder.AIOF_FULL_LOAD_ANY))
 						{ DError("Aircraft network order refuse",2); }
 					}
@@ -134,6 +138,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		}
 	}
 DInfo(root.chemin.airnet_count+" aircrafts are on the network",1);
+root.NeedDelay(50);
 }
 
 function cCarrier::VehicleOrdersReset(veh)
@@ -188,8 +193,8 @@ switch (road.ROUTE.kind)
 	case AIVehicle.VT_WATER:
 	break;
 	case 1000: // it's the air network
-		//root.carrier.AirNetworkOrdersHandler();
-		//return true;
+		root.carrier.AirNetworkOrdersHandler();
+		return true;
 	break;
 	}
 if (srcplace == null) srcplace=-1;

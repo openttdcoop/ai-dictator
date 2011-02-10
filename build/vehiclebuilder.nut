@@ -26,7 +26,7 @@ static	DEPOT_WAGON = 5;	// to add wagons
 		vehsavelist=[];
 		vehsaveactive=false;
 		vehnextprice=0;
-		AirportTypeLimit=[10, 20, 100, 200, 400]; // limit per airport type
+		AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
 		}
 	}
 
@@ -180,10 +180,10 @@ switch (road.ROUTE.kind)
 		local currAirport=root.builder.GetAirportType();
 		local maxperairport=root.carrier.AirportTypeLimit[currAirport];
 		DInfo("currAirportType="+currAirport+" limit/airport="+maxperairport,2);
-		if (road.ROUTE.status==999)
+		if (road.ROUTE.kind==1000)
 			{ // in the network
 			aircraftCurrent=root.chemin.airnet_count+1;
-			aircraftMax=root.chemin.airnet_max * (root.chemin.virtual_air.Count()-1);
+			aircraftMax=root.chemin.airnet_max * (root.chemin.virtual_air.len()-1);
 			}
 		if (aircraftMax > maxperairport)	aircraftMax=maxperairport; // per airport type limitation
 		DInfo("Limit for aircraft "+aircraftCurrent+"/"+aircraftMax,2);
@@ -222,6 +222,7 @@ if (road.ROUTE.vehicule%2 != 0 && switcher) // impair vehicule selection, becaus
 /*if (road.ROUTE.kind == AIVehicle.VT_ROAD && AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_PASSENGERS)
 	{ startdepot=false; }*/ // we are creating a new bus, we don't really care where it will start
 // but it's a good idea to build it at destination, and route it directly to destination station
+
 local newveh=AIVehicle.CloneVehicle(root.builder.GetDepotID(roadidx,startdepot),veh,true);
 if (!AIVehicle.IsValidVehicle(newveh))
 	{ DError("Cannot buy the vehicle :"+price,2); return false; }
@@ -252,6 +253,10 @@ switch (road.ROUTE.kind)
 	case AIVehicle.VT_WATER:
 	break;
 	case AIVehicle.VT_AIR:
+	if (duplicate)	{ res=root.carrier.CloneAirVehicle(idx); }
+		else	{ res=root.carrier.CreateAirVehicle(idx); }
+	break;
+	case 1000:
 	if (duplicate)	{ res=root.carrier.CloneAirVehicle(idx); }
 		else	{ res=root.carrier.CreateAirVehicle(idx); }
 	break;

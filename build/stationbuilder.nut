@@ -360,15 +360,46 @@ return -1;
 function cBuilder::GetDepotID(idx, start)
 // this function return the depot id
 {
-local obj=root.chemin.RListGetItem(idx);
-local objStation=obj.ROUTE.dst_station;
-local objEntry=obj.ROUTE.dst_entry;
+local road=root.chemin.RListGetItem(idx);
+local srcStation=root.chemin.GListGetItem(road.ROUTE.src_station);
+local dstStation=root.chemin.GListGetItem(road.ROUTE.dst_station);
 local realID=-1;
-if (start)	{ objStation=obj.ROUTE.src_station; objEntry=obj.ROUTE.src_entry; }
-local Station=root.chemin.GListGetItem(objStation);
-if (objEntry)
-	{ realID=Station.STATION.e_depot; }
-else	{ realID=Station.STATION.s_depot; }
+local srcdepotid=0;
+local dstdepotid=0;
+local depotchecklist=0;
+switch (road.ROUTE.kind)
+	{
+	case	1000: // air network is also air type, in case, because i don't think i will use that function for that case
+	case	AIVehicle.VT_AIR:
+		depotchecklist=AITile.TRANSPORT_AIR;
+	break;
+	case	AIVehicle.VT_RAIL:
+		depotchecklist=AITile.TRANSPORT_RAIL;
+	break;
+	case	AIVehicle.VT_ROAD:
+		depotchecklist=AITile.TRANSPORT_ROAD;
+	break;
+	case	AIVehicle.VT_WATER:
+		depotchecklist=AITile.TRANSPORT_WATER;
+	break;
+	}
+local depotList=AIDepotList(depotchecklist);
+if (road.ROUTE.src_entry)	srcdepotid=srcStation.STATION.e_depot;
+			else	srcdepotid=srcStation.STATION.s_depot;
+if (road.ROUTE.dst_entry)	dstdepotid=dstStation.STATION.e_depot;
+			else	dstdepotid=dstStation.STATION.s_depot;
+// try first to return what we were ask to return
+if (start)	realID=srcdepotid;
+	else	realID=dstdepotid;
+local st="destination";
+if (start)	st="source";
+if (depotList.HasItem(realID)) return realID;
+	else	{ DInfo("Warning: no depot at "+st+" for route "+idx,1); }
+if (start)	realID=dstdepotid;
+	else	realID=srcdepotid;
+if (depotList.HasItem(realID)) return realID;
+	else	DInfo("Warning: no depot at source and destination for route "+idx,1);
+// TODO: no depot at source & destination, not the best function to handle that, but we should handle that case somewhere as we have a non working route here
 return realID;
 }
 

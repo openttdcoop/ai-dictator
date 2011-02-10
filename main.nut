@@ -124,7 +124,7 @@ function DictatorAI::Start()
 		chemin.DutyOnRoute();
 		builder.QuickTasks();
 		//if (debug) chemin.RListDumpALL();
-		if (debug) chemin.RListStatus();
+		//if (debug) chemin.RListStatus();
 		AIController.Sleep(20);
 		builder.MonthlyChecks();
 		if (idleCounter > 5 && chemin.nowRoute >-1)

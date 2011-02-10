@@ -1,0 +1,70 @@
+changeset:   2:8b937ca1deae
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 17:49:35 2011 +0100
+files:       handler/vehiclehandler.nut
+description:
+Invalidate order when order destination is not a valid station.
+
+
+changeset:   3:d2eb41715919
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 18:02:59 2011 +0100
+files:       build/airbuilder.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+Remove old and unuseful comments
+
+
+changeset:   4:5ea1f86a39d7
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 20:12:38 2011 +0100
+files:       build/airbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+Change aircraft building with efficiency/best/chopper modele.
+Efficiency is use when a standard route
+Best is use when in the network
+
+
+changeset:   5:170b25d3ff0c
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 21:35:42 2011 +0100
+files:       handler/array.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+Now aircraft orders are changed when in the network, but still remains
+in their own group, so adding/removing vehicle still work for the route
+
+
+changeset:   6:39951bea2f3f
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 21:48:01 2011 +0100
+files:       build/roadbuilder.nut
+description:
+Correct a bug when road depot isn't build but station is build
+
+
+changeset:   7:1144ac582fbd
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 22:22:31 2011 +0100
+files:       build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+description:
+Enforce rules for aircraft: respect limit for network & airport out of
+network
+
+
+changeset:   8:20205fccab7f
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 06 00:08:01 2011 +0100
+files:       build/airbuilder.nut build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Prevent building or maintenance on vehicle while upgrading
+- Find the correct station to remove in orders while upgrading airport
+- Disable some checks on vehicle orders while upgrading to ease upgrades
+- Add aircraft limit base on airport type
+
+
