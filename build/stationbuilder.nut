@@ -250,30 +250,13 @@ if (depotdead > -1)
 	newdepottile.KeepAboveValue(0);
 	newdepottile.Valuate(AITile.GetDistanceManhattanToTile,depotdead);
 	newdepottile.Sort(AIList.SORT_BY_VALUE, true);
+	root.builder.RemoveBlacklistTiles(newdepottile);
 	showLogic(newdepottile);
 	foreach (tile, dummy in newdepottile)
 		{
 		newdeploc=cBuilder.BuildAndStickToRoad(tile, deptype);
 		if (newdeploc > -1)	break;
 		}
-/*	test=root.builder.RoadStationExtend(slloc,slloc+front,deptype); // try left
-	if (test)	{ newdeploc = slloc; }
-		else	{ // right
-			test=root.builder.RoadStationExtend(srloc,srloc+front,deptype);
-			if (test)	{ newdeploc = srloc; }
-				else	{ // front left
-					test=root.builder.RoadStationExtend(omloc,sloc+front+right,deptype);
-					if (test)	{ newdeploc = omloc; }
-						else	{ // front left
-							test=root.builder.RoadStationExtend(olloc, sloc+front+left, deptype); // front left
-							if (test)	{ newdeploc = olloc; }
-								else	{ // front
-									test=root.builder.RoadStationExtend(orloc, sloc+front, deptype);
-									if (test)	{ newdeploc = orloc; }
-									}
-		 					}
-					}
-			}*/
 	if (newdeploc==-1)	{ DError("Cannot rebuild our depot !",1); }
 		else		{ DInfo("Depot rebuild, all is fine !",1); }
 	}
@@ -288,19 +271,7 @@ if (success)
 	local df=AIRoad.GetRoadDepotFrontTile(newdeploc);
 	local sf=AIRoad.GetRoadStationFrontTile(newstaloc);
 	PutSign(df,"DepotFront"); PutSign(sf,"New station front");
-	if (!AIRoad.IsRoadTile(sf))
-		{
-		DInfo("Invalid station entrance, demolishing",2);
-		cTileTools.DemolishTile(sf);
-		AIRoad.BuildRoad(newstaloc,sf);
-		}
-	if (!AIRoad.IsRoadTile(df))
-		{
-		DInfo("Invalid station entrance, demolishing",2);
-		cTileTools.DemolishTile(df);
-		AIRoad.BuildRoad(newdeploc,df);
-		}
-	root.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(newdeploc), AIRoad.GetRoadStationFrontTile(newstaloc));	
+	root.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(newdeploc), AIRoad.GetRoadStationFrontTile(newstaloc));
 	}
 
 root.chemin.GListUpdateItem(station_index,station_obj); // save it
@@ -312,11 +283,11 @@ function cBuilder::RoadStationExtend(tile, direction, stationtype)
 if (AITile.IsStationTile(tile)) return false; // protect station
 if (!cTileTools.DemolishTile(tile)) return false;
 if (!AIRoad.IsRoadTile(direction))
-		{ cTileTools.DemolishTile(direction); AIRoad.BuildRoad(direction,tile); } 
-	if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_JOIN_ADJACENT))
+		{ cTileTools.DemolishTile(direction); AIRoad.BuildRoad(direction,tile); }
+if (!AIRoad.IsRoadTile(direction))	return false; // no need to build that station, it won't have a road in its front
+if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_JOIN_ADJACENT))
 		{ DError("Cannot create the station !",1); return false; }
 	else	{ AIRoad.BuildRoad(direction,tile); return true; }
-	}
 return false;
 }
 

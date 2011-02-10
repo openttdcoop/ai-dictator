@@ -152,12 +152,28 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000)) // depot, i add 100000 to kn
 	{
 	if (!AIRoad.BuildRoadDepot(tile,direction))
 		{ DInfo("Can't built the depot : "+AIError.GetLastErrorString(),2); return -1; }
-	else	return tile;
+	else	{
+		if (AIRoad.AreRoadTilesConnected(tile,direction))	return tile;
+			else	{
+				DInfo("Something is bad with the depot",2);
+				cTileTools.DemolishTile(tile);
+				root.builder.BlacklistTile(tile);
+				return -1;
+				}
+		}
 	}
 // if we are still here, we have done others cases already
 if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_NEW))
 	{ DInfo("Can't built the station : "+AIError.GetLastErrorString(),2); return -1; }
-	else return tile;
+	else	{
+		if (AIRoad.AreRoadTilesConnected(tile,direction))	return tile;
+		else	{
+			DInfo("Something is bad with that station",2);
+			cTileTools.DemolishTile(tile); 
+			root.builder.BlacklistTile(tile);
+			return -1;
+			}
+		}
 return -1;
 }
 
@@ -208,6 +224,7 @@ if (start)	{
 tilelist.Sort(AIList.SORT_BY_VALUE, false); // highest values first
 checklist.Valuate(AIRoad.IsRoadTile);
 checklist.KeepValue(1);
+root.builder.RemoveBlacklistTiles(checklist);
 if (checklist.IsEmpty())
 	{
 	DInfo("Cannot stick our station to a road, building classic",1);

@@ -88,3 +88,14 @@ description:
 - Don't check chopper orders
 
 
+changeset:   12:4b5267e98125
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 21:42:23 2011 +0100
+files:       Changelog build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut utils/tile.nut
+description:
+- Wait a few and retry when fail to demolish a tile
+- Protect station from demolishing by mistake
+- Rebuild road depot when removed by upgrading station
+
+

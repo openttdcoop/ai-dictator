@@ -19,14 +19,31 @@ static	DIR_SW = 3; // gareE+routeW = depot sortie vers W, me=2
 	holestart=null;
 	holeend=null;
 	holes=null;
+	TilesBlacklist=null;
 	savedepot = null; 			// the tile of the last depot we have build
 	
 	constructor(that)
 		{
 		root = that;
+		TilesBlacklist=AIList();
 		CriticalError=false;
 		}
 	}
+
+function cBuilder::BlacklistTile(tile)
+// add that tile to our blacklist
+{
+root.builder.TilesBlacklist.AddItem(tile,0);
+}
+
+function cBuilder::RemoveBlacklistTiles(tilelist)
+// remove all blacklist tile from tilelist and return it
+{
+foreach (tile, dummy in tilelist)
+	{
+	if (root.builder.TilesBlacklist.HasItem(tile))	tilelist.RemoveItem(tile);
+	}
+}
 
 function cBuilder::IsCriticalError()
 // Check the last error to see if the error is a critical error or temp failure
