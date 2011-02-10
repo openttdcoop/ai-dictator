@@ -99,3 +99,13 @@ description:
 - Rebuild road depot when removed by upgrading station
 
 
+changeset:   14:186701f304f7
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 22:37:39 2011 +0100
+files:       handler/chemin.nut
+description:
+- Lower conditions when we try to add a new vehicle while we still have
+some vehicle to upgrade
+
+

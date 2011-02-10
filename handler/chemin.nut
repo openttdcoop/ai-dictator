@@ -820,34 +820,26 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			continue; // skip to next route, we won't check removing for that turn
 			}
 		}
-/*	// removing vehicle
-	if (!profit && oldveh)
+	if (cargowait == 0) // this happen if we load anything at the station
 		{
-		if (prevprofit > 0) continue;
-		// if we are here, last and current year are losts for 1 of the vehicle in the group
-		vehList=AIVehicleList_Group(road.ROUTE.groupe_id);
-		vehList.Valuate(AIVehicle.GetProfitThisYear);
-		vehList.KeepAboveValue(0);
-		if (vehList.IsEmpty()) // so no one make any profit this year for that group
-			{
-			root.chemin.RouteStatusChange(j,666);
-			DInfo("Route #"+j+" seems to be damage, will try to repair it.",0);
-			vehList=AIVehicleList_Group(road.ROUTE.groupe_id);
-			//vehList.RemoveTop(2);
-			if (!vehList.IsEmpty())
-				{ DInfo("Sending bad group vehicles to depot for route #"+j,0); }
-			foreach (i, dummy in vehList)
-				{
-				root.carrier.VehicleToDepotAndSell(i);
-				}
-			root.builder.TryBuildThatRoute(j);
-			}
-		else	{ // just that vehicle that was bad
-			root.carrier.VehicleToDepotAndSell(vehsample);
-			local tot=AIVehicle.GetProfitThisYear(vehsample);
-			DInfo("Sending a vehicle from route #"+j+" to depot, not making profits : "+tot,0);
-			}
-		}*/
+		local busyList=AIVehicleList_Group(road.ROUTE.groupe_id);
+		local runningList=AIList();
+		if (busyList.IsEmpty()) continue;
+		busyList.Valuate(AIVehicle.GetState);
+		runningList.AddList(busyList);
+		busyList.KeepValue(AIVehicle.VS_AT_STATION); // the loading vehicle
+		runningList.KeepValue(AIVehicle.VS_RUNNING); // healthy vehicle
+		if (busyList.IsEmpty())	continue; // no need to continue if noone is at station
+		runningList.Valuate(AIVehicle.GetCurrentSpeed);
+		runningList.KeepValue(0); // running but at 0 speed
+		if (runningList.IsEmpty())	continue; // all vehicles are moving
+		runningList.Valuate(AIVehicle.GetProfitThisYear);
+		runningList.Sort(AIList.SORT_BY_VALUE,true);
+		// now send that one to depot & sell it
+		local veh=runningList.Begin();
+		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",2);
+		root.carrier.VehicleToDepotAndSell(veh);
+		}
 	}
 }
 
