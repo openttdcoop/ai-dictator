@@ -127,7 +127,8 @@ return true;
 
 function cBuilder::BuildAndStickToRoad(tile, stationtype)
 {
-if (!AITile.DemolishTile(tile))
+if (AITile.IsStationTile(tile)) return false; // protect station
+if (!cTileTools.DemolishTile(tile))
 	{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
 
 // ok we know we are close to a road, let's find where the road is
@@ -346,7 +347,7 @@ if (!isneartown)
 	if (!AIRoad.BuildRoadDepot(deptile, depfront))
 		{
 		AILog.Error("Depot could not be built: " + AIError.GetLastErrorString());
-		AITile.DemolishTile(statile);
+		cTileTools.DemolishTile(statile);
 		return false;
 		}
 	}
@@ -454,7 +455,7 @@ else	{
 				}
 			} else {
 				if (!AIBridge.IsBridgeTile(path.GetTile()) && !AITunnel.IsTunnelTile(path.GetTile())) {
-					if (AIRoad.IsRoadTile(path.GetTile())) AITile.DemolishTile(path.GetTile());
+					if (AIRoad.IsRoadTile(path.GetTile())) cTileTools.DemolishTile(path.GetTile());
 					if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == par.GetTile()) {
 						if (!AITunnel.BuildTunnel(AIVehicle.VT_ROAD, path.GetTile())) {
 							DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);

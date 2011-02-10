@@ -18,6 +18,18 @@ if (distedge < 120) {
 	return tiles;
 }
 
+function cTileTools::DemolishTile(tile)
+// same as AITile.DemolishTile but retry after a little wait
+{
+local res=AITile.DemolishTile(tile);
+if (!res)
+	{
+	AIController.Sleep(30);
+	res=AITile.DemolishTile(tile);
+	}
+return res;
+}
+
 function cTileTools::GetTilesAroundPlace(place)
 // Get tiles around a place
 {

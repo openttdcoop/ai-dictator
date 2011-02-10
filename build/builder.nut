@@ -98,8 +98,8 @@ foreach (i, dummy in tiletester)
 	if (tile == weare)	continue; // tile is ok, it's one of our tile
 	DInfo(tile+" my compny "+weare,2);
 	// Watchout for roadtile from company X crossing our rail
-	tile=AITile.DemolishTile(i); // can we delete that tile ? Ignore result, we will care about it on next try
-	tile=AITile.DemolishTile(i); // demolish it twice, this should remove the crossing roads case
+	tile=cTileTools.DemolishTile(i); // can we delete that tile ? Ignore result, we will care about it on next try
+	tile=cTileTools.DemolishTile(i); // demolish it twice, this should remove the crossing roads case
 	if (!root.builder.IsCriticalError()) continue;
 		else	{ return false; }
 	}

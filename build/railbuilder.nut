@@ -153,23 +153,23 @@ if (objtype==0 && !remove) // flatten
 	}
 if (objtype==1) // rail
 	{
-	if (!AITile.IsBuildable(ti) && AITile.GetOwner(ti)!=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	{ AITile.DemolishTile(ti); }
+	if (!AITile.IsBuildable(ti) && AITile.GetOwner(ti)!=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	{ cTileTools.DemolishTile(ti); }
 //	PutSign(ti,"!-"+AITile.GetMinHeight(ti)+"/"+AITile.GetMaxHeight(ti));
 	if (direction==AIRail.RAILTRACK_NE_SW)
 			{ tracktype=AIRail.RAILTRACK_NE_SW; }
 		else	{ tracktype=AIRail.RAILTRACK_NW_SE; }
-	if (remove)	{ AITile.DemolishTile(ti); }
+	if (remove)	{ cTileTools.DemolishTile(ti); }
 		else	{ success=AIRail.BuildRailTrack(ti, tracktype); }
 	DInfo("Putting a rail",1);
 	}
 if (objtype==2) // rail
 	{
-	if (!AITile.IsBuildable(ti))	{ AITile.DemolishTile(ti); }
+	if (!AITile.IsBuildable(ti))	{ cTileTools.DemolishTile(ti); }
 //	PutSign(ti,"!-"+AITile.GetMinHeight(ti)+"/"+AITile.GetMaxHeight(ti));
 	if (direction==AIRail.RAILTRACK_NE_SW)
 			{ tracktype=AIRail.RAILTRACK_NW_NE; } // ok
 		else	{ tracktype=AIRail.RAILTRACK_NW_NE; } //NE_SE
-	if (remove)	{ AITile.DemolishTile(ti); }
+	if (remove)	{ cTileTools.DemolishTile(ti); }
 		else	{ success=AIRail.BuildRailTrack(ti, tracktype); }
 	DInfo("Putting a rail",1);
 	}
@@ -201,8 +201,8 @@ if (objtype==10) // depot
 			s=AIRail.RAILTRACK_NW_NE;//ok 
 			depottile+=AIMap.GetTileIndex(-1,0);
 			} // 1 X (right)
-	if (!AITile.IsBuildable(depottile))	{ AITile.DemolishTile(depottile); }
-	if (remove)	{ AITile.DemolishTile(depottile); }
+	if (!AITile.IsBuildable(depottile))	{ cTileTools.DemolishTile(depottile); }
+	if (remove)	{ cTileTools.DemolishTile(depottile); }
 		else	{
 			cTileTools.FlattenTile(stationOrigin,depottile);
 			success=AIRail.BuildRailTrack(t,f);
@@ -480,7 +480,7 @@ function cBuilder::RetryRail(prevprev, pp1, pp2, pp3, head1)
 					}
 				}
 			} else {
-				AITile.DemolishTile(tile);
+				cTileTools.DemolishTile(tile);
 			}
 			head2[0] = tile;
 		}

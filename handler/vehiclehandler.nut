@@ -138,7 +138,6 @@ PutSign(location,"NetLoc");
 		}
 	}
 DInfo(root.chemin.airnet_count+" aircrafts are on the network",1);
-root.NeedDelay(50);
 }
 
 function cCarrier::VehicleOrdersReset(veh)

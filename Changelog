@@ -78,3 +78,13 @@ Correct bug: don't remove handicap on ranking if handicap isn't
 positive, else we higher ranking instead
 
 
+changeset:   11:a107f11a4981
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 18:41:01 2011 +0100
+files:       Changelog build/builder.nut build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Set malus on ranking == to the ranking
+- Don't check chopper orders
+
+

@@ -170,9 +170,6 @@ foreach (town, townvalue in townlist)
 		}
 	}
 if (newadd > 0)	{ DInfo("Adding "+newadd+" aircrafts to the air network",1); }
-//root.chemin.virtual_air=AIList();
-//root.chemin.virtual_air=finalList;
-root.NeedDelay(20);
 root.carrier.AirNetworkOrdersHandler();
 }
 
@@ -785,7 +782,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	if (firstveh) vehneed=2;
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
-	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule,2);
+	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+" firstveh="+firstveh,2);
 	if (vehprofit <=0)	profit=false;
 		else		profit=true;
 	vehList.Valuate(AIVehicle.GetAge);

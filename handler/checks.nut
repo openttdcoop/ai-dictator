@@ -15,10 +15,20 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 	local stationtype=0;
 	local src=root.chemin.GListGetItem(road.ROUTE.src_station);
 	local dst=root.chemin.GListGetItem(road.ROUTE.dst_station);
+	local upgrade=false;
 	if (src.STATION.type < newairporttype)
-		{ DInfo("stationt type="+src.STATION.type+" newairporttype="+newairporttype,2); root.builder.AirportNeedUpgrade(i,true); }
+		{
+		DInfo("stationt type="+src.STATION.type+" newairporttype="+newairporttype,2);
+		root.builder.AirportNeedUpgrade(i,true);
+		upgrade=true;
+		}
 	if (dst.STATION.type < newairporttype)
-		{ DInfo("stationt type="+src.STATION.type+" newairporttype="+newairporttype,2);  root.builder.AirportNeedUpgrade(i,false); }
+		{
+		DInfo("stationt type="+src.STATION.type+" newairporttype="+newairporttype,2);
+		root.builder.AirportNeedUpgrade(i,false);
+		upgrade=true;
+		}
+	if (upgrade) break;
 	}
 }
 

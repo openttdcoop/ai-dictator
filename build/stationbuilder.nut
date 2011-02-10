@@ -228,9 +228,6 @@ PutSign(srloc,"R");
 PutSign(sloc+front,"|");
 PutSign(omloc,"O");
 local depotdead=-1;
-// first look if we're about to replace our depot
-if (slloc == depot_id)	depotdead=slloc;
-if (srloc == depot_id)	depotdead=srloc;
 local statype=AIRoad.ROADVEHTYPE_BUS;
 if (station_obj.STATION.railtype == 11)	{ statype=AIRoad.ROADVEHTYPE_TRUCK; }
 local deptype=AIRoad.ROADVEHTYPE_BUS+100000; // we add 100000
@@ -244,27 +241,39 @@ if (success)	{ newstaloc = slloc; }
 		if (success)	{ newstaloc = srloc; }
 		}
 local test=false;
+if (newstaloc == depot_id)	depotdead=newstaloc; // check if we kill our depot while upgrading
 if (depotdead > -1)
 	{ // depot was destroy, look out possible places to rebuild one, this is safe if stations are there
 	DInfo("Depot has been destroy while upgrading, building a new one.",1);
-	test=root.builder.RoadStationExtend(slloc,slloc+front,deptype); // try left
+	local newdepottile=cTileTools.GetTilesAroundPlace(depotdead);
+	newdepottile.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
+	newdepottile.KeepAboveValue(0);
+	newdepottile.Valuate(AITile.GetDistanceManhattanToTile,depotdead);
+	newdepottile.Sort(AIList.SORT_BY_VALUE, true);
+	showLogic(newdepottile);
+	foreach (tile, dummy in newdepottile)
+		{
+		newdeploc=cBuilder.BuildAndStickToRoad(tile, deptype);
+		if (newdeploc > -1)	break;
+		}
+/*	test=root.builder.RoadStationExtend(slloc,slloc+front,deptype); // try left
 	if (test)	{ newdeploc = slloc; }
 		else	{ // right
 			test=root.builder.RoadStationExtend(srloc,srloc+front,deptype);
 			if (test)	{ newdeploc = srloc; }
-				else	{ // front
-					test=root.builder.RoadStationExtend(omloc,front,deptype);
+				else	{ // front left
+					test=root.builder.RoadStationExtend(omloc,sloc+front+right,deptype);
 					if (test)	{ newdeploc = omloc; }
 						else	{ // front left
-							test=root.builder.RoadStationExtend(olloc, front+left, deptype); // front left
+							test=root.builder.RoadStationExtend(olloc, sloc+front+left, deptype); // front left
 							if (test)	{ newdeploc = olloc; }
-								else	{ // front right
-									test=root.builder.RoadStationExtend(orloc, front+right, deptype);
+								else	{ // front
+									test=root.builder.RoadStationExtend(orloc, sloc+front, deptype);
 									if (test)	{ newdeploc = orloc; }
 									}
 		 					}
 					}
-			}
+			}*/
 	if (newdeploc==-1)	{ DError("Cannot rebuild our depot !",1); }
 		else		{ DInfo("Depot rebuild, all is fine !",1); }
 	}
@@ -278,17 +287,17 @@ if (success)
 	station_obj.STATION.e_depot=depot_id;
 	local df=AIRoad.GetRoadDepotFrontTile(newdeploc);
 	local sf=AIRoad.GetRoadStationFrontTile(newstaloc);
-	PutSign(df,"DepotFront"); PutSign(sf,"New station front");	
+	PutSign(df,"DepotFront"); PutSign(sf,"New station front");
 	if (!AIRoad.IsRoadTile(sf))
 		{
 		DInfo("Invalid station entrance, demolishing",2);
-		AITile.DemolishTile(sf);
+		cTileTools.DemolishTile(sf);
 		AIRoad.BuildRoad(newstaloc,sf);
 		}
 	if (!AIRoad.IsRoadTile(df))
 		{
 		DInfo("Invalid station entrance, demolishing",2);
-		AITile.DemolishTile(df);
+		cTileTools.DemolishTile(df);
 		AIRoad.BuildRoad(newdeploc,df);
 		}
 	root.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(newdeploc), AIRoad.GetRoadStationFrontTile(newstaloc));	
@@ -298,25 +307,12 @@ root.chemin.GListUpdateItem(station_index,station_obj); // save it
 return success;
 }
 
-function cBuilder::AirStationNeedUpgrade(roadidx,start)
-// Upgrade an existing station
-{
-DWarn("Upgrading station is not done yet");
-return false;
-}
-
 function cBuilder::RoadStationExtend(tile, direction, stationtype)
 {
 if (AITile.IsStationTile(tile)) return false; // protect station
-if (!AITile.DemolishTile(tile)) return false;
-local stype=stationtype;
-if (stype > 60000)
-	{
-	if (!AIRoad.BuildRoadDepot(tile, direction))
-		{ DError("Cannot create the depot !",1); return false; }
-	else	{ AIRoad.BuildRoad(direction,tile); return true; }
-	}
-else	{
+if (!cTileTools.DemolishTile(tile)) return false;
+if (!AIRoad.IsRoadTile(direction))
+		{ cTileTools.DemolishTile(direction); AIRoad.BuildRoad(direction,tile); } 
 	if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_JOIN_ADJACENT))
 		{ DError("Cannot create the station !",1); return false; }
 	else	{ AIRoad.BuildRoad(direction,tile); return true; }
@@ -401,6 +397,18 @@ if (depotList.HasItem(realID)) return realID;
 	else	DInfo("Warning: no depot at source and destination for route "+idx,1);
 // TODO: no depot at source & destination, not the best function to handle that, but we should handle that case somewhere as we have a non working route here
 return realID;
+}
+
+function cBuilder::RepairRouteRoad()
+// check if a road route need a correction
+{
+for (local i=0; i < root.chemin.RListGetSize(); i++)
+	{
+	road=root.chemin.RListGetItem(i);
+	if (!road.ROUTE.isServed)	continue;
+	if (!road.ROUTE.kind == AIVehicle.VT_ROAD) continue;
+//	local srcdepotloc=road.ROUTE.
+	}
 }
 
 /*function cBuilder::FindStationClosestEntry(obj, target)
@@ -597,12 +605,12 @@ if (objtype==0 && !remove) // flatten
 	}
 if (objtype==1) // rail
 	{
-	if (!AITile.IsBuildable(ti))	{ AITile.DemolishTile(ti); }
+	if (!AITile.IsBuildable(ti))	{ cTileTools.DemolishTile(ti); }
 //	PutSign(ti,"!-"+AITile.GetMinHeight(ti)+"/"+AITile.GetMaxHeight(ti));
 	if (obj.STATION.direction==AIRail.RAILTRACK_NE_SW)
 			{ tracktype=AIRail.RAILTRACK_NE_SW; }
 		else	{ tracktype=AIRail.RAILTRACK_NW_SE; }
-	if (remove)	{ AITile.DemolishTile(ti); }
+	if (remove)	{ cTileTools.DemolishTile(ti); }
 		else	{ success=AIRail.BuildRailTrack(ti, tracktype); }
 	DInfo("Putting a rail",1);
 	}
@@ -623,8 +631,8 @@ if (objtype==2) // depot
 			s=AIRail.RAILTRACK_NW_NE;//ok 
 			depottile+=AIMap.GetTileIndex(-1,0);
 			} // 1 X (right)
-	if (!AITile.IsBuildable(depottile))	{ AITile.DemolishTile(depottile); }
-	if (remove)	{ AITile.DemolishTile(depottile); }
+	if (!AITile.IsBuildable(depottile))	{ cTileTools.DemolishTile(depottile); }
+	if (remove)	{ cTileTools.DemolishTile(depottile); }
 		else	{
 			cTileTools.FlattenTile(stationOrigin,depottile);
 			success=AIRail.BuildRailTrack(t,f);
