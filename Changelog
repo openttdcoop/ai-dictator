@@ -118,3 +118,13 @@ description:
 - Sell spare vehicles on too busy stations
 
 
+changeset:   16:9f6a1241156a
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 00:51:48 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut
+description:
+- Don't sell spare if we have less than 3 spares
+- Correct a bug finding if our depot was destroy
+
+

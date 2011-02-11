@@ -248,6 +248,8 @@ if (depotdead > -1)
 	local newdepottile=cTileTools.GetTilesAroundPlace(depotdead);
 	newdepottile.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
 	newdepottile.KeepAboveValue(0);
+	newdepottile.Valuate(AIRoad.IsRoadTile);
+	newdepottile.KeepValue(0);
 	newdepottile.Valuate(AITile.GetDistanceManhattanToTile,depotdead);
 	newdepottile.Sort(AIList.SORT_BY_VALUE, true);
 	newdepottile.RemoveAboveValue(50);
