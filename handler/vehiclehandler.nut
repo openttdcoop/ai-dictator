@@ -257,6 +257,23 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 	}
 }
 
+function cCarrier::VehicleSetDepotOrder(veh)
+// set all orders of the vehicle to force it going to a depot
+{
+local idx=root.carrier.VehicleFindRouteIndex(veh);
+// One day i should check rogues vehicles running out of control from a route, but this shouldn't happen :p
+local homedepot=root.builder.GetDepotID(idx,true);
+if (homedepot==-1)	homedepot=root.builder.GetDepotID(idx,false);
+root.carrier.VehicleOrdersReset(veh);
+if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	{ DError("Vehicle refuse goto depot order",2); }
+// And another one day i will kills all vehicles that refuse to go to a depot !!!
+if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	{ DError("Vehicle refuse goto depot order",2); }
+// twice time, even we get caught by vehicle orders check, it will ask to send the vehicle.... to depot
+DInfo("Seting depot order for vehicle "+veh+"-"+AIVehicle.GetName(veh),2);
+}
+
 function cCarrier::VehicleSendToDepot(veh,flag)
 // send a vehicle to depot, set its flag for the reason
 {
@@ -299,10 +316,10 @@ local understood=false;
 understood=AIVehicle.SendVehicleToDepot(veh);
 if (!understood) {
 	DInfo(AIVehicle.GetName(veh)+" refuse to go to depot",1);
-	return false;
 	}
 else	DInfo(AIVehicle.GetName(veh)+" is going to depot "+reason,0);
-
+// sometimes undertood is true but the vehicle doesn't go to depot
+root.carrier.VehicleSetDepotOrder(veh);
 if (!root.carrier.VehicleSetFlag(veh,flag))
 	{ DError("Fail to flag the vehicle !",2); }
 }

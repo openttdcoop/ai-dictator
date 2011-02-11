@@ -36,12 +36,12 @@ function cBuilder::BlacklistTile(tile)
 root.builder.TilesBlacklist.AddItem(tile,tile);
 }
 
-function cBuilder::RemoveBlacklistTiles(tilelist)
+function cBuilder::RemoveBlacklistTiles(tilelist) // TODO: fix me
 // remove all blacklist tile from tilelist and return it
 {
 local newTile=AIAbstractList();
 newTile.AddList(tilelist);
-DInfo("newTile size "+newTile.Count(),2);
+DInfo("newTile size "+newTile.Count(),2); 
 if (newTile.IsEmpty()) return tilelist;
 if (root.builder.TilesBlacklist.IsEmpty()) return tilelist;
 foreach (tile, dummy in tilelist)
@@ -229,7 +229,7 @@ function cBuilder::FindCompatibleStationExistForAllCases(source, t_index, s_star
 local target=root.chemin.RListGetItem(t_index);
 local compareStationType=-1;
 local comparerealid=root.builder.GetStationID(t_index,t_start);
-DInfo("Station id ="+comparerealid);
+DInfo("Station id ="+comparerealid,2);
 // check the station is valid
 //if (!AIStation.IsValidStation(comparerealid))	{ return false; }
 // We need to find if the station can provide or accept the cargo we need

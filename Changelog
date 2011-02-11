@@ -138,3 +138,16 @@ description:
 tiles!
 
 
+changeset:   18:1476c5c5a64a
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 22:43:14 2011 +0100
+files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/chemin.nut
+description:
+- Disable Tilelist blacklist, not working and it bug me enough like
+that, will recheck that when i got time to spare on it
+- Preparing the pre-build service handling, will do it after i have fix
+the vehicle need to go to depot case (thinking about a clean fix for
+that, i will add before i re-forget again)
+
+

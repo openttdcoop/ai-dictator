@@ -685,7 +685,6 @@ if (vehlist.IsEmpty())	age=1000;
 		else	age=vehlist.GetValue(vehlist.Begin());
 if (age < 10) { DInfo("Too young buy "+age+" count="+vehlist.Count(),2); return; }
 local bigairportlocation=root.chemin.virtual_air[0];
-DInfo("bigairportloc:"+bigairportlocation);
 local bigairportID=AIStation.GetStationID(bigairportlocation);
 local cargowaiting=AIStation.GetCargoWaiting(bigairportID,passcargo);
 local vehneed=0;
