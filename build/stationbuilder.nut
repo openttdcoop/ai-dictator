@@ -169,6 +169,7 @@ if (start)	{ station_index=road.ROUTE.src_station; }
 DInfo("station index "+station_index,2);
 station_obj=root.chemin.GListGetItem(station_index);
 local station_id=root.builder.GetStationID(roadidx,start);
+local destination_loc=AIStation.GetLocation(root.builder.GetStationID(roadidx,!start));
 DInfo("Upgrading road station "+AIStation.GetName(station_id),0);
 local depot_id=root.builder.GetDepotID(roadidx,start);
 // as depot id seems to be = tile index, depot location = depot id so
@@ -246,14 +247,14 @@ if (depotdead > -1)
 	{ // depot was destroy, look out possible places to rebuild one, this is safe if stations are there
 	DInfo("Depot has been destroy while upgrading, building a new one.",1);
 	local newdepottile=cTileTools.GetTilesAroundPlace(depotdead);
+	newdepottile=root.builder.RemoveBlacklistTiles(newdepottile);
 	newdepottile.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
 	newdepottile.KeepAboveValue(0);
 	newdepottile.Valuate(AIRoad.IsRoadTile);
 	newdepottile.KeepValue(0);
 	newdepottile.Valuate(AITile.GetDistanceManhattanToTile,depotdead);
 	newdepottile.Sort(AIList.SORT_BY_VALUE, true);
-	newdepottile.RemoveAboveValue(50);
-	root.builder.RemoveBlacklistTiles(newdepottile);
+	newdepottile.RemoveAboveValue(20);
 	showLogic(newdepottile);
 	foreach (tile, dummy in newdepottile)
 		{
@@ -275,6 +276,7 @@ if (success)
 	local sf=AIRoad.GetRoadStationFrontTile(newstaloc);
 	PutSign(df,"DepotFront"); PutSign(sf,"New station front");
 	root.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(newdeploc), AIRoad.GetRoadStationFrontTile(newstaloc));
+	root.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(newdeploc), AIRoad.GetRoadStationFrontTile(destination_loc));
 	}
 
 root.chemin.GListUpdateItem(station_index,station_obj); // save it

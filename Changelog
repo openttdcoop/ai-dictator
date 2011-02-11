@@ -128,3 +128,13 @@ description:
 - Correct a bug finding if our depot was destroy
 
 
+changeset:   17:dd597eefc68c
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 01:01:14 2011 +0100
+files:       Changelog build/stationbuilder.nut
+description:
+- Erf, while sticking our road depot to a road tile, don't build on road
+tiles!
+
+

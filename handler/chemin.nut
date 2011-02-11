@@ -465,6 +465,7 @@ sroad.ROUTE.dst_istown=eroad.DEPOT.istown;
 if (sroad.ROUTE.dst_istown)	{ sroad.ROUTE.dst_place=AITown.GetLocation(end); }
 			else	{ sroad.ROUTE.dst_place=AIIndustry.GetLocation(end); }
 sroad.ROUTE.length=eroad.DEPOT.distance;
+sroad.ROUTE.status=2;
 root.chemin.RListUpdateItem(start,sroad);
 DInfo("Route created: "+sroad.ROUTE.cargo_name+" from "+sroad.ROUTE.src_name+" to "+sroad.ROUTE.dst_name+" "+sroad.ROUTE.length+"m",0);
 }
@@ -473,6 +474,7 @@ function cChemin::EndingJobFinder(idx)
 // Try find where to drop cargo for a route
 {
 local endroute=root.chemin.RListGetItem(idx);
+if (endroute.ROUTE.status!=1)	return idx; // tell caller we know where to go already
 DInfo("Finding where to drop cargo ("+endroute.ROUTE.cargo_name+") for service "+idx,0);
 root.chemin.RouteCreateEndingList(idx);
 endroute=root.chemin.RListGetItem(idx);
@@ -631,7 +633,7 @@ do 	{
 	madLoop++;
 	} while (!goodRoute && madLoop < madLoopIter);
 if (!goodRoute)	{ return -1; }
-	else	{ root.chemin.RouteIsValid(startidx,endidx); }
+	else	{ if (endidx!=startidx)	root.chemin.RouteIsValid(startidx,endidx); } // only if route is not already known
 return startidx;
 }
 
@@ -838,7 +840,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		runningList.Valuate(AIVehicle.GetProfitThisYear);
 		showLogic(runningList);
 		runningList.Sort(AIList.SORT_BY_VALUE,true);
-		if (runningList.Count() < 4)	continue; // we will not remove 4 last vehicles, upto "profitlost" to remove them
+		if (runningList.Count() < 2)	continue; // we will not remove last vehicles, upto "profitlost" to remove them
 		// now send that one to depot & sell it
 		local veh=runningList.Begin();
 		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",2);

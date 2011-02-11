@@ -33,7 +33,7 @@ static	DIR_SW = 3; // gareE+routeW = depot sortie vers W, me=2
 function cBuilder::BlacklistTile(tile)
 // add that tile to our blacklist
 {
-root.builder.TilesBlacklist.AddItem(tile,0);
+root.builder.TilesBlacklist.AddItem(tile,tile);
 }
 
 function cBuilder::RemoveBlacklistTiles(tilelist)
@@ -42,12 +42,13 @@ function cBuilder::RemoveBlacklistTiles(tilelist)
 local newTile=AIAbstractList();
 newTile.AddList(tilelist);
 DInfo("newTile size "+newTile.Count(),2);
-if (newTile.IsEmpty()) return;
+if (newTile.IsEmpty()) return tilelist;
+if (root.builder.TilesBlacklist.IsEmpty()) return tilelist;
 foreach (tile, dummy in tilelist)
 	{
 	if (root.builder.TilesBlacklist.HasItem(tile))	newTile.RemoveItem(tile);
 	}
-tilelist=newTile;
+return newTile;
 }
 
 function cBuilder::IsCriticalError()
@@ -399,14 +400,17 @@ function cBuilder::TryBuildThatRoute(idx)
 {
 local rr=root.chemin.RListGetItem(idx);
 local success=false;
-success=root.carrier.GetVehicle(idx);
-// this check we could pickup a vehicle to validate road type can be use
-if (!success)
+if (rr.ROUTE.status==2) // not switch/case so we can advance steps in one pass
 	{
-	root.chemin.RouteIsNotDoable(idx); // retry that road real later
-	return false;
+	success=root.carrier.GetVehicle(idx);
+	// this check we could pickup a vehicle to validate road type can be use
+	if (!success)
+		{
+		root.chemin.RouteIsNotDoable(idx); // retry that road real later
+		return false;
+		}
+	else	{ root.chemin.RouteStatusChange(idx,3); } // advance to phase 3
 	}
-else	{ root.chemin.RouteStatusChange(idx,3); } // advance to phase 3
 root.bank.RaiseFundsBigTime();
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==3)
