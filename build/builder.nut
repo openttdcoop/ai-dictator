@@ -466,22 +466,11 @@ if (rr.ROUTE.status==5)
 		}
 	else	{ root.chemin.RouteStatusChange(idx,6); }
 	}
-
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==6)
 	{
 	success=root.builder.BuildRoadByType(idx);
-	if (success) 	{
-			DInfo("Route contruction complete ! "+rr.ROUTE.src_name+" to "+rr.ROUTE.dst_name,0);
-			rr.ROUTE.isServed=true;
-			rr.ROUTE.groupe_id=AIGroup.CreateGroup(rr.ROUTE.kind);
-			local groupname = AICargo.GetCargoLabel(rr.ROUTE.cargo_id)+" - "+rr.ROUTE.src_name;
-			if (groupname.len() > 29) groupname = groupname.slice(0, 28);
-			rr.ROUTE.groupe_name=groupname;
-			AIGroup.SetName(rr.ROUTE.groupe_id, rr.ROUTE.groupe_name);
-			root.chemin.RListUpdateItem(idx,rr);
-			root.chemin.RouteStatusChange(idx,100);
-			}
+	if (success)	{ root.chemin.RouteStatusChange(idx,7); }
 		else	{
 			if (root.builder.CriticalError)
 				{
@@ -490,9 +479,22 @@ if (rr.ROUTE.status==6)
 				root.builder.DeleteStation(idx);
 				return false;
 				}
-			else	{ return false; }
-			}
+			} // and nothing more, stay at phase 6 to repathfind/rebuild the road when possible
+	}	
+rr=root.chemin.RListGetItem(idx); // reload datas
+if (rr.ROUTE.status==7)
+	{
+	DInfo("Route contruction complete ! "+rr.ROUTE.src_name+" to "+rr.ROUTE.dst_name,0);
+	rr.ROUTE.isServed=true;
+	rr.ROUTE.groupe_id=AIGroup.CreateGroup(rr.ROUTE.kind);
+	local groupname = AICargo.GetCargoLabel(rr.ROUTE.cargo_id)+" - "+rr.ROUTE.src_name;
+	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
+	rr.ROUTE.groupe_name=groupname;
+	AIGroup.SetName(rr.ROUTE.groupe_id, rr.ROUTE.groupe_name);
+	root.chemin.RListUpdateItem(idx,rr);
+	root.chemin.RouteStatusChange(idx,100);
 	}
+
 if (rr.ROUTE.status==666)
 	{
 	// TODO: per type check: road or rail

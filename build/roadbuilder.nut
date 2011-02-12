@@ -391,7 +391,8 @@ root.chemin.RListUpdateItem(root.chemin.nowRoute,road);
 return true;
 }
 
-function cBuilder::BuildRoadROAD(head1, head2)
+function cBuilder::PathfindRoadROAD(head1, head2)
+// just pathfind the road, but still don't build it
 {
 local pathfinder = MyRoadPF();
 pathfinder._cost_level_crossing = 1000;
@@ -412,111 +413,161 @@ while (path == false && counter < 150)
 	counter++;
 	AIController.Sleep(1);
 	}
+// restore our money
+root.bank.RaiseFundsTo(savemoney);
 if (path != null && path != false)
 	{
-	DInfo("Path found. (" + counter + ")",1); 
+	DInfo("Path found. (" + counter + ")",1);
+	return path;
 	}
 else	{
 	ClearSignsALL();
 	DInfo("Pathfinding failed.",1);
 	root.builder.CriticalError=true;
-	root.bank.RaiseFundsTo(savemoney);
 	return false;
 	}
+}
 
-	root.bank.RaiseFundsBigTime();
-	local prev = null;
-	local waserror = false;
-	holes=[];
-	while (path != null) {
-		local par = path.GetParent();
-		if (par != null) {
-			if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1) {
-				if (!AIRoad.BuildRoad(path.GetTile(), par.GetTile())) {
-					local error = AIError.GetLastError();
-					if (error != AIError.ERR_ALREADY_BUILT) {
-						if (error == AIError.ERR_VEHICLE_IN_THE_WAY) {
-							DInfo("A vehicle was in the way while I was building the road. Retrying...",1);
-							counter = 0;
+function cBuilder::ConstructRoadROAD(path)
+// this construct (build) the road we get from path
+{
+root.bank.RaiseFundsBigTime();
+DInfo("Building road structure",0);
+local prev = null;
+local waserror = false;
+holes=[];
+while (path != null)
+	{
+	local par = path.GetParent();
+	if (par != null)
+		{
+		if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1)
+			{
+			if (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()))
+				{
+				local error = AIError.GetLastError();
+				if (error != AIError.ERR_ALREADY_BUILT)
+					{
+					if (error == AIError.ERR_VEHICLE_IN_THE_WAY)
+						{
+						DInfo("A vehicle was in the way while I was building the road. Retrying...",1);
+						counter = 0;
+						AIController.Sleep(75);
+						while (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()) && counter < 3)
+							{
+							counter++;
 							AIController.Sleep(75);
-							while (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()) && counter < 3) {
-								counter++;
-								AIController.Sleep(75);
 							}
-							if (counter > 2) {
-								DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
-								cBuilder.ReportHole(path.GetTile(), par.GetTile(), waserror);
-								waserror = true;
-							} else {
-								if (waserror) {
-									waserror = false;
-									holes.push([holestart, holeend]);
-								}
-							}
-						} else {
+						if (counter > 2)
+							{
 							DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
 							cBuilder.ReportHole(path.GetTile(), par.GetTile(), waserror);
 							waserror = true;
+							}
+						 else	{
+							if (waserror)
+								{
+								waserror = false;
+								holes.push([holestart, holeend]);
+								}
+							}
 						}
-					} else {
-						if (waserror) {
-							waserror = false;
-							holes.push([holestart, holeend]);
+					else	{
+						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
+						cBuilder.ReportHole(path.GetTile(), par.GetTile(), waserror);
+						waserror = true;
 						}
 					}
-				} else {
-					if (waserror) {
+			 	else	{
+					if (waserror)
+						{
 						waserror = false;
 						holes.push([holestart, holeend]);
+						}
 					}
 				}
-			} else {
-				if (!AIBridge.IsBridgeTile(path.GetTile()) && !AITunnel.IsTunnelTile(path.GetTile())) {
-					if (AIRoad.IsRoadTile(path.GetTile())) cTileTools.DemolishTile(path.GetTile());
-					if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == par.GetTile()) {
-						if (!AITunnel.BuildTunnel(AIVehicle.VT_ROAD, path.GetTile())) {
-							DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
-							if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH) {
-								DInfo("That tunnel would be too expensive. Construction aborted.",1);
-								root.builder.CriticalError=true; return false;
+		 	else 	{
+				if (waserror)
+					{
+					waserror = false;
+					holes.push([holestart, holeend]);
+					}
+				}
+			}
+	 	else	{
+			if (!AIBridge.IsBridgeTile(path.GetTile()) && !AITunnel.IsTunnelTile(path.GetTile()))
+				{
+				if (AIRoad.IsRoadTile(path.GetTile())) cTileTools.DemolishTile(path.GetTile());
+				if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == par.GetTile())
+					{
+					if (!AITunnel.BuildTunnel(AIVehicle.VT_ROAD, path.GetTile()))
+						{
+						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
+						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
+							{
+							DInfo("That tunnel would be too expensive. Construction aborted.",1);
+							return false;
 							}
-							cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
-							waserror = true;
-						} else {
-							if (waserror) {
-								waserror = false;
-								holes.push([holestart, holeend]);
+						cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
+						waserror = true;
+						}
+					else	{
+						if (waserror)
+							{
+							waserror = false;
+							holes.push([holestart, holeend]);
 							}
 						}
-					} else {
-						local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
-						bridgelist.Valuate(AIBridge.GetMaxSpeed);
-						if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgelist.Begin(), path.GetTile(), par.GetTile())) {
-							DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
-							if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH) {
-								DInfo("That bridge would be too expensive. Construction aborted.",1);
-								root.builder.CriticalError=true; return false;
+					}
+			 	else	{
+					local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
+					bridgelist.Valuate(AIBridge.GetMaxSpeed);
+					if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgelist.Begin(), path.GetTile(), par.GetTile()))
+						{
+						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
+						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
+							{
+							DInfo("That bridge would be too expensive. Construction aborted.",1);
+							return false;
 							}
-							cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
-							waserror = true;
-						} else {
-							if (waserror) {
-								waserror = false;
-								holes.push([holestart, holeend]);
+						cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
+						waserror = true;
+						}
+					 else	{
+						if (waserror)
+							{
+							waserror = false;
+							holes.push([holestart, holeend]);
 							}
 						}
 					}
 				}
 			}
 		}
-		prev = path;
-		path = par;
+	prev = path;
+	path = par;
 	}
-	if (waserror) {
-		waserror = false;
-		holes.push([holestart, holeend]);
+if (waserror)
+	{
+	waserror = false;
+	holes.push([holestart, holeend]);
 	}
-	return true;
+if (holes.len() > 0)
+	{ DInfo("Road construction fail...",1); return false; }
+return true;
 }
 
+
+function cBuilder::BuildRoadROAD(head1, head2)
+// pathfind+building the road
+// we return true or false if it fail
+{
+local path= false;
+path = root.builder.PathfindRoadROAD(head1, head2);
+if (path != null && path != false)
+	{
+	return root.builder.ConstructRoadROAD(path);
+	}
+else	{ return false;	}
+}
 

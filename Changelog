@@ -170,3 +170,13 @@ description:
 - Avoid our go to depot orders been removed by our order checks
 
 
+changeset:   21:307510b476ca
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 12 22:45:56 2011 +0100
+files:       Changelog TODO.txt info.nut main.nut
+description:
+- Some cleanup for release (soon)
+- Redo save/load functions, should work now
+
+
