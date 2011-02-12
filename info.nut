@@ -1,10 +1,10 @@
  class DictatorAI extends AIInfo 
  {
-   function GetAuthor()        { return "Brumi"; }
+   function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
    function GetVersion()       { return 12; }
-   function MinVersionToLoad() { return 1; }
+   function MinVersionToLoad() { return 2; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
    function GetShortName()     { return "DCTR"; }
@@ -32,15 +32,15 @@
 	 flags = AICONFIG_INGAME
 	});
 
-    AddLabels("fairlevel", {_0 = "Crazy", _1 = "Opportunist", _2 = "Dictator"});
+    AddLabels("fairlevel", {_0 = "Lazy", _1 = "Opportunist", _2 = "Dictator"});
 
 	AddSetting({
 		name = "use_train",
 		description = "Use trains",
-		easy_value = 1,
-		medium_value = 1,
-		hard_value = 1,
-		custom_value = 1,
+		easy_value = 0,
+		medium_value = 0,
+		hard_value = 0,
+		custom_value = 0,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
 	AddSetting({
@@ -64,10 +64,10 @@
 	AddSetting({
 		name = "use_boat",
 		description = "Use boat vehicles",
-		easy_value = 1,
-		medium_value = 1,
-		hard_value = 1,
-		custom_value = 1,
+		easy_value = 0,
+		medium_value = 0,
+		hard_value = 0,
+		custom_value = 0,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
     	AddSetting({
@@ -75,10 +75,10 @@
 	 description = "Enable debug messages",
 	 min_value = 0,
 	 max_value = 2,
-	 easy_value = 2,
-	 medium_value = 2,
-	 hard_value = 2,
-	 custom_value = 2,
+	 easy_value = 0,
+	 medium_value = 0,
+	 hard_value = 0,
+	 custom_value = 0,
 	 flags = AICONFIG_INGAME
 	});
     AddLabels("debug", {_0 = "Disable debug", _1 = "Basic debug", _2 = "Full debug"});

@@ -38,19 +38,12 @@ class DictatorAI extends AIController
 	fairlevel = null;
 	debug = null;
 	idleCounter=null;
-	softStart=null;
 	
 	checker=null;	
 	
 	lastroute = null;
 	loadedgame = null;
-	buildingstage = null;
-	inauguration = null;
-	removelist = null;
-	toremove = { vehtype = null,
-		     stasrc = null,
-		     stadst = null,
-		     list = null};
+
    constructor()
    	{
 	chemin=cChemin(this);
@@ -61,62 +54,51 @@ class DictatorAI extends AIController
 	carrier=cCarrier(this);
 
 	loadedgame = false;
-	idleCounter = 0;
-	softStart = 0;
 	checker=0;		// this one is use to set a monthly check for some operations
-//	buildingstage = 0;
-//	inauguration = 0;
-	removelist = [];
 	} 
  }
  
  
 function DictatorAI::Start()
 {
-
 	DInfo("DicatorAI started.");
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	AICompany.SetAutoRenewStatus(false);
-	bank.Update();
 	if (loadedgame) 
 		{
+		DInfo("We are promoting "+AICargo.GetCargoLabel(chemin.cargo_fav),0);
+		DInfo("We have "+(chemin.GListGetSize()-1)+" stations",0);
+		DInfo("We know "+(chemin.RListGetSize()-1)+" routes",0);
+		DInfo(" ");
 		chemin.RouteMaintenance();
-		softStart=8;
 		}
 	 else 	{
 		AIInit();
 		chemin.RouteCreateALL();
 		}
+	bank.Update();
 	while(true)
 		{
 		this.SetRailType();
 		this.CheckCurrentSettings();
 		if (use_train) builder.BaseStationRailBuilder(80835);
 		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
-		if (softStart < 3) // set the game to use only road for 3 turns
-			{
-			softStart++;
-			}
 		bank.CashFlow();
 		this.ClearSignsALL();
-		if (this.HasWaitingTimePassed())
-			{
-			if (bank.canBuild)
+		if (bank.canBuild)
+				{
+				chemin.ShowStationCapacity();
+				chemin.nowRoute=chemin.StartingJobFinder();
+				if (chemin.nowRoute>-1)
 					{
-					chemin.ShowStationCapacity();
-					chemin.nowRoute=chemin.StartingJobFinder();
-					if (chemin.nowRoute>-1)
-						{
-						builder.TryBuildThatRoute(chemin.nowRoute);
-						DInfo(" ");
-						// now jump to build stage
-						}
+					builder.TryBuildThatRoute(chemin.nowRoute);
+					DInfo(" ");
+					// now jump to build stage
 					}
-				else { DInfo("Waiting for more cash..."); }
-			}
+				}
+			else { DInfo("Waiting for more cash..."); }
 		
 		builder.TrainStationTesting();
-		//chemin.RouteDelete(3);
 		bank.CashFlow();
 		eventManager.HandleEvents();
 		//chemin.FewRouteDump();
@@ -125,11 +107,8 @@ function DictatorAI::Start()
 		builder.QuickTasks();
 		//if (debug) chemin.RListDumpALL();
 		//if (debug) chemin.RListStatus();
-		AIController.Sleep(20);
+		AIController.Sleep(10);
 		builder.MonthlyChecks();
-		if (idleCounter > 5 && chemin.nowRoute >-1)
-				{ idleCounter=0; chemin.nowRoute=-1; }
-			else	{ idleCounter++; DInfo("Idle: "+idleCounter,2); }
 		}
 }
 
@@ -144,40 +123,34 @@ if (debug) AIController.Sleep(delay);
 } 
  
 function DictatorAI::Save()
-{
-//eventManager.GetEvents(); // Get latests events to save them
+{ // hmmm, some devs might not like all those saved datas
 local table = 
 	{
-//	aa = null,
-	cA = [],
-	gA = null
+	routes = null,
+	stations = null,
+	cargo = null,
+	// virtual_air could be found easy
+	vapass=null,
+	vamail=null
 	}
 
-table.cA = chemin.RList;
-table.gA = chemin.GList;
-//table.eL = eventManager.eventList;
-// can't save instance, and eventList is an array of instance
-// should convert the array, but a boring list of convert functions to do that.
-// let's just loose events for now
-//table.gM=bank.gotMoney;
-//table.aa="save test";
-//DInfo("tableCA size="+table.cA.len());
+table.routes = chemin.RList;
+table.stations = chemin.GList;
+table.cargo=chemin.cargo_fav;
+table.vapass=chemin.virtual_air_group_pass;
+table.vamail=chemin.virtual_air_group_mail;
 return table;
 }
  
 function DictatorAI::Load(version, data)
 {
 	DInfo("Loading a saved game with DictatorAI. ");
-	if ("cA" in data) chemin.RList=data.cA;
-	if ("gA" in data) chemin.GList=data.cA;
-/*	if ("cA" in data) 
-		{ DInfo("Found cA !"+data.cA);
-		for (local i=0; i < data.cA.len(); i++)	{ DInfo("i:"+i+" data:"+data.cA[i]); }
-		}*/
-	//if ("eL" in data) eventManager.eventList=data.eL;
-//let's just loose events for now
+	if ("routes" in data) chemin.RList=data.routes;
+	if ("stations" in data) chemin.GList=data.stations;
+	if ("vapass" in data) chemin.virtual_air_group_pass=data.vapass;
+	if ("vamail" in data) chemin.virtual_air_group_mail=data.vamail;
+	if ("cargo" in data) chemin.cargo_fav=data.cargo;
 	loadedgame = true;
-
 }
 
  
@@ -302,26 +275,3 @@ function DictatorAI::ArrayToList(array)
 	return list;
 }
 
-function DictatorAI::HasWaitingTimePassed()
-{
-	local date = AIDate.GetCurrentDate();
-	// local waitingtime = AIController.GetSetting("waiting_time") + (AIDate.GetYear(date) - inauguration) * AIController.GetSetting("slowdown") * 4;
-	//if (date - lastroute > waitingtime) return true; else return false;
-	return true;
-}
-
-/*function DictatorAI::RemoveUnfinishedRoute()
-{
-	AILog.Info("Removing the unfinished route after loading...");
-	if (toremove.vehtype == AIVehicle.VT_ROAD) {
-		cBuilder.DeleteRoadStation(toremove.stasrc);
-		cBuilder.DeleteRoadStation(toremove.stadst);
-	} else {
-		builder = cBuilder(this);
-		builder.DeleteRailStation(toremove.stasrc);
-		builder.DeleteRailStation(toremove.stadst);
-		builder.RemoveRailLine(toremove.list[0]);
-		builder.RemoveRailLine(toremove.list[1]);
-		builder = null;
-	}
-}*/

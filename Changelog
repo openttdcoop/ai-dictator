@@ -161,3 +161,12 @@ description:
 is too weak to be usable, specially it's not even trustable
 
 
+changeset:   20:08c45c901eac
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 12 09:31:47 2011 +0100
+files:       Changelog TODO.txt handler/vehiclehandler.nut
+description:
+- Avoid our go to depot orders been removed by our order checks
+
+
