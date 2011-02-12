@@ -151,3 +151,13 @@ the vehicle need to go to depot case (thinking about a clean fix for
 that, i will add before i re-forget again)
 
 
+changeset:   19:6389e1375f01
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 23:28:36 2011 +0100
+files:       Changelog build/builder.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Add a new way to send vehicle to depot, the yes/no VehicleSendToDepot
+is too weak to be usable, specially it's not even trustable
+
+

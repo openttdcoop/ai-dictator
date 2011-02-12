@@ -107,6 +107,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local numorders=0;
 	foreach (vehicle, dummy in airlist)
 		{
+		if (cCarrier.VehicleIsFlag(vehicle)) continue; // don't order anything to a flag vehicle
 		if (isfirst)
 			{
 			rabbit=vehicle;
@@ -119,7 +120,6 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 				//foreach (town, location in root.chemin.virtual_air)
 					{
 				local location=root.chemin.virtual_air[i];
-PutSign(location,"NetLoc");
 					if (!AIOrder.AppendOrder(rabbit, location, AIOrder.AIOF_FULL_LOAD_ANY))
 						{ DError("Aircraft network order refuse",2); }
 					}
@@ -172,8 +172,8 @@ switch (road.ROUTE.kind)
 		if (road.ROUTE.dst_istown)
 			{ twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE + AIOrder.AIOF_FULL_LOAD_ANY; }
 		else	{ twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE; }
-		srcplace= srcStation.STATION.e_loc;
-		dstplace= dstStation.STATION.e_loc;
+		srcplace= AIStation.GetLocation(srcStation.STATION.station_id);
+		dstplace= AIStation.GetLocation(dstStation.STATION.station_id);
 	break;
 	case AIVehicle.VT_RAIL:
 		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE + AIOrder.AIOF_FULL_LOAD_ANY;
@@ -264,6 +264,7 @@ local idx=root.carrier.VehicleFindRouteIndex(veh);
 // One day i should check rogues vehicles running out of control from a route, but this shouldn't happen :p
 local homedepot=root.builder.GetDepotID(idx,true);
 if (homedepot==-1)	homedepot=root.builder.GetDepotID(idx,false);
+AIOrder.UnshareOrders(veh);
 root.carrier.VehicleOrdersReset(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
@@ -278,6 +279,7 @@ function cCarrier::VehicleSendToDepot(veh,flag)
 // send a vehicle to depot, set its flag for the reason
 {
 local reason="";
+root.carrier.VehicleSetDepotOrder(veh);
 if (cCarrier.VehicleIsFlag(veh))
 	{
 	return false;
@@ -319,7 +321,6 @@ if (!understood) {
 	}
 else	DInfo(AIVehicle.GetName(veh)+" is going to depot "+reason,0);
 // sometimes undertood is true but the vehicle doesn't go to depot
-root.carrier.VehicleSetDepotOrder(veh);
 if (!root.carrier.VehicleSetFlag(veh,flag))
 	{ DError("Fail to flag the vehicle !",2); }
 }
@@ -482,28 +483,32 @@ if (!AIOrder.IsValidVehicleOrder(vehicle, ordercheck)) return false;
 local tiletarget=AIOrder.GetOrderDestination(vehicle, ordercheck);
 local vehicleType=AIVehicle.GetVehicleType(vehicle);
 if (!chopper)
-	{ // Skip this tests for a chopper, well it a start, we never get there with a chopper for now
+	{ // Skip this test for a chopper, well it a start, we never get there with a chopper for now
 	if (!AICompany.IsMine(AITile.GetOwner(tiletarget)))	return false;
-	if (!AITile.IsStationTile(tiletarget)) return false;
 	}
 local stationID=AIStation.GetStationID(tiletarget);
 switch (vehicleType)
 	{
 	case	AIVehicle.VT_RAIL:
-		if (!AIStation.HasStationType(stationID,AIStation.STATION_TRAIN)) return false;
+		local is_station=AIStation.HasStationType(stationID,AIStation.STATION_TRAIN);
+		local is_depot=AIRail.IsRailDepotTile(tiletarget);
+		if (!is_depot && !is_station) return false;
 	break;
 	case	AIVehicle.VT_WATER:
-		if (!AIStation.HasStationType(stationID,AIStation.STATION_DOCK)) return false;
+		local is_station=AIStation.HasStationType(stationID,AIStation.STATION_DOCK);
+		local is_depot=AIMarine.IsWaterDepotTile(tiletarget);
+		if (!is_station && !is_depot) return false;
 	break;
 	case	AIVehicle.VT_AIR:
-		if (!AIStation.HasStationType(stationID,AIStation.STATION_AIRPORT)) return false;
+		local is_station=AIStation.HasStationType(stationID,AIStation.STATION_AIRPORT);
+		local is_depot=AIAirport.GetHangarOfAirport(tiletarget);
+		if (!is_station && !is_depot)	return false;
 	break;
 	case	AIVehicle.VT_ROAD:
-		local buscheck=true;
-		local truckcheck=true;
-		truckcheck=AIStation.HasStationType(stationID,AIStation.STATION_TRUCK_STOP);
-		buscheck=AIStation.HasStationType(stationID,AIStation.STATION_BUS_STOP);
-		if (!truckcheck && !buscheck) return false;
+		local truckcheck=AIStation.HasStationType(stationID,AIStation.STATION_TRUCK_STOP);
+		local buscheck=AIStation.HasStationType(stationID,AIStation.STATION_BUS_STOP);
+		local depotcheck=AIRoad.IsRoadDepotTile(tiletarget);
+		if (!truckcheck && !buscheck && !depotcheck) return false;
 	break;
 	}
 return true;
