@@ -180,3 +180,13 @@ description:
 - Redo save/load functions, should work now
 
 
+changeset:   22:d1179eaec1cc
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 13 00:18:49 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut
+description:
+- Separate road pathfinding & road construction, so we could re-use one
+or the other
+
+

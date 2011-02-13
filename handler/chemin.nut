@@ -748,10 +748,12 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	if (road.ROUTE.vehicule == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
 	local maxveh=0;
 	local cargoid=road.ROUTE.cargo_id;
+	local estimateCapacity=1;
 	switch (work)
 		{
 		case AIVehicle.VT_ROAD:
 			maxveh=root.chemin.road_max_onroute;
+			estimateCapacity=15;
 		break;
 		case AIVehicle.VT_AIR:
 			maxveh=root.chemin.air_max;
@@ -778,8 +780,15 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local vehonroute=road.ROUTE.vehicule;
 	local cargowait=AIStation.GetCargoWaiting(stationid,cargoid);
 	local vehneed=0;
-	if (capacity > 0)	vehneed=cargowait / capacity;
-	if (firstveh) vehneed=2;
+	if (capacity > 0)	{ vehneed=cargowait / capacity; }
+			else	{// This happen when we don't have a vehicle sample -> 0 vehicle = new route certainly
+				local producing=0;
+				if (road.ROUTE.src_istown)	{ producing=AITown.GetLastMonthProduction(road.ROUTE.src_id,road.ROUTE.cargo_id); }
+					else	{ producing=AIIndustry.GetLastMonthProduction(road.ROUTE.src_id,road.ROUTE.cargo_id); }
+				if (work == AIVehicle.VT_ROAD)	{ vehneed= producing / estimateCapacity; }
+				}
+	if (firstveh) 
+		{ if (vehneed < 2)	vehneed=2; }
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+" firstveh="+firstveh,2);
@@ -816,6 +825,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 					root.chemin.RListDumpOne(j);
 					firstveh=false;	
 					}
+				if (k % 2 == 0)	AIController.Sleep(6);
 				}
 			continue; // skip to next route, we won't check removing for that turn
 			}

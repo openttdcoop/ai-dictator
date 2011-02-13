@@ -585,8 +585,8 @@ switch (what.ROUTE.kind)
 	case AIVehicle.VT_RAIL:
 	success=root.carrier.GetRailVehicle(idx);
 	break;
-	/*case AIVehicle.VT_WATER:
-	break;*/
+	/*case AIVehicle.VT_WATER:*/
+	break;
 	case AIVehicle.VT_AIR:
 	success=root.carrier.GetAirVehicle(idx);
 	break;
