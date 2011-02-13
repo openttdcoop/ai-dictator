@@ -190,3 +190,12 @@ description:
 or the other
 
 
+changeset:   23:7accbde76f18
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 13 01:05:09 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/chemin.nut
+description:
+- More road vehicle build after route creating
+
+

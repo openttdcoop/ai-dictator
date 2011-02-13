@@ -37,7 +37,7 @@ class DictatorAI extends AIController
 	use_air = null;
 	fairlevel = null;
 	debug = null;
-	idleCounter=null;
+	secureStart=null;
 	
 	checker=null;	
 	
@@ -48,6 +48,7 @@ class DictatorAI extends AIController
    	{
 	chemin=cChemin(this);
 	minRank = 5000;		// ranking bellow that are drop jobs
+	secureStart= 3;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
 	bank = cBanker(this);
 	eventManager= cEvents(this);
 	builder=cBuilder(this);
@@ -70,6 +71,7 @@ function DictatorAI::Start()
 		DInfo("We have "+(chemin.GListGetSize()-1)+" stations",0);
 		DInfo("We know "+(chemin.RListGetSize()-1)+" routes",0);
 		DInfo(" ");
+		secureStart=1;
 		chemin.RouteMaintenance();
 		}
 	 else 	{
@@ -248,6 +250,7 @@ switch (fairlevel)
 use_boat=false; // we will handle boats later
 //use_air=false;
 //use_train=false;
+if (!use_road)	secureStart=0; // sadly we can't use road vehicle, disabling secureStart so
 }
 
 function DictatorAI::ListToArray(list)

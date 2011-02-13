@@ -239,6 +239,7 @@ function cChemin::RouteMalusHigher(idx)
 {
 local road=root.chemin.RListGetItem(idx);
 road.ROUTE.handicap+=road.ROUTE.ranking;
+road.ROUTE.ranking=root.chemin.GetStartDepotRanking(road);
 root.chemin.RListUpdateItem(idx,road);
 }
 
@@ -386,7 +387,7 @@ else	{ // that's cargo for a town
 	dstlist=AITownList();
 	dstlist.Valuate(AITown.GetDistanceManhattanToTile, who.ROUTE.src_place);
 	}
-dstlist.KeepBetweenValue(15,400); // filter distance <20 >400 are not really doable
+dstlist.KeepBetweenValue(15,400); // filter distance <15 >400 are not really doable
 if (!root.bank.unleash_road)	{ dstlist.KeepBetweenValue(15,100); } // filter again if we are limit by money
 who.ROUTE.isServed=false;
 // we now have a list of distinations id & distance from starting point
@@ -602,14 +603,17 @@ local goodRoute=false;
 root.chemin.RouteRefresh();
 local task=null;
 local tasktry=null;
+local gotmalus=0; // i use that to count how many route have a malus, if = numbers of route -> means we check all routes and fail
 // fresh infos for accurate calc
 do 	{
 	bestJob=-1;
 	startidx=-1;
+	gotmalus=0;
 	for (local i=0; i < chemSize; i++)
 		{
 		task=root.chemin.RListGetItem(i);
 		local rnk=task.ROUTE.ranking;
+		if (task.ROUTE.handicap > 0)	gotmalus++;
 		if (task.ROUTE.isServed) { continue; } // we already own & run that route
 		if (task.ROUTE.status==0) { continue; } // ignore that route, undoable we recheck it later
 		if (task.ROUTE.ranking <= root.minRank) { continue; } // too poor to be useful //root.minRank
@@ -625,11 +629,18 @@ do 	{
 		}
 	else 	{
 		DInfo(" ");
-		DInfo("Checking service #"+startidx+" - "+tasktry,0);
+		DInfo("Checking service #"+startidx+" - "+tasktry+" "+bestJob,0);
 		root.chemin.RListDumpOne(startidx);
 		endidx=root.chemin.EndingJobFinder(startidx);
 		}
 	if (startidx >-1 && endidx >-1)	{ goodRoute=true; }
+	if (gotmalus >= chemSize)	root.secureStart=0; // disable it, we try all routes and none can be done with road vehicle
+	if (root.secureStart > 0)
+		{
+		local isroad=root.chemin.RListGetItem(startidx);
+		if (isroad.ROUTE.kind == AIVehicle.VT_ROAD)	{ root.secureStart--; }
+				else	{ root.chemin.RouteMalusHigher(startidx); goodRoute=false; }
+		}
 	madLoop++;
 	} while (!goodRoute && madLoop < madLoopIter);
 if (!goodRoute)	{ return -1; }
@@ -846,7 +857,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		runningList.Valuate(AIVehicle.GetCurrentSpeed);
 		runningList.KeepValue(0); // running but at 0 speed
 		if (runningList.IsEmpty())	continue; // all vehicles are moving
-		runningList.Valuate(AIVehicle.GetProfitThisYear);
+		runningList.Valuate(AIVehicle.GetAge); // better sold the oldest one
 		showLogic(runningList);
 		runningList.Sort(AIList.SORT_BY_VALUE,true);
 		if (runningList.Count() < 2)	continue; // we will not remove last vehicles, upto "profitlost" to remove them
@@ -854,6 +865,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		local veh=runningList.Begin();
 		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",2);
 		root.carrier.VehicleToDepotAndSell(veh);
+		AIVehicle.ReverseVehicle(veh); // try to make it move away from the queue
 		}
 	}
 }
