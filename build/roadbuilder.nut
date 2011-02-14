@@ -287,7 +287,7 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 			{
 			tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
 			}
-		tilelist.Sort(AIList.SORT_BY_VALUE,istown);
+		tilelist.Sort(AIList.SORT_BY_VALUE,true);
 		}
 DInfo("Tilelist set to "+tilelist.Count(),2);
 //tilelist.Sort(AIList.SORT_BY_VALUE, !isneartown);
@@ -332,6 +332,7 @@ if (statile==-1 && !istown && isneartown)
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.KeepAboveValue(0);
 	tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
+	tilelist.Sort(AIList.SORT_BY_VALUE, true);
 	}
 if (!isneartown)
 	{
@@ -405,8 +406,8 @@ pathfinder.InitializePath([head1], [head2]);
 local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 root.bank.SaveMoney(); // thinking long time, don't waste money
 DInfo("Road Pathfinding...",1);
-local counter = 0;
 local path = false;
+local counter=0;
 while (path == false && counter < 150)
 	{
 	path = pathfinder.FindPath(100);
@@ -435,6 +436,7 @@ root.bank.RaiseFundsBigTime();
 DInfo("Building road structure",0);
 local prev = null;
 local waserror = false;
+local counter=0;
 holes=[];
 while (path != null)
 	{

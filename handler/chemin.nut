@@ -694,7 +694,7 @@ vehlist.Sort(AIList.SORT_BY_VALUE,true); // younger first
 local age=0;
 if (vehlist.IsEmpty())	age=1000;
 		else	age=vehlist.GetValue(vehlist.Begin());
-if (age < 10) { DInfo("Too young buy "+age+" count="+vehlist.Count(),2); return; }
+if (age < 90) { DInfo("Too young buy "+age+" count="+vehlist.Count(),2); return; }
 local bigairportlocation=root.chemin.virtual_air[0];
 local bigairportID=AIStation.GetStationID(bigairportlocation);
 local cargowaiting=AIStation.GetCargoWaiting(bigairportID,passcargo);
@@ -733,6 +733,21 @@ if (profit) // making profit
 	}
 }
 
+function cChemin::VehicleGroupProfitRatio(groupID)
+// check a vehicle group and return a ratio representing it's value
+// it's just (groupprofit * 1000 / numbervehicle)
+{
+if (!AIGroup.IsValidGroup(groupID))	return 0;
+local vehlist=AIVehicleList_Group(groupID);
+vehlist.Valuate(AIVehicle.GetProfitThisYear);
+local vehnumber=vehlist.Count();
+if (vehnumber == 0) return 0; // avoid / per 0
+local totalvalue=0;
+foreach (vehicle, value in vehlist)
+	{ totalvalue+=value*1000; }
+return totalvalue / vehnumber;
+}
+
 function cChemin::DutyOnRoute()
 // this is where we add vehicle and tiny other things to max our money
 {
@@ -748,10 +763,12 @@ local profit=false;
 local prevprofit=0;
 local vehprofit=0;
 local oldveh=false;
+local priority=AIList();
+local road=null;
 root.chemin.DutyOnAirNetwork(); // we handle the network load here
 for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
-	local road=root.chemin.RListGetItem(j);
+	road=root.chemin.RListGetItem(j);
 	if (!road.ROUTE.isServed) continue;
 	if (road.ROUTE.kind == 1000) continue;	// ignore the network routes
 	if (road.ROUTE.status == 999) continue; // ignore route that are part of the network
@@ -828,19 +845,23 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		if (profit && oldveh)
 			{
 			root.bank.busyRoute=true;
-			for (local k=0; k < vehneed; k++)
+			if (firstveh && vehneed > 0)
 				{
-				if (root.carrier.BuildAndStartVehicle(j,!firstveh))
+				if (root.carrier.BuildAndStartVehicle(j,false))
 					{
 					DInfo("Adding a vehicle to route #"+j+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
-					root.chemin.RListDumpOne(j);
-					firstveh=false;	
+					firstveh=false;
 					}
-				if (k % 2 == 0)	AIController.Sleep(6);
 				}
-			continue; // skip to next route, we won't check removing for that turn
+			if (!firstveh && vehneed > 1)
+					{
+					priority.AddItem(road.ROUTE.groupe_id,vehneed-1);
+					continue; // skip to next route, we won't check removing for that turn
+					}
 			}
 		}
+
+// Removing vehicle when station is too crowd & vehicle get stuck
 	if (cargowait == 0) // this happen if we load everything at the station
 		{
 		local busyList=AIVehicleList_Group(road.ROUTE.groupe_id);
@@ -866,6 +887,32 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",2);
 		root.carrier.VehicleToDepotAndSell(veh);
 		AIVehicle.ReverseVehicle(veh); // try to make it move away from the queue
+		}
+	}
+// now we can try add others needed vehicles here but base on priority
+if (priority.IsEmpty())	return;
+local priosave=AIList();
+priosave.AddList(priority); // save it because value is = number of vehicle we need
+priority.Valuate(root.chemin.VehicleGroupProfitRatio);
+priority.Sort(AIList.SORT_BY_VALUE,false);
+local vehneed=0;
+foreach (groupid, ratio in priority)
+	{
+	if (priosave.HasItem(groupid))	vehneed=priosave.GetValue(groupid);
+				else	vehneed=0;
+	for (local i=0; i < root.chemin.RListGetSize(); i++)
+		{
+		road=root.chemin.RListGetItem(i);
+		if (road.ROUTE.groupe_id == groupid)
+			{
+			for (local z=0; z < vehneed; z++)
+				{
+				if (root.carrier.BuildAndStartVehicle(i,true))
+					{
+					DInfo("Adding a vehicle to route #"+i+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
+					}
+				}
+			}
 		}
 	}
 }

@@ -266,9 +266,9 @@ if (depotdead > -1)
 	}
 else 	newdeploc=depot_id;
 depot_id=newdeploc;
-station_obj.STATION.type=0; // success or not, road station can only upgrade 1 time
 if (success)
 	{
+	station_obj.STATION.type=0; // hmmm, not sure it's a good idea, but let it try to upgrade it until success
 	DInfo("Station "+AIStation.GetName(station_obj.STATION.station_id)+" has been upgrade",0);
 	station_obj.STATION.size++;
 	station_obj.STATION.e_depot=depot_id;
@@ -291,7 +291,11 @@ if (!AIRoad.IsRoadTile(direction))
 		{ cTileTools.DemolishTile(direction); AIRoad.BuildRoad(direction,tile); }
 if (!AIRoad.IsRoadTile(direction))	return false; // no need to build that station, it won't have a road in its front
 if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_JOIN_ADJACENT))
-		{ DError("Cannot create the station !",1); return false; }
+		{
+		DError("Cannot create the station !",1);
+		// TODO: need to rethink many (all) building/demolish trys functions, having a depot with a road vehicle in it (but not stop at depot) prevent demolishing the tile, this is not crical, but this fool us
+		return false;
+		}
 	else	{ AIRoad.BuildRoad(direction,tile); return true; }
 return false;
 }

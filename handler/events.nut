@@ -111,6 +111,54 @@ switch (eventType)
 		DInfo(AIVehicle.GetName(vehicle) + " is not profitable, sending it to depot");
 		root.carrier.VehicleToDepotAndSell(vehicle);
 	break;
+	case AIEvent.AI_ET_COMPANY_IN_TROUBLE:
+		event = AIEventCompanyInTrouble.Convert(event);
+		local company = event.GetCompanyID();
+		local action="";
+		local info="";
+		local isme=AICompany.IsMine(company);
+		if (isme)	info="My company";
+			else	info=AICompany.GetName(company);
+		info+=" is in trouble. ";
+		switch (root.fairlevel)
+			{
+			case	0:
+				if (isme)	action="I'm sure someone will give me some money";
+						action="Oh no, it's so sad !";
+			break;
+			case	1:
+				if (isme)	action="I will call Bernard Madoff for more hints.";
+					else	action="Sell those actions now !";
+			break;
+			case	2:
+				if (isme)	action="Fools rebels, you will never win !";
+						action="They have refuse to put my son as director, now pay !";
+			break;
+			}
+		DInfo(info+action);
+		if (isme)
+			{
+			local vehlist=AIVehicleList();
+			vehlist.Valuate(AIVehicle.GetProfitThisYear);
+			local vehsell=AIAbstractList();
+			vehsell.AddList(vehlist);
+			vehsell.RemoveAboveValue(0);
+			vehlist.KeepAboveValue(0);
+			vehlist.Valuate(AIVehicle.GetCurrentValue);
+			vehlist.Sort(AIList.SORT_BY_VALUE,false);
+			foreach (vehicle, profit in vehsell)
+				{ // sell all non profitable vehicles
+				root.carrier.VehicleToDepotAndSell(vehicle);
+				}
+			foreach (vehicle, value in vehlist)
+				{
+				do	{
+					root.carrier.VehicleToDepotAndSell(vehicle);
+					AIController.Sleep(400);
+					} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);
+				}
+			}
+	break;
 	default :
 		DInfo("Discarding event "+eventType,2);
 	}

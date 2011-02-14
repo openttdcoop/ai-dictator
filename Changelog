@@ -199,3 +199,13 @@ description:
 - More road vehicle build after route creating
 
 
+changeset:   24:7f321fce9f5a
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 13 22:35:42 2011 +0100
+files:       Changelog TODO.txt handler/chemin.nut main.nut
+description:
+- Until we build 3 working road vehicle, disable other transport: this
+should help starting game & bankrupt trouble, specially with high costs
+
+
