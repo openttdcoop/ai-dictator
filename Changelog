@@ -328,3 +328,12 @@ description:
 should follow more closely the real number
 
 
+changeset:   37:7b1a6dfae91a
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 23:08:14 2011 +0100
+files:       Changelog TODO.txt handler/chemin.nut main.nut
+description:
+- Tun a bit vehicle creation: limit...
+
+

@@ -33,6 +33,7 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		Item = cCheminItem();
 		badLocation= this.Item.badLocation;
 		route=this.Item.ROUTE;
+		nowRoute=-1;
 		buildmode=true;
 		cargo_fav=-1;
 		airnet_count=0;
@@ -251,6 +252,7 @@ root.chemin.RouteStatusChange(idx,0);
 local road=root.chemin.RListGetItem(idx);
 road.ROUTE.handicap=road.ROUTE.ranking;
 root.chemin.RListUpdateItem(idx,road);
+root.chemin.nowRoute=-1; // reset it when we found an invalid route
 }
 
 function cChemin::CreateNewRoute(cargoID, industryID, isTown)

@@ -148,23 +148,23 @@ function cBuilder::GetDirection(tilefrom, tileto)
 	return ret;	
 }
 
-function cBuilder::BuildStation(start)
+function cBuilder::BuildStation(idx,start)
 // Build start station, reroute to the correct station builder depending on the road type to build
 {
-local what=root.chemin.RListGetItem(root.chemin.nowRoute);
+local what=root.chemin.RListGetItem(idx);
 local success=false;
 switch (what.ROUTE.kind)
 	{
 	case AIVehicle.VT_ROAD:
-	success=root.builder.BuildRoadStation(start);
+	success=root.builder.BuildRoadStation(idx,start);
 	break;
 	case AIVehicle.VT_RAIL:
-	success=root.builder.BuildTrainStation(start);
+	success=root.builder.BuildTrainStation(idx,start);
 	break;
 	case AIVehicle.VT_WATER:
 	break;
 	case AIVehicle.VT_AIR:
-	success=root.builder.BuildAirStation(start);
+	success=root.builder.BuildAirStation(idx,start);
 	break;
 	}
 return success;
@@ -438,7 +438,7 @@ if (rr.ROUTE.status==3)
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==4)
 	{
-	if (rr.ROUTE.src_station==-1)	{ success=root.builder.BuildStation(true); }
+	if (rr.ROUTE.src_station==-1)	{ success=root.builder.BuildStation(idx,true); }
 		else	{ success=true; DInfo("Source station is already build, we're reusing an existing one",0); }
 	if (!success)
 		{ // it's bad we cannot build our source station, that's really bad !
@@ -456,7 +456,7 @@ if (rr.ROUTE.status==4)
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==5)	
 	{
-	if (rr.ROUTE.dst_station==-1)	{ success=root.builder.BuildStation(false); }
+	if (rr.ROUTE.dst_station==-1)	{ success=root.builder.BuildStation(idx,false); }
 		else	{ success=true; DInfo("Destination station is already build, we're reusing an existing one",0); }
 	if (!success)
 		{ // we cannot do destination station
@@ -486,7 +486,7 @@ if (rr.ROUTE.status==6)
 			} // and nothing more, stay at phase 6 to repathfind/rebuild the road when possible
 	}	
 rr=root.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==7)
+if (rr.ROUTE.status==8)
 	{
 	DInfo("Route contruction complete ! "+rr.ROUTE.src_name+" to "+rr.ROUTE.dst_name,0);
 	rr.ROUTE.isServed=true;

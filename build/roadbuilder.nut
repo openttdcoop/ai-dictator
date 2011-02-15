@@ -182,15 +182,14 @@ if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_NEW
 return -1;
 }
 
-function cBuilder::BuildRoadStation(start)
+function cBuilder::BuildRoadStation(road_index,start)
 {
 root.bank.RaiseFundsBigTime();
 AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 root.builder.currentRoadType=AIRoad.GetCurrentRoadType();
 local rad = AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
 local dir, tilelist, checklist, otherplace, istown, isneartown=null;
-local road = root.chemin.RListGetItem(root.chemin.nowRoute);
-root.chemin.RListDumpOne(root.chemin.nowRoute);
+local road = root.chemin.RListGetItem(road_index);
 if (start)	{
 
 		dir = root.builder.GetDirection(road.ROUTE.src_place, road.ROUTE.dst_place);
@@ -374,7 +373,6 @@ if (start)
 	road.ROUTE.dst_station = lastStation;
 	road.ROUTE.dst_entry = true;
 	}
-root.chemin.RListUpdateItem(root.chemin.nowRoute,road);
 return true;
 }
 

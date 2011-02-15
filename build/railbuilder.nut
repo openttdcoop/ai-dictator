@@ -223,7 +223,7 @@ return true;
 
 
 
-function cBuilder::BuildTrainStation(start)
+function cBuilder::BuildTrainStation(road_index,start)
 // It's where we find a spot for our train station
 // Unlike classic stations that need best spot where to get cargo, train stations best spot
 // is the one that can do its task while still provide most space to futher allow station upgrading
@@ -237,7 +237,7 @@ function cBuilder::BuildTrainStation(start)
 // chance to enlarge the station without going too much into the city
 local dir, tilelist, otherplace, isneartown = null;
 local rad = AIStation.GetCoverageRadius(AIStation.STATION_TRAIN);
-local road = root.chemin.RListGetItem(root.chemin.nowRoute);
+local road = root.chemin.RListGetItem(road_index);
 local istown=false;
 local srcpoint=null;
 local sourceplace=null;
@@ -358,7 +358,7 @@ if (start)
  else	{
 	road.ROUTE.dst_station = root.chemin.GListGetSize()-1;
 	}
-root.chemin.RListUpdateItem(root.chemin.nowRoute,road);
+root.chemin.RListUpdateItem(road_index,road);
 return true;
 }
 

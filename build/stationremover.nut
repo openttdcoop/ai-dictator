@@ -75,31 +75,14 @@ if (realidobj!=-1)
 function cBuilder::RouteDelete(idx)
 // Delete a route, we may have vehicule on it...
 {
-local road=root.chemin.RListGetItem(idx);
-if (road.ROUTE.groupe_id != -1)
-	{
-	vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
-	foreach (vehicle in vehlist)
-		{
-		root.carrier.VehicleToDepotAndSell(vehicle);
-		}
-	foreach (vehicle in vehlist)
-		{
-		local waitmax=444; // 2 months
-		local waitcount=0;
-		local wait=false;
-		do	{
-			AIController.Sleep(10);
-			root.carrier.VehicleIsWaitingInDepot();
-			if (AIVehicle.IsValidVehicle(vehicle))	wait=true;
-			waitcount++;
-			if (waitcount > waitmax)	wait=false;
-			} while (wait);
-		}
-	}
+root.carrier.VehicleGroupSendToDepotAndSell(idx);
 root.builder.DeleteStation(idx);
 root.chemin.RListDeleteItem(idx);
 }
 
+function cBuilder::RouteIsBroken(idx)
+// remove vehicles from that route & remove its isServed status
+{
 
+}
 

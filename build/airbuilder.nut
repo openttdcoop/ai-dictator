@@ -46,7 +46,6 @@ root.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network th
 root.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,true);
 local oldtype=station.STATION.type;
 local oldplace=station.STATION.e_loc;
-root.chemin.nowRoute=idx;
 local counter=0;
 local maxcount=100;
 local result=false;
@@ -64,7 +63,7 @@ if (!result)	{
 		root.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,false);
 		return false;
 		}
-result=root.builder.BuildAirStation(start,stationfakeid);
+result=root.builder.BuildAirStation(idx,start,stationfakeid);
 // TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
 if (!result) // should have pray a bit more
 	{
@@ -72,7 +71,7 @@ if (!result) // should have pray a bit more
 	local result=root.builder.AirportMaker(oldplace, oldtype);
 	}
 if (!result)
-	{ root.chemin.RouteIsNotDoable(root.chemin.nowRoute); }
+	{ root.chemin.RouteIsNotDoable(idx); }
 root.chemin.under_upgrade=false;
 root.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,false);
 }
@@ -98,12 +97,12 @@ essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
 return essai;	
 }
 
-function cBuilder::BuildAirStation(start, createstation=-1)
-// Create an airport for root.chemin.nowRoute idx at start/destination
+function cBuilder::BuildAirStation(road_index, start, createstation=-1)
+// Create an airport for road_index at start/destination
 // if createstation is not given, create a new station, else re-use the createstation index
 {
 local rad=AIStation.GetCoverageRadius(AIStation.STATION_AIRPORT);
-local road=root.chemin.RListGetItem(root.chemin.nowRoute);
+local road=root.chemin.RListGetItem(road_index);
 local helipadonly=false;
 // Pickup the airport we can build
 local airporttype=cBuilder.GetAirportType();
@@ -206,7 +205,7 @@ if (success)
 			road.ROUTE.dst_entry = true;
 			}
 		}
-	root.chemin.RListUpdateItem(root.chemin.nowRoute,road);
+	root.chemin.RListUpdateItem(road_index,road);
 	}
 else	{ // not success tell caller it's a critical failure
 	root.builder.CriticalError=true;

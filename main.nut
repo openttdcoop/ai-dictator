@@ -95,7 +95,7 @@ function DictatorAI::Start()
 		if (bank.canBuild)
 				{
 				chemin.ShowStationCapacity();
-				chemin.nowRoute=chemin.StartingJobFinder();
+				if (chemin.nowRoute==-1)	chemin.nowRoute=chemin.StartingJobFinder();
 				if (chemin.nowRoute>-1)
 					{
 					builder.TryBuildThatRoute(chemin.nowRoute);

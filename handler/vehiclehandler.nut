@@ -606,6 +606,34 @@ if (idx >= 0)
 	{ root.carrier.RouteAndStationVehicleCounterUpdate(idx); } // remove 1 from vehicle counters
 }
 
+function cCarrier::VehicleGroupSendToDepotAndSell(idx)
+// Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
+{
+local road=root.chemin.RListGetItem(idx);
+local vehlist=null;
+if (road.ROUTE.groupe_id != -1)
+	{
+	vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+	foreach (vehicle in vehlist)
+		{
+		root.carrier.VehicleToDepotAndSell(vehicle);
+		}
+	foreach (vehicle in vehlist)
+		{
+		local waitmax=222; // 1 month / vehicle, as 222*10(sleep)=2220/74
+		local waitcount=0;
+		local wait=false;
+		do	{
+			AIController.Sleep(10);
+			root.carrier.VehicleIsWaitingInDepot();
+			if (AIVehicle.IsValidVehicle(vehicle))	wait=true;
+			waitcount++;
+			if (waitcount > waitmax)	wait=false;
+			} while (wait);
+		}
+	}
+}
+
 function cCarrier::VehicleIsWaitingInDepot()
 // this function checks our depot and see if we have a vehcile in it
 // and take actions on it if need
