@@ -230,6 +230,7 @@ switch (fairlevel)
 	{
 	case 0: // easiest
 		chemin.road_max=6;
+		chemin.road_max_onroute=6;
 		chemin.rail_max=1;
 		chemin.water_max=2;
 		chemin.air_max=6;
@@ -238,6 +239,7 @@ switch (fairlevel)
 	break;
 	case 1: 
 		chemin.road_max=16;
+		chemin.road_max_onroute=8;
 		chemin.rail_max=4;
 		chemin.water_max=20;
 		chemin.air_max=10;
@@ -246,7 +248,7 @@ switch (fairlevel)
 	break;
 	case 2: 
 		chemin.road_max=32; // upto 32 bus/truck per station
-		chemin.road_max_onroute=10; // upto 10 bus/truck per route
+		chemin.road_max_onroute=12; // upto 10 bus/truck per route
 		chemin.rail_max=12; // it's our highest train limit, can't build more than 12 trains per station
 		chemin.water_max=60; // there's no real limit for boats
 		chemin.air_max=16; // 16 aircrafts, hmmm, looks a bit high

@@ -155,7 +155,7 @@ switch (road.ROUTE.kind)
 			}
 		else	{ // not yet upgrade
 			// we have reach maximum vehicule count on a 1 station value, we must upgrade the station
-			if (thatstation.STATION.e_count+1 > 5) // > divisor, now > 5 so upgrade if 6 bus/truck
+			if (thatstation.STATION.e_count+1 > 8) // > divisor, now > 5 so upgrade if 6 bus/truck
 				{ if (!root.builder.RoadStationNeedUpgrade(roadidx,start)) return false; }
 			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false;
 			}

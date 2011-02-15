@@ -860,12 +860,12 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 				if (root.carrier.BuildAndStartVehicle(j,false))
 					{
 					DInfo("Adding a vehicle to route #"+j+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
-					firstveh=false;
+					firstveh=false; vehneed--;
 					}
 				}
-			if (!firstveh && vehneed > 1)
+			if (!firstveh && vehneed > 0)
 					{
-					priority.AddItem(road.ROUTE.groupe_id,vehneed-1);
+					priority.AddItem(road.ROUTE.groupe_id,vehneed);
 					continue; // skip to next route, we won't check removing for that turn
 					}
 			}

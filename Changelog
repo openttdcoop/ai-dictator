@@ -300,3 +300,12 @@ description:
 - Prevent road station creation near another station
 
 
+changeset:   34:4c5e9530b440
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 21:21:17 2011 +0100
+files:       Changelog build/roadbuilder.nut
+description:
+- Correct bugs in road health checks
+
+
