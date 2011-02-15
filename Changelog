@@ -243,3 +243,14 @@ description:
 - Add half & yearly checks for some operations
 
 
+changeset:   29:46e0c188e169
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 13:10:06 2011 +0100
+files:       Changelog build/roadbuilder.nut build/vehiclebuilder.nut handler/chemin.nut
+description:
+- Balance vehicle for a route base on the poorest station intead of the
+highest, this will reduce crowd station, also, sadly reduce income per
+route. But i hate too crowd town
+
+

@@ -666,7 +666,7 @@ local vehlist=AIList();
 local totalcapacity=0;
 local mailroute=0;
 local passroute=0;
-local onecapacity=0;
+local onecapacity=44;
 local passcargo=root.carrier.GetPassengerCargo();
 for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
@@ -683,7 +683,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	foreach(vehicle, dummy in vehingroup)
 		{
 		totalcapacity+=AIEngine.GetCapacity(AIVehicle.GetEngineType(vehicle));
-		if (onecapacity==0)	onecapacity=AIEngine.GetCapacity(AIVehicle.GetEngineType(vehicle));
+		if (onecapacity==44)	onecapacity=AIEngine.GetCapacity(AIVehicle.GetEngineType(vehicle));
 		vehlist.AddItem(vehicle,1);
 		}
 	}
@@ -810,7 +810,8 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local vehonroute=road.ROUTE.vehicule;
 	local srccargowait=AIStation.GetCargoWaiting(stationid,cargoid);
 	local dstcargowait=AIStation.GetCargoWaiting(dstationid,cargoid);
-	local cargowait=(srccargowait < dstcargowait) ? srccargowait : dstcargowait;
+	local cargowait=srccargowait;
+	if (road.ROUTE.src_istown && dstcargowait < srccargowait) cargowait=dstcargowait;
 	
 	local vehneed=0;
 	if (capacity > 0)	{ vehneed=cargowait / capacity; }

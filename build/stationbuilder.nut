@@ -420,29 +420,6 @@ if (depotList.HasItem(realID)) return realID;
 return realID;
 }
 
-function cBuilder::RepairRouteRoad()
-// check if a road route need a correction
-{
-for (local i=0; i < root.chemin.RListGetSize(); i++)
-	{
-	road=root.chemin.RListGetItem(i);
-	if (!road.ROUTE.isServed)	continue;
-	if (!road.ROUTE.kind == AIVehicle.VT_ROAD) continue;
-//	local srcdepotloc=road.ROUTE.
-	}
-}
-
-/*function cBuilder::FindStationClosestEntry(obj, target)
-// find the closest entry or exit from the target map index
-{
-local fromEntry=AIMap.DistanceManhattan(obj.STATION.e_loc,target);
-local fromExit=AIMap.DistanceManhattan(obj.STATION.s_loc,target);
-DInfo("fromEntry="+fromEntry+" fromExit="+fromExit,2);
-if (fromExit > fromEntry)
-	{ return obj.STATION.e_loc; }
-else	{ return obj.STATION.s_loc; }
-}*/
-
 function cBuilder::FindStationEntryToExitPoint(src, dst)
 // find the closest path from station src to station dst
 // we return result values src.BestWay & dst.BestWay 
@@ -568,79 +545,6 @@ foreach (voisin in directions)
 return found;
 }
 
-/*
-function cBuilder::RailStationFindEntranceP(obj)
-// find where are the entry & exit of a station obj
-// we need obj direction & station_id to work !!!
-{
-if (!AIStation.IsValidStation(obj.STATION.station_id)) return false;
-local startPoint=AIStation.GetLocation(obj.STATION.station_id);
-if (root.debug) PutSign(startPoint,"O");
-local x=AIMap.GetTileX(startPoint);
-local y=AIMap.GetTileY(startPoint);
-local a=0; local b=0;
-local rStart=startPoint;
-local dStart=startPoint;
-local uStart=startPoint;
-local rEnd=startPoint;
-local dEnd=startPoint;
-local uEnd=startPoint;
-local test=startPoint;
-local search=true;
-local rOut="O";
-local entrycounter=0;
-local deep=0;
-while (search)
-	{
-	rOut="e";
-	if (obj.STATION.direction==AIRail.RAILTRACK_NE_SW)	{ test=test+AIMap.GetTileIndex(1,0); }
-				else		{ test=test+AIMap.GetTileIndex(0,1); }
-	if (AIRail.IsRailStationTile(test))
-		{
-		rStart=test;
-		//search=false;
-		rOut="G";
-		}
-	else	entrycounter++;
-	if (entrycounter==3)	{ obj.STATION.e_loc=test; break; }
-				
-	if (root.debug) PutSign(test,rOut);
-	DInfo("looping rStart="+rStart+" test="+test);
-	//root.NeedDelay();
-	if (deep == 10) break;
-		else deep++;
-	}
-search=true;
-entrycounter=0;
-test=startPoint;
-deep=0;
-while (search)
-	{
-	rOut="s";
-	if (obj.STATION.direction==AIRail.RAILTRACK_NE_SW)	{ test=test+AIMap.GetTileIndex(-1,0); }
-				else		{ test=test+AIMap.GetTileIndex(0,-1); }
-	if (AIRail.IsRailStationTile(test))
-		{
-		rEnd=test;
-		//search=false;
-		rOut="G";
-		}
-	else	entrycounter++;
-	if (entrycounter==3)	{ obj.STATION.s_loc=test; break; }
-
-	if (root.debug) PutSign(test,rOut);
-	DInfo("looping rEnd="+rEnd+" test="+test);
-	//root.NeedDelay();
-	if (deep == 10) break;
-		else deep++;
-	}
-DInfo("Entry="+obj.STATION.e_loc+"("+AIMap.GetTileX(obj.STATION.e_loc)+","+AIMap.GetTileY(obj.STATION.e_loc)+") Exit="+obj.STATION.s_loc+"("+AIMap.GetTileX(obj.STATION.s_loc)+","+AIMap.GetTileY(obj.STATION.s_loc)+")",2);
-ClearSignsALL();
-if (root.debug) PutSign(obj.STATION.e_loc,"E");
-if (root.debug) PutSign(obj.STATION.s_loc,"S");
-ClearSignsALL();
-}
-*/
 function cBuilder::StationAPutRail(obj, place, objtype, remove)
 // Put a rail relative to src station
 // entry to put the rail at entry, false to put it at exit

@@ -128,8 +128,6 @@ return true;
 function cBuilder::BuildAndStickToRoad(tile, stationtype)
 {
 if (AITile.IsStationTile(tile)) return -1; // protect station
-if (!cTileTools.DemolishTile(tile))
-	{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
 
 // ok we know we are close to a road, let's find where the road is
 local direction=tile+AIMap.GetTileIndex(0,1);
@@ -146,6 +144,8 @@ if (!AIRoad.IsRoadTile(direction))
 			}
 		}
 	}
+if (!cTileTools.DemolishTile(tile))
+	{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
 // sometimes, the road isn't fully connect to us, try build it, and don't care failure
 AIRoad.BuildRoad(direction,tile);
 if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000)) // depot, i add 100000 to know it's a depot i need
@@ -163,6 +163,11 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000)) // depot, i add 100000 to kn
 		}
 	}
 // if we are still here, we have done others cases already
+local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
+foreach (voisin in directions)
+	{
+	if (AITile.IsStationTile(tile+voisin))	return -1; // prevent build a station close to another one (us or anyone)
+	}
 if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_NEW))
 	{ DInfo("Can't built the station : "+AIError.GetLastErrorString(),2); return -1; }
 	else	{
