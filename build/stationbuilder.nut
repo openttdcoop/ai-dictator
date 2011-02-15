@@ -524,25 +524,20 @@ function cBuilder::RoadRunner(source, target, road_type, walkedtiles=null, origi
 {
 local max_wrong_direction=15;
 if (origin == null)	origin=AITile.GetDistanceManhattanToTile(source, target);
-if (walkedtiles == null)	{ walkedtiles=AIList(); DInfo("Init array",2); }
+if (walkedtiles == null)	{ walkedtiles=AIList(); }
 local valid=false;
 local direction=null;
 local found=(source == target);
-local hellwhy=0;
-local closest=65535;
 local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
 foreach (voisin in directions)
 	{
 	direction=source+voisin;
-	hellwhy=0;
 	if (road_type == AIVehicle.VT_ROAD)
 		{
 		if (AIBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
 			{
 			local endat=null;
 			endat=AIBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
-			DInfo("Bridge start="+source+" end at="+endat,2);
-			DInfo("Before hack source="+source+" direction="+direction,2);
 
 			// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
 			// if we are connect to someone, i reset "source" to be "someone" and continue
@@ -557,21 +552,16 @@ foreach (voisin in directions)
 				source=guessTile;
 				direction=source+voisin;
 				}
-			DInfo("After hack: source="+source+" direction="+direction,2);
-			root.NeedDelay(5);
 			}
 		valid=AIRoad.AreRoadTilesConnected(source, direction);
 		}
 	else	{ valid=AIRail.AreTilesConnected(source, direction, direction); }
-	if (!valid)	hellwhy=1;
 	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
-	if (closest > currdistance+max_wrong_direction)	closest=currdistance+max_wrong_direction;
-	if (currdistance > origin+max_wrong_direction)	{ hellwhy=2; valid=false; DInfo("dist="+currdistance+" origin="+origin+" test="+(currdistance + max_wrong_direction),2); }
-	if (currdistance > closest)	{ valid=false; DInfo("Closest hack",2); }
-	if (walkedtiles.HasItem(direction))	{ valid=false; hellwhy=3; } 
+	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
+	if (walkedtiles.HasItem(direction))	{ valid=false; } 
 	if (valid)	walkedtiles.AddItem(direction,0);
-	if (valid)	PutSign(direction,"*");
-	DInfo("Valid="+valid+" hellwhy"+hellwhy+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target+" close="+closest,2);
+	if (valid && root.debug)	PutSign(direction,"*");
+	//if (root.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
 	if (!found && valid)	found=root.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
 	if (found) return found;
 	}
