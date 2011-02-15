@@ -387,8 +387,8 @@ else	{ // that's cargo for a town
 	dstlist=AITownList();
 	dstlist.Valuate(AITown.GetDistanceManhattanToTile, who.ROUTE.src_place);
 	}
-dstlist.KeepBetweenValue(15,400); // filter distance <15 >400 are not really doable
-if (!root.bank.unleash_road)	{ dstlist.KeepBetweenValue(15,100); } // filter again if we are limit by money
+dstlist.KeepBetweenValue(30,400); // filter distance <15 >400 are not really doable
+if (!root.bank.unleash_road)	{ dstlist.KeepBetweenValue(30,100); } // filter again if we are limit by money
 who.ROUTE.isServed=false;
 // we now have a list of distinations id & distance from starting point
 // let's build our possible list to futher choose the best one
@@ -486,7 +486,7 @@ if (root.chemin.DList.len() == 0)
 	root.chemin.RouteIsNotDoable(idx);
 	return -1;
 	}
-// our list is filtered from 15-200 distance and range from farer to closer
+// our list is filtered from 30-200 distance and range from farer to closer
 // so first one is the best, except for towns
 local dest=root.chemin.DListGetItem(0);
 local bestDest=-1;
@@ -522,7 +522,7 @@ if (kind==AICargo.TE_MAIL || kind==AICargo.TE_PASSENGERS)
 	{
 	if (dest.DEPOT.distance < 40)	{ tweaklist.AddItem(1,1*v_road); }
 	if (dest.DEPOT.distance >= 150)	{ tweaklist.AddItem(2,2*v_train); }
-	if (dest.DEPOT.distance >= 40 && dest.DEPOT.distance <60)
+	if (dest.DEPOT.distance >= 40 && dest.DEPOT.distance <80)
 		{
 		tweaklist.Clear();
 		tweaklist.AddItem(1,1*v_road);
@@ -540,8 +540,8 @@ if (kind==AICargo.TE_MAIL || kind==AICargo.TE_PASSENGERS)
 	}
 else	{ // indudstries have that effect, i won't allow something other than trucks&trains
 	if (dest.DEPOT.distance< 40)	{ tweaklist.AddItem(1,1*v_road); }
-	if (dest.DEPOT.distance>=60)	{ tweaklist.AddItem(2,2*v_train); }
-	if (dest.DEPOT.distance>=40 && dest.DEPOT.distance<60)
+	if (dest.DEPOT.distance>=90)	{ tweaklist.AddItem(2,2*v_train); }
+	if (dest.DEPOT.distance>=40 && dest.DEPOT.distance<90)
 		{
 		tweaklist.Clear();
 		tweaklist.AddItem(1,1*v_road);
@@ -816,15 +816,18 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 				if (work == AIVehicle.VT_ROAD)	{ vehneed= producing / estimateCapacity; }
 				}
 	if (firstveh) 
-		{ if (vehneed < 2)	vehneed=2; }
+		{
+		if (vehneed < 2)	vehneed=2;
+		if (vehneed > 4)	vehneed=3;
+		}
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+" firstveh="+firstveh,2);
-	if (vehprofit <=0)	profit=false;
+	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
 		else		profit=true;
 	vehList.Valuate(AIVehicle.GetAge);
 	vehList.Sort(AIAbstractList.SORT_BY_VALUE,true);
-	if (vehList.GetValue(vehList.Begin()) > 240)	oldveh=true; // ~ 8 months
+	if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true; // ~ 8 months
 						else	oldveh=false;
 	// adding vehicle
 	if (vehneed > 0)
@@ -837,15 +840,15 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			root.bank.busyRoute=true;
 			continue; // no add... while we have an vehicle upgrade on its way
 			}
-		if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true;
-							else	oldveh=false;
+		/*if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true;
+							else	oldveh=false;*/
 		if (firstveh) // special cases where we must build the vehicle
 			{ profit=true; oldveh=true; }
 
-		if (profit && oldveh)
+		if (profit)
 			{
 			root.bank.busyRoute=true;
-			if (firstveh && vehneed > 0)
+			if (firstveh && vehneed > 0 && oldveh)
 				{
 				if (root.carrier.BuildAndStartVehicle(j,false))
 					{
@@ -862,7 +865,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		}
 
 // Removing vehicle when station is too crowd & vehicle get stuck
-	if (cargowait == 0) // this happen if we load everything at the station
+	if (cargowait == 0 && oldveh) // this happen if we load everything at the station
 		{
 		local busyList=AIVehicleList_Group(road.ROUTE.groupe_id);
 		local runningList=AIList();
@@ -879,7 +882,6 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		runningList.KeepValue(0); // running but at 0 speed
 		if (runningList.IsEmpty())	continue; // all vehicles are moving
 		runningList.Valuate(AIVehicle.GetAge); // better sold the oldest one
-		showLogic(runningList);
 		runningList.Sort(AIList.SORT_BY_VALUE,true);
 		if (runningList.Count() < 2)	continue; // we will not remove last vehicles, upto "profitlost" to remove them
 		// now send that one to depot & sell it

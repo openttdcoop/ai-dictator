@@ -93,16 +93,6 @@ function AIInit()
 {
 local myName = "Krinn Company";
 local FinalName = myName;
-/*if (!AICompany.SetName(myName)) 
-	{
-	local i = 2;
-	while (!AICompany.SetName(FinalName))
-		{
-		FinalName = myName + "#" + i;
-		i = i + 1;
-		}
-	}
-*/
 FinalName = PickCompanyName(666);
 AICompany.SetName(FinalName);
 AICompany.SetPresidentGender(AICompany.GENDER_MALE);

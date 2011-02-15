@@ -158,6 +158,59 @@ success=root.builder.CreateRailStationByPlan(basepoint, entry, direction, connec
 success=root.builder.CreateRailStationByPlan(otherbase, entry, otherdir, connectionbase);
 }
 
+function cBuilder::RoadBuildDepot(roadidx, start)
+// (re)-Build a depot for route index
+// If it found a road depot near, it will use that one, else create a new one
+{
+local road=root.chemin.RListGetItem(roadidx);
+local where=null;
+local source=null;
+local stationobj=null;
+if (start)	source=road.ROUTE.src_station;
+	else	source=road.ROUTE.dst_station;
+stationobj=root.chemin.GListGetItem(source);
+local stationloc=AIStation.GetLocation(stationobj.STATION.station_id);
+
+local newdepottile=cTileTools.GetTilesAroundPlace(stationloc);
+//newdepottile=root.builder.RemoveBlacklistTiles(newdepottile);
+newdepottile.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
+newdepottile.KeepAboveValue(0);
+newdepottile.Valuate(AIRoad.IsRoadTile);
+newdepottile.KeepValue(0);
+newdepottile.Valuate(AITile.GetDistanceManhattanToTile,stationloc);
+newdepottile.Sort(AIList.SORT_BY_VALUE, true);
+newdepottile.RemoveAboveValue(20);
+local reusedepot=AIList();
+reusedepot.AddList(newdepottile);
+reusedepot.Valuate(AIRoad.IsRoadDepotTile);
+reusedepot.KeepValue(1);
+reusedepot.Valuate(AITile.GetOwner);
+local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+reusedepot.KeepValue(weare);
+reusedepot.Valuate(AITile.GetDistanceManhattanToTile,stationloc);
+reusedepot.Sort(AIList.SORT_BY_VALUE, true);
+local newdeploc=-1;
+if (!reusedepot.IsEmpty())
+	{
+	newdeploc=reusedepot.Begin();
+	}
+
+if (newdeploc == -1)
+	foreach (tile, dummy in newdepottile)
+		{
+		newdeploc=cBuilder.BuildAndStickToRoad(tile, AIRoad.ROADVEHTYPE_BUS+100000);
+		if (newdeploc > -1)	break;
+		}
+if (newdeploc > -1)
+	{
+	DInfo("Building a depot for route #"+roadidx+" - Station "+AIStation.GetName(stationobj.STATION.station_id),0);
+	stationobj.STATION.e_depot=newdeploc;
+	root.chemin.GListUpdateItem(source,stationobj);
+	return true;
+	}
+return false;
+}
+
 function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 // Upgrade an existing road station.
 {
@@ -246,28 +299,11 @@ if (!AIRoad.IsRoadDepotTile(depot_id))	depotdead=newstaloc; // check if we have 
 if (depotdead > -1)
 	{ // depot was destroy, look out possible places to rebuild one, this is safe if stations are there
 	DInfo("Depot has been destroy while upgrading, building a new one.",1);
-	local newdepottile=cTileTools.GetTilesAroundPlace(depotdead);
-	newdepottile=root.builder.RemoveBlacklistTiles(newdepottile);
-	newdepottile.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
-	newdepottile.KeepAboveValue(0);
-	newdepottile.Valuate(AIRoad.IsRoadTile);
-	newdepottile.KeepValue(0);
-	newdepottile.Valuate(AITile.GetDistanceManhattanToTile,depotdead);
-	newdepottile.Sort(AIList.SORT_BY_VALUE, true);
-	newdepottile.RemoveAboveValue(20);
-	showLogic(newdepottile);
-	foreach (tile, dummy in newdepottile)
-		{
-		newdeploc=cBuilder.BuildAndStickToRoad(tile, deptype);
-		if (newdeploc > -1)	break;
-		}
-	if (newdeploc==-1)	{ DError("Cannot rebuild our depot !",1); }
-		else		{ DInfo("Depot rebuild, all is fine !",1); }
+	root.builder.RoadBuildDepot(roadidx,start);
 	}
-else 	newdeploc=depot_id;
-depot_id=newdeploc;
 if (success)
 	{
+	station_obj=root.chemin.GListGetItem(station_index); // because depot creation might alter it
 	station_obj.STATION.type=0; // hmmm, not sure it's a good idea, but let it try to upgrade it until success
 	DInfo("Station "+AIStation.GetName(station_obj.STATION.station_id)+" has been upgrade",0);
 	station_obj.STATION.size++;
@@ -370,12 +406,17 @@ if (start)	realID=srcdepotid;
 local st="destination";
 if (start)	st="source";
 if (depotList.HasItem(realID)) return realID;
-	else	{ DInfo("Warning: no depot at "+st+" for route "+idx,1); }
+	else	{
+		DInfo("Warning: no depot at "+st+" for route "+idx,1);
+		root.builder.RoadBuildDepot(idx,start);
+		}
 if (start)	realID=dstdepotid;
 	else	realID=srcdepotid;
 if (depotList.HasItem(realID)) return realID;
-	else	DInfo("Warning: no depot at source and destination for route "+idx,1);
-// TODO: no depot at source & destination, not the best function to handle that, but we should handle that case somewhere as we have a non working route here
+	else	{
+		DInfo("Warning: no depot at source and destination for route "+idx,1);
+		root.builder.RoadBuildDepot(idx,!start);
+		}
 return realID;
 }
 
@@ -476,6 +517,66 @@ obj.STATION.s_link=exithelper;
 DInfo("Fast calc entry="+entry+" objentry="+obj.STATION.e_loc+" exit="+exit+" objexit="+obj.STATION.s_loc,2);
 }
 
+function cBuilder::RoadRunner(source, target, road_type, walkedtiles=null, origin=null)
+// Follow all directions to walk through the path starting at source, ending at target
+// check if the path is valid by using road_type (railtype, road)
+// return true if we reach target
+{
+local max_wrong_direction=15;
+if (origin == null)	origin=AITile.GetDistanceManhattanToTile(source, target);
+if (walkedtiles == null)	{ walkedtiles=AIList(); DInfo("Init array",2); }
+local valid=false;
+local direction=null;
+local found=(source == target);
+local hellwhy=0;
+local closest=65535;
+local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
+foreach (voisin in directions)
+	{
+	direction=source+voisin;
+	hellwhy=0;
+	if (road_type == AIVehicle.VT_ROAD)
+		{
+		if (AIBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
+			{
+			local endat=null;
+			endat=AIBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
+			DInfo("Bridge start="+source+" end at="+endat,2);
+			DInfo("Before hack source="+source+" direction="+direction,2);
+
+			// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
+			// if we are connect to someone, i reset "source" to be "someone" and continue
+			local guessTile=null;	
+			foreach (where in directions)
+				{
+				if (AIRoad.AreRoadTilesConnected(endat, endat+where))
+					{ guessTile=endat+where; }
+				}
+			if (guessTile != null)
+				{
+				source=guessTile;
+				direction=source+voisin;
+				}
+			DInfo("After hack: source="+source+" direction="+direction,2);
+			root.NeedDelay(5);
+			}
+		valid=AIRoad.AreRoadTilesConnected(source, direction);
+		}
+	else	{ valid=AIRail.AreTilesConnected(source, direction, direction); }
+	if (!valid)	hellwhy=1;
+	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
+	if (closest > currdistance+max_wrong_direction)	closest=currdistance+max_wrong_direction;
+	if (currdistance > origin+max_wrong_direction)	{ hellwhy=2; valid=false; DInfo("dist="+currdistance+" origin="+origin+" test="+(currdistance + max_wrong_direction),2); }
+	if (currdistance > closest)	{ valid=false; DInfo("Closest hack",2); }
+	if (walkedtiles.HasItem(direction))	{ valid=false; hellwhy=3; } 
+	if (valid)	walkedtiles.AddItem(direction,0);
+	if (valid)	PutSign(direction,"*");
+	DInfo("Valid="+valid+" hellwhy"+hellwhy+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target+" close="+closest,2);
+	if (!found && valid)	found=root.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
+	if (found) return found;
+	}
+return found;
+}
 
 /*
 function cBuilder::RailStationFindEntranceP(obj)

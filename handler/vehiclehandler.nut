@@ -535,7 +535,7 @@ foreach (vehicle, dummy in tlist)
 	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
 		else	 price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	name=AIVehicle.GetName(vehicle)+"("+AIEngine.GetName(AIVehicle.GetEngineType(vehicle))+")";
-	if (age < 24)
+	if (age < 48)
 		{
 		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
 		root.carrier.vehnextprice+=price;

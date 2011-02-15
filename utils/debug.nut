@@ -9,7 +9,7 @@ function ClearSignsALL()
 // this just clear any signs we can
 {
 local sweeper=AISignList();
-DInfo("Removing Signs ! "+sweeper.Count(),1);
+DInfo("Removing Signs ! "+sweeper.Count(),2);
 foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
 }
 

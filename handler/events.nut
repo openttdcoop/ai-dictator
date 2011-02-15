@@ -124,7 +124,7 @@ switch (eventType)
 			{
 			case	0:
 				if (isme)	action="I'm sure someone will give me some money";
-						action="Oh no, it's so sad !";
+					else	action="Oh no, it's so sad !";
 			break;
 			case	1:
 				if (isme)	action="I will call Bernard Madoff for more hints.";
@@ -132,7 +132,7 @@ switch (eventType)
 			break;
 			case	2:
 				if (isme)	action="Fools rebels, you will never win !";
-						action="They have refuse to put my son as director, now pay !";
+					else	action="They have refuse to put my son as director, now pay !";
 			break;
 			}
 		DInfo(info+action);
@@ -154,7 +154,8 @@ switch (eventType)
 				{
 				do	{
 					root.carrier.VehicleToDepotAndSell(vehicle);
-					AIController.Sleep(400);
+					AIController.Sleep(150);
+					root.carrier.VehicleIsWaitingInDepot();
 					} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);
 				}
 			}

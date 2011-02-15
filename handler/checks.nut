@@ -38,6 +38,14 @@ local month=AIDate.GetMonth(AIDate.GetCurrentDate());
 if (root.checker!=month)	{ root.checker=month; }
 		else	return false;
 DInfo("Montly checks run...",2);
+for (local j=0; j < root.chemin.RListGetSize(); j++)
+	{
+	local road=root.chemin.RListGetItem(j);
+	if (!road.ROUTE.isServed) continue;
+	if (road.ROUTE.kind != AIVehicle.VT_ROAD)	continue;
+	local test=root.builder.CheckRoadHealth(j);
+	DInfo("Health check return "+test,1);
+	}
 root.builder.CheckAirportUpgrade();
 }
 

@@ -18,9 +18,28 @@ if (distedge < 120) {
 	return tiles;
 }
 
+function cTileTools::FindRoadStationTiles(tile)
+// return a list of tile where we have the station we found at tile
+{
+if (!AIRoad.IsRoadStationTile(tile))	return null;
+local stationid=AIStation.GetStationID(tile);
+if (!AICompany.IsMine(AICompany.ResolveCompanyID(AITile.GetOwner(tile))))	return null;
+local tilelist=cTileTools.GetTilesAroundPlace(tile);
+tilelist.Valuate(AITile.GetDistanceManhattanToTile,tile);
+tilelist.KeepBelowValue(6);
+tilelist.Valuate(AIRoad.IsRoadStationTile);
+tilelist.KeepValue(1);
+tilelist.Valuate(AIStation.GetStationID);
+showLogic(tilelist);
+tilelist.KeepValue(stationid);
+
+return tilelist;
+}
+
 function cTileTools::DemolishTile(tile)
 // same as AITile.DemolishTile but retry after a little wait
 {
+if (AITile.IsBuildable(tile)) return true;
 local res=AITile.DemolishTile(tile);
 if (!res)
 	{

@@ -209,3 +209,19 @@ description:
 should help starting game & bankrupt trouble, specially with high costs
 
 
+changeset:   25:a43f80a3f43e
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Mon Feb 14 01:44:41 2011 +0100
+files:       Changelog build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut handler/events.nut
+description:
+- Try to rebuild a road station if it fail (and until it success AND
+this could make problem, will see later)
+- Road station construction at nearest place we could make them from
+each other
+- Add a new priority to build vehicle: all routes that need new vehicle
+are evaluate to choose which one is the best to put our money on it at
+first. Idea is hmm, well, simple, it's just put money where you will
+get it back the fastest. This should faster & higher incomes.
+
+
