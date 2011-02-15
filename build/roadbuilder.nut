@@ -142,12 +142,12 @@ if (!AIRoad.IsRoadTile(direction))
 			}
 		}
 	}
-if (!cTileTools.DemolishTile(tile))
-	{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
 // sometimes, the road isn't fully connect to us, try build it, and don't care failure
 AIRoad.BuildRoad(direction,tile);
 if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000)) // depot, i add 100000 to know it's a depot i need
 	{
+	if (!cTileTools.DemolishTile(tile))
+		{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
 	if (!AIRoad.BuildRoadDepot(tile,direction))
 		{ DInfo("Can't built the depot : "+AIError.GetLastErrorString(),2); return -1; }
 	else	{
@@ -166,6 +166,8 @@ foreach (voisin in directions)
 	{
 	if (AITile.IsStationTile(tile+voisin))	return -1; // prevent build a station close to another one (us or anyone)
 	}
+if (!cTileTools.DemolishTile(tile))
+	{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
 if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_NEW))
 	{ DInfo("Can't built the station : "+AIError.GetLastErrorString(),2); return -1; }
 	else	{
@@ -528,7 +530,7 @@ DInfo(msg,1);
 // target station
 temp=tgt_stationid;
 correction=false;
-if (!AIStation.IsValidStation(temp))	{ DInfo(space+" Source Station is invalid !",1); good=false; }
+if (!AIStation.IsValidStation(temp))	{ DInfo(space+" Target Station is invalid !",1); good=false; }
 	else	DInfo(space+"Target station "+AIStation.GetName(temp)+"("+temp+") is valid",1);
 local station_tile=cTileTools.FindRoadStationTiles(AIStation.GetLocation(temp));
 DInfo(space+space+"Station size : "+station_tile.Count(),1);
@@ -557,11 +559,11 @@ foreach (tile, dummy in station_tile)
 // the depot
 temp=tgt_depotid;
 depotfront=AIRoad.GetRoadDepotFrontTile(temp);
-msg=space+"Target Depot "+src_depotid+" is ";
-if (!AIRoad.IsRoadDepotTile(src_depotid))
+msg=space+"Target Depot "+tgt_depotid+" is ";
+if (!AIRoad.IsRoadDepotTile(tgt_depotid))
 	{
 	msg+="invalid. ";
-	if (root.builder.RoadBuildDepot(idx, true))	msg+=error_repair;
+	if (root.builder.RoadBuildDepot(idx, false))	msg+=error_repair;
 		else	{ msg+=error_error; good=false; }
 	}
 else	msg+="valid";

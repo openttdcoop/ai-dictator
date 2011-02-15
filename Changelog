@@ -291,3 +291,12 @@ description:
 - Call road health checker after a road station upgrade
 
 
+changeset:   33:9bfe258d7f6e
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 21:13:21 2011 +0100
+files:       Changelog TODO.txt build/roadbuilder.nut
+description:
+- Prevent road station creation near another station
+
+
