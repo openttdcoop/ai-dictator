@@ -309,3 +309,12 @@ description:
 - Correct bugs in road health checks
 
 
+changeset:   35:d0e3817ea225
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 22:18:41 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/chemin.nut main.nut
+description:
+- Tun a bit road max per route and road station upgrade values
+
+

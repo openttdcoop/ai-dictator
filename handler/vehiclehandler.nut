@@ -603,7 +603,7 @@ DInfo("Sold "+AIEngine.GetName(AIVehicle.GetEngineType(veh)),0);
 AIVehicle.SellWagonChain(veh, 0);
 AIVehicle.SellVehicle(veh);
 if (idx >= 0)
-	{ root.carrier.RouteAndStationVehicleCounter(idx,false); } // remove 1 from vehicle counters
+	{ root.carrier.RouteAndStationVehicleCounterUpdate(idx); } // remove 1 from vehicle counters
 }
 
 function cCarrier::VehicleIsWaitingInDepot()

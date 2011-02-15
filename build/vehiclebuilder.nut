@@ -155,9 +155,10 @@ switch (road.ROUTE.kind)
 			}
 		else	{ // not yet upgrade
 			// we have reach maximum vehicule count on a 1 station value, we must upgrade the station
-			if (thatstation.STATION.e_count+1 > 8) // > divisor, now > 5 so upgrade if 6 bus/truck
+			if (thatstation.STATION.e_count+1 > 8) // > divisor, now > 8 so upgrade if 6 bus/truck
 				{ if (!root.builder.RoadStationNeedUpgrade(roadidx,start)) return false; }
 			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false;
+			if (road.ROUTE.vehicle+1 > root.chemin.road_max_onroute) return false;
 			}
 	break;
 	case AIVehicle.VT_RAIL:
@@ -227,7 +228,7 @@ local newveh=AIVehicle.CloneVehicle(root.builder.GetDepotID(roadidx,startdepot),
 if (!AIVehicle.IsValidVehicle(newveh))
 	{ DError("Cannot buy the vehicle :"+price,2); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(newveh),1); }
-root.carrier.RouteAndStationVehicleCounter(roadidx,true);
+root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 if (!AIVehicle.StartStopVehicle(newveh))
 	{ DError("Cannot start the vehicle :",1); return false; }
 if (!startdepot)	AIOrder.SkipToOrder(newveh, 1);
@@ -264,27 +265,32 @@ switch (road.ROUTE.kind)
 return res;
 }
 
-function cCarrier::RouteAndStationVehicleCounter(roadidx,plusplus)
-// if plusplus, add a new vehicle to the station & route
-// else remove one, update station & route vehicle counters
+function cCarrier::RouteAndStationVehicleCounterUpdate(roadidx)
+// Update the route and stations vehicle counters
 {
 local road=root.chemin.RListGetItem(roadidx);
 local entry=true;
 local station_id=0;
 local station=null;
-local addthat=-1;
-if (plusplus) addthat=1;
-road.ROUTE.vehicule+=addthat;
+loval vehgroup=null;
+if (road.ROUTE.groupe_id > -1)
+	{
+	vehgroup=AIVehicleList_Group(road.ROUTE.groupe_id);
+	road.ROUTE.vehicule=vehgroup.Count();
+	}
+else	road.ROUTE.vehicule=0;
 
 station=root.chemin.GListGetItem(road.ROUTE.src_station);
+vehgroup=AIVehicleList_Station(station.STATION.station_id);
 entry=road.ROUTE.src_entry;
-if (entry)	{ station.STATION.e_count+=addthat; }
-	else	{ station.STATION.s_count+=addthat; }
+if (entry)	{ station.STATION.e_count=vehgroup.Count(); }
+	else	{ station.STATION.s_count=vehgroup.Count(); }
 root.chemin.GListUpdateItem(road.ROUTE.src_station,station);
 station=root.chemin.GListGetItem(road.ROUTE.dst_station);
+vehgroup=AIVehicleList_Station(station.STATION.station_id);
 entry=road.ROUTE.dst_entry;
-if (entry)	{ station.STATION.e_count+=addthat; }
-	else	{ station.STATION.s_count+=addthat; }
+if (entry)	{ station.STATION.e_count=vehgroup.Count(); }
+	else	{ station.STATION.s_count=vehgroup.Count(); }
 root.chemin.GListUpdateItem(road.ROUTE.dst_station,station);
 root.chemin.RListUpdateItem(roadidx,road);
 }
@@ -322,7 +328,7 @@ AIGroup.MoveVehicle(road.ROUTE.groupe_id, firstveh);
 AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
-root.carrier.RouteAndStationVehicleCounter(roadidx,true);
+root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 return true;
 }
 
@@ -355,7 +361,7 @@ local newveh=AIVehicle.CloneVehicle(root.builder.GetDepotID(roadidx,startdepot),
 if (!AIVehicle.IsValidVehicle(newveh))
 	{ DError("Cannot buy the vehicle :"+price,2); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(newveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(newveh)),1); }
-root.carrier.RouteAndStationVehicleCounter(roadidx,true);
+root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 if (!startdepot)	AIOrder.SkipToOrder(newveh, 1);
 if (!AIVehicle.StartStopVehicle(newveh))
 	{ DError("Cannot start the vehicle :",1); return false; }
@@ -403,7 +409,7 @@ AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!road.ROUTE.src_entry)	AIOrder.SkipToOrder(firstveh, 1);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
 AIGroup.MoveVehicle(road.ROUTE.groupe_id, firstveh);
-root.carrier.RouteAndStationVehicleCounter(roadidx,true);
+root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 return true;
 }
 

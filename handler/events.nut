@@ -95,6 +95,7 @@ switch (eventType)
 			AIVehicle.StartStopVehicle(newveh);
 			DInfo("Cloned the crashed vehicle.",0);
 			}
+		// no need to update vehicle counters, as the crash vehicle is still count
 	break;
 	case AIEvent.AI_ET_VEHICLE_WAITING_IN_DEPOT:
 		root.carrier.VehicleIsWaitingInDepot();
