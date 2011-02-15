@@ -39,7 +39,9 @@ class DictatorAI extends AIController
 	debug = null;
 	secureStart=null;
 	
-	checker=null;	
+	OneMonth=null;
+	SixMonth=null;
+	TwelveMonth=null;
 	
 	lastroute = null;
 	loadedgame = null;
@@ -55,7 +57,9 @@ class DictatorAI extends AIController
 	carrier=cCarrier(this);
 
 	loadedgame = false;
-	checker=0;		// this one is use to set a monthly check for some operations
+	OneMonth=0;		// this one is use to set a monthly check for some operations
+	SixMonth=0;		// same as OneMonth but every half year
+	TwelveMonth=0;		// again for year
 	} 
  }
  

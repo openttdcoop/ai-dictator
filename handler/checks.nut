@@ -35,9 +35,25 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 function cBuilder::MonthlyChecks()
 {
 local month=AIDate.GetMonth(AIDate.GetCurrentDate());
-if (root.checker!=month)	{ root.checker=month; }
+if (root.OneMonth!=month)	{ root.OneMonth=month; root.SixMonth++;}
 		else	return false;
-DInfo("Montly checks run...",2);
+DInfo("Montly checks run...",1);
+root.builder.CheckAirportUpgrade();
+if (root.SixMonth == 6)	root.builder.HalfYearChecks();
+}
+
+function cBuilder::HalfYearChecks()
+{
+root.SixMonth=0;
+root.TwelveMonth++;
+DInfo("Half year checks run...",1);
+if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
+}
+
+function cBuilder::YearlyChecks()
+{
+root.TwelveMonth=0;
+DInfo("Yearly checks run...",1);
 for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	local road=root.chemin.RListGetItem(j);
@@ -46,7 +62,6 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local test=root.builder.CheckRoadHealth(j);
 	DInfo("Health check return "+test,1);
 	}
-root.builder.CheckAirportUpgrade();
 }
 
 function cBuilder::AirportStationsBalancing()

@@ -225,3 +225,12 @@ first. Idea is hmm, well, simple, it's just put money where you will
 get it back the fastest. This should faster & higher incomes.
 
 
+changeset:   27:4243a52a5ed3
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 03:40:30 2011 +0100
+files:       build/stationbuilder.nut
+description:
+- Remove some useless code
+
+

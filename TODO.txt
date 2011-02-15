@@ -6,7 +6,6 @@ Changelog:files:       Changelog TODO.txt info.nut main.nut
 Changelog:files:       Changelog TODO.txt handler/chemin.nut main.nut
 build/railbuilder.nut:	// TODO: switch station direction
 build/stationbuilder.nut:		// TODO: need to rethink many (all) building/demolish trys functions, having a depot with a road vehicle in it (but not stop at depot) prevent demolishing the tile, this is not crical, but this fool us
-build/stationbuilder.nut:// TODO: no depot at source & destination, not the best function to handle that, but we should handle that case somewhere as we have a non working route here
 build/airbuilder.nut:// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
 build/builder.nut:function cBuilder::RemoveBlacklistTiles(tilelist) // TODO: fix me
 build/builder.nut:	// TODO: i suppose our HQ can make next test fail, so todo is add a check & move the hq

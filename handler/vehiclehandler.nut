@@ -545,12 +545,12 @@ foreach (vehicle, dummy in tlist)
 		continue;
 		}
 	age=AIVehicle.GetReliability(vehicle);
-	if (age < 30)
+	if (age < 50)
 		{
-		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
-		root.carrier.vehnextprice+=price;
-		DInfo("Vehicle "+name+" reliability is low ("+age+"%), replacing it",0);
-		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
+		DInfo("Vehicle "+name+" reliability is low ("+age+"%)",0);
+		//root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
+		local idx=root.carrier.VehicleFindRouteIndex(vehicle);
+		root.builder.CheckRoadHealth(idx);
 		root.bank.busyRoute=true;
 		continue;
 		}

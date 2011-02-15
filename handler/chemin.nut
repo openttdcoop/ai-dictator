@@ -26,6 +26,7 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 	virtual_air_group_pass=null	// groupid for virtual air for passengers
 	virtual_air_group_mail=null	// groupid for virtual air for mail
 	under_upgrade=null;	// true when we are doing upgrade on something
+	
 	constructor(that)
 		{
 		root = that;
@@ -818,7 +819,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	if (firstveh) 
 		{
 		if (vehneed < 2)	vehneed=2;
-		if (vehneed > 4)	vehneed=3;
+		if (vehneed > 4)	vehneed=2;
 		}
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
