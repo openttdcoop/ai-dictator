@@ -806,8 +806,12 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local capacity=root.carrier.VehicleGetFullCapacity(vehsample);
 	DInfo("vehicle="+vehsample+" capacity="+capacity+" engine="+AIEngine.GetName(AIVehicle.GetEngineType(vehsample)),2);
 	local stationid=root.builder.GetStationID(j,true);
+	local dstationid=root.builder.GetStationID(j,false);
 	local vehonroute=road.ROUTE.vehicule;
-	local cargowait=AIStation.GetCargoWaiting(stationid,cargoid);
+	local srccargowait=AIStation.GetCargoWaiting(stationid,cargoid);
+	local dstcargowait=AIStation.GetCargoWaiting(dstationid,cargoid);
+	local cargowait=(srccargowait < dstcargowait) ? srccargowait : dstcargowait;
+	
 	local vehneed=0;
 	if (capacity > 0)	{ vehneed=cargowait / capacity; }
 			else	{// This happen when we don't have a vehicle sample -> 0 vehicle = new route certainly

@@ -465,6 +465,7 @@ local space="        ";
 local correction=false;
 local temp=null;
 if (!road.ROUTE.isServed)	good=false;
+if (road.ROUTE.kind != AIVehicle.VT_ROAD)	return false; // only check road type
 local source_station_obj=root.chemin.GListGetItem(road.ROUTE.src_station);
 local target_station_obj=root.chemin.GListGetItem(road.ROUTE.dst_station);
 local src_stationid=source_station_obj.STATION.station_id;

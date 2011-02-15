@@ -234,3 +234,12 @@ description:
 - Remove some useless code
 
 
+changeset:   28:179a4cad2cbc
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 12:38:40 2011 +0100
+files:       Changelog TODO.txt handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+description:
+- Add half & yearly checks for some operations
+
+
