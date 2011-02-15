@@ -281,3 +281,13 @@ for structure while we're low on money & low on income
 route (lower cost for structure)
 
 
+changeset:   32:520257cd1591
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 21:06:33 2011 +0100
+files:       Changelog build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/chemin.nut main.nut
+description:
+- Sells all vehicle prior to remove station/depot on a dead route
+- Call road health checker after a road station upgrade
+
+

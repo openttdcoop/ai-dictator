@@ -4,6 +4,7 @@ Changelog:files:       Changelog TODO.txt build/builder.nut build/stationbuilder
 Changelog:files:       Changelog TODO.txt handler/vehiclehandler.nut
 Changelog:files:       Changelog TODO.txt info.nut main.nut
 Changelog:files:       Changelog TODO.txt handler/chemin.nut main.nut
+Changelog:files:       Changelog TODO.txt handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
 build/railbuilder.nut:	// TODO: switch station direction
 build/stationbuilder.nut:		// TODO: need to rethink many (all) building/demolish trys functions, having a depot with a road vehicle in it (but not stop at depot) prevent demolishing the tile, this is not crical, but this fool us
 build/airbuilder.nut:// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that

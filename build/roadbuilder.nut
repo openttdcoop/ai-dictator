@@ -161,7 +161,7 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000)) // depot, i add 100000 to kn
 		}
 	}
 // if we are still here, we have done others cases already
-local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
+local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1), AIMap.GetTileIndex(0, 2), AIMap.GetTileIndex(2, 0), AIMap.GetTileIndex(-2, 0), AIMap.GetTileIndex(0, -2)];
 foreach (voisin in directions)
 	{
 	if (AITile.IsStationTile(tile+voisin))	return -1; // prevent build a station close to another one (us or anyone)
