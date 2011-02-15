@@ -460,6 +460,8 @@ local src_depotid=source_station_obj.STATION.e_depot;
 local tgt_depotid=target_station_obj.STATION.e_depot;
 local src_station_front=AIRoad.GetRoadStationFrontTile(src_stationloc);
 local tgt_station_front=AIRoad.GetRoadStationFrontTile(tgt_stationloc);
+local src_entry_loc=0;
+local tgt_entry_loc=0;
 local facing=0;
 local tempfront=0;
 local msg="";
@@ -476,11 +478,17 @@ local station_tile=cTileTools.FindRoadStationTiles(AIStation.GetLocation(temp));
 DInfo(space+space+"Station size : "+station_tile.Count(),1);
 facing=source_station_obj.STATION.direction;
 DInfo(space+space+"Station is facing : "+facing,1);
+src_entry_loc=AIBase.RandRange(station_tile.Count());
+local randlist=AIList();
+randlist.AddList(station_tile);
+randlist.RemoveTop(src_entry_loc);
+src_entry_loc=randlist.Begin();
 foreach (tile, dummy in station_tile)
 	{
 	PutSign(tile, "S");
 	msg=space+space+"Entry "+tile+" is ";
 	tempfront=root.builder.RoadStationFindFrontTile(tile, facing);
+	if (tile == src_entry_loc)	src_entry_loc=tempfront;
 	if (!AIRoad.AreRoadTilesConnected(tile, tempfront))
 		{
 		msg+="NOT usable. ";
@@ -526,10 +534,16 @@ local station_tile=cTileTools.FindRoadStationTiles(AIStation.GetLocation(temp));
 DInfo(space+space+"Station size : "+station_tile.Count(),1);
 facing=target_station_obj.STATION.direction;
 DInfo(space+space+"Station is facing : "+facing,1);
+tgt_entry_loc=AIBase.RandRange(station_tile.Count());
+randlist.Clear();
+randlist.AddList(station_tile);
+randlist.RemoveTop(tgt_entry_loc);
+tgt_entry_loc=randlist.Begin();
 foreach (tile, dummy in station_tile)
 	{
 	msg=space+space+"Entry "+tile+" is ";
 	tempfront=root.builder.RoadStationFindFrontTile(tile, facing);
+	if (tile == tgt_entry_loc)	tgt_entry_loc=tempfront;
 	if (!AIRoad.AreRoadTilesConnected(tile, tempfront))
 		{
 		msg+="NOT usable. ";
@@ -570,11 +584,11 @@ target_station_obj=root.chemin.GListGetItem(road.ROUTE.dst_station);
 local src_depot_front=AIRoad.GetRoadDepotFrontTile(source_station_obj.STATION.e_depot);
 local tgt_depot_front=AIRoad.GetRoadDepotFrontTile(target_station_obj.STATION.e_depot);
 msg=space+"Connection from source station to its depot : "
-if (!root.builder.RoadRunner(src_station_front, src_depot_front, AIVehicle.VT_ROAD))
+if (!root.builder.RoadRunner(src_entry_loc, src_depot_front, AIVehicle.VT_ROAD))
 	{
 	msg+="Damage & ";
-	root.builder.BuildRoadROAD(src_station_front, src_depot_front);
-	if (!root.builder.RoadRunner(src_station_front, src_depot_front, AIVehicle.VT_ROAD))
+	root.builder.BuildRoadROAD(src_entry_loc, src_depot_front);
+	if (!root.builder.RoadRunner(src_entry_loc, src_depot_front, AIVehicle.VT_ROAD))
 		{ msg+=error_error; good=false; }
 	else	{ msg+=error_repair; }
 	DInfo(msg,1);
@@ -582,11 +596,11 @@ if (!root.builder.RoadRunner(src_station_front, src_depot_front, AIVehicle.VT_RO
 	else	{ DInfo(msg+"Working",1); }
 ClearSignsALL();
 msg=space+"Connection from target station to its depot : "
-if (!root.builder.RoadRunner(tgt_station_front, tgt_depot_front, AIVehicle.VT_ROAD))
+if (!root.builder.RoadRunner(tgt_entry_loc, tgt_depot_front, AIVehicle.VT_ROAD))
 	{
 	msg+="Damage & ";
-	root.builder.BuildRoadROAD(tgt_station_front, tgt_depot_front);
-	if (!root.builder.RoadRunner(tgt_station_front, tgt_depot_front, AIVehicle.VT_ROAD))
+	root.builder.BuildRoadROAD(tgt_entry_loc, tgt_depot_front);
+	if (!root.builder.RoadRunner(tgt_entry_loc, tgt_depot_front, AIVehicle.VT_ROAD))
 		{ msg+=error_error; good=false; }
 	else	{ msg+=error_repair; }
 	DInfo(msg,1);
@@ -594,11 +608,11 @@ if (!root.builder.RoadRunner(tgt_station_front, tgt_depot_front, AIVehicle.VT_RO
 	else	{ DInfo(msg+"Working",1); }
 ClearSignsALL();
 msg=space+"Connection from source station to target station : "
-if (!root.builder.RoadRunner(src_station_front, tgt_station_front, AIVehicle.VT_ROAD))
+if (!root.builder.RoadRunner(src_entry_loc, tgt_entry_loc, AIVehicle.VT_ROAD))
 	{
 	msg+="Damage & ";
-	root.builder.BuildRoadROAD(src_station_front, tgt_station_front);
-	if (!root.builder.RoadRunner(src_station_front, tgt_station_front, AIVehicle.VT_ROAD))
+	root.builder.BuildRoadROAD(src_entry_loc, tgt_entry_loc);
+	if (!root.builder.RoadRunner(src_entry_loc, tgt_entry_loc, AIVehicle.VT_ROAD))
 		{ msg+=error_error; good=false; }
 	else	{ msg+=error_repair; }
 	DInfo(msg,1);

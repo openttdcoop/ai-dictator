@@ -190,11 +190,13 @@ reusedepot.KeepValue(weare);
 reusedepot.Valuate(AITile.GetDistanceManhattanToTile,stationloc);
 reusedepot.Sort(AIList.SORT_BY_VALUE, true);
 local newdeploc=-1;
+showLogic(reusedepot);
+root.NeedDelay(60);
 if (!reusedepot.IsEmpty())
 	{
 	newdeploc=reusedepot.Begin();
+	DInfo("Found a depot at "+newdeploc+" reusing that one",1);
 	}
-
 if (newdeploc == -1)
 	foreach (tile, dummy in newdepottile)
 		{
@@ -203,11 +205,14 @@ if (newdeploc == -1)
 		}
 if (newdeploc > -1)
 	{
-	DInfo("Building a depot for route #"+roadidx+" - Station "+AIStation.GetName(stationobj.STATION.station_id),0);
+	local atinfo=" at destination.";
+	if (start)	atinfo=" at source.";
+	DInfo("Building a depot for route #"+roadidx+" - Station "+AIStation.GetName(stationobj.STATION.station_id)+atinfo,0);
 	stationobj.STATION.e_depot=newdeploc;
 	root.chemin.GListUpdateItem(source,stationobj);
 	return true;
 	}
+else	{ DInfo("We need a depot but we fail to find/create one !",1); }
 return false;
 }
 
@@ -290,8 +295,8 @@ local test=false;
 if (!AIRoad.IsRoadDepotTile(depot_id))	depotdead=newstaloc; // check if we have kill our depot while upgrading
 if (depotdead > -1)
 	{ // depot was destroy, look out possible places to rebuild one, this is safe if stations are there
-	DInfo("Depot has been destroy while upgrading, building a new one.",1);
-	root.builder.RoadBuildDepot(roadidx,start);
+	DInfo("Depot has been destroy while upgrading.",1);
+	//root.builder.RoadBuildDepot(roadidx,start);
 	}
 if (success)
 	{
@@ -308,6 +313,7 @@ if (success)
 	}
 
 root.chemin.GListUpdateItem(station_index,station_obj); // save it
+root.builder.CheckRoadHealth(roadidx); // ask ourselves a check
 return success;
 }
 
@@ -365,6 +371,8 @@ function cBuilder::GetDepotID(idx, start)
 // this function return the depot id
 {
 local road=root.chemin.RListGetItem(idx);
+if (start && road.ROUTE.src_station==-1)	return -1;
+if (!start && road.ROUTE.dst_station==-1)	return -1; // no station = no depot at all
 local srcStation=root.chemin.GListGetItem(road.ROUTE.src_station);
 local dstStation=root.chemin.GListGetItem(road.ROUTE.dst_station);
 local realID=-1;
@@ -400,14 +408,12 @@ if (start)	st="source";
 if (depotList.HasItem(realID)) return realID;
 	else	{
 		DInfo("Warning: no depot at "+st+" for route "+idx,1);
-		root.builder.RoadBuildDepot(idx,start);
 		}
 if (start)	realID=dstdepotid;
 	else	realID=srcdepotid;
 if (depotList.HasItem(realID)) return realID;
 	else	{
 		DInfo("Warning: no depot at source and destination for route "+idx,1);
-		root.builder.RoadBuildDepot(idx,!start);
 		}
 return realID;
 }

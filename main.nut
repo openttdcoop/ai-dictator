@@ -121,6 +121,8 @@ function DictatorAI::Start()
 
 function DictatorAI::Stop()
 {
+DInfo("DictatorAI is stopped");
+ClearSignsALL();
 }
 
 function DictatorAI::NeedDelay(delay=30)

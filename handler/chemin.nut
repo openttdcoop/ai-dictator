@@ -354,7 +354,7 @@ DInfo(villeList.Count()+" towns on map",0);
 // first, let's find industries
 foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
 // now towns
-/*
+
 foreach(c, dummy in cargoList)
 	{
 	local vt=AITownList();
@@ -366,7 +366,7 @@ foreach(c, dummy in cargoList)
 			}
 		}
 	}
-*/
+
 root.chemin.CreateVirtualRoute();
 }
 

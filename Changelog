@@ -266,3 +266,18 @@ description:
 (divide by 0)
 
 
+changeset:   31:17f222b428f5
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 17:51:59 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/checks.nut handler/chemin.nut main.nut utils/banker.nut
+description:
+- Correct bug when building road stations facing random position
+- Correct bug when building road station stick to a road and this fail,
+now we fall back to "classic" (not sticky)  road station building
+- Slow build when starting a game, prevent us from having too high cost
+for structure while we're low on money & low on income
+- Remove station & depot for road vehicle when we fail to build a valid
+route (lower cost for structure)
+
+

@@ -55,19 +55,48 @@ if (isDepot)	cTileTools.DemolishTile(tile);
 function cBuilder::DeleteStation(idx)
 {
 local realidobj=root.builder.GetStationID(idx,true);
+local depot=null;
 DInfo("DEBUG removing a station, realidobj is stationID, should be -1 ="+realidobj,2);
-if (realidobj!=-1)	root.builder.DeleteStationSourceOrDestination(idx,true);
+if (realidobj!=-1)
+	{
+	depot=root.builder.GetDepotID(idx,true);
+	root.builder.DeleteDepot(depot);
+	root.builder.DeleteStationSourceOrDestination(idx,true);
+	}
 realidobj=root.builder.GetStationID(idx,false);
-if (realidobj!=-1)	root.builder.DeleteStationSourceOrDestination(idx,false);
-local depot=root.builder.GetDepotID(idx,true);
-root.builder.DeleteDepot(depot);
-depot=root.builder.GetDepotID(idx,false);
-root.builder.DeleteDepot(depot);
+if (realidobj!=-1)
+	{
+	depot=root.builder.GetDepotID(idx,false);
+	root.builder.DeleteDepot(depot);
+	root.builder.DeleteStationSourceOrDestination(idx,false);
+	}
 }
 
 function cBuilder::RouteDelete(idx)
 // Delete a route, we may have vehicule on it...
 {
+local road=root.chemin.RListGetItem(idx);
+if (road.ROUTE.groupe_id != -1)
+	{
+	vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+	foreach (vehicle in vehlist)
+		{
+		root.carrier.VehicleToDepotAndSell(vehicle);
+		}
+	foreach (vehicle in vehlist)
+		{
+		local waitmax=444; // 2 months
+		local waitcount=0;
+		local wait=false;
+		do	{
+			AIController.Sleep(10);
+			root.carrier.VehicleIsWaitingInDepot();
+			if (AIVehicle.IsValidVehicle(vehicle))	wait=true;
+			waitcount++;
+			if (waitcount > waitmax)	wait=false;
+			} while (wait);
+		}
+	}
 root.builder.DeleteStation(idx);
 root.chemin.RListDeleteItem(idx);
 }
