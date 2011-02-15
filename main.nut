@@ -38,6 +38,7 @@ class DictatorAI extends AIController
 	fairlevel = null;
 	debug = null;
 	secureStart=null;
+	builddelay=null;
 	
 	OneMonth=null;
 	SixMonth=null;
@@ -55,7 +56,7 @@ class DictatorAI extends AIController
 	eventManager= cEvents(this);
 	builder=cBuilder(this);
 	carrier=cCarrier(this);
-
+	builddelay=false;
 	loadedgame = false;
 	OneMonth=0;		// this one is use to set a monthly check for some operations
 	SixMonth=0;		// same as OneMonth but every half year

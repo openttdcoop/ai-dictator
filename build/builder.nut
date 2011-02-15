@@ -119,7 +119,7 @@ foreach (i, dummy in tiletester)
 	// TODO: check also tile is own by us, but at least a train related stuff, else we may destroy
 	// a road/air... station and so invaliding ourself a working route
 	if (tile == weare)	continue; // tile is ok, it's one of our tile
-	DInfo(tile+" my compny "+weare,2);
+	DInfo(tile+" my company "+weare,2);
 	// Watchout for roadtile from company X crossing our rail
 	tile=cTileTools.DemolishTile(i); // can we delete that tile ? Ignore result, we will care about it on next try
 	tile=cTileTools.DemolishTile(i); // demolish it twice, this should remove the crossing roads case
@@ -134,13 +134,17 @@ function cBuilder::GetDirection(tilefrom, tileto)
 {
 	local distx = AIMap.GetTileX(tileto) - AIMap.GetTileX(tilefrom);
 	local disty = AIMap.GetTileY(tileto) - AIMap.GetTileY(tilefrom);
+/*	DInfo("tilefrom :"+tilefrom+" X:"+AIMap.GetTileX(tilefrom)+" Y:"+AIMap.GetTileY(tilefrom),2);
+	DInfo("tileto :"+tileto+" X:"+AIMap.GetTileX(tileto)+" Y:"+AIMap.GetTileY(tileto),2);
+	DInfo("Get direction original: distx="+distx+" disty="+disty,2);
+	PutSign(tilefrom,"O- "+tilefrom);
+	PutSign(tileto,"D- "+tileto);*/
 	local ret = 0;
 	if (abs(distx) > abs(disty)) {
 		ret = 2;
 		disty = distx;
 	}
 	if (disty > 0) {ret = ret + 1}
-	DInfo("get direction : distx="+distx+" disty="+disty+" ret="+ret,2);
 	return ret;	
 }
 
@@ -472,11 +476,11 @@ if (rr.ROUTE.status==6)
 	success=root.builder.BuildRoadByType(idx);
 	if (success)	{ root.chemin.RouteStatusChange(idx,7); }
 		else	{
+			root.builder.DeleteStation(idx);
 			if (root.builder.CriticalError)
 				{
 				root.builder.CriticalError=false;
 				root.chemin.RouteIsNotDoable(idx);
-				root.builder.DeleteStation(idx);
 				return false;
 				}
 			} // and nothing more, stay at phase 6 to repathfind/rebuild the road when possible
@@ -493,6 +497,7 @@ if (rr.ROUTE.status==7)
 	AIGroup.SetName(rr.ROUTE.groupe_id, rr.ROUTE.groupe_name);
 	root.chemin.RListUpdateItem(idx,rr);
 	root.chemin.RouteStatusChange(idx,100);
+	if (root.secureStart > 0)	root.builddelay=true;
 	}
 
 if (rr.ROUTE.status==666)

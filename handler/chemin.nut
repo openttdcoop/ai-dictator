@@ -354,7 +354,7 @@ DInfo(villeList.Count()+" towns on map",0);
 // first, let's find industries
 foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
 // now towns
-
+/*
 foreach(c, dummy in cargoList)
 	{
 	local vt=AITownList();
@@ -366,6 +366,7 @@ foreach(c, dummy in cargoList)
 			}
 		}
 	}
+*/
 root.chemin.CreateVirtualRoute();
 }
 
@@ -464,8 +465,8 @@ local eroad=root.chemin.DListGetItem(end);
 sroad.ROUTE.dst_id=eroad.DEPOT.id;
 sroad.ROUTE.dst_name=eroad.DEPOT.name;
 sroad.ROUTE.dst_istown=eroad.DEPOT.istown;
-if (sroad.ROUTE.dst_istown)	{ sroad.ROUTE.dst_place=AITown.GetLocation(end); }
-			else	{ sroad.ROUTE.dst_place=AIIndustry.GetLocation(end); }
+if (sroad.ROUTE.dst_istown)	{ sroad.ROUTE.dst_place=AITown.GetLocation(sroad.ROUTE.dst_id); }
+			else	{ sroad.ROUTE.dst_place=AIIndustry.GetLocation(sroad.ROUTE.dst_id); }
 sroad.ROUTE.length=eroad.DEPOT.distance;
 sroad.ROUTE.status=2;
 root.chemin.RListUpdateItem(start,sroad);

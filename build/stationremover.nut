@@ -46,6 +46,12 @@ root.chemin.GListDeleteItem(fakeid);
 return true;
 }
 
+function cBuilder::DeleteDepot(tile)
+{
+local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
+if (isDepot)	cTileTools.DemolishTile(tile);
+}
+
 function cBuilder::DeleteStation(idx)
 {
 local realidobj=root.builder.GetStationID(idx,true);
@@ -53,6 +59,10 @@ DInfo("DEBUG removing a station, realidobj is stationID, should be -1 ="+realido
 if (realidobj!=-1)	root.builder.DeleteStationSourceOrDestination(idx,true);
 realidobj=root.builder.GetStationID(idx,false);
 if (realidobj!=-1)	root.builder.DeleteStationSourceOrDestination(idx,false);
+local depot=root.builder.GetDepotID(idx,true);
+root.builder.DeleteDepot(depot);
+depot=root.builder.GetDepotID(idx,false);
+root.builder.DeleteDepot(depot);
 }
 
 function cBuilder::RouteDelete(idx)

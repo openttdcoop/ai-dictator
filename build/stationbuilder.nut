@@ -238,32 +238,24 @@ switch (facing)
 // stafront = tile + offsta; depfront = tile + offsta + offdep;
 	case DIR_NE:
 // a gauche
-		//offdep = AIMap.GetTileIndex(0,-1);  
-		//offsta = AIMap.GetTileIndex(-1,0);
 		left = AIMap.GetTileIndex(0,-1);
 		right= AIMap.GetTileIndex(0,1);
 		front= AIMap.GetTileIndex(-1,0);
 	break;
 	case DIR_NW:
 // haut
-
-		//offsta = AIMap.GetTileIndex(0,-1);
 		left = AIMap.GetTileIndex(-1,0);
 		right= AIMap.GetTileIndex(1,0);
 		front= AIMap.GetTileIndex(0,-1);
 	break;
 	case DIR_SE:
 // bas
-		
-		//offsta = AIMap.GetTileIndex(0,1);
 		left = AIMap.GetTileIndex(1,0);
 		right= AIMap.GetTileIndex(-1,0);
 		front= AIMap.GetTileIndex(0,1);
 	break;
 	case DIR_SW:
 // droite
-
-		//offsta = AIMap.GetTileIndex(1,0);
 		left = AIMap.GetTileIndex(0,1);
 		right= AIMap.GetTileIndex(0,-1);
 		front= AIMap.GetTileIndex(1,0);

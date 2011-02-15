@@ -80,8 +80,6 @@ switch (direction)
 	}
 statile = tile; deptile = tile + offdep;
 stafront = tile + offsta; depfront = tile + offsta + offdep;
-// statile = 100;
-// deptile = 100
 if (!AITile.IsBuildable(deptile)) {return false;}
 if (!AITile.IsBuildable(stafront) && !AIRoad.IsRoadTile(stafront)) {return false;}
 if (!AITile.IsBuildable(depfront) && !AIRoad.IsRoadTile(depfront)) {return false;}
@@ -190,7 +188,9 @@ root.builder.currentRoadType=AIRoad.GetCurrentRoadType();
 local rad = AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
 local dir, tilelist, checklist, otherplace, istown, isneartown=null;
 local road = root.chemin.RListGetItem(root.chemin.nowRoute);
+root.chemin.RListDumpOne(root.chemin.nowRoute);
 if (start)	{
+
 		dir = root.builder.GetDirection(road.ROUTE.src_place, road.ROUTE.dst_place);
 		if (road.ROUTE.src_istown)
 			{
@@ -238,18 +238,7 @@ if (checklist.IsEmpty())
 else	{
 	DInfo("Sticking station & depot to the road",1);
 	}
-
-/*local gotRoad=false;
-foreach (i, dummy in checklist)
-	{
-	DInfo("checklist "+i+" dummy="+dummy);
-	if (dummy == 1)	{ gotRoad=true; break; }
-	}
-if (!gotRoad)
-	{	// no road there, we need one
-	AIRoad.BuildRoad(direction,tile);
-	}*/
-
+checklist.AddList(tilelist); // re-put tiles in it in case we fail building later
 local stationtype = null;
 if (AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_PASSENGERS)
 		{ stationtype = AIRoad.ROADVEHTYPE_BUS; }
@@ -286,8 +275,6 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 		//showLogic(tilelist);
 		}
 	else	{
-		//tilelist.Valuate(AITile.IsBuildable); 
-		//tilelist.KeepAboveValue(0); 
 		if (!istown)
 			{
 			tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
@@ -295,20 +282,12 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 		tilelist.Sort(AIList.SORT_BY_VALUE,true);
 		}
 DInfo("Tilelist set to "+tilelist.Count(),2);
-//tilelist.Sort(AIList.SORT_BY_VALUE, !isneartown);
 local success = false;
 local depotbuild=false;
 local stationbuild=false;
 local newStation=cStation();
 
-/*if (!istown && isneartown)
-	{
-	tilelist = AITileList_IndustryAccepting(road.ROUTE.dst_id, rad);
-	tilelist.Sort(AIList.SORT_BY_VALUE, false);
-	tilelist.Valuate(AITile.IsBuildable); // test
-	tilelist.KeepAboveValue(0); //test
-	tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-	}*/
+deptile=-1; statile=-1;
 if (isneartown)
 	{
 	foreach (tile, dummy in tilelist)
@@ -328,12 +307,12 @@ if (isneartown)
 	if (success) // we have depot + station tile, pathfind to them
 		{ root.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(deptile), AIRoad.GetRoadStationFrontTile(statile));	}
 	}
-
-if (statile==-1 && !istown && isneartown)
+if ((statile==-1 || deptile==-1) && !istown && isneartown)
 	{ // We fail to build the station, but it's because we force build station close to roads and there is no roads
+	if (statile>0)	cTileTools.DemolishTile(statile);
+	if (deptile>0)	cTileTools.DemolishTile(deptile);
 	isneartown=false;
-	tilelist = AITileList_IndustryAccepting(road.ROUTE.dst_id, rad);
-	tilelist.Sort(AIList.SORT_BY_VALUE, false);
+	tilelist.AddList(checklist); // restore the list of original tiles
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.KeepAboveValue(0);
 	tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
@@ -341,6 +320,7 @@ if (statile==-1 && !istown && isneartown)
 	}
 if (!isneartown)
 	{
+	showLogic(tilelist);
 	foreach (tile, dummy in tilelist)
 		{
 		if (cBuilder.CanBuildRoadStation(tile, dir))
@@ -385,7 +365,6 @@ root.chemin.GListAddItem(newStation); // create the station
 local lastStation=root.chemin.GListGetSize()-1;
 if (start)
 	{
-	
 	road.ROUTE.src_station = lastStation;
 	road.ROUTE.src_entry = true;
 	}

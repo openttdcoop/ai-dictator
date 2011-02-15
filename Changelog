@@ -254,3 +254,15 @@ highest, this will reduce crowd station, also, sadly reduce income per
 route. But i hate too crowd town
 
 
+changeset:   30:a9fd44772b2f
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 14:29:07 2011 +0100
+files:       Changelog build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut
+description:
+- Remove some unused code
+- Balance vehicle at station only if source is a town
+- Correct a bug with air network adding aircraft when we have 0 aircraft
+(divide by 0)
+
+

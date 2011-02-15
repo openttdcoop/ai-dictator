@@ -48,6 +48,7 @@ root.SixMonth=0;
 root.TwelveMonth++;
 DInfo("Half year checks run...",1);
 if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
+root.builddelay=false;
 }
 
 function cBuilder::YearlyChecks()

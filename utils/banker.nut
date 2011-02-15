@@ -29,8 +29,9 @@ if (cash < goodcash)	{ root.bank.canBuild=false; }
 if (ourLoan < maxLoan)	{ root.bank.canBuild=true; }
 local veh=AIVehicleList();
 if (root.bank.busyRoute)	root.bank.canBuild=false;
-if (!root.bank.canBuild && veh.IsEmpty()) // we have no vehicles
-	{ root.bank.canBuild=true; }
+if (root.builddelay)	root.bank.canBuild=false;
+//if (!root.bank.canBuild && veh.IsEmpty()) // we have no vehicles
+//	{ root.bank.canBuild=true; }
 if (root.bank.canBuild) DInfo("Construction is now allowed",1);
 DInfo("canBuild="+root.bank.canBuild+" busyRoute="+root.bank.busyRoute+" goodcash="+goodcash+" unleash="+root.bank.unleash_road,2);
 }
