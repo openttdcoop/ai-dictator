@@ -71,13 +71,13 @@ if (road.ROUTE.src_istown)
 		switch (root.fairlevel)
 			{
 			case 0:
-			stationrank=(100-(road.ROUTE.foule*50)); // give up when 2 stations are present
+			stationrank=(100-(road.ROUTE.foule*100)); // give up when 1 station is present
 			break;
 			case 1:
-			stationrank=(100-(road.ROUTE.foule*25)); // give up for 4
+			stationrank=(100-(road.ROUTE.foule*50)); // give up for 2
 			break;
 			case 0:
-			stationrank=(100-(road.ROUTE.foule*10)); // give up for 6
+			stationrank=(100-(road.ROUTE.foule*25)); // give up for 4
 			break;
 			}
 		}
@@ -822,13 +822,9 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 					else	{ producing=AIIndustry.GetLastMonthProduction(road.ROUTE.src_id,road.ROUTE.cargo_id); }
 				if (work == AIVehicle.VT_ROAD)	{ vehneed= producing / estimateCapacity; }
 				}
-	if (firstveh) 
-		{
-		if (vehneed < 2)	vehneed=2;
-		if (vehneed > 4)	vehneed=2;
-		}
+	if (firstveh) { vehneed = 2; }
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
-	if (vehneed > maxveh) vehneed=maxveh-vehonroute;
+	if (vehneed+vehonroute > maxveh) vehneed=vehneed+vehonroute-maxveh;
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+" firstveh="+firstveh,2);
 	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
 		else		profit=true;

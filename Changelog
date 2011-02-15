@@ -318,3 +318,13 @@ description:
 - Tun a bit road max per route and road station upgrade values
 
 
+changeset:   36:66e95461405b
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 22:43:36 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/events.nut handler/vehiclehandler.nut
+description:
+- Vehicle counter for station & route update instead of add/remove. This
+should follow more closely the real number
+
+
