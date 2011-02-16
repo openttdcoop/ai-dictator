@@ -337,3 +337,12 @@ description:
 - Tun a bit vehicle creation: limit...
 
 
+changeset:   38:006868041d46
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Wed Feb 16 00:14:58 2011 +0100
+files:       Changelog build/airbuilder.nut build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationremover.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+description:
+- Sell vehicle group if our route is not valid
+
+

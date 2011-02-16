@@ -251,6 +251,7 @@ function cChemin::RouteIsNotDoable(idx)
 root.chemin.RouteStatusChange(idx,0);
 local road=root.chemin.RListGetItem(idx);
 road.ROUTE.handicap=road.ROUTE.ranking;
+road.ROUTE.isServed=false;
 root.chemin.RListUpdateItem(idx,road);
 root.chemin.nowRoute=-1; // reset it when we found an invalid route
 }

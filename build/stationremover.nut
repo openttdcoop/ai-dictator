@@ -20,6 +20,7 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 // didn't find someone else use it
 
 // check if we have a vehicle using it
+root.carrier.VehicleGroupSendToDepotAndSell(idx);
 local vehcheck=AIVehicleList_Station(realidobj);
 if (!vehcheck.IsEmpty())
 	{
@@ -37,7 +38,6 @@ if (start)	fakeid=obj.ROUTE.src_station;
 for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	local road=root.chemin.RListGetItem(j);
-	//if (!road.ROUTE.isServed) continue; // don't care non working route
 	if (road.ROUTE.src_station >= fakeid) road.ROUTE.src_station--;	
 	if (road.ROUTE.dst_station >= fakeid) road.ROUTE.dst_station--;
 	root.chemin.RListUpdateItem(j,road);
@@ -56,7 +56,6 @@ function cBuilder::DeleteStation(idx)
 {
 local realidobj=root.builder.GetStationID(idx,true);
 local depot=null;
-DInfo("DEBUG removing a station, realidobj is stationID, should be -1 ="+realidobj,2);
 if (realidobj!=-1)
 	{
 	depot=root.builder.GetDepotID(idx,true);
@@ -83,6 +82,7 @@ root.chemin.RListDeleteItem(idx);
 function cBuilder::RouteIsBroken(idx)
 // remove vehicles from that route & remove its isServed status
 {
-
+root.carrier.VehicleGroupSendToDepotAndSell(idx);
+root.chemin.RouteIsNotDoable(idx);
 }
 

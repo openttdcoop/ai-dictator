@@ -158,7 +158,6 @@ switch (road.ROUTE.kind)
 			if (thatstation.STATION.e_count+1 > 8) // > divisor, now > 8 so upgrade if 6 bus/truck
 				{ if (!root.builder.RoadStationNeedUpgrade(roadidx,start)) return false; }
 			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false;
-			if (road.ROUTE.vehicle+1 > root.chemin.road_max_onroute) return false;
 			}
 	break;
 	case AIVehicle.VT_RAIL:
@@ -272,7 +271,7 @@ local road=root.chemin.RListGetItem(roadidx);
 local entry=true;
 local station_id=0;
 local station=null;
-loval vehgroup=null;
+local vehgroup=null;
 if (road.ROUTE.groupe_id > -1)
 	{
 	vehgroup=AIVehicleList_Group(road.ROUTE.groupe_id);

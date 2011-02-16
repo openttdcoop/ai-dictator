@@ -176,6 +176,7 @@ function cBuilder::BuildRoadByType(idx)
 // for trains, src & dst = false stationID for trains pointing to our GList
 {
 local road=root.chemin.RListGetItem(idx);
+root.chemin.RListDumpOne(idx);
 local success=false;
 switch (road.ROUTE.kind)
 	{
@@ -476,14 +477,25 @@ if (rr.ROUTE.status==6)
 	success=root.builder.BuildRoadByType(idx);
 	if (success)	{ root.chemin.RouteStatusChange(idx,7); }
 		else	{
-			root.builder.DeleteStation(idx);
 			if (root.builder.CriticalError)
 				{
+				root.builder.DeleteStation(idx);
 				root.builder.CriticalError=false;
 				root.chemin.RouteIsNotDoable(idx);
 				return false;
 				}
+			else	{ if (root.secureStart > 0)	root.builder.DeleteStation(idx);	}
 			} // and nothing more, stay at phase 6 to repathfind/rebuild the road when possible
+	}
+rr=root.chemin.RListGetItem(idx); // reload datas
+if (rr.ROUTE.status==7)
+	{ // check the route is really valid
+	if (rr.ROUTE.kind == AIVehicle.VT_ROAD)
+		{
+		success=root.builder.CheckRoadHealth(idx);
+		}
+	else	{ success=true; } // other route type for now are ok
+	if (success)	{ root.chemin.RouteStatusChange(idx,8); }
 	}	
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==8)
@@ -499,26 +511,6 @@ if (rr.ROUTE.status==8)
 	root.chemin.RouteStatusChange(idx,100);
 	if (root.secureStart > 0)	root.builddelay=true;
 	}
-
-if (rr.ROUTE.status==666)
-	{
-	// TODO: per type check: road or rail
-	// TODO: pathfind from station-> depot for source & destination
-	success=root.builder.BuildRoadByType(idx);
-	if (success)	
-		{
-		DInfo("Route #"+idx+" repair successfuly",0);
-		root.chemin.RouteStatusChange(idx,100);
-		}
-	}
-/*rr=root.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==10)
-	{
-	root.chemin.buildmode=true; // build best !
-	success=root.carrier.BuildAndStartVehicle(idx,false);
-	if (success)	{ root.chemin.RouteStatusChange(idx,20); root.carrier.BuildAndStartVehicle(idx,true); }
-		else	{ DInfo("Report first vehicle failure at creation ! "+success,1); return false; }
-	}*/
 return success;
 }
 

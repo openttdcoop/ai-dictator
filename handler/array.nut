@@ -128,7 +128,7 @@ local realidx=idx*dummy.STATION.len();
 if (idx >= root.chemin.GListGetSize() || idx < 0)
 	{
 	DInfo("Warning: index out of limits with GList !!! idx="+idx+" realidx="+realidx+" GList.len="+root.chemin.GList.len(),1);
-	realidx=0;
+	realidx=-1;
 	}
 return realidx;
 }
@@ -169,7 +169,6 @@ local start=root.chemin.GListGetIndex(idx);
 local next=start;
 root.chemin.GList[next]=obj.STATION.station_id;	next++;
 root.chemin.GList[next]=obj.STATION.direction;	next++;
-//root.chemin.GList[next]=obj.STATION.depot_id;	next++;
 root.chemin.GList[next]=obj.STATION.query;	next++;
 root.chemin.GList[next]=obj.STATION.haveEntry;	next++;
 root.chemin.GList[next]=obj.STATION.haveExit;	next++;
@@ -184,7 +183,6 @@ root.chemin.GList[next]=obj.STATION.s_count;	next++;
 root.chemin.GList[next]=obj.STATION.s_depot;	next++;
 root.chemin.GList[next]=obj.STATION.s_loc;	next++;
 root.chemin.GList[next]=obj.STATION.s_link;
-//DInfo("Update station #"+idx,2);
 root.chemin.GListDumpOne(idx);	
 }
 
@@ -193,11 +191,9 @@ function cChemin::GListGetItem(idx)
 {
 local obj=cStation();
 local next=root.chemin.GListGetIndex(idx);
-if (idx >= root.chemin.GListGetSize())
-	{ DWarn("Not a valid GList index !"); return false;}
+//if (idx == -1) return idx;
 obj.STATION.station_id=root.chemin.GList[next];	next++;
 obj.STATION.direction=root.chemin.GList[next];	next++;
-//obj.STATION.depot_id=root.chemin.GList[next];	next++;
 obj.STATION.query=root.chemin.GList[next];	next++;
 obj.STATION.haveEntry=root.chemin.GList[next];	next++;
 obj.STATION.haveExit=root.chemin.GList[next];	next++;
@@ -235,7 +231,7 @@ local realidx=idx*dummy.DEPOT.len();
 if (idx > root.chemin.DListGetSize() || idx < 0)
 	{
 	DWarn("Warning: index out of limits with DList !!! idx="+idx+" realidx="+realidx+" DList.len="+root.chemin.DList.len(),1);
-	realidx=0;
+	realidx=-1;
 	}
 return realidx;
 }
@@ -314,7 +310,7 @@ local realidx=idx*dummy.ROUTE.len();
 if (idx > root.chemin.RListGetSize() || idx < 0)
 	{
 	DInfo("Warning: index out of limits with RList !!! idx="+idx+" realidx="+realidx+" RList.len="+root.chemin.RList.len(),1);
-	realidx=0;
+	realidx=-1;
 	}
 return realidx;
 }
@@ -324,11 +320,9 @@ function cChemin::RListUpdateItem(idx,road)
 {
 local dummy = cCheminItem();
 local start=root.chemin.RListGetIndex(idx);
-//DInfo("Updating: idx="+idx+" start="+start+" end="+end,2);
 local next=start;
 root.chemin.RList[next]=road.ROUTE.uniqID;		next++;
 root.chemin.RList[next]=road.ROUTE.isServed;		next++;
-//root.chemin.RList[next]=road.ROUTE.railtype;		next++;
 root.chemin.RList[next]=road.ROUTE.vehicule;		next++;
 root.chemin.RList[next]=road.ROUTE.kind;		next++;
 root.chemin.RList[next]=road.ROUTE.status;		next++;
@@ -354,7 +348,6 @@ root.chemin.RList[next]=road.ROUTE.cargo_id;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_name;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_value;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_amount;	
-//root.job.RListDump();
 }
 
 function cChemin::RListAddItem(road)
@@ -367,7 +360,6 @@ for (local i=0; i < oneItemSize; i++)
 	root.chemin.RList.push(0);
 	}
 local lastItem=(root.chemin.RList.len()/oneItemSize)-1;
-//DInfo("oneSize="+oneItemSize+" LastEntryLoc="+lastItem+" size="+root.chemin.RList.len(),2);
 root.chemin.RListUpdateItem(lastItem,road);
 // now update our list with our road values
 // this way we re-use the RListUpdateItem function instead of creating one to add them
@@ -378,10 +370,8 @@ function cChemin::RListGetItem(idx)
 {
 local toReturn=cCheminItem();
 local next=root.chemin.RListGetIndex(idx);
-//DInfo("RListGetITem="+idx+" next="+next,2);
 toReturn.ROUTE.uniqID=root.chemin.RList[next];		next++;
 toReturn.ROUTE.isServed=root.chemin.RList[next];	next++;
-//toReturn.ROUTE.railtype=root.chemin.RList[next];	next++;
 toReturn.ROUTE.vehicule=root.chemin.RList[next];	next++;
 toReturn.ROUTE.kind=root.chemin.RList[next];		next++;
 toReturn.ROUTE.status=root.chemin.RList[next];		next++;
@@ -409,21 +399,3 @@ toReturn.ROUTE.cargo_value=root.chemin.RList[next];	next++;
 toReturn.ROUTE.cargo_amount=root.chemin.RList[next];	next++;
 return toReturn;
 }
-
-
-/*
-
-DIR_NW(0) & DIR_SE(1) -> NW_SE
-DIR_NE(2) & DIR_SW(3) -> NE_SW
-
-
-NW_SE = \
-NE_SW = --
-
-
-
-
-
-
-
-*/
