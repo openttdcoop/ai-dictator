@@ -540,7 +540,7 @@ foreach (vehicle, dummy in tlist)
 	if (age < 48)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
-		if (!root.bank.CanBuyThat(price)+root.carrier.vehnextprice)) continue;
+		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
 		root.carrier.vehnextprice+=price;
 		DInfo("Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" months), replacing it",0);
 		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);

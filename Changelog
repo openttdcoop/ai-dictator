@@ -373,3 +373,9 @@ user:        krinn <krinn@chez.com>
 date:        Wed Feb 16 15:57:04 2011 +0100
 summary:     - Rise price penalty to 0.5% of engine price when checking to send a
 
+changeset:   43:376454f9bb9d
+tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Wed Feb 16 16:03:41 2011 +0100
+summary:     - Block road station upgrade until we're out of game start (safe
+
