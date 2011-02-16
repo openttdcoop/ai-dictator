@@ -432,7 +432,7 @@ if (AIVehicle.IsValidVehicle(newveh))
 	root.carrier.vehnextprice=0;
 	}
 else	{
-	root.carrier.SellVehicle(veh);
+	root.carrier.VehicleSell(veh);
 	}
 }
 
@@ -530,13 +530,15 @@ foreach (vehicle, dummy in tlist)
 	if (AIVehicle.IsStoppedInDepot(vehicle)) continue;
 	age=AIVehicle.GetAgeLeft(vehicle);
 	local topengine=root.carrier.VehicleIsTop(vehicle);
-
 	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
 		else	 price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	name=AIVehicle.GetName(vehicle)+"("+AIEngine.GetName(AIVehicle.GetEngineType(vehicle))+")";
+	local groupid=AIVehicle.GetGroupID(vehicle);
+	local vehgroup=AIVehicleList_Group(groupid);
 	if (age < 48)
 		{
-		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
+		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
+		if (!root.bank.CanBuyThat((price*0.1)+price+root.carrier.vehnextprice)) continue;
 		root.carrier.vehnextprice+=price;
 		DInfo("Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" months), replacing it",0);
 		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
@@ -547,7 +549,6 @@ foreach (vehicle, dummy in tlist)
 	if (age < 50)
 		{
 		DInfo("Vehicle "+name+" reliability is low ("+age+"%)",0);
-		//root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
 		local idx=root.carrier.VehicleFindRouteIndex(vehicle);
 		root.builder.CheckRoadHealth(idx);
 		root.bank.busyRoute=true;
@@ -556,7 +557,7 @@ foreach (vehicle, dummy in tlist)
 
 	if (topengine != -1)
 		{
-
+		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		if (!root.bank.CanBuyThat((price*0.1)+price+root.carrier.vehnextprice)) continue;
 		// add a 10% to price to avoid try changing an engine and running low on money because of fluctuating money
 		root.carrier.vehnextprice+=price;

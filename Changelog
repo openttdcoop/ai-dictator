@@ -358,3 +358,12 @@ fully connected
 not enough money to complete the construction
 
 
+changeset:   40:0845ba8464ab
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Wed Feb 16 01:36:41 2011 +0100
+files:       Changelog handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Sell a vehicle if we can't replace it and we have still others running
+
+

@@ -510,6 +510,7 @@ if (rr.ROUTE.status==8)
 	root.chemin.RListUpdateItem(idx,rr);
 	root.chemin.RouteStatusChange(idx,100);
 	if (root.secureStart > 0)	root.builddelay=true;
+	root.chemin.nowRoute=-1;
 	}
 return success;
 }
