@@ -346,3 +346,15 @@ description:
 - Sell vehicle group if our route is not valid
 
 
+changeset:   39:bb93313a3e49
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Wed Feb 16 01:20:57 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut
+description:
+- Now check after a road route is create that the route is working &
+fully connected
+- Don't remove road station if we have enough income to handle it, but
+not enough money to complete the construction
+
+

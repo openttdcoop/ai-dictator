@@ -432,8 +432,7 @@ if (AIVehicle.IsValidVehicle(newveh))
 	root.carrier.vehnextprice=0;
 	}
 else	{
-	root.carrier.VehicleRemoveFlag(veh);
-	AIVehicle.StartStopVehicle(veh);
+	root.carrier.SellVehicle(veh);
 	}
 }
 
