@@ -272,7 +272,7 @@ if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
 // twice time, even we get caught by vehicle orders check, it will ask to send the vehicle.... to depot
-DInfo("Seting depot order for vehicle "+veh+"-"+AIVehicle.GetName(veh),2);
+DInfo("Setting depot order for vehicle "+veh+"-"+AIVehicle.GetName(veh),2);
 }
 
 function cCarrier::VehicleSendToDepot(veh,flag)
@@ -532,13 +532,15 @@ foreach (vehicle, dummy in tlist)
 	local topengine=root.carrier.VehicleIsTop(vehicle);
 	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
 		else	 price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
+	price+=(0.5*price);
+	// add a 50% to price to avoid try changing an engine and running low on money because of fluctuating money
 	name=AIVehicle.GetName(vehicle)+"("+AIEngine.GetName(AIVehicle.GetEngineType(vehicle))+")";
 	local groupid=AIVehicle.GetGroupID(vehicle);
 	local vehgroup=AIVehicleList_Group(groupid);
 	if (age < 48)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
-		if (!root.bank.CanBuyThat((price*0.1)+price+root.carrier.vehnextprice)) continue;
+		if (!root.bank.CanBuyThat(price)+root.carrier.vehnextprice)) continue;
 		root.carrier.vehnextprice+=price;
 		DInfo("Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" months), replacing it",0);
 		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
@@ -558,8 +560,7 @@ foreach (vehicle, dummy in tlist)
 	if (topengine != -1)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
-		if (!root.bank.CanBuyThat((price*0.1)+price+root.carrier.vehnextprice)) continue;
-		// add a 10% to price to avoid try changing an engine and running low on money because of fluctuating money
+		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
 		root.carrier.vehnextprice+=price;
 		DInfo("Vehicle "+name+" can be update with a better version, sending it to depot",0);
 		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
