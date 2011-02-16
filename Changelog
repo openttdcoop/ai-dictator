@@ -367,3 +367,9 @@ description:
 - Sell a vehicle if we can't replace it and we have still others running
 
 
+changeset:   42:fdf386e4b23f
+tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Wed Feb 16 15:57:04 2011 +0100
+summary:     - Rise price penalty to 0.5% of engine price when checking to send a
+
