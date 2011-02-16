@@ -89,7 +89,7 @@ foreach (i, dummy in airID)
 		if (percent > 4 && percent < 90)
 			{ // we have a vehicle with more than 20% cargo in it
 			root.carrier.VehicleOrderSkipCurrent(i);
-			DInfo("Forcing vehicle "+AIVehicle.GetName(i)+" to get out of the station with "+i+"% load",1);
+			DInfo("Forcing vehicle "+AIVehicle.GetName(i)+" to get out of the station with "+i+" load",1);
 			break;
 			}
 		}

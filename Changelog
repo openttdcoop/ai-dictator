@@ -1,216 +1,185 @@
-changeset:   2:8b937ca1deae
+changeset:   44:63be02a0f512
 tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 05 17:49:35 2011 +0100
+user:        krinn <krinn@chez.com>
+date:        Wed Feb 16 18:51:45 2011 +0100
+files:       Changelog handler/vehiclehandler.nut
+description:
+- Send to upgrade/replace a vehicle if we have 150% of new vehicle price
+on our account
+
+
+changeset:   43:376454f9bb9d
+user:        krinn <krinn@chez.com>
+date:        Wed Feb 16 16:03:41 2011 +0100
+files:       Changelog build/vehiclebuilder.nut
+description:
+- Block road station upgrade until we're out of game start (safe
+properties costs)
+
+
+changeset:   42:fdf386e4b23f
+user:        krinn <krinn@chez.com>
+date:        Wed Feb 16 15:57:04 2011 +0100
 files:       handler/vehiclehandler.nut
 description:
-Invalidate order when order destination is not a valid station.
+- Rise price penalty to 0.5% of engine price when checking to send a
+vehicle to depot for upgrade/replace
 
 
-changeset:   3:d2eb41715919
-tag:         tip
+changeset:   41:678efb55dbe3
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 05 18:02:59 2011 +0100
-files:       build/airbuilder.nut handler/chemin.nut handler/vehiclehandler.nut
+date:        Wed Feb 16 14:58:47 2011 +0100
+files:       Changelog build/builder.nut handler/chemin.nut handler/vehiclehandler.nut utils/banker.nut
 description:
-Remove old and unuseful comments
+- Selling a vehicle if we cannot upgrade it. In fact i'm not quiet happy
+after seeing it. And i'm not quiet happy if it's not there. Without it,
+we keep trying send a vehicle to depot, and make it restart if we can't
+do replace/upgrade, making it running/stop/running/stop... specially on
+early days when the ai is running really low on money. And with it, the
+ai is selling all its vehicle... This will be rework :p
 
 
-changeset:   4:5ea1f86a39d7
-tag:         tip
+changeset:   40:0845ba8464ab
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 05 20:12:38 2011 +0100
-files:       build/airbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut handler/vehiclehandler.nut
+date:        Wed Feb 16 01:36:41 2011 +0100
+files:       Changelog handler/chemin.nut handler/vehiclehandler.nut
 description:
-Change aircraft building with efficiency/best/chopper modele.
-Efficiency is use when a standard route
-Best is use when in the network
+- Sell a vehicle if we can't replace it and we have still others running
 
 
-changeset:   5:170b25d3ff0c
-tag:         tip
+changeset:   39:bb93313a3e49
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 05 21:35:42 2011 +0100
-files:       handler/array.nut handler/chemin.nut handler/vehiclehandler.nut
+date:        Wed Feb 16 01:20:57 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut
 description:
-Now aircraft orders are changed when in the network, but still remains
-in their own group, so adding/removing vehicle still work for the route
+- Now check after a road route is create that the route is working &
+fully connected
+- Don't remove road station if we have enough income to handle it, but
+not enough money to complete the construction
 
 
-changeset:   6:39951bea2f3f
-tag:         tip
+changeset:   38:006868041d46
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 05 21:48:01 2011 +0100
-files:       build/roadbuilder.nut
+date:        Wed Feb 16 00:14:58 2011 +0100
+files:       Changelog build/airbuilder.nut build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationremover.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
 description:
-Correct a bug when road depot isn't build but station is build
+- Sell vehicle group if our route is not valid
 
 
-changeset:   7:1144ac582fbd
-tag:         tip
+changeset:   37:7b1a6dfae91a
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 05 22:22:31 2011 +0100
-files:       build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
-description:
-Enforce rules for aircraft: respect limit for network & airport out of
-network
-
-
-changeset:   8:20205fccab7f
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sun Feb 06 00:08:01 2011 +0100
-files:       build/airbuilder.nut build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut
-description:
-- Prevent building or maintenance on vehicle while upgrading
-- Find the correct station to remove in orders while upgrading airport
-- Disable some checks on vehicle orders while upgrading to ease upgrades
-- Add aircraft limit base on airport type
-
-
-changeset:   10:55ceab8abd4e
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Thu Feb 10 15:15:56 2011 +0100
-files:       TODO.txt handler/chemin.nut
-description:
-Correct bug: don't remove handicap on ranking if handicap isn't
-positive, else we higher ranking instead
-
-
-changeset:   11:a107f11a4981
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Thu Feb 10 18:41:01 2011 +0100
-files:       Changelog build/builder.nut build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut
-description:
-- Set malus on ranking == to the ranking
-- Don't check chopper orders
-
-
-changeset:   12:4b5267e98125
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Thu Feb 10 21:42:23 2011 +0100
-files:       Changelog build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut utils/tile.nut
-description:
-- Wait a few and retry when fail to demolish a tile
-- Protect station from demolishing by mistake
-- Rebuild road depot when removed by upgrading station
-
-
-changeset:   14:186701f304f7
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Thu Feb 10 22:37:39 2011 +0100
-files:       handler/chemin.nut
-description:
-- Lower conditions when we try to add a new vehicle while we still have
-some vehicle to upgrade
-
-
-changeset:   15:0397a9f19c5d
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Thu Feb 10 23:22:14 2011 +0100
-files:       Changelog handler/chemin.nut
-description:
-- Sell spare vehicles on too busy stations
-
-
-changeset:   16:9f6a1241156a
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Fri Feb 11 00:51:48 2011 +0100
-files:       Changelog build/builder.nut build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut
-description:
-- Don't sell spare if we have less than 3 spares
-- Correct a bug finding if our depot was destroy
-
-
-changeset:   17:dd597eefc68c
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Fri Feb 11 01:01:14 2011 +0100
-files:       Changelog build/stationbuilder.nut
-description:
-- Erf, while sticking our road depot to a road tile, don't build on road
-tiles!
-
-
-changeset:   18:1476c5c5a64a
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Fri Feb 11 22:43:14 2011 +0100
-files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/chemin.nut
-description:
-- Disable Tilelist blacklist, not working and it bug me enough like
-that, will recheck that when i got time to spare on it
-- Preparing the pre-build service handling, will do it after i have fix
-the vehicle need to go to depot case (thinking about a clean fix for
-that, i will add before i re-forget again)
-
-
-changeset:   19:6389e1375f01
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Fri Feb 11 23:28:36 2011 +0100
-files:       Changelog build/builder.nut handler/chemin.nut handler/vehiclehandler.nut
-description:
-- Add a new way to send vehicle to depot, the yes/no VehicleSendToDepot
-is too weak to be usable, specially it's not even trustable
-
-
-changeset:   20:08c45c901eac
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 12 09:31:47 2011 +0100
-files:       Changelog TODO.txt handler/vehiclehandler.nut
-description:
-- Avoid our go to depot orders been removed by our order checks
-
-
-changeset:   21:307510b476ca
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sat Feb 12 22:45:56 2011 +0100
-files:       Changelog TODO.txt info.nut main.nut
-description:
-- Some cleanup for release (soon)
-- Redo save/load functions, should work now
-
-
-changeset:   22:d1179eaec1cc
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sun Feb 13 00:18:49 2011 +0100
-files:       Changelog build/builder.nut build/roadbuilder.nut
-description:
-- Separate road pathfinding & road construction, so we could re-use one
-or the other
-
-
-changeset:   23:7accbde76f18
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sun Feb 13 01:05:09 2011 +0100
-files:       Changelog build/vehiclebuilder.nut handler/chemin.nut
-description:
-- More road vehicle build after route creating
-
-
-changeset:   24:7f321fce9f5a
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Sun Feb 13 22:35:42 2011 +0100
+date:        Tue Feb 15 23:08:14 2011 +0100
 files:       Changelog TODO.txt handler/chemin.nut main.nut
 description:
-- Until we build 3 working road vehicle, disable other transport: this
-should help starting game & bankrupt trouble, specially with high costs
+- Tun a bit vehicle creation: limit...
+
+
+changeset:   36:66e95461405b
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 22:43:36 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/events.nut handler/vehiclehandler.nut
+description:
+- Vehicle counter for station & route update instead of add/remove. This
+should follow more closely the real number
+
+
+changeset:   35:d0e3817ea225
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 22:18:41 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/chemin.nut main.nut
+description:
+- Tun a bit road max per route and road station upgrade values
+
+
+changeset:   34:4c5e9530b440
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 21:21:17 2011 +0100
+files:       Changelog build/roadbuilder.nut
+description:
+- Correct bugs in road health checks
+
+
+changeset:   33:9bfe258d7f6e
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 21:13:21 2011 +0100
+files:       Changelog TODO.txt build/roadbuilder.nut
+description:
+- Prevent road station creation near another station
+
+
+changeset:   32:520257cd1591
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 21:06:33 2011 +0100
+files:       Changelog build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/chemin.nut main.nut
+description:
+- Sells all vehicle prior to remove station/depot on a dead route
+- Call road health checker after a road station upgrade
+
+
+changeset:   31:17f222b428f5
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 17:51:59 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/checks.nut handler/chemin.nut main.nut utils/banker.nut
+description:
+- Correct bug when building road stations facing random position
+- Correct bug when building road station stick to a road and this fail,
+now we fall back to "classic" (not sticky)  road station building
+- Slow build when starting a game, prevent us from having too high cost
+for structure while we're low on money & low on income
+- Remove station & depot for road vehicle when we fail to build a valid
+route (lower cost for structure)
+
+
+changeset:   30:a9fd44772b2f
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 14:29:07 2011 +0100
+files:       Changelog build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut
+description:
+- Remove some unused code
+- Balance vehicle at station only if source is a town
+- Correct a bug with air network adding aircraft when we have 0 aircraft
+(divide by 0)
+
+
+changeset:   29:46e0c188e169
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 13:10:06 2011 +0100
+files:       Changelog build/roadbuilder.nut build/vehiclebuilder.nut handler/chemin.nut
+description:
+- Balance vehicle for a route base on the poorest station intead of the
+highest, this will reduce crowd station, also, sadly reduce income per
+route. But i hate too crowd town
+
+
+changeset:   28:179a4cad2cbc
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 12:38:40 2011 +0100
+files:       Changelog TODO.txt handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+description:
+- Add half & yearly checks for some operations
+
+
+changeset:   27:4243a52a5ed3
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 03:40:30 2011 +0100
+files:       build/stationbuilder.nut
+description:
+- Remove some useless code
+
+
+changeset:   26:7120279bb40a
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 15 01:23:49 2011 +0100
+files:       Changelog TODO.txt build/roadbuilder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut utils/debug.nut utils/misc.nut utils/tile.nut
+description:
+- Modify a bit the build logic for vehicle
+- Modify the road logic when choosing what transport type we will use
+- Handle, and do what we can when our company is going bankrut
+- Add checks for road route damages
+- Add repair to damage road routes
 
 
 changeset:   25:a43f80a3f43e
-tag:         tip
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Mon Feb 14 01:44:41 2011 +0100
 files:       Changelog build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut handler/events.nut
@@ -225,157 +194,234 @@ first. Idea is hmm, well, simple, it's just put money where you will
 get it back the fastest. This should faster & higher incomes.
 
 
-changeset:   27:4243a52a5ed3
-tag:         tip
+changeset:   24:7f321fce9f5a
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 03:40:30 2011 +0100
-files:       build/stationbuilder.nut
-description:
-- Remove some useless code
-
-
-changeset:   28:179a4cad2cbc
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 12:38:40 2011 +0100
-files:       Changelog TODO.txt handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
-description:
-- Add half & yearly checks for some operations
-
-
-changeset:   29:46e0c188e169
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 13:10:06 2011 +0100
-files:       Changelog build/roadbuilder.nut build/vehiclebuilder.nut handler/chemin.nut
-description:
-- Balance vehicle for a route base on the poorest station intead of the
-highest, this will reduce crowd station, also, sadly reduce income per
-route. But i hate too crowd town
-
-
-changeset:   30:a9fd44772b2f
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 14:29:07 2011 +0100
-files:       Changelog build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut
-description:
-- Remove some unused code
-- Balance vehicle at station only if source is a town
-- Correct a bug with air network adding aircraft when we have 0 aircraft
-(divide by 0)
-
-
-changeset:   31:17f222b428f5
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 17:51:59 2011 +0100
-files:       Changelog build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/checks.nut handler/chemin.nut main.nut utils/banker.nut
-description:
-- Correct bug when building road stations facing random position
-- Correct bug when building road station stick to a road and this fail,
-now we fall back to "classic" (not sticky)  road station building
-- Slow build when starting a game, prevent us from having too high cost
-for structure while we're low on money & low on income
-- Remove station & depot for road vehicle when we fail to build a valid
-route (lower cost for structure)
-
-
-changeset:   32:520257cd1591
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 21:06:33 2011 +0100
-files:       Changelog build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/chemin.nut main.nut
-description:
-- Sells all vehicle prior to remove station/depot on a dead route
-- Call road health checker after a road station upgrade
-
-
-changeset:   33:9bfe258d7f6e
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 21:13:21 2011 +0100
-files:       Changelog TODO.txt build/roadbuilder.nut
-description:
-- Prevent road station creation near another station
-
-
-changeset:   34:4c5e9530b440
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 21:21:17 2011 +0100
-files:       Changelog build/roadbuilder.nut
-description:
-- Correct bugs in road health checks
-
-
-changeset:   35:d0e3817ea225
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 22:18:41 2011 +0100
-files:       Changelog build/vehiclebuilder.nut handler/chemin.nut main.nut
-description:
-- Tun a bit road max per route and road station upgrade values
-
-
-changeset:   36:66e95461405b
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 22:43:36 2011 +0100
-files:       Changelog build/vehiclebuilder.nut handler/events.nut handler/vehiclehandler.nut
-description:
-- Vehicle counter for station & route update instead of add/remove. This
-should follow more closely the real number
-
-
-changeset:   37:7b1a6dfae91a
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Tue Feb 15 23:08:14 2011 +0100
+date:        Sun Feb 13 22:35:42 2011 +0100
 files:       Changelog TODO.txt handler/chemin.nut main.nut
 description:
-- Tun a bit vehicle creation: limit...
+- Until we build 3 working road vehicle, disable other transport: this
+should help starting game & bankrupt trouble, specially with high costs
 
 
-changeset:   38:006868041d46
-tag:         tip
+changeset:   23:7accbde76f18
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Wed Feb 16 00:14:58 2011 +0100
-files:       Changelog build/airbuilder.nut build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationremover.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+date:        Sun Feb 13 01:05:09 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/chemin.nut
 description:
-- Sell vehicle group if our route is not valid
+- More road vehicle build after route creating
 
 
-changeset:   39:bb93313a3e49
-tag:         tip
+changeset:   22:d1179eaec1cc
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Wed Feb 16 01:20:57 2011 +0100
-files:       Changelog build/builder.nut build/roadbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut
+date:        Sun Feb 13 00:18:49 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut
 description:
-- Now check after a road route is create that the route is working &
-fully connected
-- Don't remove road station if we have enough income to handle it, but
-not enough money to complete the construction
+- Separate road pathfinding & road construction, so we could re-use one
+or the other
 
 
-changeset:   40:0845ba8464ab
-tag:         tip
+changeset:   21:307510b476ca
 user:        Pagnon Stéphane <krinn@chez.com>
-date:        Wed Feb 16 01:36:41 2011 +0100
-files:       Changelog handler/chemin.nut handler/vehiclehandler.nut
+date:        Sat Feb 12 22:45:56 2011 +0100
+files:       Changelog TODO.txt info.nut main.nut
 description:
-- Sell a vehicle if we can't replace it and we have still others running
+- Some cleanup for release (soon)
+- Redo save/load functions, should work now
 
 
-changeset:   42:fdf386e4b23f
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Wed Feb 16 15:57:04 2011 +0100
-summary:     - Rise price penalty to 0.5% of engine price when checking to send a
+changeset:   20:08c45c901eac
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 12 09:31:47 2011 +0100
+files:       Changelog TODO.txt handler/vehiclehandler.nut
+description:
+- Avoid our go to depot orders been removed by our order checks
 
-changeset:   43:376454f9bb9d
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Wed Feb 16 16:03:41 2011 +0100
-summary:     - Block road station upgrade until we're out of game start (safe
+
+changeset:   19:6389e1375f01
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 23:28:36 2011 +0100
+files:       Changelog build/builder.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Add a new way to send vehicle to depot, the yes/no VehicleSendToDepot
+is too weak to be usable, specially it's not even trustable
+
+
+changeset:   18:1476c5c5a64a
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 22:43:14 2011 +0100
+files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/chemin.nut
+description:
+- Disable Tilelist blacklist, not working and it bug me enough like
+that, will recheck that when i got time to spare on it
+- Preparing the pre-build service handling, will do it after i have fix
+the vehicle need to go to depot case (thinking about a clean fix for
+that, i will add before i re-forget again)
+
+
+changeset:   17:dd597eefc68c
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 01:01:14 2011 +0100
+files:       Changelog build/stationbuilder.nut
+description:
+- Erf, while sticking our road depot to a road tile, don't build on road
+tiles!
+
+
+changeset:   16:9f6a1241156a
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 11 00:51:48 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/stationbuilder.nut handler/chemin.nut
+description:
+- Don't sell spare if we have less than 3 spares
+- Correct a bug finding if our depot was destroy
+
+
+changeset:   15:0397a9f19c5d
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 23:22:14 2011 +0100
+files:       Changelog handler/chemin.nut
+description:
+- Sell spare vehicles on too busy stations
+
+
+changeset:   14:186701f304f7
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 22:37:39 2011 +0100
+files:       handler/chemin.nut
+description:
+- Lower conditions when we try to add a new vehicle while we still have
+some vehicle to upgrade
+
+
+changeset:   13:5e885bd80e0e
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 22:30:05 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut
+description:
+- Change a bit how we create station for road vehicle
+- Add a new blacklist for tiles that aren't usable
+- Try to build road station in a safer way and check the station is able
+to be used
+
+
+changeset:   12:4b5267e98125
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 21:42:23 2011 +0100
+files:       Changelog build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut utils/tile.nut
+description:
+- Wait a few and retry when fail to demolish a tile
+- Protect station from demolishing by mistake
+- Rebuild road depot when removed by upgrading station
+
+
+changeset:   11:a107f11a4981
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 18:41:01 2011 +0100
+files:       Changelog build/builder.nut build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Set malus on ranking == to the ranking
+- Don't check chopper orders
+
+
+changeset:   10:55ceab8abd4e
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 15:15:56 2011 +0100
+files:       TODO.txt handler/chemin.nut
+description:
+Correct bug: don't remove handicap on ranking if handicap isn't
+positive, else we higher ranking instead
+
+
+changeset:   9:6332324aa016
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 10 14:33:48 2011 +0100
+files:       Changelog TODO.txt build/airbuilder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+description:
+Working again on airnetwork
+- if a depot doesn't exist, try return another depot (not perfect, it's
+better the (re)build the depot, but it should unstuck us from building
+another vehicle if we have remove ourselves one depot and weren't able
+to rebuild it (mostly upgrading road station).
+- Add a function to handle the number of aircraft in the air network
+- Modify a bit how when we create another vehicle, looks smarter
+
+
+changeset:   8:20205fccab7f
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 06 00:08:01 2011 +0100
+files:       build/airbuilder.nut build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Prevent building or maintenance on vehicle while upgrading
+- Find the correct station to remove in orders while upgrading airport
+- Disable some checks on vehicle orders while upgrading to ease upgrades
+- Add aircraft limit base on airport type
+
+
+changeset:   7:1144ac582fbd
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 22:22:31 2011 +0100
+files:       build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+description:
+Enforce rules for aircraft: respect limit for network & airport out of
+network
+
+
+changeset:   6:39951bea2f3f
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 21:48:01 2011 +0100
+files:       build/roadbuilder.nut
+description:
+Correct a bug when road depot isn't build but station is build
+
+
+changeset:   5:170b25d3ff0c
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 21:35:42 2011 +0100
+files:       handler/array.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+Now aircraft orders are changed when in the network, but still remains
+in their own group, so adding/removing vehicle still work for the route
+
+
+changeset:   4:5ea1f86a39d7
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 20:12:38 2011 +0100
+files:       build/airbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+Change aircraft building with efficiency/best/chopper modele.
+Efficiency is use when a standard route
+Best is use when in the network
+
+
+changeset:   3:d2eb41715919
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 18:02:59 2011 +0100
+files:       build/airbuilder.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+Remove old and unuseful comments
+
+
+changeset:   2:8b937ca1deae
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 17:49:35 2011 +0100
+files:       handler/vehiclehandler.nut
+description:
+Invalidate order when order destination is not a valid station.
+
+
+changeset:   1:b60da7ac1603
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sat Feb 05 11:54:27 2011 +0100
+files:       build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+Working on air network
+
+
+changeset:   0:54f4fa278730
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 03 00:36:38 2011 +0100
+files:       build/airbuilder.nut build/builder.nut build/builinglogic.txt build/railbuilder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut info.nut license.txt main.nut utils/banker.nut utils/debug.nut utils/misc.nut utils/tile.nut
+description:
+Initial commit
+
 

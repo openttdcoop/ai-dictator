@@ -840,7 +840,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		{
 		if (root.carrier.vehnextprice > 0)
 			{
-			DInfo("We're upgrading some vehicles, not adding new vehicle until its done to keep the money... "+root.carrier.vehnextprice,0);
+			DInfo("We're upgrading some vehicles, not adding new vehicle until its done to keep the money... "+root.carrier.vehnextprice,1);
 			root.carrier.vehnextprice-=(root.carrier.vehnextprice / 20);
 			if (root.carrier.vehnextprice < 0) root.carrier.vehnextprice=0;
 			root.bank.busyRoute=true;
@@ -892,7 +892,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		if (runningList.Count() < 2)	continue; // we will not remove last vehicles, upto "profitlost" to remove them
 		// now send that one to depot & sell it
 		local veh=runningList.Begin();
-		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",2);
+		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",1);
 		root.carrier.VehicleToDepotAndSell(veh);
 		AIVehicle.ReverseVehicle(veh); // try to make it move away from the queue
 		}

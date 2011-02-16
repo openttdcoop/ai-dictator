@@ -186,6 +186,20 @@ root.chemin.GList[next]=obj.STATION.s_link;
 root.chemin.GListDumpOne(idx);	
 }
 
+function cChemin::GListGetStationIndex(stationid)
+// return the index in our station list that map to the stationid
+// stationid must be a real station & valid
+// return false if we fail
+{
+if (!AIStation.IsValidStation(stationid))	return false;
+for (local i=0; i < root.chemin.GListGetSize(); i++)
+	{
+	local stations=root.chemin.GListGetItem(i);
+	if (stations.STATION.station_id == stationid)	return i;
+	}
+return false;
+}
+
 function cChemin::GListGetItem(idx)
 // Get item #idx with obj
 {
@@ -370,6 +384,7 @@ function cChemin::RListGetItem(idx)
 {
 local toReturn=cCheminItem();
 local next=root.chemin.RListGetIndex(idx);
+if (next == -1) return -1;
 toReturn.ROUTE.uniqID=root.chemin.RList[next];		next++;
 toReturn.ROUTE.isServed=root.chemin.RList[next];	next++;
 toReturn.ROUTE.vehicule=root.chemin.RList[next];	next++;

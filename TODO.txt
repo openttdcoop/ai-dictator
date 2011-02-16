@@ -6,14 +6,13 @@ Changelog:files:       Changelog TODO.txt info.nut main.nut
 Changelog:files:       Changelog TODO.txt handler/chemin.nut main.nut
 Changelog:files:       Changelog TODO.txt handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
 Changelog:files:       Changelog TODO.txt build/roadbuilder.nut
+Changelog:files:       Changelog TODO.txt handler/chemin.nut main.nut
 build/railbuilder.nut:	// TODO: switch station direction
 build/stationbuilder.nut:		// TODO: need to rethink many (all) building/demolish trys functions, having a depot with a road vehicle in it (but not stop at depot) prevent demolishing the tile, this is not crical, but this fool us
 build/airbuilder.nut:// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
 build/builder.nut:function cBuilder::RemoveBlacklistTiles(tilelist) // TODO: fix me
 build/builder.nut:	// TODO: i suppose our HQ can make next test fail, so todo is add a check & move the hq
 build/builder.nut:	// TODO: check also tile is own by us, but at least a train related stuff, else we may destroy
-build/builder.nut:	// TODO: per type check: road or rail
-build/builder.nut:	// TODO: pathfind from station-> depot for source & destination
 handler/chemin.nut:		// TODO: we shouldn't add the destination airport in it, maybe we have source town with 4+ but not a proof destination town >=4k
 handler/chemin.nut:		// TODO: add airport station in the network instead of the route itself
 handler/vehiclehandler.nut:AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why

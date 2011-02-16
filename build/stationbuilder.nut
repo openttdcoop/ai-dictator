@@ -775,3 +775,21 @@ root.chemin.GListAddItem(obj);
 return true;
 }
 
+function cBuilder::IsRoadStationBusy(stationid)
+// Check if a road station is busy and return the vehicle list that busy it
+// Station must be AIStation.StationType==STATION_TRUCK_STOP
+// We will valuate it with cargo type each vehicle use before return it
+// Return false if not
+{
+if (!AIStation.HasStationType(stationid,AIStation.STATION_TRUCK_STOP))	return false;
+local veh_using_station=AIVehicleList_Station(stationid);
+if (veh_using_station.IsEmpty())	return false;
+local station_tiles=cTileTools.FindRoadStationTiles(AIStation.GetLocation(stationid));
+local station_index=root.chemin.GListGetStationIndex(stationid);
+if (station_index == false)	return false;
+local station_obj=root.chemin.GListGetItem(station_index);
+veh_using_station.Valuate(AITile.GetDistanceManhattanToTile, AIStation.GetLocation(stationid));
+
+}
+
+
