@@ -462,3 +462,9 @@ user:        krinn <krinn@chez.com>
 date:        Thu Feb 17 15:37:32 2011 +0100
 summary:     - Remove some code
 
+changeset:   48:112a24986e85
+tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 16:46:20 2011 +0100
+summary:     - If we can't find a place to build station, now return a critical error
+

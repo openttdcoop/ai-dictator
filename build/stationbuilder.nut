@@ -372,7 +372,7 @@ function cBuilder::GetDepotID(idx, start)
 // no longer reroute to another depot_id if fail to find one
 {
 local road=root.chemin.RListGetItem(idx);
-local station_ojb=null;
+local station_obj=null;
 if (start)	station_obj=root.chemin.GListGetItem(road.ROUTE.src_station);
 	else	station_obj=root.chemin.GListGetItem(road.ROUTE.dst_station);
 if (station_obj==-1)	return -1; // no station = no depot to find
