@@ -1,10 +1,10 @@
 class cBuilder
 	{
 	root = null;
-static	DIR_NE = 2; // gareW+routeE = depot sortie vers E, me=0
-static	DIR_NW = 0; // gareS+routeN = depot sortie vers N, me=3
-static	DIR_SE = 1; // gareN+routeS = depot sortie vers S, me=1
-static	DIR_SW = 3; // gareE+routeW = depot sortie vers W, me=2
+static	DIR_NE = 2; 
+static	DIR_NW = 0; 
+static	DIR_SE = 1; 
+static	DIR_SW = 3; 
 	currentRoadType=null;
 	
 	statile=null;
@@ -131,14 +131,10 @@ return true;
 }
 
 function cBuilder::GetDirection(tilefrom, tileto)
+// SimpleAI code
 {
 	local distx = AIMap.GetTileX(tileto) - AIMap.GetTileX(tilefrom);
 	local disty = AIMap.GetTileY(tileto) - AIMap.GetTileY(tilefrom);
-/*	DInfo("tilefrom :"+tilefrom+" X:"+AIMap.GetTileX(tilefrom)+" Y:"+AIMap.GetTileY(tilefrom),2);
-	DInfo("tileto :"+tileto+" X:"+AIMap.GetTileX(tileto)+" Y:"+AIMap.GetTileY(tileto),2);
-	DInfo("Get direction original: distx="+distx+" disty="+disty,2);
-	PutSign(tilefrom,"O- "+tilefrom);
-	PutSign(tileto,"D- "+tileto);*/
 	local ret = 0;
 	if (abs(distx) > abs(disty)) {
 		ret = 2;
@@ -316,7 +312,6 @@ return true;
 function cBuilder::FindCompatibleStationExists(idx)
 // Find if we already have a station on a place
 // if compatible, we could link to use that station too
-// we will directly set the 
 {
 local road=root.chemin.RListGetItem(idx);
 local sdepot=-1;
@@ -370,25 +365,21 @@ if (efound)	{
 		road.ROUTE.dst_entry=edepot; road.ROUTE.dst_station=estation; }
 	else { DInfo("Failure, creating a new station for our destination station.",1); }
 if (sfound && efound)
-	{ // this indicate we have found a starting & ending station re-usable -> that was our goal
-	  // But our new road and that road could be a dual road
-	  // like the case BUS:PASS:Paris->Nice and BUS:PASS:Nice->Paris
-	  // We should delete Nice->Paris or Paris->Nice to keep only one route to enforce our vehicle limitation / route
-	  // but it also could be not the case !!!
-	  // like ROAD:GOLD:Paris->Nice & ROAD:MAIL:Nice->Paris or ROAD:MAIL:Paris-Nice, not doing the same work, but using the same
-	  // road stations to carry the gold & mail, it would be really bad to remove such a route
+	{
+/* this indicate we have found a starting & ending station re-usable -> that was our goal
+But our new road and that road could be a dual road like the case BUS:PASS:Paris->Nice and BUS:PASS:Nice->Paris
+We should delete Nice->Paris or Paris->Nice to keep only one route to enforce our vehicle limitation / route but it also could be not the case !!!
+like ROAD:GOLD:Paris->Nice & ROAD:MAIL:Nice->Paris or ROAD:MAIL:Paris-Nice, not doing the same work, but using the same road stations to carry the gold & mail, it would be really bad to remove such a route
+*/
 	if (eidx == sidx)
-		{ // both station have the same road idx, so it's two stations from same road == still we're not a dup if we don't
-		  // carry the same thing. Like we do ROAD:MAIL:Paris->Nice/Paris and we just found a ROAD:GOLD:Paris/Nice route
+		{ // both station have the same road idx, so it's two stations from same road == still we're not a dup if we don't carry the same thing. Like we do ROAD:MAIL:Paris->Nice/Paris and we just found a ROAD:GOLD:Paris/Nice route
 		local temp=root.chemin.RListGetItem(sidx);
 		if (road.ROUTE.cargo_id == temp.ROUTE.cargo_id)
 				{ // now we're sure it's a dup (a twoway route and oneway is already running)
 				DInfo("Dup dual route found ! Ignoring it",1);
 				root.chemin.RouteIsNotDoable(idx);
 				root.builder.CriticalError=false; // tell caller about it
-				// here 2 choices: telling CriticalError=true so caller will just build 2 new stations & continue
-				// or CriticalError=false so caller will stop construction thinking we lack funds or something not
-				// critical, caller will end stopping construction
+				// here 2 choices: telling CriticalError=true so caller will just build 2 new stations & continue or CriticalError=false so caller will stop construction thinking we lack funds or something not critical, caller will end stopping construction
 				return false;
 				}
 			else	success=true;
@@ -408,7 +399,7 @@ local success=false;
 DInfo("Route #"+idx+" Status:"+rr.ROUTE.status,1);
 root.chemin.RListDumpOne(idx);
 if (rr.ROUTE.status==1)	root.chemin.nowRoute=-1; // that route need to get an ending route
-if (rr.ROUTE.status==2) // not switch/case so we can advance steps in one pass
+if (rr.ROUTE.status==2) // not using switch/case so we can advance steps in one pass
 	{
 	success=root.carrier.GetVehicle(idx);
 	// this check we could pickup a vehicle to validate road type can be use
@@ -513,7 +504,7 @@ if (rr.ROUTE.status==8)
 	root.chemin.RListUpdateItem(idx,rr);
 	root.chemin.RouteStatusChange(idx,100);
 	if (root.secureStart > 0)	root.builddelay=true;
-	root.chemin.nowRoute=-1;
+	root.chemin.nowRoute=-1; // Allow us to work on a new route now
 	}
 return success;
 }

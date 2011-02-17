@@ -245,6 +245,13 @@ description:
 - Avoid our go to depot orders been removed by our order checks
 
 
+<<<<<<< local
+changeset:   44:63be02a0f512
+tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Wed Feb 16 18:51:45 2011 +0100
+summary:     - Send to upgrade/replace a vehicle if we have 150% of new vehicle price
+=======
 changeset:   19:6389e1375f01
 user:        Pagnon StÃ©phane <krinn@chez.com>
 date:        Fri Feb 11 23:28:36 2011 +0100
@@ -252,7 +259,10 @@ files:       Changelog build/builder.nut handler/chemin.nut handler/vehiclehandl
 description:
 - Add a new way to send vehicle to depot, the yes/no VehicleSendToDepot
 is too weak to be usable, specially it's not even trustable
+>>>>>>> other
 
+<<<<<<< local
+=======
 
 changeset:   18:1476c5c5a64a
 user:        Pagnon StÃ©phane <krinn@chez.com>
@@ -432,4 +442,17 @@ files:       build/airbuilder.nut build/builder.nut build/builinglogic.txt build
 description:
 Initial commit
 
+
+>>>>>>> other
+changeset:   46:bd2b09fe432f
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 17 09:32:58 2011 +0100
+summary:     - Pickup another route if the route lack a place to go
+
+changeset:   46:bd2b09fe432f
+tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 17 09:32:58 2011 +0100
+summary:     - Pickup another route if the route lack a place to go
 

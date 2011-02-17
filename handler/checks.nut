@@ -40,6 +40,7 @@ if (root.OneMonth!=month)	{ root.OneMonth=month; root.SixMonth++;}
 DInfo("Montly checks run...",1);
 root.builder.CheckAirportUpgrade();
 if (root.SixMonth == 6)	root.builder.HalfYearChecks();
+root.builddelay=false; // Wait a month, now allow us to build again
 }
 
 function cBuilder::HalfYearChecks()
@@ -48,7 +49,6 @@ root.SixMonth=0;
 root.TwelveMonth++;
 DInfo("Half year checks run...",1);
 if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
-root.builddelay=false;
 }
 
 function cBuilder::YearlyChecks()

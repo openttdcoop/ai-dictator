@@ -50,7 +50,7 @@ class DictatorAI extends AIController
    constructor()
    	{
 	chemin=cChemin(this);
-	minRank = 5000;		// ranking bellow that are drop jobs
+	minRank = 5000;		// ranking below that are drop jobs
 	secureStart= 3;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
 	bank = cBanker(this);
 	eventManager= cEvents(this);
