@@ -199,6 +199,8 @@ function cCarrier::CloneRoadVehicle(roadidx)
 {
 local road=root.chemin.RListGetItem(roadidx);
 local vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+vehlist.Valuate(AIOrder.IsGotoDepotOrder,AIOrder.ORDER_CURRENT);
+vehlist.KeepValue(0);
 if (vehlist.IsEmpty())
 	{
 	DInfo("Can't find any vehicle to duplicated on that route",1);

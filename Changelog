@@ -468,3 +468,9 @@ user:        krinn <krinn@chez.com>
 date:        Thu Feb 17 16:46:20 2011 +0100
 summary:     - If we can't find a place to build station, now return a critical error
 
+changeset:   49:8ab321a2a581
+tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 16:54:51 2011 +0100
+summary:     - Change again delay to build from 1 month upto 3 months
+

@@ -81,7 +81,7 @@ root.builder.DeleteStation(idx);
 function cBuilder::RouteDelete(idx)
 // Delete a route, we may have vehicule on it...
 {
-root.carrier.RouteIsInvalid(idx);
+root.builder.RouteIsInvalid(idx);
 root.chemin.RListDeleteItem(idx);
 }
 
