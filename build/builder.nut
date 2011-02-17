@@ -405,6 +405,9 @@ function cBuilder::TryBuildThatRoute(idx)
 {
 local rr=root.chemin.RListGetItem(idx);
 local success=false;
+DInfo("Route #"+idx+" Status:"+rr.ROUTE.status,1);
+root.chemin.RListDumpOne(idx);
+if (rr.ROUTE.status==1)	root.chemin.nowRoute=-1; // that route need to get an ending route
 if (rr.ROUTE.status==2) // not switch/case so we can advance steps in one pass
 	{
 	success=root.carrier.GetVehicle(idx);

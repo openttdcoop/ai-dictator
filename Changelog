@@ -1,5 +1,13 @@
-changeset:   44:63be02a0f512
+changeset:   45:8916d2ac5eed
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 17 00:40:08 2011 +0100
+files:       Changelog TODO.txt build/builinglogic.txt build/stationbuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut
+description:
+Some code change, not working yet
+
+
+changeset:   44:63be02a0f512
 user:        krinn <krinn@chez.com>
 date:        Wed Feb 16 18:51:45 2011 +0100
 files:       Changelog handler/vehiclehandler.nut
