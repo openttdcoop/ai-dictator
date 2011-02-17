@@ -474,3 +474,9 @@ user:        krinn <krinn@chez.com>
 date:        Thu Feb 17 16:54:51 2011 +0100
 summary:     - Change again delay to build from 1 month upto 3 months
 
+changeset:   50:7d72ee61b373
+tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 17:44:29 2011 +0100
+summary:     - Avoid cloning a vehicle that have a goto depot order
+

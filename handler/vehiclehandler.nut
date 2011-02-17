@@ -548,9 +548,10 @@ foreach (vehicle, dummy in tlist)
 		continue;
 		}
 	age=AIVehicle.GetReliability(vehicle);
-	if (age < 50)
+	if (age < 30)
 		{
 		DInfo("Vehicle "+name+" reliability is low ("+age+"%)",0);
+		AIVehicle.SendVehicleToDepotForServicing(vehicle);
 		local idx=root.carrier.VehicleFindRouteIndex(vehicle);
 		root.builder.CheckRoadHealth(idx);
 		root.bank.busyRoute=true;

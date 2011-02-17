@@ -55,14 +55,14 @@ function cBuilder::YearlyChecks()
 {
 root.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
-for (local j=0; j < root.chemin.RListGetSize(); j++)
+/*for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	local road=root.chemin.RListGetItem(j);
 	if (!road.ROUTE.isServed) continue;
 	if (road.ROUTE.kind != AIVehicle.VT_ROAD)	continue;
 	local test=root.builder.CheckRoadHealth(j);
 	DInfo("Health check return "+test,1);
-	}
+	}*/
 }
 
 function cBuilder::AirportStationsBalancing()
