@@ -480,3 +480,9 @@ user:        krinn <krinn@chez.com>
 date:        Thu Feb 17 17:44:29 2011 +0100
 summary:     - Avoid cloning a vehicle that have a goto depot order
 
+changeset:   51:f6583a8c76c2
+tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 18:09:55 2011 +0100
+summary:     - Send a low reliability vehicle to servicing
+

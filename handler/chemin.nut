@@ -75,18 +75,19 @@ if (road.ROUTE.src_istown)
 			stationrank=(100-(road.ROUTE.foule*100)); // give up when 1 station is present
 			break;
 			case 1:
-			stationrank=(100-(road.ROUTE.foule*50)); // give up for 2
+			stationrank=(100-(road.ROUTE.foule*100)); // give up for 2
 			break;
 			case 0:
-			stationrank=(100-(road.ROUTE.foule*25)); // give up for 4
+			stationrank=(100-(road.ROUTE.foule*50)); // give up for 4
 			break;
 			}
 		}
-if (stationrank <= 0) { stationrank=1; }
-// even crowd, let's still give it a chance to be pick
+if (stationrank <= 0 && root.fairlevel >0) { stationrank=1; }
+// even crowd, let's still give it a chance to be pick, lower fairlevel will never do that station
 if (root.chemin.cargo_fav == road.ROUTE.cargo_id) // it's our favorite cargo
 	{ valuerank+=valuerank; }
 road.ROUTE.ranking=(stationrank*valuerank);
+//DInfo("Ranking="+road.ROUTE.ranking+" station="+stationrank+" value="+valuerank,2);
 if (road.ROUTE.handicap > 0)	road.ROUTE.ranking-=road.ROUTE.handicap;
 return road.ROUTE.ranking;
 }
