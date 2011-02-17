@@ -369,15 +369,14 @@ return -1;
 
 function cBuilder::GetDepotID(idx, start)
 // this function return the depot id
+// no longer reroute to another depot_id if fail to find one
 {
 local road=root.chemin.RListGetItem(idx);
-if (start && road.ROUTE.src_station==-1)	return -1;
-if (!start && road.ROUTE.dst_station==-1)	return -1; // no station = no depot at all
-local srcStation=root.chemin.GListGetItem(road.ROUTE.src_station);
-local dstStation=root.chemin.GListGetItem(road.ROUTE.dst_station);
+local station_ojb=null;
+if (start)	station_obj=root.chemin.GListGetItem(road.ROUTE.src_station);
+	else	station_obj=root.chemin.GListGetItem(road.ROUTE.dst_station);
+if (station_obj==-1)	return -1; // no station = no depot to find
 local realID=-1;
-local srcdepotid=0;
-local dstdepotid=0;
 local depotchecklist=0;
 switch (road.ROUTE.kind)
 	{
@@ -396,26 +395,14 @@ switch (road.ROUTE.kind)
 	break;
 	}
 local depotList=AIDepotList(depotchecklist);
-if (road.ROUTE.src_entry)	srcdepotid=srcStation.STATION.e_depot;
-			else	srcdepotid=srcStation.STATION.s_depot;
-if (road.ROUTE.dst_entry)	dstdepotid=dstStation.STATION.e_depot;
-			else	dstdepotid=dstStation.STATION.s_depot;
-// try first to return what we were ask to return
-if (start)	realID=srcdepotid;
-	else	realID=dstdepotid;
-local st="destination";
-if (start)	st="source";
-if (depotList.HasItem(realID)) return realID;
-	else	{
-		DInfo("Warning: no depot at "+st+" for route "+idx,1);
-		}
-if (start)	realID=dstdepotid;
-	else	realID=srcdepotid;
-if (depotList.HasItem(realID)) return realID;
-	else	{
-		DInfo("Warning: no depot at source and destination for route "+idx,1);
-		}
-return realID;
+local depotid=null;
+local entry_check=null;
+if (start)	entry_check=road.ROUTE.src_entry;
+	else	entry_check=road.ROUTE.dst_entry;
+if (entry_check)	depotid=station_obj.STATION.e_depot;
+		else	depotid=station_obj.STATION.s_depot;
+if (depotList.HasItem(depotid)) return depotid;
+return -1;
 }
 
 function cBuilder::FindStationEntryToExitPoint(src, dst)

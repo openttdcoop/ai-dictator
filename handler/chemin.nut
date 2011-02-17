@@ -254,6 +254,7 @@ road.ROUTE.handicap=road.ROUTE.ranking;
 road.ROUTE.isServed=false;
 root.chemin.RListUpdateItem(idx,road);
 root.chemin.nowRoute=-1; // reset it when we found an invalid route
+root.builder.RouteIsInvalid(idx); // look for vehicle & stations there to remove them
 }
 
 function cChemin::CreateNewRoute(cargoID, industryID, isTown)

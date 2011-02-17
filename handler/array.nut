@@ -205,7 +205,7 @@ function cChemin::GListGetItem(idx)
 {
 local obj=cStation();
 local next=root.chemin.GListGetIndex(idx);
-//if (idx == -1) return idx;
+if (idx == -1) return idx;
 obj.STATION.station_id=root.chemin.GList[next];	next++;
 obj.STATION.direction=root.chemin.GList[next];	next++;
 obj.STATION.query=root.chemin.GList[next];	next++;

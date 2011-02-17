@@ -71,18 +71,17 @@ if (realidobj!=-1)
 	}
 }
 
-function cBuilder::RouteDelete(idx)
-// Delete a route, we may have vehicule on it...
+function cBuilder::RouteIsInvalid(idx)
+// remove vehicles using that route & remove stations on that route if possible
 {
 root.carrier.VehicleGroupSendToDepotAndSell(idx);
 root.builder.DeleteStation(idx);
-root.chemin.RListDeleteItem(idx);
 }
 
-function cBuilder::RouteIsBroken(idx)
-// remove vehicles from that route & remove its isServed status
+function cBuilder::RouteDelete(idx)
+// Delete a route, we may have vehicule on it...
 {
-root.carrier.VehicleGroupSendToDepotAndSell(idx);
-root.chemin.RouteIsNotDoable(idx);
+root.carrier.RouteIsInvalid(idx);
+root.chemin.RListDeleteItem(idx);
 }
 

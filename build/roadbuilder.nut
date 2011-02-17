@@ -335,6 +335,7 @@ if (!isneartown)
 if (!success) 
 	{
 	DInfo("Can't find a good place to build the road station !",1);
+	root.builder.CriticalError=true;
 	return false;
 	}
 // if we are here all should be fine, we could build now
