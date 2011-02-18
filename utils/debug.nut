@@ -2,6 +2,7 @@ function PutSign(place,msg)
 // put a sign at place
 {
 if (!root.debug) return;
+if (DictatorAI.GetSetting("debug") < 2) return;
 AISign.BuildSign(place,msg);
 }
 

@@ -497,7 +497,7 @@ if (rr.ROUTE.status==8)
 	DInfo("Route contruction complete ! "+rr.ROUTE.src_name+" to "+rr.ROUTE.dst_name,0);
 	rr.ROUTE.isServed=true;
 	rr.ROUTE.groupe_id=AIGroup.CreateGroup(rr.ROUTE.kind);
-	local groupname = AICargo.GetCargoLabel(rr.ROUTE.cargo_id)+" - "+rr.ROUTE.src_name;
+	local groupname = AICargo.GetCargoLabel(rr.ROUTE.cargo_id)+"*"+root.builder.GetStationID(idx,true)+"*"+root.builder.GetStationID(idx,false);
 	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
 	rr.ROUTE.groupe_name=groupname;
 	AIGroup.SetName(rr.ROUTE.groupe_id, rr.ROUTE.groupe_name);

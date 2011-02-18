@@ -29,7 +29,6 @@ function PickCompanyName(who)
 local nameo = ["Last", "For the", "Militia", "Revolution", "Good", "Bad", "Evil"];
 local namet = ["Hope", "People", "Corporation", "Money", "Dope", "Cry", "Shot"];
 local x = 0; local y = 0;
-//x = AIBase.RandRange(3);
 if (who == 666)  { x = AIBase.RandRange(7); y = AIBase.RandRange(7); }
 	else	 { x = who; y = who; }
 return nameo[x]+" "+namet[y]+" (DictatorAI)"; 

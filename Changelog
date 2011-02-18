@@ -1,5 +1,71 @@
-changeset:   45:8916d2ac5eed
+changeset:   52:f9a844d53eb5
 tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 18:55:18 2011 +0100
+files:       Changelog handler/chemin.nut
+description:
+- for easier fairlevel, never pickup a route where someone else is
+already there
+- for others fairlevel, decrease chances of pickup, but still leave a
+hope of doing it even crowd by players (if the cake is so good, let's
+grab some too !)
+
+
+changeset:   51:f6583a8c76c2
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 18:09:55 2011 +0100
+files:       Changelog handler/checks.nut handler/vehiclehandler.nut
+description:
+- Send a low reliability vehicle to servicing
+- Don't checks road health yearly, it's too time consuming, hope the
+others ways to call it will be enough
+
+
+changeset:   50:7d72ee61b373
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 17:44:29 2011 +0100
+files:       Changelog build/stationremover.nut build/vehiclebuilder.nut
+description:
+- Avoid cloning a vehicle that have a goto depot order
+
+
+changeset:   49:8ab321a2a581
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 16:54:51 2011 +0100
+files:       Changelog build/stationbuilder.nut handler/checks.nut
+description:
+- Change again delay to build from 1 month upto 3 months
+
+
+changeset:   48:112a24986e85
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 16:46:20 2011 +0100
+files:       Changelog TODO.txt build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/array.nut handler/chemin.nut
+description:
+- If we can't find a place to build station, now return a critical error
+- GetDepotID now only return the wanted depotid, instead of a depotid
+backup if the source or destination depot is missing.
+
+
+changeset:   47:c1df3542327d
+user:        krinn <krinn@chez.com>
+date:        Thu Feb 17 15:37:32 2011 +0100
+files:       Changelog TODO.txt build/builder.nut handler/checks.nut main.nut utils/banker.nut
+description:
+- Remove some code
+- Switch build delay from 6 months down to 1 month, we will still need 1
+loan interval to start building again
+
+
+changeset:   46:bd2b09fe432f
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Thu Feb 17 09:32:58 2011 +0100
+files:       Changelog TODO.txt build/builder.nut
+description:
+- Pickup another route if the route lack a place to go
+
+
+changeset:   45:8916d2ac5eed
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Thu Feb 17 00:40:08 2011 +0100
 files:       Changelog TODO.txt build/builinglogic.txt build/stationbuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut
@@ -245,13 +311,6 @@ description:
 - Avoid our go to depot orders been removed by our order checks
 
 
-<<<<<<< local
-changeset:   44:63be02a0f512
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Wed Feb 16 18:51:45 2011 +0100
-summary:     - Send to upgrade/replace a vehicle if we have 150% of new vehicle price
-=======
 changeset:   19:6389e1375f01
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Fri Feb 11 23:28:36 2011 +0100
@@ -259,10 +318,7 @@ files:       Changelog build/builder.nut handler/chemin.nut handler/vehiclehandl
 description:
 - Add a new way to send vehicle to depot, the yes/no VehicleSendToDepot
 is too weak to be usable, specially it's not even trustable
->>>>>>> other
 
-<<<<<<< local
-=======
 
 changeset:   18:1476c5c5a64a
 user:        Pagnon Stéphane <krinn@chez.com>
@@ -442,47 +498,4 @@ files:       build/airbuilder.nut build/builder.nut build/builinglogic.txt build
 description:
 Initial commit
 
-
->>>>>>> other
-changeset:   46:bd2b09fe432f
-tag:         tip
-user:        Pagnon St�phane <krinn@chez.com>
-date:        Thu Feb 17 09:32:58 2011 +0100
-summary:     - Pickup another route if the route lack a place to go
-
-changeset:   46:bd2b09fe432f
-tag:         tip
-user:        Pagnon St�phane <krinn@chez.com>
-date:        Thu Feb 17 09:32:58 2011 +0100
-summary:     - Pickup another route if the route lack a place to go
-
-changeset:   47:c1df3542327d
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 15:37:32 2011 +0100
-summary:     - Remove some code
-
-changeset:   48:112a24986e85
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 16:46:20 2011 +0100
-summary:     - If we can't find a place to build station, now return a critical error
-
-changeset:   49:8ab321a2a581
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 16:54:51 2011 +0100
-summary:     - Change again delay to build from 1 month upto 3 months
-
-changeset:   50:7d72ee61b373
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 17:44:29 2011 +0100
-summary:     - Avoid cloning a vehicle that have a goto depot order
-
-changeset:   51:f6583a8c76c2
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 18:09:55 2011 +0100
-summary:     - Send a low reliability vehicle to servicing
 

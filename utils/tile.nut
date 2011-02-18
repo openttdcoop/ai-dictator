@@ -21,18 +21,18 @@ if (distedge < 120) {
 function cTileTools::FindRoadStationTiles(tile)
 // return a list of tile where we have the station we found at tile
 {
-if (!AIRoad.IsRoadStationTile(tile))	return null;
+//if (!AIRoad.IsRoadStationTile(tile))	return null;
 local stationid=AIStation.GetStationID(tile);
-if (!AICompany.IsMine(AICompany.ResolveCompanyID(AITile.GetOwner(tile))))	return null;
+//if (!AICompany.IsMine(AICompany.ResolveCompanyID(AITile.GetOwner(tile))))	return null;
 local tilelist=cTileTools.GetTilesAroundPlace(tile);
 tilelist.Valuate(AITile.GetDistanceManhattanToTile,tile);
-tilelist.KeepBelowValue(6);
+tilelist.KeepBelowValue(12);
 tilelist.Valuate(AIRoad.IsRoadStationTile);
 tilelist.KeepValue(1);
+showLogic(tilelist);
 tilelist.Valuate(AIStation.GetStationID);
 showLogic(tilelist);
 tilelist.KeepValue(stationid);
-
 return tilelist;
 }
 

@@ -1,12 +1,5 @@
 // main class is in vehiculebuilder
 
-function cCarrier::VehicleCountAtStation(stationID)
-// return number of vehicle waiting at the station
-{
-local vehlist=root.carrier.VehicleListBusyAtStation(stationID);
-return vehlist.Count();
-}
-
 function cCarrier::VehicleGetBiggestCapacityUsingStation(stationID)
 // return the top capacity vehicles that use that station
 {
@@ -18,7 +11,7 @@ if (!vehlist.IsEmpty())	top=vehlist.GetValue(vehlist.Begin());
 return top;
 }
 
-function cCarrier::VehicleListBusyAtStation(stationID)
+function cCarrier::VehicleListBusyAtAirport(stationID)
 // return the list of vehicles that are waiting at the station
 {
 local vehicles=AIVehicleList_Station(stationID);
@@ -32,6 +25,58 @@ vehicles.RemoveValue(-1);
 //DInfo(vehicles.Count()+" vehicles near that station",2);
 vehicles.Valuate(AIVehicle.GetState);
 vehicles.KeepValue(AIVehicle.VS_AT_STATION);
+return vehicles;
+}
+
+function cCarrier::VehicleListWaitingAtRoadStation(stationID)
+// return a list of all road vehicles that are waiting (in front) of the station
+{
+local vehicleslist=cCarrier.VehicleListAtRoadStation(stationID);
+vehicleslist.Valuate(AIVehicle.GetState);
+vehicleslist.KeepValue(AIVehicle.VS_RUNNING);
+vehicleslist.Valuate(AIVehicle.GetCurrentSpeed);
+vehicleslist.KeepValue(0); // non moving ones
+return vehicleslist;
+}
+
+function cCarrier::VehicleListLoadingAtRoadStation(stationID)
+// return a list of all road vehicles that are loading at the station
+{
+local vehicleslist=cCarrier.VehicleListAtRoadStation(stationID);
+vehicleslist.Valuate(AIVehicle.GetState);
+vehicleslist.KeepValue(AIVehicle.VS_AT_STATION);
+DInfo("VehicleListLoadingAtRoadStation "+vehicleslist.Count(),1);
+return vehicleslist;
+}
+
+function cCarrier::VehicleListAtRoadStation(stationID)
+// return a list of all road vehicles loading or waiting for a load at the station
+{
+
+local vehicles=AIVehicleList_Station(stationID);
+local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID));
+tilelist.Valuate(AIStation.GetStationID);
+tilelist.KeepValue(stationID); // now tilelist = only the tiles of the station we were looking for
+local check_tiles=AITileList();
+foreach (tiles, stationid_found in tilelist)
+	{
+	local stationloc=AIStation.GetLocation(stationid_found);
+	local upper=stationloc+AIMap.GetTileIndex(-1,-1);
+	local lower=stationloc+AIMap.GetTileIndex(1,1);
+	check_tiles.AddRectangle(upper,lower);
+	}
+vehicles.Valuate(AIVehicle.GetLocation);
+foreach (vehicle, location in vehicles)
+	{ if (!check_tiles.HasItem(location))	vehicles.SetValue(vehicle, -1); }
+vehicles.RemoveValue(-1);
+vehicles.Valuate(AIVehicle.GetState);
+vehicles.RemoveValue(AIVehicle.VS_STOPPED);
+vehicles.RemoveValue(AIVehicle.VS_IN_DEPOT);
+vehicles.RemoveValue(AIVehicle.VS_BROKEN);
+vehicles.RemoveValue(AIVehicle.VS_CRASHED);
+vehicles.RemoveValue(AIVehicle.VS_INVALID);
+DInfo("VehicleListAtRoadStation = "+vehicles.Count(),1);
+// remain vehicles = VS_RUNNING + VS_AT_STATION
 return vehicles;
 }
 

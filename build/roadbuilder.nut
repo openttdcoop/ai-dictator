@@ -321,7 +321,7 @@ if ((statile==-1 || deptile==-1) && !istown && isneartown)
 	}
 if (!isneartown)
 	{
-	showLogic(tilelist);
+	//showLogic(tilelist);
 	foreach (tile, dummy in tilelist)
 		{
 		if (cBuilder.CanBuildRoadStation(tile, dir))
