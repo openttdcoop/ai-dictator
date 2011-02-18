@@ -832,6 +832,8 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	if (firstveh) { vehneed = 2; }
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
+	local canaddonemore=root.carrier.CanAddNewVehicle(j, start);
+	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be able to buy it
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+"/"+maxveh+" firstveh="+firstveh,2);
 	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
 		else		profit=true;

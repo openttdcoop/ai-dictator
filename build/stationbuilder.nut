@@ -172,7 +172,7 @@ stationobj=root.chemin.GListGetItem(source);
 local stationloc=AIStation.GetLocation(stationobj.STATION.station_id);
 
 local newdepottile=cTileTools.GetTilesAroundPlace(stationloc);
-//newdepottile=root.builder.RemoveBlacklistTiles(newdepottile);
+newdepottile=root.builder.FilterBlacklistTiles(newdepottile);
 newdepottile.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
 newdepottile.KeepAboveValue(0);
 newdepottile.Valuate(AIRoad.IsRoadTile);
@@ -369,9 +369,10 @@ return -1;
 
 function cBuilder::GetDepotID(idx, start)
 // this function return the depot id
-// no longer reroute to another depot_id if fail to find one
+// no longer reroute to another depot_id if fail to find one, but mark route as damage
 {
 local road=root.chemin.RListGetItem(idx);
+if (road == -1) return -1;
 local station_obj=null;
 if (start)	station_obj=root.chemin.GListGetItem(road.ROUTE.src_station);
 	else	station_obj=root.chemin.GListGetItem(road.ROUTE.dst_station);
@@ -402,6 +403,7 @@ if (start)	entry_check=road.ROUTE.src_entry;
 if (entry_check)	depotid=station_obj.STATION.e_depot;
 		else	depotid=station_obj.STATION.s_depot;
 if (depotList.HasItem(depotid)) return depotid;
+root.builder.RouteIsDamage(idx); // if we are here, we fail to find a depotid
 return -1;
 }
 

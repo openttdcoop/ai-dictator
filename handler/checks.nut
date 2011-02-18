@@ -56,6 +56,8 @@ if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
 function cBuilder::RouteIsDamage(idx)
 // Set the route idx as damage
 {
+local road=root.chemin.RListGetItem(idx);
+if (road.ROUTE.kind != AIVehicle.VT_ROAD)	return;
 if (!root.chemin.repair_routes.HasItem(idx))	root.chemin.repair_routes.AddItem(idx,0);
 }
 

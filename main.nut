@@ -229,7 +229,6 @@ if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.max_aircrafts")) 
 switch (fairlevel)
 	{
 	case 0: // easiest
-		chemin.road_max=6;
 		chemin.road_max_onroute=4;
 		chemin.rail_max=1;
 		chemin.water_max=2;
@@ -237,7 +236,6 @@ switch (fairlevel)
 		chemin.airnet_max=4;
 	break;
 	case 1: 
-		chemin.road_max=16;
 		chemin.road_max_onroute=6;
 		chemin.rail_max=4;
 		chemin.water_max=20;
@@ -245,14 +243,14 @@ switch (fairlevel)
 		chemin.airnet_max=6;
 	break;
 	case 2: 
-		chemin.road_max=32; // upto 32 bus/truck per station
-		chemin.road_max_onroute=12; // upto 10 bus/truck per route
+		chemin.road_max_onroute=12; // upto 12 bus/truck per route
 		chemin.rail_max=12; // it's our highest train limit, can't build more than 12 trains per station
 		chemin.water_max=60; // there's no real limit for boats
 		chemin.air_max=8; // 8 aircrafts / route
 		chemin.airnet_max=12; // 12 aircrafts / airport in the air network, ie: 10 airports = 120 aircrafts
 	break;
 	}
+chemin.road_max=chemin.road_max_onroute*3;	// limit a station to be able to handle upto 3 full routes
 
 use_boat=false; // we will handle boats later
 //use_air=false;

@@ -36,19 +36,21 @@ function cBuilder::BlacklistTile(tile)
 root.builder.TilesBlacklist.AddItem(tile,tile);
 }
 
-function cBuilder::RemoveBlacklistTiles(tilelist) // TODO: fix me
-// remove all blacklist tile from tilelist and return it
+function cBuilder::FilterBlacklistTiles(tilelist)
+// remove all blacklisted tiles from tilelist and return it
 {
-local newTile=AIAbstractList();
-newTile.AddList(tilelist);
-DInfo("newTile size "+newTile.Count(),2); 
-if (newTile.IsEmpty()) return tilelist;
+if (tilelist.IsEmpty()) return tilelist;
 if (root.builder.TilesBlacklist.IsEmpty()) return tilelist;
-foreach (tile, dummy in tilelist)
+local newTilelist=AIList();
+newTileList.AddList(tilelist);
+
+foreach (tile, value in tilelist)
 	{
-	if (root.builder.TilesBlacklist.HasItem(tile))	newTile.RemoveItem(tile);
+	if (root.builder.TilesBlacklist.HasItem(tile))	newTileList.SetValue(tile, -1);
+						else	newTileList.SetValue(tile, value);
 	}
-return newTile;
+newTileList.RemoveValue(-1);
+return newTileList;
 }
 
 function cBuilder::IsCriticalError()

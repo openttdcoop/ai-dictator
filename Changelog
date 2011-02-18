@@ -1,5 +1,26 @@
-changeset:   52:f9a844d53eb5
+changeset:   54:7a8e8131b4e4
 tag:         tip
+user:        krinn <krinn@chez.com>
+date:        Fri Feb 18 18:31:39 2011 +0100
+files:       Changelog build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut
+description:
+- Add a flag to routes for route damage/health status
+- Flag a route as damage randomly / year for a check
+
+
+changeset:   53:513bdcdd5e36
+user:        Pagnon StÃ©phane <krinn@chez.com>
+date:        Fri Feb 18 01:59:24 2011 +0100
+files:       Changelog TODO.txt build/builder.nut build/roadbuilder.nut handler/checks.nut handler/vehiclehandler.nut utils/debug.nut utils/misc.nut utils/tile.nut
+description:
+- Road stations balancing to push out loading vehicle if a dropper need
+the place
+- Change groupname creation, now =
+CargoType*SourceStationID*TargetStationID, shorter, and uniq name like
+that
+
+
+changeset:   52:f9a844d53eb5
 user:        krinn <krinn@chez.com>
 date:        Thu Feb 17 18:55:18 2011 +0100
 files:       Changelog handler/chemin.nut
@@ -498,68 +519,4 @@ files:       build/airbuilder.nut build/builder.nut build/builinglogic.txt build
 description:
 Initial commit
 
-
-<<<<<<< local
->>>>>>> other
-changeset:   46:bd2b09fe432f
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Thu Feb 17 09:32:58 2011 +0100
-summary:     - Pickup another route if the route lack a place to go
-
-changeset:   46:bd2b09fe432f
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Thu Feb 17 09:32:58 2011 +0100
-summary:     - Pickup another route if the route lack a place to go
-
-changeset:   47:c1df3542327d
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 15:37:32 2011 +0100
-summary:     - Remove some code
-
-changeset:   48:112a24986e85
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 16:46:20 2011 +0100
-summary:     - If we can't find a place to build station, now return a critical error
-
-changeset:   49:8ab321a2a581
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 16:54:51 2011 +0100
-summary:     - Change again delay to build from 1 month upto 3 months
-
-changeset:   50:7d72ee61b373
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 17:44:29 2011 +0100
-summary:     - Avoid cloning a vehicle that have a goto depot order
-
-changeset:   51:f6583a8c76c2
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 18:09:55 2011 +0100
-summary:     - Send a low reliability vehicle to servicing
-
-changeset:   52:f9a844d53eb5
-tag:         tip
-user:        krinn <krinn@chez.com>
-date:        Thu Feb 17 18:55:18 2011 +0100
-summary:     - for easier fairlevel, never pickup a route where someone else is
-
-=======
->>>>>>> other
-changeset:   53:513bdcdd5e36
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Fri Feb 18 01:59:24 2011 +0100
-summary:     - Road stations balancing to push out loading vehicle if a dropper need
-
-changeset:   53:513bdcdd5e36
-tag:         tip
-user:        Pagnon Stéphane <krinn@chez.com>
-date:        Fri Feb 18 01:59:24 2011 +0100
-summary:     - Road stations balancing to push out loading vehicle if a dropper need
 

@@ -45,7 +45,7 @@ function cCarrier::VehicleListLoadingAtRoadStation(stationID)
 local vehicleslist=cCarrier.VehicleListAtRoadStation(stationID);
 vehicleslist.Valuate(AIVehicle.GetState);
 vehicleslist.KeepValue(AIVehicle.VS_AT_STATION);
-DInfo("VehicleListLoadingAtRoadStation "+vehicleslist.Count(),1);
+DInfo("VehicleListLoadingAtRoadStation "+vehicleslist.Count(),2);
 return vehicleslist;
 }
 
@@ -75,7 +75,7 @@ vehicles.RemoveValue(AIVehicle.VS_IN_DEPOT);
 vehicles.RemoveValue(AIVehicle.VS_BROKEN);
 vehicles.RemoveValue(AIVehicle.VS_CRASHED);
 vehicles.RemoveValue(AIVehicle.VS_INVALID);
-DInfo("VehicleListAtRoadStation = "+vehicles.Count(),1);
+DInfo("VehicleListAtRoadStation = "+vehicles.Count(),2);
 // remain vehicles = VS_RUNNING + VS_AT_STATION
 return vehicles;
 }
