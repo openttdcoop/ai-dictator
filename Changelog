@@ -1,5 +1,15 @@
-changeset:   54:7a8e8131b4e4
+changeset:   55:d90923fbc7fc
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 18 22:45:28 2011 +0100
+files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+description:
+- Fix the blacklist function
+- Stop trying to buy a new vehicle if the station won't accept another
+one
+
+
+changeset:   54:7a8e8131b4e4
 user:        krinn <krinn@chez.com>
 date:        Fri Feb 18 18:31:39 2011 +0100
 files:       Changelog build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut

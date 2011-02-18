@@ -1,3 +1,17 @@
+/**
+ *    This file is part of DictatorAI
+ *
+ *    It's free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 2 of the License, or
+ *    (at your option) any later version.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    with it.  If not, see <http://www.gnu.org/licenses/>.
+ *
+**/
+
+
 // cChemin is class that handle all routes
 
 class cChemin
@@ -832,7 +846,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	if (firstveh) { vehneed = 2; }
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
-	local canaddonemore=root.carrier.CanAddNewVehicle(j, start);
+	local canaddonemore=root.carrier.CanAddNewVehicle(j, true);
 	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be able to buy it
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+"/"+maxveh+" firstveh="+firstveh,2);
 	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail

@@ -1,3 +1,16 @@
+/**
+ *    This file is part of DictatorAI
+ *
+ *    It's free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 2 of the License, or
+ *    (at your option) any later version.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    with it.  If not, see <http://www.gnu.org/licenses/>.
+ *
+**/
+
 class MyRoadPF extends RoadPathFinder {
 	_cost_level_crossing = null;
 }
@@ -230,7 +243,7 @@ if (start)	{
 tilelist.Sort(AIList.SORT_BY_VALUE, false); // highest values first
 checklist.Valuate(AIRoad.IsRoadTile);
 checklist.KeepValue(1);
-root.builder.RemoveBlacklistTiles(checklist);
+root.builder.FilterBlacklistTiles(checklist);
 if (checklist.IsEmpty())
 	{
 	DInfo("Cannot stick our station to a road, building classic",1);

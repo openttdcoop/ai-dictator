@@ -1,4 +1,17 @@
-// 5 rails = 1 train avec 2 loco+6voyager+2mail max
+/**
+ *    This file is part of DictatorAI
+ *
+ *    It's free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 2 of the License, or
+ *    (at your option) any later version.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    with it.  If not, see <http://www.gnu.org/licenses/>.
+ *
+**/
+
+
 enum AircraftType {
 	EFFICIENT,
 	BEST,
