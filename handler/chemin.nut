@@ -26,6 +26,7 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 	virtual_air_group_pass=null	// groupid for virtual air for passengers
 	virtual_air_group_mail=null	// groupid for virtual air for mail
 	under_upgrade=null;	// true when we are doing upgrade on something
+	repair_routes=null; 	// list of routes that need repairs
 	
 	constructor(that)
 		{
@@ -42,6 +43,7 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		RList = [];	// this is our routes list
 		DList = [];	// this is our cEndDepot list, use to find a destination station
 		GList = [];	// this is our Station list (rail station only)
+		repair_routes = AIList();
 		}
 	}
 

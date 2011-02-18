@@ -212,7 +212,7 @@ if (newdeploc > -1)
 	root.chemin.GListUpdateItem(source,stationobj);
 	return true;
 	}
-else	{ DInfo("We need a depot but we fail to find/create one !",1); }
+else	{ DInfo("We need a depot but we fail to find/create one !",1); root.builder.RouteIsDamage(idx); }
 return false;
 }
 
@@ -313,7 +313,7 @@ if (success)
 	}
 
 root.chemin.GListUpdateItem(station_index,station_obj); // save it
-root.builder.CheckRoadHealth(roadidx); // ask ourselves a check
+root.builder.RouteIsDamage(roadidx); // ask ourselves a check
 return success;
 }
 

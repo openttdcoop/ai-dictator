@@ -598,7 +598,7 @@ foreach (vehicle, dummy in tlist)
 		DInfo("Vehicle "+name+" reliability is low ("+age+"%)",0);
 		AIVehicle.SendVehicleToDepotForServicing(vehicle);
 		local idx=root.carrier.VehicleFindRouteIndex(vehicle);
-		root.builder.CheckRoadHealth(idx);
+		root.builder.RouteIsDamage(idx);
 		root.bank.busyRoute=true;
 		continue;
 		}

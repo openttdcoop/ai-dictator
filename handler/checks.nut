@@ -48,13 +48,39 @@ function cBuilder::HalfYearChecks()
 root.SixMonth=0;
 root.TwelveMonth++;
 DInfo("Half year checks run...",1);
+root.builder.RouteNeedRepair();
 if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
+
 }
+
+function cBuilder::RouteIsDamage(idx)
+// Set the route idx as damage
+{
+if (!root.chemin.repair_routes.HasItem(idx))	root.chemin.repair_routes.AddItem(idx,0);
+}
+
+function cBuilder::RouteNeedRepair()
+{
+DInfo("Routes damage: "+root.chemin.repair_routes.Count(),1);
+if (root.chemin.repair_routes.IsEmpty()) return;
+foreach (routes, dummy in root.chemin.repair_routes)
+	{
+	local test=root.builder.CheckRoadHealth(routes);
+	if (test)	root.chemin.repair_routes.SetValue(routes, 1)
+		else	root.chemin.repair_routes.SetValue(routes, 0);
+	}
+root.chemin.repair_routes.KeepValue(0);
+}
+
 
 function cBuilder::YearlyChecks()
 {
 root.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
+if (root.chemin.repair_routes.Count()==0)
+	{ // No routes are damage, let's add a random one for a check
+	root.builder.RouteIsDamage(AIBase.RandRange(root.chemin.RListGetSize()));
+	}
 /*for (local j=0; j < root.chemin.RListGetSize(); j++)
 	{
 	local road=root.chemin.RListGetItem(j);
@@ -221,8 +247,8 @@ foreach (stations, dummy in truckstation)
 			{ // send all loader to depot to free space for droppers
 			foreach (vehicle, load in all_getter)
 				{
-				if (crg == 0)
-					{ // don't push the vehicle that is loading
+				if (load == 0)
+					{ // don't push the vehicle that is loading, TODO: might fail if 2 vehicles with a bit of cargo enter the station, better found a way to test station. But it's a rare case
 					DInfo("Pushing vehicle "+vehicle+"-"+AIVehicle.GetName(vehicle)+" out of the station to free space for unloaders",1);
 					AIVehicle.ReverseVehicle(vehicle);
 					AIVehicle.SendVehicleToDepotForServicing(vehicle);
