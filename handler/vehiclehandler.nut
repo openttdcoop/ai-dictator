@@ -42,10 +42,14 @@ vehicles.KeepValue(AIVehicle.VS_AT_STATION);
 return vehicles;
 }
 
-function cCarrier::VehicleListWaitingAtRoadStation(stationID)
-// return a list of all road vehicles that are waiting (in front) of the station
+function cCarrier::VehicleList_KeepStuckVehicle(vehicleslist)
+/**
+* Filter a list of vehicle to only keep running ones with a 0 speed (stuck vehicle)
+* 
+* @param vehicleslist The list of vehicle we should filter
+* @return same list with only matching vehicles
+*/
 {
-local vehicleslist=cCarrier.VehicleListAtRoadStation(stationID);
 vehicleslist.Valuate(AIVehicle.GetState);
 vehicleslist.KeepValue(AIVehicle.VS_RUNNING);
 vehicleslist.Valuate(AIVehicle.GetCurrentSpeed);
@@ -53,20 +57,28 @@ vehicleslist.KeepValue(0); // non moving ones
 return vehicleslist;
 }
 
-function cCarrier::VehicleListLoadingAtRoadStation(stationID)
-// return a list of all road vehicles that are loading at the station
+function cCarrier::VehicleList_KeepLoadingVehicle(vehicleslist)
+/**
+* Filter a list of vehicle to only keep ones that are loading at a station
+* 
+* @param vehicleslist The list of vehicle we should filter
+* @return same list with only matching vehicles
+*/
 {
-local vehicleslist=cCarrier.VehicleListAtRoadStation(stationID);
 vehicleslist.Valuate(AIVehicle.GetState);
 vehicleslist.KeepValue(AIVehicle.VS_AT_STATION);
 DInfo("VehicleListLoadingAtRoadStation "+vehicleslist.Count(),2);
 return vehicleslist;
 }
 
-function cCarrier::VehicleListAtRoadStation(stationID)
-// return a list of all road vehicles loading or waiting for a load at the station
+function cCarrier::VehicleNearStation(stationID)
+/**
+* return a list with all road vehicles we own near that station with VS_RUNNING && VS_AT_STATION status
+*
+* @param stationID the station id to check
+* @return the vehicle list
+*/
 {
-
 local vehicles=AIVehicleList_Station(stationID);
 local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID));
 tilelist.Valuate(AIStation.GetStationID);
@@ -90,7 +102,6 @@ vehicles.RemoveValue(AIVehicle.VS_BROKEN);
 vehicles.RemoveValue(AIVehicle.VS_CRASHED);
 vehicles.RemoveValue(AIVehicle.VS_INVALID);
 DInfo("VehicleListAtRoadStation = "+vehicles.Count(),2);
-// remain vehicles = VS_RUNNING + VS_AT_STATION
 return vehicles;
 }
 

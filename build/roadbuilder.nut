@@ -469,7 +469,8 @@ local msg="";
 local station_tile=null;
 local randlist=null;
 DInfo("Checking route health of #"+idx+" "+road.ROUTE.src_name+"-"+road.ROUTE.dst_name+":"+road.ROUTE.cargo_name,1);
-// check station troubles
+root.NeedDelay(50);
+// check stations for trouble
 // source station
 temp=src_stationid;
 correction=false;

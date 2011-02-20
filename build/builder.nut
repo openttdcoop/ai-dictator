@@ -32,16 +32,33 @@ static	DIR_SW = 3;
 	holestart=null;
 	holeend=null;
 	holes=null;
-	TilesBlacklist=null;
-	savedepot = null; 			// the tile of the last depot we have build
+	TilesBlacklist=null;		// our list of bad tiles
+	station_take=null;		// list of stations where we take products
+	station_drop=null;		// list of stations where we drop products
+	savedepot = null; 		// the tile of the last depot we have build
+	
 	
 	constructor(that)
 		{
 		root = that;
 		TilesBlacklist=AIList();
+		station_take=AIList();
+		station_drop=AIList();
 		CriticalError=false;
 		}
 	}
+
+function cBuilder::StationIsAccepting(stationid)
+// add that station to the station_drop list
+{
+if (!root.builder.station_drop.HasItem(stationid))	root.builder.station_take.AddItem(stationid, 1);
+}
+
+function cBuilder::StationIsProviding(stationid)
+// add that station to the station_take list
+{
+if (!root.builder.station_take.HasItem(stationid))	root.builder.station_take.AddItem(stationid, 1);
+}
 
 function cBuilder::BlacklistThatTile(tile)
 /**
@@ -526,6 +543,8 @@ if (rr.ROUTE.status==8)
 	AIGroup.SetName(rr.ROUTE.groupe_id, rr.ROUTE.groupe_name);
 	root.chemin.RListUpdateItem(idx,rr);
 	root.chemin.RouteStatusChange(idx,100);
+	root.builder.StationIsAccepting(root.builder.GetStationID(idx,false));
+	root.builder.StationIsProviding(root.builder.GetStationID(idx,true));
 	if (root.secureStart > 0)	root.builddelay=true;
 	root.chemin.nowRoute=-1; // Allow us to work on a new route now
 	}

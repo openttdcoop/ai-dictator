@@ -1,5 +1,13 @@
-changeset:   57:64a67402a24d
+changeset:   58:3221b6176807
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 20 11:57:10 2011 +0100
+files:       Changelog build/builder.nut build/stationbuilder.nut build/stationremover.nut handler/events.nut handler/vehiclehandler.nut utils/misc.nut
+description:
+- Some code change / remove
+
+
+changeset:   57:64a67402a24d
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Sun Feb 20 01:20:52 2011 +0100
 files:       Changelog TODO.txt build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut utils/misc.nut

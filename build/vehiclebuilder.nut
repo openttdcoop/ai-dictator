@@ -32,6 +32,7 @@ static	DEPOT_WAGON = 5;	// to add wagons
 	vehsaveactive=null;	// when true, we have some vehicles saved that need a restore
 	vehnextprice=null;	// we just use that to upgrade vehicle
 	AirportTypeLimit=null;  // can't make it a const, squirrel is so weird
+	top_vehicle=null;	// the list of vehicle engine id we know cannot be upgrade
 
 	constructor(that)
 		{
@@ -39,6 +40,7 @@ static	DEPOT_WAGON = 5;	// to add wagons
 		vehsavelist=[];
 		vehsaveactive=false;
 		vehnextprice=0;
+		top_vehicle=AIList();
 		AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
 		}
 	}

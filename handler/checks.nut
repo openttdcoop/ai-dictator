@@ -13,7 +13,7 @@
 **/
 
 
-// all operations here a cBuilder even the file itself do handling work
+// all operations here are cBuilder even the file itself do handling work
 // operations here are time eater
 
 function cBuilder::CheckAirportUpgrade()
@@ -166,19 +166,24 @@ foreach (cargo, dummy in cargo_list)
 cargo_list.KeepAboveValue(7); // doc says below 8 means no acceptance
 return cargo_list;
 }
-	
 
 function cBuilder::RoadStationsBalancing()
 // Look at road stations for busy loading and balance it by sending vehicle to servicing
 // Because vehicle could block the station waiting to load something, while others carrying products can't enter it
 {
+// speed up
+// station source check (crowd)
+// station target check (only to see if current cargo is accept)
+// vehicle check only 1st of group for many op
 local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
 if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
 	{
 	DInfo("Station check #"+stations+" "+AIStation.GetName(stations),1);
-	local truck_loading=cCarrier.VehicleListLoadingAtRoadStation(stations);
-	local truck_waiting=cCarrier.VehicleListWaitingAtRoadStation(stations);
+	local truck_atstation=cCarrier.VehicleNearStation(stations);
+	if (truck_atstation.Count() < 2)	continue;
+	local truck_loading=cCarrier.VehicleList_KeepLoadingVehicle(truck_atstation);
+	local truck_waiting=cCarrier.VehicleList_KeepStuckVehicle(truck_atstation);
 	local truck_getter_loading=AIList();
 	local truck_getter_waiting=AIList();
 	local truck_dropper_loading=AIList();
