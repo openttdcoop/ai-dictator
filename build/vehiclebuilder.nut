@@ -593,7 +593,7 @@ function cCarrier::ChooseWagon(cargo)
 	return wagonlist.Begin();
 }
 
-function cCarrier::ChooseRailVeh(idx)
+function cCarrier::ChooseRailVeh(idx) // TODO: recheck that, for case where a train could be better base on power
 {
 local vehlist = AIEngineList(AIVehicle.VT_RAIL);
 vehlist.Valuate(AIEngine.HasPowerOnRail, AIRail.GetCurrentRailType());
@@ -601,18 +601,9 @@ vehlist.KeepValue(1);
 vehlist.Valuate(AIEngine.IsWagon);
 vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.GetMaxSpeed);
-DInfo("vehicule found: "+vehlist.Count(),2);
+DInfo("Train found: "+vehlist.Count(),2);
 local veh = null;
-local fast=null;
-local slow=null;
-if (vehlist.Count() > 0)
-	{
-	fast=vehlist.Begin();
-	while (vehlist.HasNext())	{ slow=vehlist.Next(); }
-	DInfo("Cheap engine: "+AIEngine.GetName(slow)+" Best engine: "+AIEngine.GetName(fast),2);
-	}
-if (root.chemin.buildmode)	{ veh=fast; }
-		else	{ veh=slow; }
+if (vehlist.Count() > 0)	veh=vehlist.Begin();
 return veh;
 }
 

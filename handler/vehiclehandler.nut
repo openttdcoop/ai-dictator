@@ -433,7 +433,6 @@ local wagon = null;
 local numwagon=AIVehicle.GetNumWagons(veh);
 local railtype = root.chemin.RouteGetRailType(idx);
 local newveh=null;
-root.chemin.buildmode=true; // set to find the best wagon/engine
 local homedepot=root.builder.GetDepotID(idx,true);
 DInfo("Depot is at "+homedepot,2);
 PutSign(homedepot,"Depot");

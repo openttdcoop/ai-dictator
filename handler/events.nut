@@ -64,10 +64,9 @@ switch (eventType)
 		root.chemin.RouteCreateIndustry(industry);
 	break;
 	case AIEvent.AI_ET_INDUSTRY_CLOSE:
-		//event = AIEventIndustryClose.Convert(event);
-		//local industry = event.GetIndustryID();
-		// For now i don't handle industry closing, cChemin::RouteArrayPurge is handling it already
-		// May change because RouteArrayPurge only handle starting industry not ending ones.
+		event = AIEventIndustryClose.Convert(event);
+		local industry = event.GetIndustryID();
+		DInfo("Industry "+AIIndustry.GetName(industry)+" is closed !",0);
 	break;
 	case AIEvent.AI_ET_COMPANY_NEW:
 		event = AIEventCompanyNew.Convert(event);

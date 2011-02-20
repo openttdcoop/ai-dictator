@@ -107,7 +107,7 @@ class cCheminItem
 
 		src_id = -1,		// industry/town id of starting (a producer)
 		src_name = "none",	// name
-		src_istown = false,	// a town or not
+		src_istown = true,	// a town or not
 		src_place= -1,		// location on map
 		src_station= -1,	// an index to the station array
 		src_entry= -1,		// for trains, true if we are connect to station entry, false we're connect to station exit
@@ -115,7 +115,7 @@ class cCheminItem
 					// for aircraft, true if we are an airport false if we are a platform
 		dst_id = -1,
 		dst_name = "none",
-		dst_istown= false,
+		dst_istown= true,	// if we default that to false, route maintenance will remove it!
 		dst_place= -1,
 		dst_station= -1,	// an index to the station array
 		dst_entry= -1,		// destination station entry/exit connection

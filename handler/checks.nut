@@ -64,7 +64,6 @@ root.TwelveMonth++;
 DInfo("Half year checks run...",1);
 root.builder.RouteNeedRepair();
 if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
-
 }
 
 function cBuilder::RouteIsDamage(idx)

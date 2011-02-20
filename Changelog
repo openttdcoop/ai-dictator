@@ -1,5 +1,21 @@
-changeset:   60:a53f854b55bd
+changeset:   61:a7cf4a8b5d0d
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 20 17:11:15 2011 +0100
+files:       Changelog handler/chemin.nut main.nut
+description:
+- Impove general speed: now we only call route maintenance if we detect
+a bad industry while looking for a new job (this will also catch job
+currently done)
+- Decrease malus on route is only done on refresh now, this save a loop
+for routes just to decrease their malus
+- Add a little sleep when the AI is init, sometimes some values aren't
+init properly (company name, cargo favorite...). I hope the delay will
+close those bugs (squirrel is slow to init?)
+- Handle closing industry correcly
+
+
+changeset:   60:a53f854b55bd
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Sun Feb 20 16:22:35 2011 +0100
 files:       Changelog build/vehiclebuilder.nut handler/events.nut handler/vehiclehandler.nut

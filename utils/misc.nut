@@ -111,6 +111,7 @@ function AIInit()
 local myName = "Krinn Company";
 local FinalName = myName;
 FinalName = PickCompanyName(666);
+AIController.Sleep(15);
 AICompany.SetName(FinalName);
 AICompany.SetPresidentGender(AICompany.GENDER_MALE);
 DInfo("We're now "+FinalName);
