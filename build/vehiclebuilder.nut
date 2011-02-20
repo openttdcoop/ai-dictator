@@ -58,6 +58,16 @@ DInfo("Saving vehicle from route "+idx,1);
 root.carrier.VehicleSell(veh);
 }
 
+function cCarrier::VehicleGetCargoType(veh)
+// return cargo type the vehicle is handling
+{
+local cargotype=AICargoList();
+foreach (cargo, dummy in cargotype)
+	{
+	if (AIVehicle.GetCapacity(veh, cargo) > 0)	return cargo;
+	}
+}
+
 function cCarrier::RestoreSavedVehicle(veh)
 // restore previously saved vehicle
 {

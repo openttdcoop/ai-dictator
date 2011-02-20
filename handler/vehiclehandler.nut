@@ -487,35 +487,56 @@ else	{
 	}
 }
 
+function cCarrier::VehicleIsTop_GetUniqID(engine, cargo)
+// return a uniqID for a vehicle engine type + cargo, as we can't have dup in a AIList()
+{
+return (engine+1)*root.chemin.IDX_HELPER+cargo;
+}
+
 function cCarrier::VehicleIsTop(veh)
 // return engine modele if the vehicle can be upgrade
 {
-local idx=root.carrier.VehicleFindRouteIndex(veh);
-if (idx < 0) return -1; // tell we're at top already for unknow vehicle
-local road=root.chemin.RListGetItem(idx);
+if (!AIVehicle.IsValidVehicle(veh)) return -1;
+local cargo=null;
+local uniqID=null;
+local idx=null;
+local road=null;
 local top=null;
-local cargo=road.ROUTE.cargo_id;
+local ourEngine=AIVehicle.GetEngineType(veh);
 switch (AIVehicle.GetVehicleType(veh))
 	{
 	case AIVehicle.VT_ROAD:
+		cargo=root.carrier.VehicleGetCargoType(veh);
+		uniqID=root.carrier.VehicleIsTop_GetUniqID(ourEngine, cargo);
+		if (root.carrier.top_vehicle.HasItem(uniqID))	return -1; // we know that engine is at top already
 		top = root.carrier.ChooseRoadVeh(cargo);
 	break;
 	case AIVehicle.VT_RAIL:
+		uniqID=root.carrier.VehicleIsTop_GetUniqID(ourEngine, 100);
+		if (root.carrier.top_vehicle.HasItem(uniqID))	return -1;
+		idx=root.carrier.VehicleFindRouteIndex(veh);
 		top = root.carrier.ChooseRailVeh(idx);
 	break;
 	case AIVehicle.VT_WATER:
 	return;
 	break;
 	case AIVehicle.VT_AIR:
+		idx=root.carrier.VehicleFindRouteIndex(veh);
+		road=root.chemin.RListGetItem(idx);
 		local modele=AircraftType.EFFICIENT;
 		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
 		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
+		uniqID=root.carrier.VehicleIstop_GetUniqID(ourEngine, modele);
+		if (root.carrier.top_vehicle.HasItem(uniqID))	return -1;
 		top = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 	break;
 	}
-local ourengine=AIVehicle.GetEngineType(veh);
-if (ourengine == top)	return -1;
-		else	return top;	
+if (ourEngine == top)	{
+			DInfo("Adding engine "+AIEngine.GetName(ourEngine)+" to vehicle top list",1);
+			root.carrier.top_vehicle.AddItem(uniqID, ourEngine);
+			return -1;
+			}
+		else	return top;
 }
 
 function cCarrier::VehicleOrderIsValid(vehicle,orderpos)

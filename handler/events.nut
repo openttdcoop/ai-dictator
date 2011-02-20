@@ -55,7 +55,6 @@ while (AIEventController.IsEventWaiting())
 {
 local event=AIEventController.GetNextEvent();
 local eventType=event.GetEventType();
-// TODO: watch out for eventType=even[0].GetEventType()
 DInfo("New event incoming: "+eventType,2);
 switch (eventType)
 	{
@@ -74,19 +73,20 @@ switch (eventType)
 		event = AIEventCompanyNew.Convert(event);
 		local company = AICompany.GetName(event.GetCompanyID());
 		DInfo("Welcome "+company,0);
-		if ("SimpleAI" in company)
-			{
-			DInfo("I love "+company+"! DictatorAI is a fork of SimpleAI.",0);
-			}
 	break;
 	case AIEvent.AI_ET_ENGINE_PREVIEW:
 		event = AIEventEnginePreview.Convert(event);
-		if (event.AcceptPreview()) DInfo("New engine available for preview: " + event.GetName(),0);
+		if (event.AcceptPreview()) 
+			{
+			DInfo("New engine available for preview: " + event.GetName(),0);
+			root.carrier.top_vehicle.Clear(); // reset top vehicle list
+			}
 	break;
 	case AIEvent.AI_ET_ENGINE_AVAILABLE:
 		event = AIEventEngineAvailable.Convert(event);
 		local engine = event.GetEngineID();
 		DInfo("New engine available: " + AIEngine.GetName(engine),0);
+		root.carrier.top_vehicle.Clear(); // reset top vehicle list
 	break;
 	case AIEvent.AI_ET_VEHICLE_CRASHED:
 		local vehicle = null;

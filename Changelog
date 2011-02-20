@@ -1,5 +1,13 @@
-changeset:   58:3221b6176807
+changeset:   59:827d749d9eda
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 20 15:21:43 2011 +0100
+files:       Changelog build/builder.nut build/roadbuilder.nut build/vehiclebuilder.nut handler/checks.nut handler/vehiclehandler.nut
+description:
+- Preparing new station handling and new vehicle handling
+
+
+changeset:   58:3221b6176807
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Sun Feb 20 11:57:10 2011 +0100
 files:       Changelog build/builder.nut build/stationbuilder.nut build/stationremover.nut handler/events.nut handler/vehiclehandler.nut utils/misc.nut
