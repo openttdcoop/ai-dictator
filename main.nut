@@ -123,7 +123,7 @@ function DictatorAI::Start()
 		bank.CashFlow();
 		eventManager.HandleEvents();
 		//chemin.FewRouteDump();
-		chemin.RouteMaintenance();
+		chemin.global_malus+=(5*chemin.IDX_HELPER);
 		chemin.DutyOnRoute();
 		builder.QuickTasks();
 		//if (debug) chemin.RListDumpALL();

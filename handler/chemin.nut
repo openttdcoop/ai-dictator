@@ -33,13 +33,13 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 	water_max=null;		// maximum ships a station can handle
 	road_max_onroute=null;  // maximum road vehicle on a route
 	nowRoute=null;		// the current route index we work on
-	buildmode=null;		// true build best, false build cheap
 	cargo_fav=null;		// that cargo is our favorite cargo
 	virtual_air=null;	// this is the list of towns in our virtual air network
 	virtual_air_group_pass=null	// groupid for virtual air for passengers
 	virtual_air_group_mail=null	// groupid for virtual air for mail
 	under_upgrade=null;	// true when we are doing upgrade on something
 	repair_routes=null; 	// list of routes that need repairs
+	global_malus=null;	// we remove that global malus from any route malus as soon as we can
 	
 	constructor(that)
 		{
@@ -47,11 +47,11 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		Item = cCheminItem();
 		route=this.Item.ROUTE;
 		nowRoute=-1;
-		buildmode=true;
 		cargo_fav=-1;
 		airnet_count=0;
 		virtual_air=[];
 		under_upgrade=false;
+		global_malus=0;
 		RList = [];	// this is our routes list
 		DList = [];	// this is our cEndDepot list, use to find a destination station
 		GList = [];	// this is our Station list (rail station only)
@@ -285,7 +285,7 @@ function cChemin::RouteMalusLower(idx)
 // lower our handicap for that road
 {
 local road=root.chemin.RListGetItem(idx);
-road.ROUTE.handicap-=(10*root.chemin.IDX_HELPER);
+road.ROUTE.handicap-=root.chemin.global_malus;
 if (road.ROUTE.handicap <= 0 && road.ROUTE.status==0)	{ road.ROUTE.handicap=0; road.ROUTE.status=1; }
 // gone to 0, we wait enough, we also reset our doable status to retry the road
 root.chemin.RListUpdateItem(idx,road);
@@ -482,11 +482,11 @@ function cChemin::RouteRefresh()
 local listCounter=(root.chemin.RList.len()/root.chemin.Item.ROUTE.len());
 for (local i=0; i < listCounter; i++)
 	{
-	root.chemin.RouteMalusLower(i); // decrease a bit our malus on road
+	root.chemin.RouteMalusLower(i); // decrease our malus on road
 	root.chemin.UpdateStartRoute(i);
 	AIController.Sleep(1);
-	//root.chemin.RListUpdateItem(i,road);
 	}
+root.chemin.global_malus=0;
 }
 
 function cChemin::RouteMaintenance()
@@ -499,10 +499,13 @@ for (local i=0; i < listCounter; i++)
 	{
 	local purgeit="";
 	local road=root.chemin.RListGetItem(i);
-	root.chemin.RouteMalusLower(i);
 	if ((!road.ROUTE.src_istown) && (!AIIndustry.IsValidIndustry(road.ROUTE.src_id)))
 		{ 	// not a town and not a valid industry
-		purgeit="Bad starting industry";
+		purgeit="Bad source industry";
+		}
+	if ((!road.ROUTE.dst_istown) && (!AIIndustry.IsValidIndustry(road.ROUTE.dst_id)))
+		{ 	// not a town and not a valid industry
+		purgeit="Bad destination industry";
 		}
 	if (road.ROUTE.uniqID in uniqList)
 		{	// dup uniqID
@@ -669,6 +672,7 @@ local task=null;
 local tasktry=null;
 local gotmalus=0; // i use that to count how many route have a malus, if = numbers of route -> means we check all routes and fail
 // fresh infos for accurate calc
+local industryList=AIIndustryList();
 do 	{
 	bestJob=-1;
 	startidx=-1;
@@ -677,6 +681,10 @@ do 	{
 		{
 		task=root.chemin.RListGetItem(i);
 		local rnk=task.ROUTE.ranking;
+		local badindustry=false;
+		if (!task.ROUTE.src_istown && !industryList.HasItem(task.ROUTE.src_id))	badindustry=true;
+		if (!task.ROUTE.dst_istown && !industryList.HasItem(task.ROUTE.dst_id))	badindustry=true;
+		if (badindustry)	{ root.chemin.RouteMaintenance(); return -1; }
 		if (task.ROUTE.handicap > 0)	gotmalus++;
 		if (task.ROUTE.isServed) { continue; } // we already own & run that route
 		if (task.ROUTE.status==0) { continue; } // ignore that route, undoable we recheck it later

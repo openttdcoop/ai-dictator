@@ -1,5 +1,14 @@
-changeset:   59:827d749d9eda
+changeset:   60:a53f854b55bd
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 20 16:22:35 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/events.nut handler/vehiclehandler.nut
+description:
+- Impove upgrade vehicle detection speed, now only check one time if an
+engine could be upgrade until we found new engine preview/avaiable
+
+
+changeset:   59:827d749d9eda
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Sun Feb 20 15:21:43 2011 +0100
 files:       Changelog build/builder.nut build/roadbuilder.nut build/vehiclebuilder.nut handler/checks.nut handler/vehiclehandler.nut
