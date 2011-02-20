@@ -60,8 +60,13 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 	}
 
 function cChemin::RouteTownsInjector()
+// Inject prebuild jobs for towns
+// prebuild jobs are : pass & bus, pass & aircraft, pass & boats and mail & aircraft
+// this way each town can get 1 airport handling mail+pass + 1 bus station + 1 boat station for passengers
+// mail will still have 1 chance to be pick by : boat or truck (trains simply don't do town)
+// We also remove undoable/unwanted connections (like dup connections)
+// We will keep only bigtowns->smalltowns jobs and drop smalltowns->bigtowns jobs, this will force shared station limit to be reach faster on bigtowns and new stations build on big towns to handle the flow
 {
-return;
 local towns=AITownList();
 local alttowns=AIList();
 local town_connector=[];
@@ -984,7 +989,7 @@ foreach (groupid, ratio in priority)
 			{
 			for (local z=0; z < vehneed; z++)
 				{
-				if (root.carrier.BuildAndStartVehicle(i,true))
+				if (root.banker.CanBuyThat(AIEngine.GetPrice(i)) && root.carrier.BuildAndStartVehicle(i,true))
 					{
 					DInfo("Adding a vehicle to route #"+i+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
 					}

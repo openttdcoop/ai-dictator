@@ -1,5 +1,13 @@
-changeset:   61:a7cf4a8b5d0d
+changeset:   62:91d2e6d03e15
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 20 17:11:48 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/events.nut handler/vehiclehandler.nut utils/misc.nut
+description:
+- Continue from previous changes
+
+
+changeset:   61:a7cf4a8b5d0d
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Sun Feb 20 17:11:15 2011 +0100
 files:       Changelog handler/chemin.nut main.nut
