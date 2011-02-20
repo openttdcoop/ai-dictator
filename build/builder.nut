@@ -44,9 +44,14 @@ static	DIR_SW = 3;
 	}
 
 function cBuilder::BlacklistTile(tile)
-// add that tile to our blacklist
+/**
+* Add a tile to our blacklist
+* 
+* @param tile the tile to blacklist
+*/
 {
 root.builder.TilesBlacklist.AddItem(tile,tile);
+DInfo("Blacklist size: "+root.builder.TilesBlacklist.Count(),2);
 }
 
 function cBuilder::FilterBlacklistTiles(tilelist)
@@ -73,7 +78,8 @@ function cBuilder::IsCriticalError()
 {
 if (root.builder.CriticalError) return true; // tell everyone we fail until the flag is remove
 local lasterror=AIError.GetLastError();
-DInfo("Error check: "+AIError.GetLastErrorString(),2);
+local errcat=AIError.GetErrorCategory();
+DInfo("Error check: "+AIError.GetLastErrorString()+" Cat: "+errcat,2);
 switch (lasterror)
 	{
 	case AIError.ERR_NOT_ENOUGH_CASH:
@@ -505,6 +511,7 @@ if (rr.ROUTE.status==7)
 		}
 	else	{ success=true; } // other route type for now are ok
 	if (success)	{ root.chemin.RouteStatusChange(idx,8); }
+		else	{ root.chemin.RouteIsNotDoable(idx); return false; }
 	}	
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==8)

@@ -32,8 +32,8 @@ return names[who];
 function getFirstName(who)
 {
 DInfo("picking first name: "+who,1);
-local names = ["fidel", "Benito", "Vladamir", "Joseph", "Fulgencio", "Kim", "Robert", "Omar", "Slobodan",
-	"Napoléon", "Julius", "Mao"];
+local names = ["Fidel", "Benito", "Vladamir", "Joseph", "Fulgencio", "Kim", "Robert", "Omar", "Slobodan",
+	"Napoleon", "Julius", "Mao"];
 if (who == 666) { who = AIBase.RandRange(12) };
 return names[who];
 }
@@ -65,14 +65,18 @@ function DError(putMsg,debugValue=1)
 local debugState = DictatorAI.GetSetting("debug");
 if (debugValue <= debugState )
 	{
-	AILog.Info(putMsg+" Error:"+AIError.GetLastErrorString());
+	AILog.Error(putMsg+" Error:"+AIError.GetLastErrorString());
 	}
 }
 
 function DWarn(putMsg)
-// Warning messages are always display
+// just output AILog message depending on debug level
 {
-AILog.Warning("WARNING:"+putMsg);
+local debugState = DictatorAI.GetSetting("debug");
+if (debugValue <= debugState )
+	{
+	AILog.Warning("WARNING: "+putMsg);
+	}
 }
 
 function ShowTick()

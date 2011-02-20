@@ -530,6 +530,11 @@ return (price+(lifetime*runningcost))/capacity;
 }
 
 function cCarrier::ChooseRoadVeh(cargo)
+/**
+* Pickup a road vehicle base on -> max capacity > max speed > max reliability
+* @param cargo the cargo we should carry
+* @return the vehicle engine id
+*/
 {
 local vehlist = AIEngineList(AIVehicle.VT_ROAD);
 vehlist.Valuate(AIEngine.GetRoadType);
@@ -538,20 +543,26 @@ vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
 vehlist.KeepValue(1);
+local top=null;
+vehlist.Valuate(AIEngine.GetCapacity);
+vehlist.Sort(AIList.SORT_BY_VALUE,false);
+top=vehlist.GetValue(vehlist.Begin());
+vehlist.KeepValue(top);
 vehlist.Valuate(AIEngine.GetMaxSpeed);
-//may filter with iscraftable
-//DInfo("vehicule found: "+vehlist.Count(),2);
-local veh = null;
-local fast=null;
-local slow=null;
-if (vehlist.Count() > 0)
+vehlist.Sort(AIList.SORT_BY_VALUE,false);
+top=vehlist.GetValue(vehlist.Begin());
+vehlist.KeepValue(top);
+vehlist.Valuate(AIEngine.GetReliability);
+vehlist.Sort(AIList.SORT_BY_VALUE,false);
+top=vehlist.GetValue(vehlist.Begin());
+vehlist.KeepValue(top);
+foreach (vehicle, capacity in vehlist)
 	{
-	fast=vehlist.Begin();
-	while (vehlist.HasNext())	{ slow=vehlist.Next(); }
-	//DInfo("Cheap engine: "+AIEngine.GetName(slow)+" Best engine: "+AIEngine.GetName(fast),2);
+	DInfo("Vehicle "+vehicle+" - "+AIEngine.GetName(vehicle)+" Speed: "+AIEngine.GetMaxSpeed(vehicle)+" Capacity: "+AIEngine.GetCapacity(vehicle)+" Price: "+AIEngine.GetPrice(vehicle),2);
 	}
-if (root.chemin.buildmode)	{ veh=fast; }
-		else	{ veh=slow; }
+DInfo("Road vehicule selected: "+AIEngine.GetName(vehlist.Begin()),2);
+local veh = -1;
+if (vehlist.Count() > 0) { veh=vehlist.Begin();	}
 return veh;
 }
 

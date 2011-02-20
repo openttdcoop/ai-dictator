@@ -137,65 +137,52 @@ return true;
 }
 
 function cBuilder::BuildAndStickToRoad(tile, stationtype)
+/**
+* Find a road near tile and build a road depot or station connected to that road
+*
+* @param tile tile where to put the structure
+* @param stationtype if AIRoad.ROADVEHTYPE_BUS+100000 build a depot, else build a station of stationtype type
+* @return -1 on error, tile position on success, CriticalError is set 
+*/
 {
-if (AITile.IsStationTile(tile)) return -1; // protect station
+local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)]; 
 
 // ok we know we are close to a road, let's find where the road is
-local direction=tile+AIMap.GetTileIndex(0,1);
-if (!AIRoad.IsRoadTile(direction))
-	{
-	direction=tile+AIMap.GetTileIndex(0,-1);
-	if (!AIRoad.IsRoadTile(direction))
-		{
-		direction=tile+AIMap.GetTileIndex(1,0);
-		if (!AIRoad.IsRoadTile(direction))
-			{
-			direction=tile+AIMap.GetTileIndex(-1,0);
-			if (!AIRoad.IsRoadTile(direction))	{ DInfo("Can't find the road ???",2); return -1; }
-			}
-		}
-	}
-// sometimes, the road isn't fully connect to us, try build it, and don't care failure
-AIRoad.BuildRoad(direction,tile);
-if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000)) // depot, i add 100000 to know it's a depot i need
-	{
-	if (!cTileTools.DemolishTile(tile))
-		{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
-	if (!AIRoad.BuildRoadDepot(tile,direction))
-		{ DInfo("Can't built the depot : "+AIError.GetLastErrorString(),2); return -1; }
-	else	{
-		if (AIRoad.AreRoadTilesConnected(tile,direction))	return tile;
-			else	{
-				DInfo("Something is bad with the depot",2);
-				cTileTools.DemolishTile(tile);
-				root.builder.BlacklistTile(tile);
-				return -1;
-				}
-		}
-	}
-// if we are still here, we have done others cases already
-local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1), AIMap.GetTileIndex(0, 2), AIMap.GetTileIndex(2, 0), AIMap.GetTileIndex(-2, 0), AIMap.GetTileIndex(0, -2)];
+local direction=-1;
+local tooclose=false;
+
 foreach (voisin in directions)
 	{
-	if (AITile.IsStationTile(tile+voisin))	return -1; // prevent build a station close to another one (us or anyone)
+	if (AIRoad.IsRoadTile(tile+voisin)) { direction=tile+voisin; break; }
 	}
-if (!cTileTools.DemolishTile(tile))
-	{ DInfo("Can't remove that tile : "+AIError.GetLastErrorString(),2); return -1; }
-if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_NEW))
-	{ DInfo("Can't built the station : "+AIError.GetLastErrorString(),2); return -1; }
-	else	{
-		if (AIRoad.AreRoadTilesConnected(tile,direction))	return tile;
-		else	{
-			DInfo("Something is bad with that station",2);
-			cTileTools.DemolishTile(tile); 
-			root.builder.BlacklistTile(tile);
+if (direction == -1)	{ DWarn("Can't find a road to stick our structure ???",2); return -1; }
+
+if (stationtype != (AIRoad.ROADVEHTYPE_BUS+100000)) // not a depot = truck or bus station need
+	{
+	foreach (voisin in directions) // find if the place isn't too close from another station
+		{
+		tooclose=AITile.IsStationTile(tile+voisin);
+		if (!tooclose)	tooclose=AITile.IsStationTile(tile+voisin+voisin);
+		if (tooclose)
+			{
+			DError("Road station would be too close from another station",2);
+			root.builder.CriticalError=true; // force a critical error
 			return -1;
 			}
 		}
-return -1;
+	}
+// now build the structure, function is in stationbuilder.nut
+return root.builder.BuildRoadStationOrDepotAtTile(tile, direction, stationtype, true);
 }
 
 function cBuilder::BuildRoadStation(road_index,start)
+/**
+* Build a road station for a route
+*
+* @param road_index index of the road to build the station
+* @param start true to build at source, false at destination
+* @return true or false
+*/
 {
 root.bank.RaiseFundsBigTime();
 AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
@@ -204,7 +191,6 @@ local rad = AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
 local dir, tilelist, checklist, otherplace, istown, isneartown=null;
 local road = root.chemin.RListGetItem(road_index);
 if (start)	{
-
 		dir = root.builder.GetDirection(road.ROUTE.src_place, road.ROUTE.dst_place);
 		if (road.ROUTE.src_istown)
 			{
@@ -246,11 +232,11 @@ checklist.KeepValue(1);
 root.builder.FilterBlacklistTiles(checklist);
 if (checklist.IsEmpty())
 	{
-	DInfo("Cannot stick our station to a road, building classic",1);
+	DInfo("Cannot stick our station to a road, building classic",2);
 	isneartown=false;
 	}
 else	{
-	DInfo("Sticking station & depot to the road",1);
+	DInfo("Sticking station & depot to the road",2);
 	}
 checklist.AddList(tilelist); // re-put tiles in it in case we fail building later
 local stationtype = null;

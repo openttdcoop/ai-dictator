@@ -1,4 +1,6 @@
 autogenerate todo
+Changelog:files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+Changelog:files:       Changelog TODO.txt build/builder.nut build/roadbuilder.nut handler/checks.nut handler/vehiclehandler.nut utils/debug.nut utils/misc.nut utils/tile.nut
 Changelog:files:       Changelog TODO.txt build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/array.nut handler/chemin.nut
 Changelog:files:       Changelog TODO.txt build/builder.nut handler/checks.nut main.nut utils/banker.nut
 Changelog:files:       Changelog TODO.txt build/builder.nut
@@ -16,12 +18,12 @@ Changelog:files:       Changelog TODO.txt build/airbuilder.nut build/stationbuil
 build/railbuilder.nut:	// TODO: switch station direction
 build/stationbuilder.nut:		// TODO: need to rethink many (all) building/demolish trys functions, having a depot with a road vehicle in it (but not stop at depot) prevent demolishing the tile, this is not crical, but this fool us
 build/airbuilder.nut:// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
-build/builder.nut:function cBuilder::RemoveBlacklistTiles(tilelist) // TODO: fix me
 build/builder.nut:	// TODO: i suppose our HQ can make next test fail, so todo is add a check & move the hq
 build/builder.nut:	// TODO: check also tile is own by us, but at least a train related stuff, else we may destroy
 handler/chemin.nut:		// TODO: we shouldn't add the destination airport in it, maybe we have source town with 4+ but not a proof destination town >=4k
 handler/chemin.nut:		// TODO: add airport station in the network instead of the route itself
 handler/vehiclehandler.nut:AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why
+handler/checks.nut:					{ // don't push the vehicle that is loading, TODO: might fail if 2 vehicles with a bit of cargo enter the station, better found a way to test station. But it's a rare case
 handler/events.nut:// TODO: watch out for eventType=even[0].GetEventType()
 handler/events.nut:				// TODO: Handle it. 
 main.nut:TODO: find how the internal ttd name vehicle.max_boats vehicle.max_aircrafts

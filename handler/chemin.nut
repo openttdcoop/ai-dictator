@@ -24,7 +24,6 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 	DList = null; 		// Destinations List
 	GList = null;		// List of our trains stations
 	Item = null;
-	badLocation = null;
 	route=null;
 	rail_max=null;		// maximum trains vehicle a station can handle
 	road_max=null;		// maximum road vehicle a station can handle
@@ -46,7 +45,6 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		{
 		root = that;
 		Item = cCheminItem();
-		badLocation= this.Item.badLocation;
 		route=this.Item.ROUTE;
 		nowRoute=-1;
 		buildmode=true;
@@ -60,6 +58,47 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		repair_routes = AIList();
 		}
 	}
+
+function cChemin::RouteTownsInjector()
+{
+return;
+local towns=AITownList();
+local alttowns=AIList();
+local town_connector=[];
+local towndone=AIList();
+towns.Valuate(AITown.GetPopulation);
+towns.Sort(AIList.SORT_BY_VALUE,false);
+alttowns.AddList(towns);
+foreach (town, dummy in towns)
+	{ DInfo("doing town "+town+" connect="+town_connector.len()+" done="+towndone.Count()); AIController.Sleep(2);
+	foreach (alttown, dummy2 in alttowns)
+		{
+		local towncheck=1000+(town*alttown);
+		if (!towndone.HasItem(towncheck) && town != alttown)
+			{ DInfo("add "+town+" -> "+alttown+" "+(town != alttown)+" "+(towndone.HasItem(towncheck))+" "+towncheck);
+			towndone.AddItem(towncheck, 0);
+			town_connector.push(town);
+			town_connector.push(alttown);
+			}
+		}
+	}
+for (local i=0; i < town_connector.len(); i++)
+	{
+	DInfo("Source town = "+AITown.GetName(town_connector[i])+"("+AITown.GetPopulation(town_connector[i])+") -> "+AITown.GetName(town_connector[i+1])+"("+AITown.GetPopulation(town_connector[i+1])+")",0);
+	i++
+	}
+for (local i=0; i < town_connector.len(); i++)
+	{
+	local srctown=town_connector[i];
+	local dsttown=town_connector[i+1];
+	
+	i++; 
+	}
+crashme();
+/*foreach (stown, ttown in town_connector)
+	{ DInfo("Source town = "+AITown.GetName(stown)+" -> "+AITown.GetName(ttown),0);	}
+*/
+}
 
 function cChemin::RouteGetRailType(idx)
 // return rail type use in that idx route
@@ -372,6 +411,7 @@ DInfo(it.Count()+" industries on map",0);
 local cargoList=AICargoList();
 local villeList=AITownList();
 DInfo(villeList.Count()+" towns on map",0);
+root.chemin.RouteTownsInjector();
 // first, let's find industries
 foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
 // now towns
@@ -444,6 +484,7 @@ for (local i=0; i < listCounter; i++)
 	{
 	root.chemin.RouteMalusLower(i); // decrease a bit our malus on road
 	root.chemin.UpdateStartRoute(i);
+	AIController.Sleep(1);
 	//root.chemin.RListUpdateItem(i,road);
 	}
 }

@@ -498,7 +498,6 @@ else	{
 function cCarrier::VehicleIsTop(veh)
 // return engine modele if the vehicle can be upgrade
 {
-root.chemin.buildmode=true;
 local idx=root.carrier.VehicleFindRouteIndex(veh);
 if (idx < 0) return -1; // tell we're at top already for unknow vehicle
 local road=root.chemin.RListGetItem(idx);
@@ -706,6 +705,7 @@ tlist.KeepValue(1);
 local flag=-1;
 foreach (i, dummy in tlist)
 	{
+	AIController.Sleep(1); // Brumi's advice
 	flag=cCarrier.VehicleGetFlag(i); // safe, return -1 on failure
 	DInfo("Flag set = "+flag,2);
 	//if (flag == -1) flag=DEPOT_RESTART; // set it for a restart

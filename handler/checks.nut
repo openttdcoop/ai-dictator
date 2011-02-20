@@ -72,6 +72,7 @@ function cBuilder::RouteIsDamage(idx)
 {
 local road=root.chemin.RListGetItem(idx);
 if (road.ROUTE.kind != AIVehicle.VT_ROAD)	return;
+if (!road.ROUTE.isServed)	return;
 if (!root.chemin.repair_routes.HasItem(idx))	root.chemin.repair_routes.AddItem(idx,0);
 }
 

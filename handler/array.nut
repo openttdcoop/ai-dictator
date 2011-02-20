@@ -84,10 +84,8 @@ class cStation
 class cCheminItem
 {
 	ROUTE = null;
-	badLocation= null;
 	constructor()
 	{
-		badLocation=[];		// we will hold here all locations where a train station isn't able to be functional
 		ROUTE = {
 		uniqID = 0,		// an uniqID to identify the ROUTE
 		isServed = false,	// if true we use that ROUTE
@@ -141,7 +139,7 @@ local dummy=cStation();
 local realidx=idx*dummy.STATION.len();
 if (idx >= root.chemin.GListGetSize() || idx < 0)
 	{
-	DInfo("Warning: index out of limits with GList !!! idx="+idx+" realidx="+realidx+" GList.len="+root.chemin.GList.len(),1);
+	DWarn("Index out of limits with GList !!! idx="+idx+" realidx="+realidx+" GList.len="+root.chemin.GList.len(),1);
 	realidx=-1;
 	}
 return realidx;
@@ -258,7 +256,7 @@ local dummy=cEndDepot();
 local realidx=idx*dummy.DEPOT.len();
 if (idx > root.chemin.DListGetSize() || idx < 0)
 	{
-	DWarn("Warning: index out of limits with DList !!! idx="+idx+" realidx="+realidx+" DList.len="+root.chemin.DList.len(),1);
+	DWarn("Index out of limits with DList !!! idx="+idx+" realidx="+realidx+" DList.len="+root.chemin.DList.len(),1);
 	realidx=-1;
 	}
 return realidx;
@@ -337,7 +335,7 @@ local dummy=cCheminItem();
 local realidx=idx*dummy.ROUTE.len();
 if (idx > root.chemin.RListGetSize() || idx < 0)
 	{
-	DInfo("Warning: index out of limits with RList !!! idx="+idx+" realidx="+realidx+" RList.len="+root.chemin.RList.len(),1);
+	DWarn("Index out of limits with RList !!! idx="+idx+" realidx="+realidx+" RList.len="+root.chemin.RList.len(),1);
 	realidx=-1;
 	}
 return realidx;

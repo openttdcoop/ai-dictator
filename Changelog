@@ -1,5 +1,13 @@
-changeset:   55:d90923fbc7fc
+changeset:   56:452db8546b29
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 18 23:43:36 2011 +0100
+files:       Changelog build/airbuilder.nut build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut info.nut main.nut utils/banker.nut utils/debug.nut utils/misc.nut utils/tile.nut
+description:
+- Tags all files GNU
+
+
+changeset:   55:d90923fbc7fc
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Fri Feb 18 22:45:28 2011 +0100
 files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
