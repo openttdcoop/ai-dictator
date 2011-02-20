@@ -43,7 +43,7 @@ static	DIR_SW = 3;
 		}
 	}
 
-function cBuilder::BlacklistTile(tile)
+function cBuilder::BlacklistThatTile(tile)
 /**
 * Add a tile to our blacklist
 * 
@@ -416,6 +416,7 @@ function cBuilder::TryBuildThatRoute(idx)
 // advance the route construction
 {
 local rr=root.chemin.RListGetItem(idx);
+if (rr == -1)	return;
 local success=false;
 DInfo("Route #"+idx+" Status:"+rr.ROUTE.status,1);
 root.chemin.RListDumpOne(idx);

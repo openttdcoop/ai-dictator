@@ -124,6 +124,7 @@ switch (eventType)
 		event = AIEventVehicleUnprofitable.Convert(event);
 		local vehicle = event.GetVehicleID();
 		DInfo(AIVehicle.GetName(vehicle) + " is not profitable, sending it to depot");
+		root.builder.RouteIsDamage(root.carrier.VehicleFindRouteIndex(vehicle));
 		root.carrier.VehicleToDepotAndSell(vehicle);
 	break;
 	case AIEvent.AI_ET_COMPANY_IN_TROUBLE:

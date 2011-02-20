@@ -181,7 +181,6 @@ function cBuilder::RoadBuildDepot(roadidx, start)
 */
 {
 local road=root.chemin.RListGetItem(roadidx);
-if (road < 0)	return -1;
 local source=null;
 local stationobj=null;
 local other=null;

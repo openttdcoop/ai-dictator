@@ -104,26 +104,6 @@ if (current+1 == total)	current=0;
 AIOrder.SkipToOrder(veh, current);
 }
 
-function cCarrier::VehicleIsLoading(takeone, taketwo)
-// compare a list of vehicle (takeone & taketwo) return true if any vehicle is loading
-{
-if (takeone.Count() != taketwo.Count()) return false; // must be equal list
-foreach (x, dummy1 in takeone)
-	{
-	local before=0;
-	local after=0;
-	if (x in taketwo)
-		{
-		before=dummy1;
-		after=taketwo.GetValue(x);
-		if (before == after) continue;
-		if (before < after)	return true;
-			else		return false;
-		}
-	}
-return false;
-}
-
 function cCarrier::VehicleGetCargoLoad(veh)
 // return amout of any cargo loaded in the vehicle
 {
@@ -420,6 +400,7 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 	{
 	local road=root.chemin.RListGetItem(i);
 	if (road.ROUTE.groupe_id == group)	{ idx=i; break; }
+	AIController.Sleep(1);
 	}
 return idx;
 }

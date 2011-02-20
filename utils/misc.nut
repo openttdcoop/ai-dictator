@@ -69,7 +69,7 @@ if (debugValue <= debugState )
 	}
 }
 
-function DWarn(putMsg)
+function DWarn(putMsg, debugValue=1)
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");

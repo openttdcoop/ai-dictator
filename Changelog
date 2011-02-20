@@ -1,5 +1,16 @@
-changeset:   56:452db8546b29
+changeset:   57:64a67402a24d
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 20 01:20:52 2011 +0100
+files:       Changelog TODO.txt build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut utils/misc.nut
+description:
+- Correct bug with index found by Zuu
+- Add some more test on build failure
+- Change a lot of building road station/depot functions
+- Correct a bug Brumi indirectly help me found with upgrading vehicle
+
+
+changeset:   56:452db8546b29
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Fri Feb 18 23:43:36 2011 +0100
 files:       Changelog build/airbuilder.nut build/builder.nut build/railbuilder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut info.nut main.nut utils/banker.nut utils/debug.nut utils/misc.nut utils/tile.nut

@@ -41,8 +41,6 @@ if (!vehcheck.IsEmpty())
 	return false;
 	}
 local wasnamed=AIStation.GetName(realidobj);
-// blacklist that tile
-root.builder.BlacklistTile(AIStation.GetLocation(realidobj));
 if (!AITile.DemolishTile(AIStation.GetLocation(realidobj))) return false;
 DInfo("Removing station "+wasnamed+" unused by anyone",0);
 local fakeid=-1;
