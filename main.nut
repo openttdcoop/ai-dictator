@@ -65,7 +65,7 @@ class DictatorAI extends AIController
    	{
 	chemin=cChemin(this);
 	minRank = 5000;		// ranking below that are drop jobs
-	secureStart= 2;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
+	secureStart= 0;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
 	bank = cBanker(this);
 	eventManager= cEvents(this);
 	builder=cBuilder(this);
@@ -92,7 +92,7 @@ function DictatorAI::Start()
 		DInfo("We have "+(chemin.GListGetSize()-1)+" stations",0);
 		DInfo("We know "+(chemin.RListGetSize()-1)+" routes",0);
 		DInfo(" ");
-		secureStart=1;
+		secureStart=0;
 		chemin.RemapGroupsToRoutes();
 		chemin.RouteMaintenance();
 		}
@@ -115,7 +115,11 @@ function DictatorAI::Start()
 				if (chemin.nowRoute==-1)	chemin.nowRoute=chemin.StartingJobFinder();
 				if (chemin.nowRoute>-1)
 					{
-					builder.TryBuildThatRoute(chemin.nowRoute);
+					local costsbuild=bank.GetConstructionsCosts(chemin.nowRoute);
+					bank.RaiseFundsTo(costsbuild);
+					DInfo("Route #"+chemin.nowRoute+" estimate costs to build : "+costsbuild,1);
+					if (bank.CanBuyThat(costsbuild))	builder.TryBuildThatRoute(chemin.nowRoute);
+									else	DInfo("Route is too expansive for us",1);
 					DInfo(" ");
 					// now jump to build stage
 					}

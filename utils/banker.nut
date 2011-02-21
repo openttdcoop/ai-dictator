@@ -41,12 +41,58 @@ if (goodcash < root.bank.mincash) goodcash=root.bank.mincash;
 if (ourLoan==0 && cash>=root.bank.mincash)	{ root.bank.unleash_road=true; }
 	else	{ root.bank.unleash_road=false; }
 if (cash < goodcash)	{ root.bank.canBuild=false; }
-if (ourLoan < maxLoan)	{ root.bank.canBuild=true; }
+if (maxLoan > 2000000 && ourLoan > 0)	{ DInfo("Trying to repay loan",2); root.bank.canBuild=false; } // wait to repay loan
+if (ourLoan < maxLoan+(4*AICompany.GetLoanInterval()))	{ root.bank.canBuild=true; }
 local veh=AIVehicleList();
 if (root.bank.busyRoute)	root.bank.canBuild=false;
 if (root.builddelay)	root.bank.canBuild=false;
+if (root.chemin.map_group_to_route.Count() == 0)	root.bank.canBuild=true; // we have 0 route force a build
 if (root.bank.canBuild) DInfo("Construction is now allowed",1);
 DInfo("canBuild="+root.bank.canBuild+" busyRoute="+root.bank.busyRoute+" goodcash="+goodcash+" unleash="+root.bank.unleash_road+" nowroute="+root.chemin.nowRoute,2);
+}
+
+function cBanker::GetConstructionsCosts(idx)
+// return estimate costs to try build that route
+{
+local road=root.chemin.RListGetItem(idx);
+local money=0;
+local clean=AITile.GetBuildCost(AITile.BT_CLEAR_HOUSE);
+local engine=root.carrier.GetVehicle(idx);
+local engineprice=0;
+if (engine != -1)	engineprice=AIEngine.GetPrice(engine);
+switch (road.ROUTE.kind)
+	{
+	case	AIVehicle.VT_ROAD:
+		// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
+		money+=engineprice*2;
+		money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
+		money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT));
+		money+=4*clean;
+		money+=(4+road.ROUTE.length)*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD));
+	break;
+	case	AIVehicle.VT_RAIL:
+		local rtype=AIRail.GetCurrentRailType();
+		// 1 vehicle + 2 stations + 2 depot + 4 destuction + 3 tracks entries and length*rail
+		money+=engineprice*2;
+		money+=(2+5)*(AIRail.GetBuildCost(rtype, AIRoad.BT_STATION)); // station train 5 length
+		money+=2*(AIRail.GetBuildCost(rtype, AIRoad.BT_DEPOT));
+		money+=4*clean;
+		money+=(3+road.ROUTE.length)*(AIRail.GetBuildCost(rtype, AIRoad.BT_TRACK));
+	break;
+	case	AIVehicle.VT_WATER:
+		// 2 vehicle + 2 stations + 2 depot
+		money+=engineprice*2;
+		money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK));
+		money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT));
+	break;
+	case	AIVehicle.VT_AIR:
+		// 2 vehicle + 2 airports
+		money+=engineprice*2;
+		money+=2*(AIAirport.GetPrice(root.builder.GetAirportType()));
+	break;
+	}
+DInfo("Estimated costs to build route "+idx+" : "+money,2);
+return money;
 }
 
 function cBanker::GetLoanValue(money)

@@ -1,5 +1,24 @@
-changeset:   63:13f725cba0cc
+changeset:   64:796f4cca3e6c
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Mon Feb 21 14:48:41 2011 +0100
+files:       Changelog build/airbuilder.nut build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut info.nut main.nut utils/banker.nut utils/debug.nut utils/misc.nut
+description:
+- Change groupe_name & groupe_id -> group_name & groupe_id, less french
+- Now check a road structure is correctly connect before valid it
+- Remove many building station/depot and centralise all in one so it's
+easier to handle errors...
+- We know keep a list that map vehicle group to our route index, this
+will greatly speed up vehicle handling
+- Rewrote the logic to find a destination job, better code, faster, also
+should support prebuild routes (if not ready)
+- Now support distance for vehicle: min, max limit by money & max, and
+they change while playing (if money trigger is ok)
+- Correct bugs when getting an item from an ailist
+- Clean out unused code from array
+
+
+changeset:   63:13f725cba0cc
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Sun Feb 20 17:37:53 2011 +0100
 files:       Changelog handler/chemin.nut

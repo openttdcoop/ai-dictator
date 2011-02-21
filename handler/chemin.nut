@@ -44,7 +44,7 @@ static	TRANSPORT_DISTANCE=[40,150,200, 30,80,110, 40,90,150, 40,150,200];
 	global_malus=null;	// we remove that global malus from any route malus as soon as we can
 	max_transport_distance=null;	// maximum distance to transport cargo
 	min_transport_distance=null;	// minimum distance to transport cargo
-	match_group_to_route=null;	// a list of group and value = index of the route that have that group, faster checks
+	map_group_to_route=null;	// a list of group and value = index of the route that have that group, faster checks
 	max_town_jobs=null;
 	
 	constructor(that)
@@ -62,7 +62,7 @@ static	TRANSPORT_DISTANCE=[40,150,200, 30,80,110, 40,90,150, 40,150,200];
 		DList = AIList();	// this is our cEndDepot list, use to find a destination station
 		GList = [];		// this is our Station list (rail station only)
 		repair_routes = AIList();
-		match_group_to_route=AIList();
+		map_group_to_route=AIList();
 		max_transport_distance = 400;
 		max_town_jobs=200;	// maximum jobs we will do with towns
 		}
@@ -71,11 +71,11 @@ static	TRANSPORT_DISTANCE=[40,150,200, 30,80,110, 40,90,150, 40,150,200];
 function cChemin::RemapGroupsToRoutes()
 // reset and rebuild the match_group_to_route list with proper group->route that use it
 {
-root.chemin.match_group_to_route.Clear();
+root.chemin.map_group_to_route.Clear();
 for (local i=0; i < root.chemin.RListGetSize(); i++)
 	{
 	local road=root.chemin.RListGetItem(i);
-	root.chemin.match_group_to_route.AddItem(road.ROUTE.group_id, i);
+	root.chemin.map_group_to_route.AddItem(road.ROUTE.group_id, i);
 	}
 }
 
@@ -519,7 +519,7 @@ DInfo(it.Count()+" industries on map",0);
 local cargoList=AICargoList();
 local villeList=AITownList();
 DInfo(villeList.Count()+" towns on map",0);
-//root.chemin.RouteTownsInjector();
+root.chemin.RouteTownsInjector();
 // first, let's find industries
 foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
 //² now towns
@@ -626,6 +626,8 @@ function cChemin::RouteIsValid(idx)
 {
 root.chemin.RouteStatusChange(idx,2);
 local road=root.chemin.RListGetItem(idx);
+road.ROUTE.money=root.bank.GetConstructionsCosts(idx);
+root.chemin.RListUpdateItem(idx, road);
 DInfo("Route created: "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name+" "+road.ROUTE.length+"m",0);
 }
 
@@ -690,6 +692,7 @@ else	{
 	}
 road.ROUTE.length=AITile.GetDistanceManhattanToTile(road.ROUTE.src_place, road.ROUTE.dst_place);
 root.chemin.RListUpdateItem(idx,road);
+DInfo("Choosing transport type",2);
 if (!root.chemin.PickupTransportType(idx)) return -1;
 return idx+1; // make sure return isn't = idx
 }
@@ -757,7 +760,7 @@ if (root.debug) foreach (i, dummy in tweaklist) { DInfo("roadtype="+i+" possible
 tweaklist.RemoveValue(0);
 if (tweaklist.IsEmpty())
 	{
-	DWarn("Can't pickup a road type with the current vehicle limitation",1); 
+	DWarn("Can't pickup a transport type with the current vehicle limitation",1); 
 	root.chemin.RouteIsNotDoable(idx);
 	return false;
 	}
@@ -782,6 +785,13 @@ switch (res)
 roadtype=root.chemin.RouteTypeToString(road.ROUTE.kind);
 DInfo("Choosen road: "+road.ROUTE.kind+" "+roadtype,2);
 root.chemin.RListUpdateItem(idx,road);
+local success=root.carrier.GetVehicle(idx);
+if (success < 0)
+	{
+	DWarn("There's no vehicle for that transport type we could use to carry that cargo",2);
+	return false;
+	root.chemin.RouteIsNotDoable(idx);
+	}
 return true;
 }
 
@@ -835,7 +845,7 @@ do 	{
 		root.chemin.RListDumpOne(startidx);
 		endidx=root.chemin.RouteFindDestination(startidx);
 		}
-	root.NeedDelay(50);
+	root.NeedDelay(2);
 	if (endidx == -2)	endidx=startidx;	// -2 = we know where to go already
 	if (startidx >-1 && endidx >-1)	{ goodRoute=true; }
 	if (gotmalus >= chemSize)	root.secureStart=0; // disable it, we try all routes and none can be done with road vehicle
@@ -848,7 +858,7 @@ do 	{
 	madLoop++;
 	} while (!goodRoute && madLoop < madLoopIter);
 if (!goodRoute)	{ return -1; }
-	else	{ if (endidx!=startidx)	root.chemin.RouteIsValid(startidx); } // only if route is not already known
+	else	{ root.chemin.RouteIsValid(startidx); }
 return startidx;
 }
 

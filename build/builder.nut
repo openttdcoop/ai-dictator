@@ -440,8 +440,8 @@ root.chemin.RListDumpOne(idx);
 if (rr.ROUTE.status==1)	root.chemin.nowRoute=-1; // that route need to get an ending route
 if (rr.ROUTE.status==2) // not using switch/case so we can advance steps in one pass
 	{
-	success=root.carrier.GetVehicle(idx);
-	// this check we could pickup a vehicle to validate road type can be use
+	success=root.chemin.PickupTransportType(idx)
+	// this check that we could pickup a vehicle to validate road type can be used, also recalc that route distance
 	if (!success)
 		{
 		root.chemin.RouteIsNotDoable(idx); // retry that road real later
@@ -449,7 +449,7 @@ if (rr.ROUTE.status==2) // not using switch/case so we can advance steps in one 
 		}
 	else	{ root.chemin.RouteStatusChange(idx,3); } // advance to phase 3
 	}
-root.bank.RaiseFundsBigTime();
+root.bank.RaiseFundsBy(rr.ROUTE.money);
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==3)
 	{
@@ -547,7 +547,7 @@ if (rr.ROUTE.status==8)
 	root.builder.StationIsAccepting(root.builder.GetStationID(idx,false));
 	root.builder.StationIsProviding(root.builder.GetStationID(idx,true));
 	if (root.secureStart > 0)	root.builddelay=true;
-	root.chemin.match_group_to_route.AddItem(rr.ROUTE.group_id, idx);
+	root.chemin.map_group_to_route.AddItem(rr.ROUTE.group_id, idx);
 	root.chemin.nowRoute=-1; // Allow us to work on a new route now
 	}
 return success;

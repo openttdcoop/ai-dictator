@@ -449,10 +449,10 @@ if (veh == null)	{
 			DError("No suitable train to buy !",1);
 			road=root.chemin.RouteMalusHigher(road);
 			root.chemin.RListUpdateItem(root.chemin.nowJob,road);
-			return false;
+			return -1;
 			}
 DInfo("Choosen train: "+AIEngine.GetName(veh),2);
-return true;
+return veh;
 }
 
 function cCarrier::GetRoadVehicle(idx)
@@ -464,10 +464,10 @@ if (veh == null)	{
 			DError("No suitable road vehicle to buy !",1);
 			road=root.chemin.RouteMalusHigher(road);
 			root.chemin.RListUpdateItem(idx,road);
-			return false;
+			return -1;
 			}
-DInfo("Choosen vehicule: "+AIEngine.GetName(veh),2);
-return true;
+DInfo("Choosen road vehicle: "+AIEngine.GetName(veh),2);
+return veh;
 }
 
 function cCarrier::GetAirVehicle(idx)
@@ -483,10 +483,10 @@ if (veh == null)	{
 				else	DError("No suitable choppers to buy !");
 			road=root.chemin.RouteMalusHigher(road);
 			root.chemin.RListUpdateItem(idx,road);
-			return false;
+			return -1;
 			}
 DInfo("Choosen aircraft: "+AIEngine.GetName(veh),2);
-return true;
+return veh;
 }
 
 function cCarrier::AircraftIsChopper(vehicle)
@@ -611,7 +611,7 @@ function cCarrier::GetVehicle(idx)
 // Get current choosen vehicle, reroute depending on road type
 {
 local what=root.chemin.RListGetItem(idx);
-local success=false;
+local success=-1;
 switch (what.ROUTE.kind)
 	{
 	case AIVehicle.VT_ROAD:
