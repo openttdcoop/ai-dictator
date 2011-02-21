@@ -118,7 +118,6 @@ DInfo("Routes: "+(root.chemin.RListGetSize()-1)+" invalid:"+invalid+" running: "
 
 function cChemin::ShowStationCapacity()
 {
-return true;
 if (!root.debug) return;
 local stations=null;
 for (local i=0; i < root.chemin.GListGetSize(); i++)

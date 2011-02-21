@@ -1,5 +1,15 @@
-changeset:   66:04e61632d5fd
+changeset:   67:f4eae252c3e0
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Mon Feb 21 23:13:19 2011 +0100
+files:       Changelog TODO.txt build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut main.nut
+description:
+- More clean output for non debug play
+- Don't resend vehicle or check a vehicle that is told to go to depot
+- Don't try to clone a crash vehicle on crash event
+
+
+changeset:   66:04e61632d5fd
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Mon Feb 21 21:58:40 2011 +0100
 files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut main.nut utils/misc.nut

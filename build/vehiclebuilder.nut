@@ -25,6 +25,7 @@ class cCarrier
 	AirportTypeLimit=null;  // can't make it a const, squirrel is so weird
 	top_vehicle=null;	// the list of vehicle engine id we know cannot be upgrade
 	to_depot=null;		// list the vehicle going to depot
+	do_profit=null;		// Record each vehicle profits
 
 	constructor(that)
 		{
@@ -32,6 +33,7 @@ class cCarrier
 		vehnextprice=0;
 		top_vehicle=AIList();
 		to_depot=AIList();
+		do_profit=AIList();
 		AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
 		}
 	}
@@ -44,6 +46,19 @@ foreach (cargo, dummy in cargotype)
 	{
 	if (AIVehicle.GetCapacity(veh, cargo) > 0)	return cargo;
 	}
+}
+
+function cCarrier::VehicleGetProfit(veh)
+// add a vehicle to do_profit list, calc its profit and also return it
+{
+local profit=AIVehicle.GetProfitThisYear(veh);
+local oldprofit=0;
+if (root.carrier.do_profit.HasItem(veh))	oldprofit=root.carrier.do_profit.GetValue(veh);
+					else	root.carrier.do_profit.AddItem(veh,0);
+if (profit > oldprofit)	oldprofit=profit - oldprofit;
+		else	oldprofit=oldprofit+profit;
+root.carrier.do_profit.SetValue(veh, oldprofit);
+return oldprofit;
 }
 
 function cCarrier::CanAddNewVehicle(roadidx, start)

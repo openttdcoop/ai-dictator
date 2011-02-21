@@ -80,13 +80,19 @@ function cBuilder::RouteNeedRepair()
 {
 DInfo("Damage routes: "+root.chemin.repair_routes.Count(),1);
 if (root.chemin.repair_routes.IsEmpty()) return;
+local deletethatone=-1;
 foreach (routes, dummy in root.chemin.repair_routes)
 	{
+	local trys=dummy;
+	trys++;
+	DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1);
 	local test=root.builder.CheckRoadHealth(routes);
-	if (test)	root.chemin.repair_routes.SetValue(routes, 1)
-		else	root.chemin.repair_routes.SetValue(routes, 0);
+	if (test)	root.chemin.repair_routes.SetValue(routes, -1)
+		else	root.chemin.repair_routes.SetValue(routes, trys);
+	if (trys >= 30)	{ deletethatone=routes }
 	}
-root.chemin.repair_routes.KeepValue(0);
+root.chemin.repair_routes.RemoveValue(-1);
+if (deletethatone != -1)	{ root.builder.RouteIsInvalid(deletethatone); }
 }
 
 
@@ -94,18 +100,7 @@ function cBuilder::YearlyChecks()
 {
 root.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
-if (root.chemin.repair_routes.Count()==0)
-	{ // No routes are damage, let's add a random one for a check
-	root.builder.RouteIsDamage(AIBase.RandRange(root.chemin.RListGetSize()));
-	}
-/*for (local j=0; j < root.chemin.RListGetSize(); j++)
-	{
-	local road=root.chemin.RListGetItem(j);
-	if (!road.ROUTE.isServed) continue;
-	if (road.ROUTE.kind != AIVehicle.VT_ROAD)	continue;
-	local test=root.builder.CheckRoadHealth(j);
-	DInfo("Health check return "+test,1);
-	}*/
+root.carrier.do_profit.Clear();
 }
 
 function cBuilder::AirportStationsBalancing()

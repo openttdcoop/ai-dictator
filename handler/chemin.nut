@@ -177,13 +177,6 @@ foreach (town, dummy in towns)
 			}
 		}
 	}
-/*
-for (local i=0; i < town_connector.len(); i++)
-	{
-	DInfo("Source town = "+AITown.GetName(town_connector[i])+"("+AITown.GetPopulation(town_connector[i])+") -> "+AITown.GetName(town_connector[i+1])+"("+AITown.GetPopulation(town_connector[i+1])+")",0);
-	i++
-	}
-*/
 local mailcargo=root.carrier.GetMailCargo();
 local passcargo=root.carrier.GetPassengerCargo();
 root.bank.unleash_road=true; // make sure it's true before filtering distances
@@ -199,13 +192,13 @@ for (local i=0; i < town_connector.len(); i++)
 		local maxdist=root.chemin.GetTransportDistance(transport,true);
 		if (distance > maxdist)	continue;
 		root.chemin.RouteTownsInjector_CreateRoute(srctown, dsttown, distance, passcargo, transport);
+		if (transport == AIVehicle.VT_AIR) // Add also a mail work for aircrafts
+			root.chemin.RouteTownsInjector_CreateRoute(srctown, dsttown, distance, mailcargo, transport);
 		}
 	AIController.Sleep(2);
 	i++;
 	}
 root.bank.unleash_road=false;
-root.chemin.RouteMaintenance();
-root.NeedDelay(200);
 }
 
 function cChemin::RouteGetRailType(idx)
@@ -510,6 +503,7 @@ foreach(c, dummy in ct)
 		root.chemin.CreateNewRoute(c,industryID,false);
 		}
 	}
+AIController.Sleep(2);
 }
 
 function cChemin::RouteCreateALL()

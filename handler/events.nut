@@ -91,7 +91,7 @@ switch (eventType)
 		local vehicle = null;
 		event = AIEventVehicleCrashed.Convert(event);
 		vehicle = event.GetVehicleID();
-		DInfo("Vehicle "+root.carrier.VehicleGetFormatString(vehicle)+" has crashed !!!",0);
+		DInfo("Vehicle "+root.carrier.VehicleGetFormatString(vehicle)+" has crashed. I suspect everyone ! Some heads will fall !!!",0);
 		if (!AIVehicle.IsValidVehicle(vehicle)) break;
 		DInfo("Vehicle state: " + AIVehicle.GetState(vehicle),1);
 	break;

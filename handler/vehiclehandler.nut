@@ -381,7 +381,7 @@ function cCarrier::VehicleUpgradeEngineAndWagons(veh)
 local idx=root.carrier.VehicleFindRouteIndex(veh);
 if (idx < 0)
 	{
-	DError("This vehicle "+root.carrier.VehicleGetFormatString+" is not use by any route !!!",1);
+	DError("This vehicle "+root.carrier.VehicleGetFormatString(veh)+" is not use by any route !!!",1);
 	root.carrier.VehicleSell(veh);
 	return false;
 	}
@@ -428,7 +428,6 @@ switch (AIVehicle.GetVehicleType(veh))
 	return;
 	break;
 	}
-AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why
 root.builder.IsCriticalError();
 root.builder.CriticalError=false;
 AIGroup.MoveVehicle(road.ROUTE.group_id,newveh);
@@ -437,12 +436,13 @@ local newenginename=AIVehicle.GetName(newveh)+"("+AIEngine.GetName(AIVehicle.Get
 if (AIVehicle.IsValidVehicle(newveh))
 	{
 	DInfo("-> Vehicle "+root.carrier.VehicleGetFormatString(veh)+" replace with "+root.carrier.VehicleGetFormatString(newveh),0);
-	AIVehicle.StartStopVehicle(newveh);
+	AIVehicle.StartStopVehicle(newveh); // send it without orders, it should get catch
 	AIVehicle.SellWagonChain(veh,0);
 	root.carrier.VehicleSell(veh);
 	root.carrier.vehnextprice=0;
 	}
 else	{
+	AIVehicle.VehicleOrdersReset(veh); // because its orders are now goto depot, next vehicle check will catch it
 	AIVehicle.StartStopVehicle(veh);
 	root.carrier.vehnextprice=0;
 	}
@@ -584,7 +584,8 @@ foreach (vehicle, dummy in tlist)
 		root.bank.busyRoute=true;
 		continue;
 		}
-	price=AIVehicle.GetProfitThisYear(vehicle);
+	price=root.carrier.VehicleGetProfit(vehicle);
+	DInfo("-> Vehicle "+name+" profits : "+price,2);
 	age=AIVehicle.GetAge(vehicle);
 	if (age > 240 && price < 0) // (8 months)
 		{
