@@ -51,7 +51,7 @@ if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
 // find traffic that use that airport & reroute it
 root.chemin.under_upgrade=true;
 // prior to reroute aircraft, make sure they have a route to go
-root.carrier.VehicleBuildOrders(road.ROUTE.groupe_id); // and try to rebuild its orders
+root.carrier.VehicleBuildOrders(road.ROUTE.group_id); // and try to rebuild its orders
 root.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 
 root.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,true);

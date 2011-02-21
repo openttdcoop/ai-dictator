@@ -94,5 +94,6 @@ function cBuilder::RouteDelete(idx)
 {
 root.builder.RouteIsInvalid(idx);
 root.chemin.RListDeleteItem(idx);
+root.chemin.RemapGroupsToRoutes();
 }
 

@@ -18,14 +18,16 @@ class cBanker
 	unleash_road = null;	// true to build big road, false for small size
 	mincash=null;
 	busyRoute=null;		// true if we are still busy handling a route, we need false to build new route
+	basePrice=null;		// it's just a base price cost to remove a rock tile
 	
 	constructor(that)
 		{
 		root=that;
 		unleash_road=false;
 		canBuild=true;
-		mincash=70000;
+		mincash=10000;
 		busyRoute=false;
+		basePrice=0;
 		}
 	}
 
@@ -70,7 +72,7 @@ function cBanker::RaiseFundsBigTime()
 {
 local tomax=5000000;
 local max=tomax;
-if (AICompany.GetMaxLoanAmount() < tomax)	max=AICompany.GetMaxLoanAmount();
+if (AICompany.GetMaxLoanAmount() < tomax)	max=(AICompany.GetMaxLoanAmount()*80/100);
 root.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
 }
 

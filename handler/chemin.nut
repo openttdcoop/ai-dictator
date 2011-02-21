@@ -16,8 +16,10 @@
 
 class cChemin
 	{
-static	IDX_HELPER = 256;		// use to create an uniq ID (also use to set handicap value)
+static	IDX_HELPER = 512;		// use to create an uniq ID (also use to set handicap value)
 static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that value population
+static	TRANSPORT_DISTANCE=[40,150,200, 30,80,110, 40,90,150, 40,150,200];
+// min, limited, max distance for rail, road, water & air vehicle
 	root = null;
 	Item = null;            // Item = our values for a route define by CCheminItem class
 	RList = null;		// the array of Starting Item (our routes, because all our route start at producing location)
@@ -35,11 +37,15 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 	nowRoute=null;		// the current route index we work on
 	cargo_fav=null;		// that cargo is our favorite cargo
 	virtual_air=null;	// this is the list of towns in our virtual air network
-	virtual_air_group_pass=null	// groupid for virtual air for passengers
-	virtual_air_group_mail=null	// groupid for virtual air for mail
+	virtual_air_group_pass=null;	// groupid for virtual air for passengers
+	virtual_air_group_mail=null;	// groupid for virtual air for mail
 	under_upgrade=null;	// true when we are doing upgrade on something
 	repair_routes=null; 	// list of routes that need repairs
 	global_malus=null;	// we remove that global malus from any route malus as soon as we can
+	max_transport_distance=null;	// maximum distance to transport cargo
+	min_transport_distance=null;	// minimum distance to transport cargo
+	match_group_to_route=null;	// a list of group and value = index of the route that have that group, faster checks
+	max_town_jobs=null;
 	
 	constructor(that)
 		{
@@ -52,12 +58,91 @@ static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that
 		virtual_air=[];
 		under_upgrade=false;
 		global_malus=0;
-		RList = [];	// this is our routes list
-		DList = [];	// this is our cEndDepot list, use to find a destination station
-		GList = [];	// this is our Station list (rail station only)
+		RList = [];		// this is our routes list
+		DList = AIList();	// this is our cEndDepot list, use to find a destination station
+		GList = [];		// this is our Station list (rail station only)
 		repair_routes = AIList();
+		match_group_to_route=AIList();
+		max_transport_distance = 400;
+		max_town_jobs=200;	// maximum jobs we will do with towns
 		}
 	}
+
+function cChemin::RemapGroupsToRoutes()
+// reset and rebuild the match_group_to_route list with proper group->route that use it
+{
+root.chemin.match_group_to_route.Clear();
+for (local i=0; i < root.chemin.RListGetSize(); i++)
+	{
+	local road=root.chemin.RListGetItem(i);
+	root.chemin.match_group_to_route.AddItem(road.ROUTE.group_id, i);
+	}
+}
+
+function cChemin::GetTransportDistance(transport_type, get_max)
+// Return the transport distance a transport_type could do
+// if get_max=true return maximum distance, else return minimum distance
+{
+local small=1000;
+local big=0;
+local target=transport_type * 3;
+local toret=0;
+for (local i=0; i < root.chemin.TRANSPORT_DISTANCE.len(); i++)
+	{
+	local min=root.chemin.TRANSPORT_DISTANCE[i];
+	local lim=root.chemin.TRANSPORT_DISTANCE[i+1];
+	local max=root.chemin.TRANSPORT_DISTANCE[i+2];
+	if (target == i)
+		{
+		if (get_max)
+			{
+			if (root.bank.unleash_road)	toret=max;
+						else	toret=lim;
+			}
+		else	toret=min;
+		}
+	if (min < small)	small=min;
+	if (max > big)		big=max;
+	i+=2; // next iter
+	}
+root.chemin.max_transport_distance=big;
+root.chemin.min_transport_distance=small;
+return toret;
+}
+
+function cChemin::RouteTownsInjector_GetUniqID(srctown, dsttown, cargo, kind)
+// create a uniqID for the routes we pre-build
+{
+if (dsttown == -1)	return 
+return (root.chemin.IDX_HELPER*3*srctown+dsttown)+(kind*4)+cargo;
+}
+
+function cChemin::RouteTownsInjector_CreateRoute(src_id, dst_id, distance, cargo, roadtype)
+// Add a new town pre-build town job
+{
+local road=cCheminItem();
+road.ROUTE.isServed=false;
+road.ROUTE.cargo_id=cargo;
+road.ROUTE.cargo_name=AICargo.GetCargoLabel(cargo);
+road.ROUTE.cargo_value=root.chemin.ValuateCargo(cargo);
+road.ROUTE.src_id=src_id;
+road.ROUTE.dst_id=dst_id;
+road.ROUTE.src_place=AITown.GetLocation(src_id);
+road.ROUTE.dst_place=AITown.GetLocation(dst_id);
+road.ROUTE.src_istown=true;
+road.ROUTE.dst_istown=true;
+road.ROUTE.src_name=AITown.GetName(src_id);
+road.ROUTE.dst_name=AITown.GetName(dst_id);
+road.ROUTE.status=1;
+road.ROUTE.kind=roadtype;
+if (road.ROUTE.dst_id==-1)	road.ROUTE.vehicule=0;
+			else	road.ROUTE.vehicule=-1;
+road.ROUTE.length=distance;
+road.ROUTE.uniqID=root.chemin.RouteTownsInjector_GetUniqID(src_id, dst_id, cargo, roadtype);
+root.chemin.RListAddItem(road);
+local rtypename=root.chemin.RouteTypeToString(road.ROUTE.kind);
+DInfo("Creating a new service: "+((root.chemin.RList.len()/road.ROUTE.len())-1)+":"+road.ROUTE.uniqID+" "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name+" for "+road.ROUTE.cargo_name+", "+road.ROUTE.length+"m"+" using "+rtypename,1);
+}
 
 function cChemin::RouteTownsInjector()
 // Inject prebuild jobs for towns
@@ -67,42 +152,60 @@ function cChemin::RouteTownsInjector()
 // We also remove undoable/unwanted connections (like dup connections)
 // We will keep only bigtowns->smalltowns jobs and drop smalltowns->bigtowns jobs, this will force shared station limit to be reach faster on bigtowns and new stations build on big towns to handle the flow
 {
+//local transport_list=[AIVehicle.VT_AIR, AIVehicle.VT_ROAD, AIVehicle.VT_WATER];
+local transport_list=[AIVehicle.VT_AIR, AIVehicle.VT_ROAD];
 local towns=AITownList();
 local alttowns=AIList();
 local town_connector=[];
 local towndone=AIList();
 towns.Valuate(AITown.GetPopulation);
 towns.Sort(AIList.SORT_BY_VALUE,false);
+towns.KeepTop(20);
 alttowns.AddList(towns);
+alttowns.KeepTop(10); // TODO: fixme
 foreach (town, dummy in towns)
-	{ DInfo("doing town "+town+" connect="+town_connector.len()+" done="+towndone.Count()); AIController.Sleep(2);
+	{ //DInfo("doing town "+town+" connect="+town_connector.len()+" done="+towndone.Count());
+	AIController.Sleep(2);
 	foreach (alttown, dummy2 in alttowns)
 		{
 		local towncheck=1000+(town*alttown);
 		if (!towndone.HasItem(towncheck) && town != alttown)
-			{ DInfo("add "+town+" -> "+alttown+" "+(town != alttown)+" "+(towndone.HasItem(towncheck))+" "+towncheck);
+			{ //DInfo("add "+town+" -> "+alttown+" "+(town != alttown)+" "+(towndone.HasItem(towncheck))+" "+towncheck);
 			towndone.AddItem(towncheck, 0);
 			town_connector.push(town);
 			town_connector.push(alttown);
 			}
 		}
 	}
+/*
 for (local i=0; i < town_connector.len(); i++)
 	{
 	DInfo("Source town = "+AITown.GetName(town_connector[i])+"("+AITown.GetPopulation(town_connector[i])+") -> "+AITown.GetName(town_connector[i+1])+"("+AITown.GetPopulation(town_connector[i+1])+")",0);
 	i++
 	}
+*/
+local mailcargo=root.carrier.GetMailCargo();
+local passcargo=root.carrier.GetPassengerCargo();
+root.bank.unleash_road=true; // make sure it's true before filtering distances
 for (local i=0; i < town_connector.len(); i++)
 	{
 	local srctown=town_connector[i];
 	local dsttown=town_connector[i+1];
-	
-	i++; 
+	local distance=AITile.GetDistanceManhattanToTile(AITown.GetLocation(srctown), AITown.GetLocation(dsttown));
+	if (distance > root.chemin.max_transport_distance)	{ i++; continue; }
+	if (distance < root.chemin.min_transport_distance)	{ i++; continue; }
+	foreach (transport in transport_list)
+		{
+		local maxdist=root.chemin.GetTransportDistance(transport,true);
+		if (distance > maxdist)	continue;
+		root.chemin.RouteTownsInjector_CreateRoute(srctown, dsttown, distance, passcargo, transport);
+		}
+	AIController.Sleep(2);
+	i++;
 	}
-crashme();
-/*foreach (stown, ttown in town_connector)
-	{ DInfo("Source town = "+AITown.GetName(stown)+" -> "+AITown.GetName(ttown),0);	}
-*/
+root.bank.unleash_road=false;
+root.chemin.RouteMaintenance();
+root.NeedDelay(200);
 }
 
 function cChemin::RouteGetRailType(idx)
@@ -188,7 +291,7 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 			// now moving aircraft in the virtual group id
 			local tomail=null;
 			tomail=AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_MAIL;
-			local vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+			local vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 			/*foreach (vehicle, dummy in vehlist)
 				{
 				root.carrier.VehicleOrdersReset(vehicle);
@@ -354,17 +457,17 @@ road.ROUTE.src_id=-10;
 road.ROUTE.dst_id=-10;
 road.ROUTE.kind=1000; // aircraft network
 road.ROUTE.status=999;
-road.ROUTE.uniqID=root.chemin.IDX_HELPER*4;
+road.ROUTE.uniqID=root.chemin.IDX_HELPER*10;
 road.ROUTE.src_name="Virtual aircraft network";
 road.ROUTE.dst_name="Virtual aircraft network";
-road.ROUTE.groupe_name="Virtual airnet pass";
-road.ROUTE.groupe_id=AIGroup.CreateGroup(AIVehicle.VT_AIR);
-root.chemin.virtual_air_group_pass=road.ROUTE.groupe_id;
+road.ROUTE.group_name="Virtual airnet pass";
+road.ROUTE.group_id=AIGroup.CreateGroup(AIVehicle.VT_AIR);
+root.chemin.virtual_air_group_pass=road.ROUTE.group_id;
 road.ROUTE.isServed=true;
 road.ROUTE.src_istown=true;
 road.ROUTE.dst_istown=true;
 road.ROUTE.ranking=0;
-AIGroup.SetName(road.ROUTE.groupe_id, road.ROUTE.groupe_name);
+AIGroup.SetName(road.ROUTE.group_id, road.ROUTE.group_name);
 root.chemin.RListAddItem(road);
 DInfo("Creating a new service: "+((root.chemin.RList.len()/road.ROUTE.len())-1)+":"+road.ROUTE.uniqID+" "+road.ROUTE.src_name+" for "+road.ROUTE.cargo_name,1);
 
@@ -372,10 +475,10 @@ road.ROUTE.uniqID++;
 road.ROUTE.cargo_id=root.carrier.GetMailCargo();
 road.ROUTE.cargo_name=AICargo.GetCargoLabel(road.ROUTE.cargo_id);
 road.ROUTE.cargo_value=root.chemin.ValuateCargo(road.ROUTE.cargo_id);
-road.ROUTE.groupe_name="Virtual airnet mail";
-road.ROUTE.groupe_id=AIGroup.CreateGroup(AIVehicle.VT_AIR);
-root.chemin.virtual_air_group_mail=road.ROUTE.groupe_id;
-AIGroup.SetName(road.ROUTE.groupe_id, road.ROUTE.groupe_name);
+road.ROUTE.group_name="Virtual airnet mail";
+road.ROUTE.group_id=AIGroup.CreateGroup(AIVehicle.VT_AIR);
+root.chemin.virtual_air_group_mail=road.ROUTE.group_id;
+AIGroup.SetName(road.ROUTE.group_id, road.ROUTE.group_name);
 root.chemin.RListAddItem(road);
 DInfo("Creating a new service: "+((root.chemin.RList.len()/road.ROUTE.len())-1)+":"+road.ROUTE.uniqID+" "+road.ROUTE.src_name+" for "+road.ROUTE.cargo_name,1);
 
@@ -391,8 +494,8 @@ function cChemin::RouteGetUniqID(cargoID,industryID,istown)
 // return an uniq ID
 {
 if (istown)
-		{ return (industryID+1)*root.chemin.IDX_HELPER+cargoID; }
-	else 	{ return (industryID+1)*(root.chemin.IDX_HELPER*2)+cargoID; }
+		{ return (industryID+1)*(root.chemin.IDX_HELPER*2)+cargoID; }
+	else 	{ return (industryID+1)*(root.chemin.IDX_HELPER)+cargoID; }
 }
 
 function cChemin::RouteCreateIndustry(industryID)
@@ -416,11 +519,12 @@ DInfo(it.Count()+" industries on map",0);
 local cargoList=AICargoList();
 local villeList=AITownList();
 DInfo(villeList.Count()+" towns on map",0);
-root.chemin.RouteTownsInjector();
+//root.chemin.RouteTownsInjector();
 // first, let's find industries
 foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
-// now towns
+//² now towns
 
+/*
 foreach(c, dummy in cargoList)
 	{
 	local vt=AITownList();
@@ -432,51 +536,41 @@ foreach(c, dummy in cargoList)
 			}
 		}
 	}
-
+*/
 root.chemin.CreateVirtualRoute();
 }
 
 function cChemin::RouteCreateEndingList(idx)
 // Build a DList with all possible place to drop our cargo for the idx starting
 {
-root.chemin.DList=[];
+root.chemin.DList.Clear();
 local who=root.chemin.RListGetItem(idx);
 local cargoeffect = AICargo.GetTownEffect(who.ROUTE.cargo_id);
 local dstlist=null;
-local dstDepot=cEndDepot();
+local istown=false;
 if (cargoeffect == AICargo.TE_NONE || cargoeffect == AICargo.TE_WATER)
 	{ // not a cargo for a town
-	dstDepot.DEPOT.istown=false;
+	istown=false;
 	dstlist=AIIndustryList_CargoAccepting(who.ROUTE.cargo_id);
 	dstlist.Valuate(AIIndustry.GetDistanceManhattanToTile, who.ROUTE.src_place);
 	}
 else	{ // that's cargo for a town
-	dstDepot.DEPOT.istown=true;
+	istown=true;
 	dstlist=AITownList();
 	dstlist.Valuate(AITown.GetDistanceManhattanToTile, who.ROUTE.src_place);
 	}
-dstlist.KeepBetweenValue(30,400); // filter distance <15 >400 are not really doable
-if (!root.bank.unleash_road)	{ dstlist.KeepBetweenValue(30,100); } // filter again if we are limit by money
+dstlist.KeepBetweenValue(min_transport_distance,max_transport_distance); // filter distances not really doable
+if (istown)	dstlist.Valuate(AITown.GetPopulation);
+dstlist.Sort(AIList.SORT_BY_VALUE, true); // biggest distance first for industry, highest population first for town
 who.ROUTE.isServed=false;
-// we now have a list of distinations id & distance from starting point
+// we now have a list of destinations id
 // let's build our possible list to futher choose the best one
-if (dstlist.Count()==0)
-	{ // empty list, nothing we can do about that
-	root.chemin.DListReset();
-	// just reset DList so caller will see the list is empty
-	}
-else	{
-	root.chemin.DListReset();
+if (dstlist.Count() !=0)
+	{
 	foreach (i, val in dstlist)
 		{
-		dstDepot.DEPOT.id=i;
-		dstDepot.DEPOT.ranking=0;
-		if (dstDepot.DEPOT.istown)
-			{ dstDepot.DEPOT.name=AITown.GetName(i); dstDepot.DEPOT.ranking=AITown.GetPopulation(dstDepot.DEPOT.id); }
-		else	{ dstDepot.DEPOT.name=AIIndustry.GetName(i); }
-		dstDepot.DEPOT.distance=val;
-
-		root.chemin.DListAddItem(dstDepot);
+		if (istown)	root.chemin.DList.AddItem(i, 1);
+			else	root.chemin.DList.AddItem(i, 0);
 		}
 	}
 }
@@ -527,60 +621,91 @@ for (local i=0; i < listCounter; i++)
 	} // for loop
 }
 
-function cChemin::RouteIsValid(start,end)
+function cChemin::RouteIsValid(idx)
 // set all values for that route
 {
-local sroad=root.chemin.RListGetItem(start);
-local eroad=root.chemin.DListGetItem(end);
-sroad.ROUTE.dst_id=eroad.DEPOT.id;
-sroad.ROUTE.dst_name=eroad.DEPOT.name;
-sroad.ROUTE.dst_istown=eroad.DEPOT.istown;
-if (sroad.ROUTE.dst_istown)	{ sroad.ROUTE.dst_place=AITown.GetLocation(sroad.ROUTE.dst_id); }
-			else	{ sroad.ROUTE.dst_place=AIIndustry.GetLocation(sroad.ROUTE.dst_id); }
-sroad.ROUTE.length=eroad.DEPOT.distance;
-sroad.ROUTE.status=2;
-root.chemin.RListUpdateItem(start,sroad);
-DInfo("Route created: "+sroad.ROUTE.cargo_name+" from "+sroad.ROUTE.src_name+" to "+sroad.ROUTE.dst_name+" "+sroad.ROUTE.length+"m",0);
+root.chemin.RouteStatusChange(idx,2);
+local road=root.chemin.RListGetItem(idx);
+DInfo("Route created: "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name+" "+road.ROUTE.length+"m",0);
 }
 
-function cChemin::EndingJobFinder(idx)
+function cChemin::RouteTypeToString(routetype)
+// return a string representing current road type
+{
+switch (routetype)
+	{
+	case	AIVehicle.VT_ROAD:
+		return "bus & trucks";
+	case	AIVehicle.VT_AIR:
+		return	"aircrafts";
+	case	AIVehicle.VT_WATER:
+		return	"boats";
+	case	AIVehicle.VT_RAIL:
+		return	"trains";
+	}
+return "";
+}
+
+function cChemin::RouteFindDestinationForCargo(idx)
 // Try find where to drop cargo for a route
+// return -1 on failure, the index in DList on success
 {
 local endroute=root.chemin.RListGetItem(idx);
-if (endroute.ROUTE.status!=1)	return idx; // tell caller we know where to go already
+if (endroute.ROUTE.status!=1)	return -2; // tell caller we know where to go already
+if (endroute.ROUTE.vehicule==-1)	return -2; // fixed routes will have it set to -1 until they works
 DInfo("Finding where to drop cargo ("+endroute.ROUTE.cargo_name+") for service "+idx,0);
+local previous_try=endroute.ROUTE.dst_entry; // we store in dst_entry the value of the previous try
 root.chemin.RouteCreateEndingList(idx);
-endroute=root.chemin.RListGetItem(idx);
-DInfo("DList size: "+root.chemin.DList.len(),2);
-if (root.chemin.DList.len() == 0)
+DInfo("Found "+root.chemin.DList.Count()+" possible destinations",2);
+if (root.chemin.DList.Count() == 0)
 	{ // DList is reset on error or size = 0 if nothing is found
-	DInfo("Can't find a place who accept "+endroute.ROUTE.cargo_name+" from "+endroute.ROUTE.src_name,1);
+	DWarn("Can't find a place who accept "+endroute.ROUTE.cargo_name+" from "+endroute.ROUTE.src_name,1);
 	root.chemin.RouteIsNotDoable(idx);
 	return -1;
 	}
-// our list is filtered from 30-200 distance and range from farer to closer
-// so first one is the best, except for towns
-local dest=root.chemin.DListGetItem(0);
-local bestDest=-1;
-if (dest.DEPOT.istown)
-	{ // we're going to a town, better pickup the biggest one so
-	local toprank=-1;
-	for (local i=0; i < (root.chemin.DList.len()/dest.DEPOT.len()); i++)
-		{
-		dest=root.chemin.DListGetItem(i);
-		if (toprank < dest.DEPOT.ranking)  { toprank=dest.DEPOT.ranking; bestDest=i; }
-		}
-	
+// our list is filtered a bit by range and also filter by biggest range or biggest population order
+local new_try=previous_try+1;
+if (new_try > root.chemin.DList.Count())	new_try=0;
+return new_try;
+}
+
+function cChemin::RouteFindDestination(idx)
+// Find a destination station & pickup transport type for it
+{
+local bestDest=root.chemin.RouteFindDestinationForCargo(idx);
+DInfo("Pickup destination #"+bestDest,2);
+if (bestDest < 0)	return bestDest; // fail to find a destination or we know it already
+local road=root.chemin.RListGetItem(idx);
+road.ROUTE.dst_id=ListGetItem(root.chemin.DList, bestDest);
+road.ROUTE.dst_entry=bestDest;
+road.ROUTE.dst_istown=(root.chemin.DList.GetValue(bestDest)==1);
+if (road.ROUTE.dst_istown)	
+	{
+	road.ROUTE.dst_name=AITown.GetName(road.ROUTE.dst_id);
+	road.ROUTE.dst_place=AITown.GetLocation(road.ROUTE.dst_id);
 	}
-else	{ bestDest=0; }
-// ok now pickup how we will carry that
-dest=root.chemin.DListGetItem(bestDest);
-local kind=AICargo.GetTownEffect(endroute.ROUTE.cargo_id);
-// distance
-// 20-60 road can do it, assign as 1,
-// 40-200 trains can do it, assign as 2, when low money limit to 100
-// 40-150 air can do it assign as 3
-// 40-150 for boat, assign as 4
+else	{
+	road.ROUTE.dst_name=AIIndustry.GetName(road.ROUTE.dst_id);
+	road.ROUTE.dst_place=AIIndustry.GetLocation(road.ROUTE.dst_id);
+	}
+road.ROUTE.length=AITile.GetDistanceManhattanToTile(road.ROUTE.src_place, road.ROUTE.dst_place);
+root.chemin.RListUpdateItem(idx,road);
+if (!root.chemin.PickupTransportType(idx)) return -1;
+return idx+1; // make sure return isn't = idx
+}
+
+function cChemin::PickupTransportType(idx)
+// Pickup a road transport type if none exist for that route
+// If it exist, just verify the distances are ok
+// return true/false
+{
+local road=root.chemin.RListGetItem(idx);
+if (road == -1) return false;
+local kind=AICargo.GetTownEffect(road.ROUTE.cargo_id);
+// road assign as 1,
+// trains assign as 2
+// air assign as 3
+// boat, assign as 4
 local v_train=1;
 local v_boat =1;
 local v_air  =1;
@@ -589,75 +714,75 @@ if (!root.use_train) v_train=0;
 if (!root.use_boat) v_boat=0;
 if (!root.use_air) v_air=0;
 if (!root.use_road) v_road=0;
+if (road.ROUTE.vehicule==-1) // prebuild roads, we disable others transport type so
+	switch (road.ROUTE.kind)
+		{
+		case	AIVehicle.VT_ROAD:
+			v_air=0; v_boat=0; v_train=0;
+		break;
+		case	AIVehicle.VT_AIR:
+			v_road=0; v_boat=0; v_train=0;
+		break;
+		case	AIVehicle.VT_WATER:
+			v_air=0; v_road=0; v_train=0;
+		break;
+		case	AIVehicle.VT_RAIL:
+			v_air=0; v_boat=0; v_road=0;
+		break;
+		}
 local tweaklist=AIList();
+local road_maxdistance=root.chemin.GetTransportDistance(AIVehicle.VT_ROAD,true);
+local road_mindistance=root.chemin.GetTransportDistance(AIVehicle.VT_ROAD,false);
+local rail_maxdistance=root.chemin.GetTransportDistance(AIVehicle.VT_RAIL,true);
+local rail_mindistance=root.chemin.GetTransportDistance(AIVehicle.VT_RAIL,false);
+local air_maxdistance=root.chemin.GetTransportDistance(AIVehicle.VT_AIR,true);
+local air_mindistance=root.chemin.GetTransportDistance(AIVehicle.VT_AIR,false);
+local water_maxdistance=root.chemin.GetTransportDistance(AIVehicle.VT_WATER,true);
+local water_mindistance=root.chemin.GetTransportDistance(AIVehicle.VT_WATER,false);
+DInfo("Distances: Truck="+road_mindistance+"/"+road_maxdistance+" Aircraft="+air_mindistance+"/"+air_maxdistance+" Train="+rail_mindistance+"/"+rail_maxdistance+" Boat="+water_mindistance+"/"+water_maxdistance,2);
+local goal=road.ROUTE.length;
+DInfo("Goal distance="+goal,2);
 if (kind==AICargo.TE_MAIL || kind==AICargo.TE_PASSENGERS)
 	{
-	if (dest.DEPOT.distance < 40)	{ tweaklist.AddItem(1,1*v_road); }
-	if (dest.DEPOT.distance >= 150)	{ tweaklist.AddItem(2,2*v_train); }
-	if (dest.DEPOT.distance >= 40 && dest.DEPOT.distance <80)
-		{
-		tweaklist.Clear();
-		tweaklist.AddItem(1,1*v_road);
-		tweaklist.AddItem(2,2*v_train);
-		tweaklist.AddItem(3,3*v_air);
-		tweaklist.AddItem(4,4*v_boat);
-		}
-	if (dest.DEPOT.distance >= 80 && dest.DEPOT.distance <150)
-		{
-		tweaklist.Clear();
-		tweaklist.AddItem(2,2*v_train);
-		tweaklist.AddItem(3,3*v_air);
-		tweaklist.AddItem(4,4*v_boat);
-		}
+	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(1,1*v_road); }
+	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(2,2*v_train); }
+	if (goal >= air_mindistance && goal <= air_maxdistance)		{ tweaklist.AddItem(3,3*v_air); }
+	if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(4,4*v_boat); }
 	}
 else	{ // indudstries have that effect, i won't allow something other than trucks&trains
-	if (dest.DEPOT.distance< 40)	{ tweaklist.AddItem(1,1*v_road); }
-	if (dest.DEPOT.distance>=90)	{ tweaklist.AddItem(2,2*v_train); }
-	if (dest.DEPOT.distance>=40 && dest.DEPOT.distance<90)
-		{
-		tweaklist.Clear();
-		tweaklist.AddItem(1,1*v_road);
-		tweaklist.AddItem(2,2*v_train);
-		}
+	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(1,1*v_road); }
+	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(2,2*v_train); }
 	}
-root.chemin.DListDump();
-if (root.debug) foreach (i, dummy in tweaklist) { DInfo("tweaklist i="+i+" dummy="+dummy,2); }
-// here we cannot have 0 items in list, but list might have 0 in it when a vehicle is disable/not allow
+if (root.debug) foreach (i, dummy in tweaklist) { DInfo("roadtype="+i+" possible="+dummy,2); }
 tweaklist.RemoveValue(0);
-// now we could :/
 if (tweaklist.IsEmpty())
 	{
-	DInfo("Can't pickup a road type with the current vehicle limitation",1); 
+	DWarn("Can't pickup a road type with the current vehicle limitation",1); 
 	root.chemin.RouteIsNotDoable(idx);
-	return -1;
+	return false;
 	}
-local res=tweaklist.Begin();
+local res=AIBase.RandRange(tweaklist.Count());
+res=ListGetItem(tweaklist,res);
 local roadtype="";
 switch (res)
 	{
 	case	1:
-		endroute.ROUTE.kind=AIVehicle.VT_ROAD;
-		roadtype="Bus & truck";
+		road.ROUTE.kind=AIVehicle.VT_ROAD;
 	break;
 	case	2:	
-		endroute.ROUTE.kind=AIVehicle.VT_RAIL;
-		roadtype="Train";
+		road.ROUTE.kind=AIVehicle.VT_RAIL;
 	break;
 	case	3:
-		endroute.ROUTE.kind=AIVehicle.VT_AIR;
-		roadtype="Aircraft";
+		road.ROUTE.kind=AIVehicle.VT_AIR;
 	break;
 	case	4:
-		endroute.ROUTE.kind=AIVehicle.VT_WATER;
-		roadtype="Boat";
-	break;
-	default	:
-		bestDest=-1;
+		road.ROUTE.kind=AIVehicle.VT_WATER;
 	break;
 	}
-DInfo("Choosen road: "+endroute.ROUTE.kind+" "+roadtype,2);
-root.chemin.RListUpdateItem(idx,endroute);
-return bestDest;
+roadtype=root.chemin.RouteTypeToString(road.ROUTE.kind);
+DInfo("Choosen road: "+road.ROUTE.kind+" "+roadtype,2);
+root.chemin.RListUpdateItem(idx,road);
+return true;
 }
 
 function cChemin::StartingJobFinder()
@@ -708,8 +833,10 @@ do 	{
 		DInfo(" ");
 		DInfo("Checking service #"+startidx+" - "+tasktry+" "+bestJob,0);
 		root.chemin.RListDumpOne(startidx);
-		endidx=root.chemin.EndingJobFinder(startidx);
+		endidx=root.chemin.RouteFindDestination(startidx);
 		}
+	root.NeedDelay(50);
+	if (endidx == -2)	endidx=startidx;	// -2 = we know where to go already
 	if (startidx >-1 && endidx >-1)	{ goodRoute=true; }
 	if (gotmalus >= chemSize)	root.secureStart=0; // disable it, we try all routes and none can be done with road vehicle
 	if (root.secureStart > 0)
@@ -721,7 +848,7 @@ do 	{
 	madLoop++;
 	} while (!goodRoute && madLoop < madLoopIter);
 if (!goodRoute)	{ return -1; }
-	else	{ if (endidx!=startidx)	root.chemin.RouteIsValid(startidx,endidx); } // only if route is not already known
+	else	{ if (endidx!=startidx)	root.chemin.RouteIsValid(startidx); } // only if route is not already known
 return startidx;
 }
 
@@ -755,7 +882,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		}
 	if (road.ROUTE.status != 999) continue;
 	if (!road.ROUTE.isServed) continue;
-	local vehingroup=AIVehicleList_Group(road.ROUTE.groupe_id);
+	local vehingroup=AIVehicleList_Group(road.ROUTE.group_id);
 	foreach(vehicle, dummy in vehingroup)
 		{
 		totalcapacity+=AIEngine.GetCapacity(AIVehicle.GetEngineType(vehicle));
@@ -873,9 +1000,9 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			continue; // no train upgrade for now will do later
 		break;
 		}
-	local vehList=AIVehicleList_Group(road.ROUTE.groupe_id);
+	local vehList=AIVehicleList_Group(road.ROUTE.group_id);
 	vehList.Valuate(AIVehicle.GetProfitThisYear);
-	vehList.Sort(AIAbstractList.SORT_BY_VALUE,true); // poor numbers first
+	vehList.Sort(AIList.SORT_BY_VALUE,true); // poor numbers first
 	local vehsample=vehList.Begin();  // one sample in the group
 	local vehprofit=vehList.GetValue(vehsample);
 	local prevprofit=AIVehicle.GetProfitLastYear(vehsample);
@@ -902,11 +1029,13 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
 	local canaddonemore=root.carrier.CanAddNewVehicle(j, true);
 	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be able to buy it
+	canaddonemore=root.carrier.CanAddNewVehicle(j, false);
+	if (!canaddonemore)	vehneed=0;
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+"/"+maxveh+" firstveh="+firstveh,2);
 	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
 		else		profit=true;
 	vehList.Valuate(AIVehicle.GetAge);
-	vehList.Sort(AIAbstractList.SORT_BY_VALUE,true);
+	vehList.Sort(AIList.SORT_BY_VALUE,true);
 	if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true; // ~ 8 months
 						else	oldveh=false;
 	// adding vehicle
@@ -938,7 +1067,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 				}
 			if (!firstveh && vehneed > 0)
 					{
-					priority.AddItem(road.ROUTE.groupe_id,vehneed);
+					priority.AddItem(road.ROUTE.group_id,vehneed);
 					continue; // skip to next route, we won't check removing for that turn
 					}
 			}
@@ -947,7 +1076,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 // Removing vehicle when station is too crowd & vehicle get stuck
 	if (cargowait == 0 && oldveh) // this happen if we load everything at the station
 		{
-		local busyList=AIVehicleList_Group(road.ROUTE.groupe_id);
+		local busyList=AIVehicleList_Group(road.ROUTE.group_id);
 		local runningList=AIList();
 		if (busyList.IsEmpty()) continue;
 		busyList.Valuate(AIVehicle.GetState);
@@ -978,21 +1107,26 @@ priosave.AddList(priority); // save it because value is = number of vehicle we n
 priority.Valuate(root.chemin.VehicleGroupProfitRatio);
 priority.Sort(AIList.SORT_BY_VALUE,false);
 local vehneed=0;
+local vehvalue=0;
 foreach (groupid, ratio in priority)
 	{
 	if (priosave.HasItem(groupid))	vehneed=priosave.GetValue(groupid);
 				else	vehneed=0;
+	if (vehneed == 0) continue;
+	local vehvaluegroup=AIVehicleList_Group(groupid);	
+	vehvalue=AIEngine.GetPrice(AIVehicle.GetEngineType(vehvaluegroup.Begin()));
 	for (local i=0; i < root.chemin.RListGetSize(); i++)
 		{
 		road=root.chemin.RListGetItem(i);
-		if (road.ROUTE.groupe_id == groupid)
+		if (road.ROUTE.group_id == groupid)
 			{
 			for (local z=0; z < vehneed; z++)
 				{
-				if (root.banker.CanBuyThat(AIEngine.GetPrice(i)) && root.carrier.BuildAndStartVehicle(i,true))
-					{
-					DInfo("Adding a vehicle to route #"+i+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
-					}
+				if (root.bank.CanBuyThat(vehvalue))
+					if (root.carrier.BuildAndStartVehicle(i,true))
+						{
+						DInfo("Adding a vehicle to route #"+i+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
+						}
 				}
 			}
 		}

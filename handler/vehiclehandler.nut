@@ -152,7 +152,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	road=root.chemin.RListGetItem(j);
 	if (road.ROUTE.status!=999) continue; // only check 999 status, it's the "i'm part of network" status
 	//if (road.ROUTE.kind == 1000) continue;
-	local airlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+	local airlist=AIVehicleList_Group(road.ROUTE.group_id);
 	if (airlist.IsEmpty()) continue; // no aircrafts on that group
 	local numorders=0;
 	foreach (vehicle, dummy in airlist)
@@ -290,7 +290,7 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 	if (srcstation == stationID)	orderpos=0;
 	local dststation=root.builder.GetStationID(i,false);
 	if (dststation == stationID)	orderpos=1;
-	group=road.ROUTE.groupe_id;
+	group=road.ROUTE.group_id;
 	if (orderpos > -1)
 		{ // that route use that station
 		if (reroute)
@@ -410,7 +410,7 @@ local idx=-1;
 for (local i=0; i < root.chemin.RListGetSize(); i++)
 	{
 	local road=root.chemin.RListGetItem(i);
-	if (road.ROUTE.groupe_id == group)	{ idx=i; break; }
+	if (road.ROUTE.group_id == group)	{ idx=i; break; }
 	AIController.Sleep(1);
 	}
 return idx;
@@ -470,7 +470,7 @@ switch (AIVehicle.GetVehicleType(veh))
 	break;
 	}
 AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why
-AIGroup.MoveVehicle(road.ROUTE.groupe_id,newveh);
+AIGroup.MoveVehicle(road.ROUTE.group_id,newveh);
 local oldenginename=AIEngine.GetName(AIVehicle.GetEngineType(veh));
 local newenginename=AIVehicle.GetName(newveh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(newveh))+")";
 if (AIVehicle.IsValidVehicle(newveh))
@@ -683,9 +683,9 @@ function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 {
 local road=root.chemin.RListGetItem(idx);
 local vehlist=null;
-if (road.ROUTE.groupe_id != -1)
+if (road.ROUTE.group_id != -1)
 	{
-	vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+	vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 	foreach (vehicle in vehlist)
 		{
 		root.carrier.VehicleToDepotAndSell(vehicle);

@@ -80,26 +80,6 @@ for (local i=0; i < (root.chemin.RListGetSize()); i++)
 	}
 }
 
-function cChemin::DListDump()
-// dump the DList table
-{
-if (!root.debug) return;
-local wtf="";
-local j=0;
-local dummy=cEndDepot();
-for (local i=0; i < root.chemin.DList.len(); i++)
-	{
-	if (j==0)	{ wtf="DList["+(i/dummy.DEPOT.len())+"] "; }
-	wtf=wtf+root.chemin.DList[i]+" / ";
-	j++;
-	if (j > (dummy.DEPOT.len()-1))
-		{
-		DInfo(wtf,2);
-		j=0;
-		}
-	}
-}
-
 function cChemin::RListStatus()
 // count route, invalid, done, with handicap... for stats
 {

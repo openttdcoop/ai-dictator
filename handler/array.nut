@@ -14,22 +14,6 @@
 
 // This is where we handle our arrays
 
-class cEndDepot
-{
-	DEPOT = null;
-	constructor()
-	{
-	DEPOT =
-		{
-		id = -1,
-		name="none",
-		istown = false,
-		distance = 0,
-		ranking = 0
-		}
-	}
-}
-
 class cStation
 {
 	STATION = null;
@@ -102,8 +86,8 @@ class cCheminItem
 					// 999 - route is in a virtual network
 					// 666 - route is on error, need repair
 		length=0,		// distance from src to dst
-		groupe_id=-1,		// groupID
-		groupe_name="none",	// groupe name
+		group_id=-1,		// groupID
+		group_name="none",	// group name
 
 		src_id = -1,		// industry/town id of starting (a producer)
 		src_name = "none",	// name
@@ -120,13 +104,14 @@ class cCheminItem
 		dst_station= -1,	// an index to the station array
 		dst_entry= -1,		// destination station entry/exit connection
 
-		ranking=0,     		// estimated value of building & do that ROUTE
+		ranking=0,     		// estimated value of building that ROUTE
 		handicap=0,		// on failure for a reason, downrank it
 		foule=0,    		// crowd stations get also a malus
 		cargo_id=-1,		
 		cargo_name="none",        
 		cargo_value=0,       
 		cargo_amount=0,
+		money=0			// we save here the price to build the route
 		}
 	}
 }
@@ -243,68 +228,6 @@ local dummy=cStation();
 return root.chemin.GList.len() / dummy.STATION.len();
 }
 
-function cChemin::DListGetSize()
-{
-local dummy=cEndDepot();
-return root.chemin.DList.len() / dummy.DEPOT.len();
-}
-
-function cChemin::DListGetIndex(idx)
-// this function return the real index in our array for a relative idx position
-{
-local dummy=cEndDepot();
-local realidx=idx*dummy.DEPOT.len();
-if (idx > root.chemin.DListGetSize() || idx < 0)
-	{
-	DWarn("Index out of limits with DList !!! idx="+idx+" realidx="+realidx+" DList.len="+root.chemin.DList.len(),1);
-	realidx=-1;
-	}
-return realidx;
-}
-
-function cChemin::DListReset()
-// just to reset our DList to create a new one
-{
-root.chemin.DList=[];
-}
-
-function cChemin::DListAddItem(obj)
-// Add an new item to DList
-// This add dummy space, as we will call DListUpdateItem to really add some values
-{
-local dummy=cEndDepot();
-for (local i=0; i < (dummy.DEPOT.len()); i++)
-	{ root.chemin.DList.push("dummy_EndDepot"); }
-local start=root.chemin.DList.len()/(dummy.DEPOT.len())-1;
-root.chemin.DListUpdateItem(start,obj);
-}
-
-function cChemin::DListUpdateItem(idx,obj)
-// Update item #idx with obj
-{
-local start=root.chemin.DListGetIndex(idx);
-local next=start;
-root.chemin.DList[next]=obj.DEPOT.id;	next++;
-root.chemin.DList[next]=obj.DEPOT.name;	next++;
-root.chemin.DList[next]=obj.DEPOT.istown;	next++;
-root.chemin.DList[next]=obj.DEPOT.distance;	next++;
-root.chemin.DList[next]=obj.DEPOT.ranking;
-}
-
-function cChemin::DListGetItem(idx)
-// get item idx in DList
-{
-local ret=cEndDepot();
-local start=root.chemin.DListGetIndex(idx);
-local next=start;
-ret.DEPOT.id=root.chemin.DList[next];	next++;
-ret.DEPOT.name=root.chemin.DList[next];	next++;
-ret.DEPOT.istown=root.chemin.DList[next];	next++;
-ret.DEPOT.distance=root.chemin.DList[next];	next++;
-ret.DEPOT.ranking=root.chemin.DList[next];	
-return ret;
-}
-
 function cChemin::RListDeleteItem(idx)
 // Delete item at pos
 {
@@ -353,8 +276,8 @@ root.chemin.RList[next]=road.ROUTE.vehicule;		next++;
 root.chemin.RList[next]=road.ROUTE.kind;		next++;
 root.chemin.RList[next]=road.ROUTE.status;		next++;
 root.chemin.RList[next]=road.ROUTE.length;		next++;
-root.chemin.RList[next]=road.ROUTE.groupe_id;		next++;
-root.chemin.RList[next]=road.ROUTE.groupe_name;		next++;
+root.chemin.RList[next]=road.ROUTE.group_id;		next++;
+root.chemin.RList[next]=road.ROUTE.group_name;		next++;
 root.chemin.RList[next]=road.ROUTE.src_id;		next++;
 root.chemin.RList[next]=road.ROUTE.src_name;		next++;
 root.chemin.RList[next]=road.ROUTE.src_istown;		next++;
@@ -373,7 +296,8 @@ root.chemin.RList[next]=road.ROUTE.foule;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_id;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_name;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_value;		next++;
-root.chemin.RList[next]=road.ROUTE.cargo_amount;	
+root.chemin.RList[next]=road.ROUTE.cargo_amount;	next++;
+root.chemin.RList[next]=road.ROUTE.money;	
 }
 
 function cChemin::RListAddItem(road)
@@ -403,8 +327,8 @@ toReturn.ROUTE.vehicule=root.chemin.RList[next];	next++;
 toReturn.ROUTE.kind=root.chemin.RList[next];		next++;
 toReturn.ROUTE.status=root.chemin.RList[next];		next++;
 toReturn.ROUTE.length=root.chemin.RList[next];		next++;
-toReturn.ROUTE.groupe_id=root.chemin.RList[next];	next++;
-toReturn.ROUTE.groupe_name=root.chemin.RList[next];	next++;
+toReturn.ROUTE.group_id=root.chemin.RList[next];	next++;
+toReturn.ROUTE.group_name=root.chemin.RList[next];	next++;
 toReturn.ROUTE.src_id=root.chemin.RList[next];		next++;
 toReturn.ROUTE.src_name=root.chemin.RList[next];	next++;
 toReturn.ROUTE.src_istown=root.chemin.RList[next];	next++;
@@ -424,5 +348,6 @@ toReturn.ROUTE.cargo_id=root.chemin.RList[next];	next++;
 toReturn.ROUTE.cargo_name=root.chemin.RList[next];	next++;
 toReturn.ROUTE.cargo_value=root.chemin.RList[next];	next++;
 toReturn.ROUTE.cargo_amount=root.chemin.RList[next];	next++;
+toReturn.ROUTE.money=root.chemin.RList[next];	next++;
 return toReturn;
 }

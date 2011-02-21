@@ -188,9 +188,9 @@ local otherobj=null;
 if (start)	{ source=road.ROUTE.src_station; other=road.ROUTE.dst_station; }
 	else	{ source=road.ROUTE.dst_station; other=road.ROUTE.src_station; }
 stationobj=root.chemin.GListGetItem(source);
-if (stationobj < 0)	return -1; // just return, that route is just too bad
+if (stationobj == -1)	return -1; // just return, that route is just too bad
 otherobj=root.chemin.GListGetItem(other);
-if (otherobj < 0)	return -1;
+if (otherobj == -1)	return -1;
 local stationloc=AIStation.GetLocation(stationobj.STATION.station_id);
 local newdepottile=cTileTools.GetTilesAroundPlace(stationloc);
 local reusedepot=AIList();
@@ -380,19 +380,19 @@ function cBuilder::BuildRoadStationOrDepotAtTile(tile, direction, stationtype, s
 {
 // before spending money on a "will fail" structure, check the structure could be connected to a road
 if (AITile.IsStationTile(tile))	return -1; // don't destroy a station, might even not be our
-root.bank.RaiseFundsBy(3000); // should be enought to cover our building/demolishing
+root.bank.RaiseFundsBigTime(); 
 if (!AIRoad.IsRoadTile(direction))
 	{
 	if (!cTileTools.DemolishTile(direction))
 		{
-		DInfo("Can't remove that tile at "+tile,2); PutSign(tile,"X");
+		DWarn("Can't remove that tile at "+tile,2); PutSign(tile,"X");
 		root.builder.IsCriticalError();
 		if (root.builder.CriticalError)	root.builder.BlacklistThatTile(tile);
 		return -1;
 		}
 	if (!AIRoad.BuildRoad(direction,tile))
 		{
-		DInfo("Can't build road entrance for the station/depot structure",2);
+		DWarn("Can't build road entrance for the station/depot structure",2);
 		root.builder.IsCriticalError();
 		if (root.builder.CriticalError)	root.builder.BlacklistThatTile(tile);
 		return -1;
@@ -400,7 +400,7 @@ if (!AIRoad.IsRoadTile(direction))
 	}
 if (!cTileTools.DemolishTile(tile))
 	{
-	DInfo("Can't remove that tile at "+tile,2); PutSign(tile,"X");
+	DWarn("Can't remove that tile at "+tile,2); PutSign(tile,"X");
 	root.builder.IsCriticalError();
 	if (root.builder.CriticalError)	root.builder.BlacklistThatTile(tile);
 	root.builder.CriticalError=false;		
@@ -411,21 +411,23 @@ local newstation=AIStation.STATION_JOIN_ADJACENT;
 if (stationnew)	newstation=AIStation.STATION_NEW;
 if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 	{
+	root.bank.RaiseFundsBigTime();
 	success=AIRoad.BuildRoadDepot(tile,direction);
 	PutSign(tile,"D");
 	if (!success)
 		{
-		DInfo("Can't built a road depot at "+tile,2);
+		DWarn("Can't built a road depot at "+tile,2);
 		root.builder.IsCriticalError();
 		}
 	else	{ DInfo("Built a road depot at "+tile,2); }
 	}
 else	{
+	root.bank.RaiseFundsBigTime();
 	success=AIRoad.BuildRoadStation(tile, direction, stationtype, newstation);
 	PutSign(tile,"S");
 	if (!success)
 		{
-		DInfo("Can't built the road station at "+tile,2);
+		DWarn("Can't built the road station at "+tile,2);
 		root.builder.IsCriticalError();
 		}
 	else	{ DInfo("Built a road station at "+tile,2); }
@@ -436,25 +438,20 @@ if (!success)
 	return -1;
 	}
 else	{
+	if (!AIRoad.AreRoadTilesConnected(tile, direction))
+		if (!AIRoad.BuildRoad(tile, direction))
+		{
+		DWarn("Fail to connect the road structure with the road in front of it",2);
+		root.builder.IsCriticalError();
+		root.builder.BlacklistThatTile(direction);
+		if (!cTileTools.DemolishTile(tile))
+			{
+			DWarn("Can't remove bad road structure !",2);
+			}
+		return -1;
+		}
 	return tile;
 	}
-}
-
-function cBuilder::RoadStationExtend(tile, direction, stationtype, station)
-{
-if (AITile.IsStationTile(tile)) return false; // protect station
-if (!cTileTools.DemolishTile(tile)) return false;
-if (!AIRoad.IsRoadTile(direction))
-		{ cTileTools.DemolishTile(direction); AIRoad.BuildRoad(direction,tile); }
-if (!AIRoad.IsRoadTile(direction))	return false; // no need to build that station, it won't have a road in its front
-if (!AIRoad.BuildRoadStation(tile, direction, stationtype, AIStation.STATION_JOIN_ADJACENT))
-		{
-		DError("Cannot create the station !",1);
-		// TODO: need to rethink many (all) building/demolish trys functions, having a depot with a road vehicle in it (but not stop at depot) prevent demolishing the tile, this is not crical, but this fool us
-		return false;
-		}
-	else	{ AIRoad.BuildRoad(direction,tile); return true; }
-return false;
 }
 
 function cBuilder::GetStationType(stationid)

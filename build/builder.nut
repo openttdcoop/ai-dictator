@@ -536,16 +536,18 @@ if (rr.ROUTE.status==8)
 	{
 	DInfo("Route contruction complete ! "+rr.ROUTE.src_name+" to "+rr.ROUTE.dst_name,0);
 	rr.ROUTE.isServed=true;
-	rr.ROUTE.groupe_id=AIGroup.CreateGroup(rr.ROUTE.kind);
+	rr.ROUTE.group_id=AIGroup.CreateGroup(rr.ROUTE.kind);
 	local groupname = AICargo.GetCargoLabel(rr.ROUTE.cargo_id)+"*"+root.builder.GetStationID(idx,true)+"*"+root.builder.GetStationID(idx,false);
 	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
-	rr.ROUTE.groupe_name=groupname;
-	AIGroup.SetName(rr.ROUTE.groupe_id, rr.ROUTE.groupe_name);
+	rr.ROUTE.group_name=groupname;
+	rr.ROUTE.vehicule=0;
+	AIGroup.SetName(rr.ROUTE.group_id, rr.ROUTE.group_name);
 	root.chemin.RListUpdateItem(idx,rr);
 	root.chemin.RouteStatusChange(idx,100);
 	root.builder.StationIsAccepting(root.builder.GetStationID(idx,false));
 	root.builder.StationIsProviding(root.builder.GetStationID(idx,true));
 	if (root.secureStart > 0)	root.builddelay=true;
+	root.chemin.match_group_to_route.AddItem(rr.ROUTE.group_id, idx);
 	root.chemin.nowRoute=-1; // Allow us to work on a new route now
 	}
 return success;

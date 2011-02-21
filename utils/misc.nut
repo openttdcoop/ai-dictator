@@ -11,7 +11,6 @@
  *
 **/
 
-
 function sliceString(a)
 {
 local t=20;
@@ -41,9 +40,9 @@ return names[who];
 function PickCompanyName(who)
 {
 local nameo = ["Last", "For the", "Militia", "Revolution", "Good", "Bad", "Evil"];
-local namet = ["Hope", "People", "Corporation", "Money", "Dope", "Cry", "Shot"];
+local namet = ["Hope", "People", "Corporation", "Money", "Dope", "Cry", "Shot", "War", "Battle", "Fight"];
 local x = 0; local y = 0;
-if (who == 666)  { x = AIBase.RandRange(7); y = AIBase.RandRange(7); }
+if (who == 666)  { x = AIBase.RandRange(7); y = AIBase.RandRange(10); }
 	else	 { x = who; y = who; }
 return nameo[x]+" "+namet[y]+" (DictatorAI)"; 
 
@@ -75,7 +74,7 @@ function DWarn(putMsg, debugValue=1)
 local debugState = DictatorAI.GetSetting("debug");
 if (debugValue <= debugState )
 	{
-	AILog.Warning("WARNING: "+putMsg);
+	AILog.Warning(putMsg);
 	}
 }
 
@@ -90,7 +89,7 @@ if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
 	{
 	local townlist = AITownList();
 	townlist.Valuate(AITown.GetPopulation);
-	townlist.Sort(AIAbstractList.SORT_BY_VALUE, false);
+	townlist.Sort(AIList.SORT_BY_VALUE, false);
 	local townid = townlist.Begin();
 	local townloc = AITown.GetLocation(townid);
 	local place_id = AITile.GetClosestTown(townloc);
@@ -98,10 +97,20 @@ if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
 	}
 }
 
+function ListGetItem(list, item_num)
+{
+local new=AIList();
+new.AddList(list);
+new.RemoveTop(item_num);
+return new.Begin();
+}
+
 function AIGetCargoFavorite()
 {
 local crglist=AICargoList();
 chemin.cargo_fav=AIBase.RandRange(crglist.Count());
+chemin.cargo_fav=ListGetItem(crglist, chemin.cargo_fav);
+DInfo("max cargo: "+crglist.Count()+" pick="+chemin.cargo_fav,1);
 DInfo("We will promote "+AICargo.GetCargoLabel(chemin.cargo_fav),0);
 }
 
@@ -124,6 +133,7 @@ DInfo(lastrand+" will rules the company with an iron fist");
 AICompany.SetPresidentName(lastrand);
 AIGetCargoFavorite();
 checkHQ();
+AIController.Sleep(100);
 }
 
 

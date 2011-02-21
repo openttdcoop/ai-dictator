@@ -155,7 +155,7 @@ switch (eventType)
 			{
 			local vehlist=AIVehicleList();
 			vehlist.Valuate(AIVehicle.GetProfitThisYear);
-			local vehsell=AIAbstractList();
+			local vehsell=AIList();
 			vehsell.AddList(vehlist);
 			vehsell.RemoveAboveValue(0);
 			vehlist.KeepAboveValue(0);
@@ -276,7 +276,7 @@ function cManager::CheckRoutes() {
 					vehicles.Valuate(AIVehicle.GetProfitThisYear);
 					if (vehicles.GetValue(vehicles.Begin()) <= 0) break;
 					vehicles.Valuate(AIVehicle.GetAge);
-					vehicles.Sort(AIAbstractList.SORT_BY_VALUE, true);
+					vehicles.Sort(AIList.SORT_BY_VALUE, true);
 					if (vehicles.GetValue(vehicles.Begin()) > 90) {
 						local engine = cBuilder.ChooseRoadVeh(route.crg);
 						if (engine == null) break;

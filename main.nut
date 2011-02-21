@@ -65,7 +65,7 @@ class DictatorAI extends AIController
    	{
 	chemin=cChemin(this);
 	minRank = 5000;		// ranking below that are drop jobs
-	secureStart= 3;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
+	secureStart= 2;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
 	bank = cBanker(this);
 	eventManager= cEvents(this);
 	builder=cBuilder(this);
@@ -84,6 +84,8 @@ function DictatorAI::Start()
 	DInfo("DicatorAI started.");
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	AICompany.SetAutoRenewStatus(false);
+	bank.SaveMoney();
+	local dontcare=chemin.GetTransportDistance(AIVehicle.VT_ROAD,true); // don't care, just to have min&max distance set
 	if (loadedgame) 
 		{
 		DInfo("We are promoting "+AICargo.GetCargoLabel(chemin.cargo_fav),0);
@@ -91,6 +93,7 @@ function DictatorAI::Start()
 		DInfo("We know "+(chemin.RListGetSize()-1)+" routes",0);
 		DInfo(" ");
 		secureStart=1;
+		chemin.RemapGroupsToRoutes();
 		chemin.RouteMaintenance();
 		}
 	 else 	{
@@ -141,7 +144,7 @@ ClearSignsALL();
 
 function DictatorAI::NeedDelay(delay=30)
 {
-DInfo("We are waiting",2);
+DInfo("We are waiting: "+delay,2);
 if (debug) AIController.Sleep(delay);
 } 
  

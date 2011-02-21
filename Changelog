@@ -1,5 +1,15 @@
-changeset:   62:91d2e6d03e15
+changeset:   63:13f725cba0cc
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Sun Feb 20 17:37:53 2011 +0100
+files:       Changelog handler/chemin.nut
+description:
+- Buy only vehicle if we have the money for it (lol). 1st vehicle will
+still try without the check.
+- Working on jobs injector
+
+
+changeset:   62:91d2e6d03e15
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Sun Feb 20 17:11:48 2011 +0100
 files:       Changelog build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/events.nut handler/vehiclehandler.nut utils/misc.nut

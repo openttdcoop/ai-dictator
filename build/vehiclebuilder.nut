@@ -220,21 +220,21 @@ return true;
 }
 
 function cCarrier::CloneRoadVehicle(roadidx)
-// add another vehicule on that route, sharing orders
+// add another Vehicle on that route, sharing orders
 {
 local road=root.chemin.RListGetItem(roadidx);
-local vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+local vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 vehlist.Valuate(AIOrder.IsGotoDepotOrder,AIOrder.ORDER_CURRENT);
 vehlist.KeepValue(0);
 if (vehlist.IsEmpty())
 	{
-	DInfo("Can't find any vehicle to duplicated on that route",1);
+	DError("Can't find any vehicle to duplicated on that route",1);
 	return false;
 	}
 // first check we can add one more vehicle to start or ending station
 if (!root.carrier.CanAddNewVehicle(roadidx,true) || !root.carrier.CanAddNewVehicle(roadidx,false))
 	{
-	DInfo("One station on that route is full, cannot add more vehicle",1);
+	DWarn("One station on that route is full, cannot add more vehicle",1);
 	return false;
 	}
 local veh=vehlist.Begin();
@@ -245,7 +245,7 @@ local switcher=false;
 if (AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_PASSENGERS || AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_MAIL)
 	{ switcher = true; }
 
-if (road.ROUTE.vehicule%2 != 0 && switcher) // impair vehicule selection, because impair+1 = pair :)
+if (road.ROUTE.vehicule%2 != 0 && switcher) // impair Vehicle selection, because impair+1 = pair :)
 	{ startdepot=false; }
 /*if (road.ROUTE.kind == AIVehicle.VT_ROAD && AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_PASSENGERS)
 	{ startdepot=false; }*/ // we are creating a new bus, we don't really care where it will start
@@ -253,7 +253,7 @@ if (road.ROUTE.vehicule%2 != 0 && switcher) // impair vehicule selection, becaus
 
 local newveh=AIVehicle.CloneVehicle(root.builder.GetDepotID(roadidx,startdepot),veh,true);
 if (!AIVehicle.IsValidVehicle(newveh))
-	{ DError("Cannot buy the vehicle :"+price,2); return false; }
+	{ DWarn("Cannot buy the vehicle : "+price,2); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(newveh),1); }
 root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 if (!AIVehicle.StartStopVehicle(newveh))
@@ -300,9 +300,9 @@ local entry=true;
 local station_id=0;
 local station=null;
 local vehgroup=null;
-if (road.ROUTE.groupe_id > -1)
+if (road.ROUTE.group_id > -1)
 	{
-	vehgroup=AIVehicleList_Group(road.ROUTE.groupe_id);
+	vehgroup=AIVehicleList_Group(road.ROUTE.group_id);
 	road.ROUTE.vehicule=vehgroup.Count();
 	}
 else	road.ROUTE.vehicule=0;
@@ -323,7 +323,7 @@ root.chemin.RListUpdateItem(roadidx,road);
 }
 
 function cCarrier::CreateRoadVehicle(roadidx)
-// Build first vehicule of a road
+// Build first Vehicle of a road
 {
 local road=root.chemin.RListGetItem(roadidx);
 local srcplace = AIStation.GetLocation(root.builder.GetStationID(roadidx,true));
@@ -334,10 +334,10 @@ local homedepot = root.builder.GetDepotID(roadidx,true);
 local price = AIEngine.GetPrice(veh);
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
-root.bank.RaiseFundsBy(price*2);
+root.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
-	{ DError("Cannot buy the vehicle :",1); return false; }
+	{ DWarn("Cannot buy the vehicle :",1); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(firstveh),1); }
 if (AIEngine.GetCargoType(veh) != cargoid) AIVehicle.RefitVehicle(firstveh, cargoid);
 local firstorderflag = null;
@@ -351,7 +351,7 @@ else	{
 	firstorderflag = AIOrder.AIOF_FULL_LOAD_ANY + AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 	}
-AIGroup.MoveVehicle(road.ROUTE.groupe_id, firstveh);
+AIGroup.MoveVehicle(road.ROUTE.group_id, firstveh);
 AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
@@ -360,19 +360,19 @@ return true;
 }
 
 function cCarrier::CloneAirVehicle(roadidx)
-// add another vehicule on that route, sharing orders
+// add another Vehicle on that route, sharing orders
 {
 local road=root.chemin.RListGetItem(roadidx);
-local vehlist=AIVehicleList_Group(road.ROUTE.groupe_id);
+local vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 if (vehlist.IsEmpty())
 	{
-	DInfo("Can't find any vehicle to duplicated on that route",1);
+	DError("Can't find any vehicle to duplicated on that route",1);
 	return false;
 	}
 // first check we can add one more vehicle to start or ending station
 if (!root.carrier.CanAddNewVehicle(roadidx,true) || !root.carrier.CanAddNewVehicle(roadidx,false))
 	{
-	DInfo("One airport is full, cannot add more aircrafts",1);
+	DWarn("One airport is full, cannot add more aircrafts",1);
 	return false;
 	}
 local veh=vehlist.Begin();
@@ -386,7 +386,7 @@ if (road.ROUTE.vehicule%2 != 0 && switcher) // impair vehicule selection, becaus
 if (!road.ROUTE.src_entry)	startdepot=false;
 local newveh=AIVehicle.CloneVehicle(root.builder.GetDepotID(roadidx,startdepot),veh,true);
 if (!AIVehicle.IsValidVehicle(newveh))
-	{ DError("Cannot buy the vehicle :"+price,2); return false; }
+	{ DWarn("Cannot buy the vehicle :"+price,2); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(newveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(newveh)),1); }
 root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 if (!startdepot)	AIOrder.SkipToOrder(newveh, 1);
@@ -423,7 +423,7 @@ if (veh == null)
 root.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
-	{ DError("Cannot buy the vehicle :",1); return false; }
+	{ DWarn("Cannot buy the vehicle :",1); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),1); }
 //if (AIEngine.GetCargoType(veh) != cargoid) AIVehicle.RefitVehicle(firstveh, cargoid);
 // no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
@@ -435,7 +435,7 @@ AIOrder.AppendOrder(firstveh, srcplace, secondorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!road.ROUTE.src_entry)	AIOrder.SkipToOrder(firstveh, 1);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
-AIGroup.MoveVehicle(road.ROUTE.groupe_id, firstveh);
+AIGroup.MoveVehicle(road.ROUTE.group_id, firstveh);
 root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 return true;
 }
@@ -446,7 +446,7 @@ function cCarrier::GetRailVehicle(idx)
 local road= root.chemin.RListGetItem(idx);
 local veh = root.carrier.ChooseRailVeh(idx);
 if (veh == null)	{
-			DInfo("No suitable train to buy !",1);
+			DError("No suitable train to buy !",1);
 			road=root.chemin.RouteMalusHigher(road);
 			root.chemin.RListUpdateItem(root.chemin.nowJob,road);
 			return false;
@@ -461,7 +461,7 @@ function cCarrier::GetRoadVehicle(idx)
 local road= root.chemin.RListGetItem(idx);
 local veh = root.carrier.ChooseRoadVeh(road.ROUTE.cargo_id);
 if (veh == null)	{
-			DInfo("No suitable road vehicle to buy !",1);
+			DError("No suitable road vehicle to buy !",1);
 			road=root.chemin.RouteMalusHigher(road);
 			root.chemin.RListUpdateItem(idx,road);
 			return false;
@@ -479,8 +479,8 @@ if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
 if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
 local veh = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 if (veh == null)	{
-			if (road.ROUTE.src_entry)	DInfo("No suitable aircraft to buy !",1);
-				else	DInfo("No suitable choppers to buy !");
+			if (road.ROUTE.src_entry)	DError("No suitable aircraft to buy !",1);
+				else	DError("No suitable choppers to buy !");
 			road=root.chemin.RouteMalusHigher(road);
 			root.chemin.RListUpdateItem(idx,road);
 			return false;
@@ -589,7 +589,7 @@ function cCarrier::ChooseWagon(cargo)
 	wagonlist.KeepValue(cargo);
 	wagonlist.Valuate(AIEngine.GetCapacity);
 	if (wagonlist.Count() == 0) 
-		{ DInfo("No wagons can transport that cargo.",1); return null; }
+		{ DError("No wagons can transport that cargo.",1); return null; }
 	return wagonlist.Begin();
 }
 
@@ -650,7 +650,7 @@ DInfo("Depotid: "+homedepot,2);
 if (veh == null) return false;
 if (!root.bank.RaiseFundsBy(price))
 	{
-	DInfo("I don't have enough money to buy that train and its wagons "+AIEngine.GetName(veh),1);
+	DWarn("I don't have enough money to buy that train and its wagons "+AIEngine.GetName(veh),1);
 	return false;
 	}
 else	{ DInfo("Train "+AIEngine.GetName(veh)+" and wagons will cost "+price,1); }
@@ -674,13 +674,13 @@ if (AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_PASSENGERS || AICar
 	}
 DInfo("Append order to "+AIEngine.GetName(trainengine)+" to "+AIStation.GetName(srcplace),2);
 if (!AIOrder.AppendOrder(trainengine, AIStation.GetLocation(srcplace), firstorderflag))
-	{ DInfo("Fail to set order !!!"+AIError.GetLastErrorString(),1); }
+	{ DError("Fail to set order !!!"+AIError.GetLastErrorString(),1); }
 if (!AIOrder.AppendOrder(trainengine, AIStation.GetLocation(dstplace), AIOrder.AIOF_NON_STOP_INTERMEDIATE))
-	{ DInfo("Fail to set order !!!"+AIError.GetLastErrorString(),1); }
+	{ DError("Fail to set order !!!"+AIError.GetLastErrorString(),1); }
 DInfo("orders set",1);
 if (!AIVehicle.StartStopVehicle(trainengine))
 	{ DInfo(AIVehicle.GetName(trainengine)+" refuse to start !!!"+AIError.GetLastErrorString(),1); }
-AIGroup.MoveVehicle(road.ROUTE.groupe_id, trainengine);
+AIGroup.MoveVehicle(road.ROUTE.group_id, trainengine);
 return true;
 }
 

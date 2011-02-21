@@ -270,7 +270,6 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 			if (!istown) tilelist.Valuate(AITile.GetCargoProduction, road.ROUTE.cargo_id, 1, 1, rad);
 				else tilelist.Valuate(AITile.GetCargoAcceptance, road.ROUTE.cargo_id, 1, 1, rad);
 			tilelist.Sort(AIList.SORT_BY_VALUE, false);
-			DInfo("Town or industry start, valuate as biggest first",2);
 			}
 		//showLogic(tilelist);
 		}
