@@ -587,7 +587,7 @@ foreach (vehicle, dummy in tlist)
 	price=root.carrier.VehicleGetProfit(vehicle);
 	DInfo("-> Vehicle "+name+" profits : "+price,2);
 	age=AIVehicle.GetAge(vehicle);
-	if (age > 240 && price < 0) // (8 months)
+	if (age > 240 && price < 0 && root.month > 3) // (8 months)
 		{
 		DInfo("-> Vehicle "+name+" is not making profit",0);
 		root.carrier.VehicleSendToDepot(vehicle);

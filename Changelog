@@ -1,5 +1,15 @@
-changeset:   67:f4eae252c3e0
+changeset:   68:db9a6ae182dd
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 22 00:25:47 2011 +0100
+files:       Changelog build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut utils/debug.nut
+description:
+- Minors corrections here & there
+- Add a money flow control for vehicles as Zuu suggest, looks far better with
+it
+
+
+changeset:   67:f4eae252c3e0
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Mon Feb 21 23:13:19 2011 +0100
 files:       Changelog TODO.txt build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut main.nut
