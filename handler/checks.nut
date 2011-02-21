@@ -63,6 +63,7 @@ root.SixMonth=0;
 root.TwelveMonth++;
 DInfo("Half year checks run...",1);
 root.builder.RouteNeedRepair();
+//root.builddelay=false;
 if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
 }
 

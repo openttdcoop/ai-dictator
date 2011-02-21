@@ -1,5 +1,21 @@
-changeset:   64:796f4cca3e6c
+changeset:   65:fc6eaae78fdc
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Mon Feb 21 17:02:13 2011 +0100
+files:       Changelog build/builder.nut build/vehiclebuilder.nut handler/chemin.nut main.nut utils/banker.nut
+description:
+- Add a route costs estimate to prevent us building something we
+couldn't do
+- Disable the safestart (will remove it) if the route costs estimate is
+good enought
+- When building a route, we also re-check distances to switch transport
+type
+- General handling of routes speed is real faster (and i have ideas for
+vehicle handling, airport upgrade & stations checks too)
+- When loan reach a certain value, we stop building and try to repay it
+
+
+changeset:   64:796f4cca3e6c
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Mon Feb 21 14:48:41 2011 +0100
 files:       Changelog build/airbuilder.nut build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut info.nut main.nut utils/banker.nut utils/debug.nut utils/misc.nut

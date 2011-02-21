@@ -100,9 +100,6 @@ switch (eventType)
 		local homedepot = root.builder.GetDepotID(routeidx,true);
 		local newveh=null;
 		root.bank.RaiseFundsBigTime();
-		if (!root.carrier.vehsaveactive)	newveh=AIVehicle.CloneVehicle(homedepot, vehicle, true);
-			else	{ DInfo("Cannot cloned any vehicle while we're in save vehicle mode. Say goodbye to that vehicle, sorry",0); break; }
-
 		if (AIVehicle.IsValidVehicle(newveh))
 			{
 			AIVehicle.StartStopVehicle(newveh);
@@ -117,14 +114,14 @@ switch (eventType)
 		event = AIEventVehicleLost.Convert(event);
 		local vehicle = event.GetVehicleID();
 		DInfo(AIVehicle.GetName(vehicle) + " is lost, I don't know what to do with that ! Sending it to depot");
-		root.carrier.VehicleToDepotAndSell(vehicle);
+		root.carrier.VehicleSendToDepot(vehicle);
 	break;
 	case AIEvent.AI_ET_VEHICLE_UNPROFITABLE:
 		event = AIEventVehicleUnprofitable.Convert(event);
 		local vehicle = event.GetVehicleID();
 		DInfo(AIVehicle.GetName(vehicle) + " is not profitable, sending it to depot");
 		root.builder.RouteIsDamage(root.carrier.VehicleFindRouteIndex(vehicle));
-		root.carrier.VehicleToDepotAndSell(vehicle);
+		root.carrier.VehicleSendToDepot(vehicle);
 	break;
 	case AIEvent.AI_ET_COMPANY_IN_TROUBLE:
 		event = AIEventCompanyInTrouble.Convert(event);
@@ -163,12 +160,12 @@ switch (eventType)
 			vehlist.Sort(AIList.SORT_BY_VALUE,false);
 			foreach (vehicle, profit in vehsell)
 				{ // sell all non profitable vehicles
-				root.carrier.VehicleToDepotAndSell(vehicle);
+				root.carrier.VehicleSendToDepot(vehicle);
 				}
 			foreach (vehicle, value in vehlist)
 				{
 				do	{
-					root.carrier.VehicleToDepotAndSell(vehicle);
+					root.carrier.VehicleSendToDepot(vehicle);
 					AIController.Sleep(150);
 					root.carrier.VehicleIsWaitingInDepot();
 					} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);

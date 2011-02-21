@@ -36,6 +36,7 @@ static	DIR_SW = 3;
 	station_take=null;		// list of stations where we take products
 	station_drop=null;		// list of stations where we drop products
 	savedepot = null; 		// the tile of the last depot we have build
+	route_start=null;		// the route we start build on
 	
 	
 	constructor(that)
@@ -45,6 +46,7 @@ static	DIR_SW = 3;
 		station_take=AIList();
 		station_drop=AIList();
 		CriticalError=false;
+		route_start=-1;
 		}
 	}
 
@@ -507,6 +509,7 @@ if (rr.ROUTE.status==5)
 rr=root.chemin.RListGetItem(idx); // reload datas
 if (rr.ROUTE.status==6)
 	{
+	root.builder.route_start=idx;
 	success=root.builder.BuildRoadByType(idx);
 	if (success)	{ root.chemin.RouteStatusChange(idx,7); }
 		else	{
@@ -546,9 +549,10 @@ if (rr.ROUTE.status==8)
 	root.chemin.RouteStatusChange(idx,100);
 	root.builder.StationIsAccepting(root.builder.GetStationID(idx,false));
 	root.builder.StationIsProviding(root.builder.GetStationID(idx,true));
-	if (root.secureStart > 0)	root.builddelay=true;
+	root.builddelay=true;
 	root.chemin.map_group_to_route.AddItem(rr.ROUTE.group_id, idx);
 	root.chemin.nowRoute=-1; // Allow us to work on a new route now
+	root.builder.route_start=-1;
 	}
 return success;
 }

@@ -133,7 +133,7 @@ DInfo(lastrand+" will rules the company with an iron fist");
 AICompany.SetPresidentName(lastrand);
 AIGetCargoFavorite();
 checkHQ();
-AIController.Sleep(100);
+AIController.Sleep(20);
 }
 
 

@@ -118,8 +118,13 @@ function DictatorAI::Start()
 					local costsbuild=bank.GetConstructionsCosts(chemin.nowRoute);
 					bank.RaiseFundsTo(costsbuild);
 					DInfo("Route #"+chemin.nowRoute+" estimate costs to build : "+costsbuild,1);
+					if (builder.route_start >= 0)	{ coststobuild=-10000; } // continue building the same route
 					if (bank.CanBuyThat(costsbuild))	builder.TryBuildThatRoute(chemin.nowRoute);
-									else	DInfo("Route is too expansive for us",1);
+									else	{
+										DInfo("Route is too expansive for us",1);
+										chemin.RouteMalusHigher(chemin.nowRoute);
+										chemin.nowRoute=-1;
+										}
 					DInfo(" ");
 					// now jump to build stage
 					}

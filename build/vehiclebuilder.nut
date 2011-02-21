@@ -21,15 +21,6 @@ enum AircraftType {
 class cCarrier
 	{
 	root = null;
-static	DEPOT_SELL = 0;		// goto depot for selling
-static	DEPOT_REPLACE = 1;	// to replace it
-static	DEPOT_STOP = 2;		// to stop & wait in depot
-static	DEPOT_SAVE = 3;		// to start
-static	DEPOT_UPGRADE = 4;	// to upgrade engine
-static	DEPOT_WAGON = 5;	// to add wagons
-	DEPOT_RESTART = 6;	// force vehicle restart
-	vehsavelist=null;	// our list of vehicles saved
-	vehsaveactive=null;	// when true, we have some vehicles saved that need a restore
 	vehnextprice=null;	// we just use that to upgrade vehicle
 	AirportTypeLimit=null;  // can't make it a const, squirrel is so weird
 	top_vehicle=null;	// the list of vehicle engine id we know cannot be upgrade
@@ -37,26 +28,11 @@ static	DEPOT_WAGON = 5;	// to add wagons
 	constructor(that)
 		{
 		root=that;
-		vehsavelist=[];
-		vehsaveactive=false;
 		vehnextprice=0;
 		top_vehicle=AIList();
 		AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
 		}
 	}
-
-function cCarrier::SaveVehicleAndDelete(veh)
-// save a vehicle then delete it
-{
-if (!AIVehicle.IsValidVehicle(veh))	return false;
-if (!AIVehicle.IsStoppedInDepot(veh))	return false;
-local idx=root.carrier.VehicleFindRouteIndex(veh);
-if (idx == -1) return false;
-if (!root.carrier.vehsaveactive)	root.carrier.vehsaveactive=true;
-root.carrier.vehsavelist.push(idx); // save it
-DInfo("Saving vehicle from route "+idx,1);
-root.carrier.VehicleSell(veh);
-}
 
 function cCarrier::VehicleGetCargoType(veh)
 // return cargo type the vehicle is handling
@@ -68,22 +44,6 @@ foreach (cargo, dummy in cargotype)
 	}
 }
 
-function cCarrier::RestoreSavedVehicle(veh)
-// restore previously saved vehicle
-{
-local idx=null;
-do	{
-	idx=vehsavelist.pop;
-	DInfo("Restoring vehicle from route "+idx,1);
-	local road=root.chemin.GListGetItem(idx);
-	local duplicate=true;
-	if (road.ROUTE.vehicule == 0) duplicate=false;
-	local success=root.carrier.BuildAndStartVehicle(idx,duplicate);
-	if (success)	{ DInfo("Adding a vehicle to route #"+idx+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,1); }
-	} while (vehsavelist.len()>0);
-vehsaveactive=false;
-}
-
 function cCarrier::VehicleExists(veh)
 // just return true if we own the vehicle
 {
@@ -91,73 +51,6 @@ local vehlist=AIVehicleList();
 if (vehlist.IsEmpty()) return false;
 if (!vehlist.HasItem(veh)) return false;
 return true;
-}
-
-function cCarrier::VehicleListFlag()
-// flag list the vehicle
-{
-local vehlist=AIVehicleList();
-if (vehlist.IsEmpty())	return;
-foreach (i, dummy in vehlist)
-	{
-	DInfo("vehicle="+i+" dummy="+dummy+" name="+AIVehicle.GetName(i)+" type="+AIEngine.GetName(AIVehicle.GetEngineType(i)),2);
-	}
-}
-
-function cCarrier::VehicleRemoveFlag(veh)
-// Remove a flag from a vehicle
-{
-if (!cCarrier.VehicleExists(veh)) return false;
-if (!cCarrier.VehicleIsFlag(veh)) return false;
-local name=AIVehicle.GetName(veh);
-name=name.slice(3);
-local i=0;
-while (!AIVehicle.SetName(veh,name))
-	{
-	name=i+name;
-	i++;
-	}
-return true;
-}
-
-function cCarrier::VehicleIsFlag(veh)
-// return true if we have a flag set on that vehicle
-{
-if (!cCarrier.VehicleExists(veh)) return false;
-local name=AIVehicle.GetName(veh);
-if (name.len() < 4) return false;
-local ourID=""+AICompany.ResolveCompanyID(AICompany.COMPANY_SELF)+"";
-local sec="non";
-local fir="non";
-local thi="non";
-fir=name.slice(0,1);
-sec=name.slice(1,2);
-thi=name.slice(2,3);
-if (fir == ourID && thi == ourID) return true;
-return false;
-}
-
-function cCarrier::VehicleGetFlag(veh)
-// get the flag on a vehicle, and return it
-{
-if (!cCarrier.VehicleExists(veh)) return -1;
-if (!cCarrier.VehicleIsFlag(veh)) return -1;
-local name=AIVehicle.GetName(veh);
-local val=name.slice(1,2);
-//val.tointeger();
-return val.tointeger();
-}
-
-function cCarrier::VehicleSetFlag(veh,flag)
-// flag the vehicle
-{
-if (!cCarrier.VehicleExists(veh)) return false;
-local ourID=""+AICompany.ResolveCompanyID(AICompany.COMPANY_SELF)+"";
-cCarrier.VehicleRemoveFlag(veh);
-local name=AIVehicle.GetName(veh);
-flag.tostring();
-flag=ourID+flag+ourID+name;
-return AIVehicle.SetName(veh,flag);
 }
 
 function cCarrier::CanAddNewVehicle(roadidx, start)
@@ -172,17 +65,13 @@ local divisor=0;
 switch (road.ROUTE.kind)
 	{
 	case AIVehicle.VT_ROAD:
-		divisor=root.chemin.road_max / (3-thatstation.STATION.size);
 		if (thatstation.STATION.type==0)
 			{ // max size already
-			if (thatstation.STATION.e_count+1 > divisor) return false; 
-			// this limit us to road vehicle depending on the station size
+			if (thatstation.STATION.e_count+1 > root.road_max) return false; 
 			}
 		else	{ // not yet upgrade
-			// we have reach maximum vehicule count on a 1 station value, we must upgrade the station
-			if (thatstation.STATION.e_count+1 > 8 && root.secureStart == 0)
-			 // upgrade now if 8+ and if we're not still at game start, save properties costs
-				{ if (!root.builder.RoadStationNeedUpgrade(roadidx,start)) return false; }
+			if (thatstation.STATION.e_count+1 > root.chemin.road_max_onroute && root.secureStart == 0)
+				root.builder.RoadStationNeedUpgrade(roadidx,start);
 			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false;
 			}
 	break;

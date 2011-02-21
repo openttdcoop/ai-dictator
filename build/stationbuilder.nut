@@ -279,7 +279,7 @@ local new_location=[AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(0,1), AIMap.Get
 local new_facing=[AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1)];
 // 0 will be same as original station, north, south, east, west
 local road=root.chemin.RListGetItem(roadidx);
-if (road != -1)	return false;
+if (road == -1)	return false;
 local station_obj=null;
 local station_index=null;
 local other_index=null;
@@ -300,7 +300,7 @@ DInfo("Road depot is at "+depot_id,2);
 local sta_pos=AIStation.GetLocation(station_id);
 local sta_front=AIRoad.GetRoadStationFrontTile(sta_pos);
 local dep_pos=depot_id;
-local dep_front=AIRoad.GetDepotFrontTile(dep_pos);
+local dep_front=AIRoad.GetRoadDepotFrontTile(dep_pos);
 local depotdead=false;
 local statype=AIRoad.ROADVEHTYPE_BUS;
 if (station_obj.STATION.railtype == 11)	{ statype=AIRoad.ROADVEHTYPE_TRUCK; }
@@ -316,8 +316,8 @@ foreach (voisin in new_location)
 	if (sta_pos+voisin == sta_front)	{ newpos=-1; } // station will block other station entry, bad!
 	sta_pos_list.AddItem(sta_pos+voisin, newpos);
 	}
+sta_pos_list.RemoveValue(-1);
 sta_pos_list=root.builder.FilterBlacklistTiles(sta_pos_list);
-sta_pos.RemoveValue(-1);
 foreach (tile, dummy in sta_pos_list)
 	{ // building the list as (tilefront, tile), not (tile, tilefront) because tile won't be uniq
 	foreach (directions in new_facing)

@@ -160,9 +160,9 @@ local town_connector=[];
 local towndone=AIList();
 towns.Valuate(AITown.GetPopulation);
 towns.Sort(AIList.SORT_BY_VALUE,false);
-towns.KeepTop(20);
+//towns.KeepTop(20);
 alttowns.AddList(towns);
-alttowns.KeepTop(10); // TODO: fixme
+alttowns.KeepTop(20); // TODO: fixme
 foreach (town, dummy in towns)
 	{ //DInfo("doing town "+town+" connect="+town_connector.len()+" done="+towndone.Count());
 	AIController.Sleep(2);
@@ -418,6 +418,7 @@ road.ROUTE.handicap=road.ROUTE.ranking;
 road.ROUTE.isServed=false;
 root.chemin.RListUpdateItem(idx,road);
 root.chemin.nowRoute=-1; // reset it when we found an invalid route
+root.builder.route_start=-1;
 root.builder.RouteIsInvalid(idx); // look for vehicle & stations there to remove them
 }
 
@@ -519,6 +520,7 @@ DInfo(it.Count()+" industries on map",0);
 local cargoList=AICargoList();
 local villeList=AITownList();
 DInfo(villeList.Count()+" towns on map",0);
+DInfo("Finding routes...",0);
 root.chemin.RouteTownsInjector();
 // first, let's find industries
 foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
@@ -578,7 +580,8 @@ if (dstlist.Count() !=0)
 function cChemin::RouteRefresh()
 // Refresh our routes datas
 {
-local listCounter=(root.chemin.RList.len()/root.chemin.Item.ROUTE.len());
+local listCounter=root.chemin.RListGetSize();
+DInfo("Refresh "+listCounter+" routes...",1);
 for (local i=0; i < listCounter; i++)
 	{
 	root.chemin.RouteMalusLower(i); // decrease our malus on road
@@ -811,7 +814,6 @@ root.chemin.RouteRefresh();
 local task=null;
 local tasktry=null;
 local gotmalus=0; // i use that to count how many route have a malus, if = numbers of route -> means we check all routes and fail
-// fresh infos for accurate calc
 local industryList=AIIndustryList();
 do 	{
 	bestJob=-1;
@@ -1038,8 +1040,10 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
 	local canaddonemore=root.carrier.CanAddNewVehicle(j, true);
-	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be able to buy it
+	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be able to buy it	
+	DInfo("CanAddNewVehicle for source station says "+canaddonemore,2);
 	canaddonemore=root.carrier.CanAddNewVehicle(j, false);
+	DInfo("CanAddNewVehicle for destination station says "+canaddonemore,2);
 	if (!canaddonemore)	vehneed=0;
 	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+"/"+maxveh+" firstveh="+firstveh,2);
 	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
@@ -1106,7 +1110,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		// now send that one to depot & sell it
 		local veh=runningList.Begin();
 		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",1);
-		root.carrier.VehicleToDepotAndSell(veh);
+		root.carrier.VehicleSendToDepot(veh);
 		AIVehicle.ReverseVehicle(veh); // try to make it move away from the queue
 		}
 	}

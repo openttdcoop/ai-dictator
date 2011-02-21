@@ -67,7 +67,6 @@ function cCarrier::VehicleList_KeepLoadingVehicle(vehicleslist)
 {
 vehicleslist.Valuate(AIVehicle.GetState);
 vehicleslist.KeepValue(AIVehicle.VS_AT_STATION);
-DInfo("VehicleListLoadingAtRoadStation "+vehicleslist.Count(),2);
 return vehicleslist;
 }
 
@@ -101,8 +100,16 @@ vehicles.RemoveValue(AIVehicle.VS_IN_DEPOT);
 vehicles.RemoveValue(AIVehicle.VS_BROKEN);
 vehicles.RemoveValue(AIVehicle.VS_CRASHED);
 vehicles.RemoveValue(AIVehicle.VS_INVALID);
-DInfo("VehicleListAtRoadStation = "+vehicles.Count(),2);
+//DInfo("VehicleListAtRoadStation = "+vehicles.Count(),2);
 return vehicles;
+}
+
+function cCarrier::VehicleGetFormatString(veh)
+// return a vehicle string with the vehicle infos
+{
+if (!AIVehicle.IsValidVehicle(veh))	return "<Invalid vehicle>";
+local toret="#"+veh+" - "+AIVehicle.GetName(veh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(veh))+")";
+return toret;
 }
 
 function cCarrier::VehicleOrderSkipCurrent(veh)
@@ -157,7 +164,6 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 	local numorders=0;
 	foreach (vehicle, dummy in airlist)
 		{
-		if (cCarrier.VehicleIsFlag(vehicle)) continue; // don't order anything to a flag vehicle
 		if (isfirst)
 			{
 			rabbit=vehicle;
@@ -325,45 +331,12 @@ if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 DInfo("Setting depot order for vehicle "+veh+"-"+AIVehicle.GetName(veh),2);
 }
 
-function cCarrier::VehicleSendToDepot(veh,flag)
-// send a vehicle to depot, set its flag for the reason
+function cCarrier::VehicleSendToDepot(veh)
+// send a vehicle to depot
 {
+if (!AIVehicle.IsValidVehicle(veh))	return false;
 local reason="";
 root.carrier.VehicleSetDepotOrder(veh);
-if (cCarrier.VehicleIsFlag(veh))
-	{
-	return false;
-	}
-if (!cCarrier.VehicleExists(veh))
-	{
-	DInfo("That vehicle doesn't exist !",1);
-	return false;
-	}
-
-switch (flag)
-	{
-	case DEPOT_SELL:
-	reason="to be sold";
-	break;
-	case DEPOT_REPLACE:
-	reason="to be replace";
-	break;
-	case DEPOT_STOP:
-	reason="to stop & wait futher orders";
-	break;
-	case DEPOT_SAVE:
-	reason="to be save & restore";
-	break;
-	case DEPOT_UPGRADE:
-	reason="to be upgrade";
-	break;
-	case DEPOT_WAGON:
-	reason="to add wagons";
-	break;
-	default:
-	reason="for unknow reason #"+flag;
-	break;
-	}
 local understood=false;
 understood=AIVehicle.SendVehicleToDepot(veh);
 if (!understood) {
@@ -371,8 +344,6 @@ if (!understood) {
 	}
 else	DInfo(AIVehicle.GetName(veh)+" is going to depot "+reason,0);
 // sometimes undertood is true but the vehicle doesn't go to depot
-if (!root.carrier.VehicleSetFlag(veh,flag))
-	{ DError("Fail to flag the vehicle !",2); }
 }
 
 function cCarrier::VehicleGetFullCapacity(veh)
@@ -396,24 +367,15 @@ else	{ // others
 	}
 }
 
-function cCarrier::VehicleToDepotAndSell(veh)
-// send a vehicle to sell it
-{
-cCarrier.VehicleSendToDepot(veh,cCarrier.DEPOT_SELL);
-}
-
 function cCarrier::VehicleFindRouteIndex(veh)
 // return index of the route the veh vehicle is running on
 {
 local group=AIVehicle.GetGroupID(veh);
-local idx=-1;
-for (local i=0; i < root.chemin.RListGetSize(); i++)
+foreach (sgroup, sidx in root.chemin.map_group_to_route)
 	{
-	local road=root.chemin.RListGetItem(i);
-	if (road.ROUTE.group_id == group)	{ idx=i; break; }
-	AIController.Sleep(1);
+	if (group == sgroup)	return sidx;
 	}
-return idx;
+return -1;
 }
 
 function cCarrier::VehicleUpgradeEngineAndWagons(veh)
@@ -470,19 +432,22 @@ switch (AIVehicle.GetVehicleType(veh))
 	break;
 	}
 AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why
+root.builder.IsCriticalError();
+root.builder.CriticalError=false;
 AIGroup.MoveVehicle(road.ROUTE.group_id,newveh);
 local oldenginename=AIEngine.GetName(AIVehicle.GetEngineType(veh));
 local newenginename=AIVehicle.GetName(newveh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(newveh))+")";
 if (AIVehicle.IsValidVehicle(newveh))
 	{
+	DInfo("Vehicle "+root.carrier.VehicleGetFormatString(veh)+" replace with "+root.carrier.VehicleGetFormatString(newveh),0);
 	AIVehicle.StartStopVehicle(newveh);
 	AIVehicle.SellWagonChain(veh,0);
-	AIVehicle.SellVehicle(veh);
-	DInfo("Vehicle "+oldenginename+" replace with "+newenginename,0);
+	root.carrier.VehicleSell(veh);
 	root.carrier.vehnextprice=0;
 	}
 else	{
-	root.carrier.VehicleSell(veh);
+	AIVehicle.StartStopVehicle(veh);
+	root.carrier.vehnextprice=0;
 	}
 }
 
@@ -584,6 +549,7 @@ return true;
 }
 
 function cCarrier::VehicleMaintenance()
+// lookout our vehicles for troubles
 {
 if (root.chemin.under_upgrade)
 	{
@@ -591,20 +557,23 @@ if (root.chemin.under_upgrade)
 	return;
 	}
 local tlist=AIVehicleList();
+tlist.Valuate(AIVehicle.GetState);
+tlist.RemoveValue(AIVehicle.VS_STOPPED);
+tlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
+tlist.RemoveValue(AIVehicle.VS_CRASHED);
 DInfo("Checking "+tlist.Count()+" vehicles",0);
 local age=0;
 local name="";
 local price=0;
 foreach (vehicle, dummy in tlist)
 	{
-	if (AIVehicle.IsStoppedInDepot(vehicle)) continue;
 	age=AIVehicle.GetAgeLeft(vehicle);
 	local topengine=root.carrier.VehicleIsTop(vehicle);
 	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
 		else	 price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	price+=(0.5*price);
 	// add a 50% to price to avoid try changing an engine and running low on money because of fluctuating money
-	name=AIVehicle.GetName(vehicle)+"("+AIEngine.GetName(AIVehicle.GetEngineType(vehicle))+")";
+	name=root.carrier.VehicleGetFormatString(vehicle);
 	local groupid=AIVehicle.GetGroupID(vehicle);
 	local vehgroup=AIVehicleList_Group(groupid);
 	if (age < 48)
@@ -613,7 +582,7 @@ foreach (vehicle, dummy in tlist)
 		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
 		root.carrier.vehnextprice+=price;
 		DInfo("Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" months), replacing it",0);
-		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
+		root.carrier.VehicleSendToDepot(vehicle);
 		root.bank.busyRoute=true;
 		continue;
 		}
@@ -627,14 +596,13 @@ foreach (vehicle, dummy in tlist)
 		root.bank.busyRoute=true;
 		continue;
 		}
-
 	if (topengine != -1)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
 		root.carrier.vehnextprice+=price;
 		DInfo("Vehicle "+name+" can be update with a better version, sending it to depot",0);
-		root.carrier.VehicleSendToDepot(vehicle,DEPOT_UPGRADE);
+		root.carrier.VehicleSendToDepot(vehicle);
 		root.bank.busyRoute=true;
 		continue;
 		}
@@ -649,7 +617,7 @@ foreach (vehicle, dummy in tlist)
 	if (age < 2)
 		{
 		DInfo("Vehicle "+name+" have too few orders, sending it to depot",0);
-		root.carrier.VehicleSendToDepot(vehicle,DEPOT_SELL);
+		root.carrier.VehicleSendToDepot(vehicle);
 		}
 	for (local z=AIOrder.GetOrderCount(vehicle)-1; z >=0; z--)
 		{ // I check backward to prevent z index gone wrong if an order is remove
@@ -688,7 +656,7 @@ if (road.ROUTE.group_id != -1)
 	vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 	foreach (vehicle in vehlist)
 		{
-		root.carrier.VehicleToDepotAndSell(vehicle);
+		root.carrier.VehicleSendToDepot(vehicle);
 		}
 	foreach (vehicle in vehlist)
 		{
@@ -707,51 +675,19 @@ if (road.ROUTE.group_id != -1)
 }
 
 function cCarrier::VehicleIsWaitingInDepot()
-// this function checks our depot and see if we have a vehcile in it
-// and take actions on it if need
+// this function checks our depot sell vehicle in it
 {
 local tlist=AIVehicleList();
 DInfo("Checking vehicles in depots",1);
 tlist.Valuate(AIVehicle.IsStoppedInDepot);
 tlist.KeepValue(1);
-local flag=-1;
 foreach (i, dummy in tlist)
 	{
-	AIController.Sleep(1); // Brumi's advice
-	flag=cCarrier.VehicleGetFlag(i); // safe, return -1 on failure
-	DInfo("Flag set = "+flag,2);
-	//if (flag == -1) flag=DEPOT_RESTART; // set it for a restart
-	if (flag == DEPOT_REPLACE) flag=DEPOT_UPGRADE; // never just replace, try upgrade while doing it
-	
-	switch (flag)
-		{
-		case DEPOT_SELL:
-			root.carrier.VehicleSell(i);
-		break;
-		case DEPOT_REPLACE:
-		break;
-		case DEPOT_STOP:
-			DInfo("Vehicle "+AIVehicle.GetName(i)+" is waiting new orders",0);
-		break;
-		case DEPOT_SAVE:
-			DInfo("Vehicle "+AIVehicle.GetName(i)+" is waiting for a save & restore service",0);
-			root.carrier.SaveVehicleAndDelete(i);
-		break;
-		case DEPOT_UPGRADE:
-			DInfo("Vehicle "+AIVehicle.GetName(i)+" need upgrade",0);
-			root.carrier.VehicleUpgradeEngineAndWagons(i);
-		break;
-		case DEPOT_WAGON:
-		break;
-		case DEPOT_RESTART:
-			AIVehicle.StartStopVehicle(i);
-			DInfo("Vehicle "+AIVehicle.GetName(i)+" is waiting for nothing, restarting it",0);
-		break;
-		default:
-			DInfo("Vehicle "+AIVehicle.GetName(i)+" is in depot for unknow reason #"+flag+", selling it",0);
-			root.carrier.VehicleSell(i);
-		break;
-		}
+	local istop=root.carrier.VehicleIsTop(i);
+	if (istop != -1)	{ root.carrier.VehicleUpgradeEngineAndWagons(i); }
+	DInfo("Vehicle "+root.carrier.VehicleGetFormatString(i)+" sold.",0);
+	root.carrier.VehicleSell(i);
+	AIController.Sleep(1);
 	}
 }
 
