@@ -91,21 +91,9 @@ switch (eventType)
 		local vehicle = null;
 		event = AIEventVehicleCrashed.Convert(event);
 		vehicle = event.GetVehicleID();
-		DInfo("One of my vehicle has crashed.",0);
+		DInfo("Vehicle "+root.carrier.VehicleGetFormatString(vehicle)+" has crashed !!!",0);
 		if (!AIVehicle.IsValidVehicle(vehicle)) break;
 		DInfo("Vehicle state: " + AIVehicle.GetState(vehicle),1);
-		if (AIVehicle.GetState(vehicle) != AIVehicle.VS_CRASHED) break;
-		local group = AIVehicle.GetGroupID(vehicle);
-		local routeidx = root.carrier.VehicleFindRouteIndex(vehicle);
-		local homedepot = root.builder.GetDepotID(routeidx,true);
-		local newveh=null;
-		root.bank.RaiseFundsBigTime();
-		if (AIVehicle.IsValidVehicle(newveh))
-			{
-			AIVehicle.StartStopVehicle(newveh);
-			DInfo("Cloned the crashed vehicle.",0);
-			}
-		// no need to update vehicle counters, as the crash vehicle is still count
 	break;
 	case AIEvent.AI_ET_VEHICLE_WAITING_IN_DEPOT:
 		root.carrier.VehicleIsWaitingInDepot();
@@ -140,7 +128,7 @@ switch (eventType)
 			break;
 			case	1:
 				if (isme)	action="I will call Bernard Madoff for more hints.";
-					else	action="Sell those actions now !";
+					else	action="Sell his actions now !";
 			break;
 			case	2:
 				if (isme)	action="Fools rebels, you will never win !";
@@ -172,8 +160,6 @@ switch (eventType)
 				}
 			}
 	break;
-	default :
-		DInfo("Discarding event "+eventType,2);
 	}
 
 } // while

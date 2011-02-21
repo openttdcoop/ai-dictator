@@ -21,10 +21,37 @@ build/railbuilder.nut:	// TODO: switch station direction
 build/airbuilder.nut:// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
 build/builder.nut:	// TODO: i suppose our HQ can make next test fail, so todo is add a check & move the hq
 build/builder.nut:	// TODO: check also tile is own by us, but at least a train related stuff, else we may destroy
-handler/chemin.nut:alttowns.KeepTop(10); // TODO: fixme
+handler/chemin.nut:alttowns.KeepTop(20); // TODO: fixme
 handler/chemin.nut:		// TODO: we shouldn't add the destination airport in it, maybe we have source town with 4+ but not a proof destination town >=4k
 handler/chemin.nut:		// TODO: add airport station in the network instead of the route itself
 handler/vehiclehandler.nut:AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why
 handler/checks.nut:					{ // don't push the vehicle that is loading, TODO: might fail if 2 vehicles with a bit of cargo enter the station, better found a way to test station. But it's a rare case
 handler/events.nut:				// TODO: Handle it. 
 main.nut:TODO: find how the internal ttd name vehicle.max_boats vehicle.max_aircrafts
+new.txt:diff -r fc6eaae78fdc TODO.txt
+new.txt:--- a/TODO.txt	Mon Feb 21 17:02:13 2011 +0100
+new.txt:+++ b/TODO.txt	Mon Feb 21 21:52:55 2011 +0100
+new.txt:+Changelog:files:       Changelog TODO.txt build/builder.nut build/roadbuilder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut utils/misc.nut
+new.txt: Changelog:files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/checks.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+new.txt: Changelog:files:       Changelog TODO.txt build/builder.nut build/roadbuilder.nut handler/checks.nut handler/vehiclehandler.nut utils/debug.nut utils/misc.nut utils/tile.nut
+new.txt: Changelog:files:       Changelog TODO.txt build/roadbuilder.nut build/stationbuilder.nut build/stationremover.nut handler/array.nut handler/chemin.nut
+new.txt: Changelog:files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut handler/chemin.nut
+new.txt: Changelog:files:       TODO.txt handler/chemin.nut
+new.txt: Changelog:files:       Changelog TODO.txt build/airbuilder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/chemin.nut handler/vehiclehandler.nut main.nut
+new.txt:+build/vehiclebuilder.nut:function cCarrier::ChooseRailVeh(idx) // TODO: recheck that, for case where a train could be better base on power
+new.txt: build/railbuilder.nut:	// TODO: switch station direction
+new.txt:-build/stationbuilder.nut:		// TODO: need to rethink many (all) building/demolish trys functions, having a depot with a road vehicle in it (but not stop at depot) prevent demolishing the tile, this is not crical, but this fool us
+new.txt: build/airbuilder.nut:// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
+new.txt: build/builder.nut:	// TODO: i suppose our HQ can make next test fail, so todo is add a check & move the hq
+new.txt: build/builder.nut:	// TODO: check also tile is own by us, but at least a train related stuff, else we may destroy
+new.txt:+handler/chemin.nut:alttowns.KeepTop(10); // TODO: fixme
+new.txt: handler/chemin.nut:		// TODO: we shouldn't add the destination airport in it, maybe we have source town with 4+ but not a proof destination town >=4k
+new.txt: handler/chemin.nut:		// TODO: add airport station in the network instead of the route itself
+new.txt: handler/vehiclehandler.nut:AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why
+new.txt: handler/checks.nut:					{ // don't push the vehicle that is loading, TODO: might fail if 2 vehicles with a bit of cargo enter the station, better found a way to test station. But it's a rare case
+new.txt:-handler/events.nut:// TODO: watch out for eventType=even[0].GetEventType()
+new.txt: handler/events.nut:				// TODO: Handle it. 
+new.txt: main.nut:TODO: find how the internal ttd name vehicle.max_boats vehicle.max_aircrafts
+new.txt:-alttowns.KeepTop(10); // TODO: fixme
+new.txt:+alttowns.KeepTop(20); // TODO: fixme
+new.txt: AIOrder.ShareOrders(newveh, veh); // TODO: always fail, look why

@@ -1,5 +1,19 @@
-changeset:   65:fc6eaae78fdc
+changeset:   66:04e61632d5fd
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Mon Feb 21 21:58:40 2011 +0100
+files:       Changelog TODO.txt build/builder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut main.nut utils/misc.nut
+description:
+- Upgrade road station if we reach the vehicle limit / route
+- Keep building same route if we just fail for non critical reasons
+(lack of money, vehicle in the way...)
+- Remove the tag code for vehicle, we can find out why a vehicle is in
+depot without help
+- Remove non useful vehicle state from vehicle maintenance list, faster
+a bit
+
+
+changeset:   65:fc6eaae78fdc
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Mon Feb 21 17:02:13 2011 +0100
 files:       Changelog build/builder.nut build/vehiclebuilder.nut handler/chemin.nut main.nut utils/banker.nut

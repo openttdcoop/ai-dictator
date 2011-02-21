@@ -24,12 +24,14 @@ class cCarrier
 	vehnextprice=null;	// we just use that to upgrade vehicle
 	AirportTypeLimit=null;  // can't make it a const, squirrel is so weird
 	top_vehicle=null;	// the list of vehicle engine id we know cannot be upgrade
+	to_depot=null;		// list the vehicle going to depot
 
 	constructor(that)
 		{
 		root=that;
 		vehnextprice=0;
 		top_vehicle=AIList();
+		to_depot=AIList();
 		AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
 		}
 	}
@@ -42,15 +44,6 @@ foreach (cargo, dummy in cargotype)
 	{
 	if (AIVehicle.GetCapacity(veh, cargo) > 0)	return cargo;
 	}
-}
-
-function cCarrier::VehicleExists(veh)
-// just return true if we own the vehicle
-{
-local vehlist=AIVehicleList();
-if (vehlist.IsEmpty()) return false;
-if (!vehlist.HasItem(veh)) return false;
-return true;
 }
 
 function cCarrier::CanAddNewVehicle(roadidx, start)
@@ -67,7 +60,7 @@ switch (road.ROUTE.kind)
 	case AIVehicle.VT_ROAD:
 		if (thatstation.STATION.type==0)
 			{ // max size already
-			if (thatstation.STATION.e_count+1 > root.road_max) return false; 
+			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false; 
 			}
 		else	{ // not yet upgrade
 			if (thatstation.STATION.e_count+1 > root.chemin.road_max_onroute && root.secureStart == 0)

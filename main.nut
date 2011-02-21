@@ -129,7 +129,7 @@ function DictatorAI::Start()
 					// now jump to build stage
 					}
 				}
-			else { DInfo("Waiting for more cash..."); }
+			else { DInfo(" "); }
 		
 		builder.TrainStationTesting();
 		bank.CashFlow();

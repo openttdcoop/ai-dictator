@@ -540,6 +540,7 @@ foreach(c, dummy in cargoList)
 	}
 */
 root.chemin.CreateVirtualRoute();
+root.chemin.RouteMaintenance();
 }
 
 function cChemin::RouteCreateEndingList(idx)
@@ -617,7 +618,7 @@ for (local i=0; i < listCounter; i++)
 	if (purgeit != "")
 		{ // found something to remove
 		root.chemin.RListDumpOne(i);
-		DInfo("Removing route "+i+" - Reason: "+purgeit,0);
+		DInfo("-> Removing route "+i+" - Reason: "+purgeit,0);
 		root.builder.RouteDelete(i);
 		break;
 		}
@@ -631,7 +632,7 @@ root.chemin.RouteStatusChange(idx,2);
 local road=root.chemin.RListGetItem(idx);
 road.ROUTE.money=root.bank.GetConstructionsCosts(idx);
 root.chemin.RListUpdateItem(idx, road);
-DInfo("Route created: "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name+" "+road.ROUTE.length+"m",0);
+DInfo("Route created: "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name+" "+road.ROUTE.length+"km using "+root.chemin.RouteTypeToString(road.ROUTE.kind),0);
 }
 
 function cChemin::RouteTypeToString(routetype)

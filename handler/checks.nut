@@ -53,6 +53,7 @@ if (root.OneMonth!=month)	{ root.OneMonth=month; root.SixMonth++;}
 		else	return false;
 DInfo("Montly checks run...",1);
 root.builder.CheckAirportUpgrade();
+root.builder.RouteNeedRepair();
 if (root.SixMonth % 3 == 0) root.builddelay=false; // Wait 3 months, now allow us to build again
 if (root.SixMonth == 6)	root.builder.HalfYearChecks();
 }
@@ -62,8 +63,7 @@ function cBuilder::HalfYearChecks()
 root.SixMonth=0;
 root.TwelveMonth++;
 DInfo("Half year checks run...",1);
-root.builder.RouteNeedRepair();
-//root.builddelay=false;
+if (root.chemin.airnet_count > 0) DInfo("Aircraft network have "+root.chemin.airnet_count+" aircrafts running",0);
 if (root.TwelveMonth == 2)	root.builder.YearlyChecks();
 }
 
@@ -78,7 +78,7 @@ if (!root.chemin.repair_routes.HasItem(idx))	root.chemin.repair_routes.AddItem(i
 
 function cBuilder::RouteNeedRepair()
 {
-DInfo("Routes damage: "+root.chemin.repair_routes.Count(),1);
+DInfo("Damage routes: "+root.chemin.repair_routes.Count(),1);
 if (root.chemin.repair_routes.IsEmpty()) return;
 foreach (routes, dummy in root.chemin.repair_routes)
 	{
