@@ -56,6 +56,7 @@ root.builder.CheckAirportUpgrade();
 root.builder.RouteNeedRepair();
 if (root.SixMonth % 3 == 0) root.builddelay=false; // Wait 3 months, now allow us to build again
 if (root.SixMonth == 6)	root.builder.HalfYearChecks();
+//if (bank.canBuild && chemin.nowRoute == -1)	
 }
 
 function cBuilder::HalfYearChecks()
@@ -71,6 +72,7 @@ function cBuilder::RouteIsDamage(idx)
 // Set the route idx as damage
 {
 local road=root.chemin.RListGetItem(idx);
+if (road == -1) return;
 if (road.ROUTE.kind != AIVehicle.VT_ROAD)	return;
 if (!road.ROUTE.isServed)	return;
 if (!root.chemin.repair_routes.HasItem(idx))	root.chemin.repair_routes.AddItem(idx,0);
@@ -89,7 +91,7 @@ foreach (routes, dummy in root.chemin.repair_routes)
 	local test=root.builder.CheckRoadHealth(routes);
 	if (test)	root.chemin.repair_routes.SetValue(routes, -1)
 		else	root.chemin.repair_routes.SetValue(routes, trys);
-	if (trys >= 30)	{ deletethatone=routes }
+	if (trys >= 12)	{ deletethatone=routes }
 	}
 root.chemin.repair_routes.RemoveValue(-1);
 if (deletethatone != -1)	{ root.builder.RouteIsInvalid(deletethatone); }
@@ -101,6 +103,7 @@ function cBuilder::YearlyChecks()
 root.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
 root.carrier.do_profit.Clear();
+root.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
 }
 
 function cBuilder::AirportStationsBalancing()

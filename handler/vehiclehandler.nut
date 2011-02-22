@@ -394,7 +394,7 @@ local railtype = root.chemin.RouteGetRailType(idx);
 local newveh=null;
 local homedepot=root.builder.GetDepotID(idx,true);
 DInfo("Upgrading using depot at "+homedepot,2);
-PutSign(homedepot,"Depot");
+PutSign(homedepot,"D");
 local money=0;
 //if (railtype > 20) railtype-=20;
 switch (AIVehicle.GetVehicleType(veh))
@@ -442,10 +442,10 @@ if (AIVehicle.IsValidVehicle(newveh))
 	root.carrier.vehnextprice=0;
 	}
 else	{
-	AIVehicle.VehicleOrdersReset(veh); // because its orders are now goto depot, next vehicle check will catch it
+	root.carrier.VehicleOrdersReset(veh); // because its orders are now goto depot, next vehicle check will catch it
 	AIVehicle.StartStopVehicle(veh);
-	root.carrier.vehnextprice=0;
 	}
+root.carrier.vehnextprice=0;
 }
 
 function cCarrier::VehicleIsTop_GetUniqID(engine, cargo)
@@ -487,7 +487,7 @@ switch (AIVehicle.GetVehicleType(veh))
 		local modele=AircraftType.EFFICIENT;
 		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
 		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
-		uniqID=root.carrier.VehicleIstop_GetUniqID(ourEngine, modele);
+		uniqID=root.carrier.VehicleIsTop_GetUniqID(ourEngine, modele);
 		if (root.carrier.top_vehicle.HasItem(uniqID))	return -1;
 		top = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 	break;
@@ -578,7 +578,6 @@ foreach (vehicle, dummy in tlist)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
-		root.carrier.vehnextprice+=price;
 		DInfo("-> Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" days left), replacing it",0);
 		root.carrier.VehicleSendToDepot(vehicle);
 		root.bank.busyRoute=true;
@@ -587,9 +586,9 @@ foreach (vehicle, dummy in tlist)
 	price=root.carrier.VehicleGetProfit(vehicle);
 	DInfo("-> Vehicle "+name+" profits : "+price,2);
 	age=AIVehicle.GetAge(vehicle);
-	if (age > 240 && price < 0 && root.month > 3) // (8 months)
+	if (age > 240 && price < 0 && root.OneMonth > 3) // (3 months after new year)
 		{
-		DInfo("-> Vehicle "+name+" is not making profit",0);
+		DInfo("-> Vehicle "+name+" is not making profit, sending it to depot",0);
 		root.carrier.VehicleSendToDepot(vehicle);
 		age=root.carrier.VehicleFindRouteIndex(vehicle);
 		root.builder.RouteIsDamage(age);
@@ -597,7 +596,7 @@ foreach (vehicle, dummy in tlist)
 	age=AIVehicle.GetReliability(vehicle);
 	if (age < 30)
 		{
-		DInfo("-> Vehicle "+name+" reliability is low ("+age+"%)",0);
+		DInfo("-> Vehicle "+name+" reliability is low ("+age+"%), sending it for servicing at depot",0);
 		AIVehicle.SendVehicleToDepotForServicing(vehicle);
 		local idx=root.carrier.VehicleFindRouteIndex(vehicle);
 		root.builder.RouteIsDamage(idx);
@@ -607,9 +606,9 @@ foreach (vehicle, dummy in tlist)
 	if (topengine != -1)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
-		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
-		root.carrier.vehnextprice+=price;
-		DInfo("-> Vehicle "+name+" can be update with a better version, sending it to depot",0);
+		// reserving money for the upgrade
+		if (root.carrier.vehnextprice==0)	root.carrier.vehnextprice+=price;
+		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
 		root.carrier.VehicleSendToDepot(vehicle);
 		root.bank.busyRoute=true;
 		continue;

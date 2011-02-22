@@ -171,99 +171,30 @@ success=root.builder.CreateRailStationByPlan(basepoint, entry, direction, connec
 success=root.builder.CreateRailStationByPlan(otherbase, entry, otherdir, connectionbase);
 }
 
-function cBuilder::RoadBuildDepot(roadidx, start)
+function cBuilder::RoadFindCompatibleDepot(tile)
 /**
-* Build a road depot for a route, re-use a depot if we can find one near, last re-use the other side depot
+* Try to find an existing road depot near tile and reuse it
 *
-* @param roadidx the route index to build the depot
-* @param start if true build for source, false for destination
-* @return -1 on failure, depot location on success, set criticalerror
+* @param tile the tile to search the depot
+* @return -1 on failure, depot location on success
 */
 {
-local road=root.chemin.RListGetItem(roadidx);
-local source=null;
-local stationobj=null;
-local other=null;
-local otherobj=null;
-if (start)	{ source=road.ROUTE.src_station; other=road.ROUTE.dst_station; }
-	else	{ source=road.ROUTE.dst_station; other=road.ROUTE.src_station; }
-stationobj=root.chemin.GListGetItem(source);
-if (stationobj == -1)	return -1; // just return, that route is just too bad
-otherobj=root.chemin.GListGetItem(other);
-if (otherobj == -1)	return -1;
-local stationloc=AIStation.GetLocation(stationobj.STATION.station_id);
-local newdepottile=cTileTools.GetTilesAroundPlace(stationloc);
-local reusedepot=AIList();
-newdepottile=root.builder.FilterBlacklistTiles(newdepottile);
-newdepottile.Valuate(AITile.GetDistanceManhattanToTile,stationloc);
-newdepottile.Sort(AIList.SORT_BY_VALUE, true);
-newdepottile.RemoveAboveValue(10);
-reusedepot.AddList(newdepottile);
-newdepottile.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
-newdepottile.KeepAboveValue(0);
-newdepottile.Valuate(AIRoad.IsRoadTile);
-newdepottile.KeepValue(0);
+local reusedepot=cTileTools.GetTilesAroundPlace(tile);
 reusedepot.Valuate(AIRoad.IsRoadDepotTile);
 reusedepot.KeepValue(1);
 reusedepot.Valuate(AITile.GetOwner);
 local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 reusedepot.KeepValue(weare);
-showLogic(reusedepot);
-showLogic(newdepottile);
-root.NeedDelay(60);
+reusedepot.Valuate(AITile.GetDistanceManhattanToTile,tile);
+reusedepot.Sort(AIList.SORT_BY_VALUE, true);
+reusedepot.RemoveAboveValue(10);
+
 local newdeploc=-1;
-local reuse=false;
 if (!reusedepot.IsEmpty())
 	{
 	newdeploc=reusedepot.Begin();
-	reuse=true;
-	DInfo("Found a road depot near our station at "+newdeploc+" reusing that one",1);
 	}
-local allfail=false;
-if (newdeploc == -1)
-	{
-	allfail=true;
-	foreach (tile, dummy in newdepottile)
-		{
-		newdeploc=root.builder.BuildAndStickToRoad(tile, AIRoad.ROADVEHTYPE_BUS+100000);
-		if (!root.builder.CriticalError)	allfail=false;
-		root.builder.CriticalError=false; // discard error
-		if (newdeploc > -1)	break;
-		}
-	}
-if (allfail)
-	{ // pfff ! We really can't build/find a depot, let's check other side depot
-	local otherdep=otherobj.STATION.e_depot;
-	if (!AIRoad.IsRoadDepotTile(otherdep))
-		{ root.builder.CriticalError=true; }
-	else	{
-		allfail=false; reuse=true;
-		newdeploc=otherdep;
-		local forwho="source";
-		if (start) forwho="destination";
-		DInfo("All fail, reusing the depot from the "+frowho+" station",1);
-		}
-	}
-
-local forwho="Destination";
-if (start) forwho="Source";
-if (newdeploc > -1)
-	{
-	PutSign(newdeploc,"D");
-	local atinfo="Building ";
-	if (reuse) atinfo="Reusing ";
-	DInfo(atinfo+"road depot at "+newdeploc+" for route #"+roadidx+" - "+forwho+" station "+AIStation.GetName(stationobj.STATION.station_id),0);
-	stationobj.STATION.e_depot=newdeploc;
-	root.chemin.GListUpdateItem(source,stationobj);
-	return newdeploc;
-	}
-else	{
-	local tell="We need a depot but all our solves fail for route #"+roadidx+" - "+forwho+" station "+AIStation.GetName(stationobj.STATION.station_id);
-	if (allfail)	{ DError(tell+". That's serious error !",1); root.builder.CriticalError=true; }
-		else	DWarn(tell,1);
-	return -1;
-	}
-return -1;
+return newdeploc;
 }
 
 function cBuilder::RoadStationNeedUpgrade(roadidx,start)
@@ -310,24 +241,46 @@ local new_dep_pos=-1;
 local success=false;
 local sta_pos_list=AIList();
 local sta_front_list=AIList();
-foreach (voisin in new_location)
+facing=root.builder.GetDirection(sta_pos, sta_front);
+local p_left=0;
+local p_right=0;
+local p_back=0;
+switch (facing)
 	{
-	local newpos=1;
-	if (sta_pos+voisin == sta_front)	{ newpos=-1; } // station will block other station entry, bad!
-	sta_pos_list.AddItem(sta_pos+voisin, newpos);
+	case DIR_NW:
+		p_left = AIMap.GetTileIndex(1,0);
+		p_right =AIMap.GetTileIndex(-1,0);
+		p_back = AIMap.GetTileIndex(0,1); 
+	break;
+	case DIR_NE:
+		p_left = AIMap.GetTileIndex(0,-1);
+		p_right =AIMap.GetTileIndex(0,1);
+		p_back = AIMap.GetTileIndex(1,0); 
+	break;
+	case DIR_SW:
+		p_left = AIMap.GetTileIndex(0,1);
+		p_right =AIMap.GetTileIndex(0,-1); 
+		p_back = AIMap.GetTileIndex(-1,0);
+	break;
+	case DIR_SE:
+		p_left = AIMap.GetTileIndex(1,0);
+		p_right =AIMap.GetTileIndex(-1,0);
+		p_back = AIMap.GetTileIndex(0,-1);
+	break;
 	}
-sta_pos_list.RemoveValue(-1);
-sta_pos_list=root.builder.FilterBlacklistTiles(sta_pos_list);
-foreach (tile, dummy in sta_pos_list)
-	{ // building the list as (tilefront, tile), not (tile, tilefront) because tile won't be uniq
-	foreach (directions in new_facing)
-		{
-		local newdirection=tile;
-		if (tile+directions == sta_pos)	{ newdirection=-1; } // front of new station will be where our station is, bad!
-		sta_front_list.AddItem(tile+directions,newdirection);
-		}
-	}
-sta_front_list.RemoveValue(-1);
+PutSign(sta_pos+p_left,"L");
+PutSign(sta_pos+p_right,"R");
+PutSign(sta_pos+p_back,"B");
+// possible entry + location of station
+sta_front_list.AddItem(sta_pos+p_back+p_back,		sta_pos+p_back);
+sta_front_list.AddItem(sta_front+p_left,		sta_pos+p_left);
+sta_front_list.AddItem(sta_front+p_right,		sta_pos+p_right);
+sta_front_list.AddItem(sta_pos+p_left+p_left,		sta_pos+p_left);
+sta_front_list.AddItem(sta_pos+p_right+p_right,		sta_pos+p_right);
+sta_front_list.AddItem(sta_pos+p_back+p_back+p_left,	sta_pos+p_back+p_left);
+sta_front_list.AddItem(sta_pos+p_back+p_left+p_left,	sta_pos+p_back+p_left);
+sta_front_list.AddItem(sta_pos+p_back+p_right+p_right,	sta_pos+p_back+p_right);
+sta_front_list.AddItem(sta_pos+p_back+p_back+p_right,	sta_pos+p_back+p_right);
 local allfail=true;
 foreach (direction, tile in sta_front_list)
 	{
@@ -346,21 +299,19 @@ if (new_sta_pos == dep_front)
 if (depotdead)	
 	{
 	DWarn("Road depot was destroy while upgrading",1);
-	new_dep_pos=root.builder.RoadBuildDepot(roadidx,start);
-	if (root.builder.CriticalError)	{ root.builder.CriticalError=false; }
-				else	{ root.builder.RouteIsDamage(roadidx); }
-	// can't do anything more than that :(
+	new_dep_pos=root.builder.BuildRoadDepotAtTile(new_sta_pos);
+	root.builder.CriticalError=false;
+	// Should be more than enough
 	}
 else	{ new_dep_pos=depot_id; }
 if (new_sta_pos > -1)
 	{
-	station_obj=root.chemin.GListGetItem(station_index); // because depot creation might change it
+	station_obj.STATION.e_depot=new_dep_pos;
 	station_obj.STATION.type=0; // no more upgrade for it
 	DInfo("Station "+AIStation.GetName(station_obj.STATION.station_id)+" has been upgrade",0);
 	station_obj.STATION.size++;
 	station_obj.STATION.e_depot=new_dep_pos;
 	}
-
 root.chemin.GListUpdateItem(station_index,station_obj); // save it
 root.builder.RouteIsDamage(roadidx); // ask ourselves a check
 return success;
@@ -369,7 +320,7 @@ return success;
 function cBuilder::BuildRoadStationOrDepotAtTile(tile, direction, stationtype, stationnew)
 /**
 * Build a road depot or station, add tile to blacklist on critical failure
-* Also build the entry tile with road if need
+* Also build the entry tile with road if need. Try also to find a compatible depot near the wanted position and re-use it
 *
 * @param tile the tile where to put the structure
 * @param direction the tile where the structure will be connected
@@ -412,14 +363,24 @@ if (stationnew)	newstation=AIStation.STATION_NEW;
 if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 	{
 	root.bank.RaiseFundsBigTime();
-	success=AIRoad.BuildRoadDepot(tile,direction);
+	// first let's hack another depot if we can
+	local hackdepot=root.builder.RoadFindCompatibleDepot(tile);
+	if (hackdepot == -1)	success=AIRoad.BuildRoadDepot(tile,direction);
+			else	{
+				tile=hackdepot;
+				direction=AIRoad.GetRoadDepotFrontTile(tile);
+				success=true;
+				}
 	PutSign(tile,"D");
 	if (!success)
 		{
 		DWarn("Can't built a road depot at "+tile,2);
 		root.builder.IsCriticalError();
 		}
-	else	{ DInfo("Built a road depot at "+tile,2); }
+	else	{
+		if (hackdepot == -1)	DInfo("Built a road depot at "+tile,0);
+				else	DInfo("Found a road depot near "+tile+", reusing that one",0);
+		}
 	}
 else	{
 	root.bank.RaiseFundsBigTime();
@@ -430,7 +391,7 @@ else	{
 		DWarn("Can't built the road station at "+tile,2);
 		root.builder.IsCriticalError();
 		}
-	else	{ DInfo("Built a road station at "+tile,2); }
+	else	DInfo("Built a road station at "+tile,0);
 	}
 if (!success)
 	{
@@ -644,7 +605,7 @@ foreach (voisin in directions)
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; } 
 	if (valid)	walkedtiles.AddItem(direction,0);
-	if (valid && root.debug)	PutSign(direction,"*");
+	//if (valid && root.debug)	PutSign(direction,"*");
 	//if (root.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
 	if (!found && valid)	found=root.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
 	if (found) return found;

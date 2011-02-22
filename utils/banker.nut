@@ -46,6 +46,7 @@ if (ourLoan < maxLoan+(4*AICompany.GetLoanInterval()))	{ root.bank.canBuild=true
 local veh=AIVehicleList();
 if (root.bank.busyRoute)	root.bank.canBuild=false;
 if (root.builddelay)	root.bank.canBuild=false;
+if (root.carrier.vehnextprice >0)	root.bank.canBuild=false;
 if (root.chemin.map_group_to_route.Count() == 0)	root.bank.canBuild=true; // we have 0 route force a build
 if (root.bank.canBuild) DInfo("Construction is now allowed",1);
 DInfo("canBuild="+root.bank.canBuild+" busyRoute="+root.bank.busyRoute+" goodcash="+goodcash+" unleash="+root.bank.unleash_road+" nowroute="+root.chemin.nowRoute,2);

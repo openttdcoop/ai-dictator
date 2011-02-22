@@ -68,8 +68,10 @@ class cStation
 class cCheminItem
 {
 	ROUTE = null;
+	job_pool = null;
 	constructor()
 	{
+		job_pool = {};		// testing
 		ROUTE = {
 		uniqID = 0,		// an uniqID to identify the ROUTE
 		isServed = false,	// if true we use that ROUTE
@@ -111,6 +113,7 @@ class cCheminItem
 		cargo_name="none",        
 		cargo_value=0,       
 		cargo_amount=0,
+		essai=0,			// the index to possible destionation we trys already
 		money=0			// we save here the price to build the route
 		}
 	}
@@ -297,6 +300,7 @@ root.chemin.RList[next]=road.ROUTE.cargo_id;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_name;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_value;		next++;
 root.chemin.RList[next]=road.ROUTE.cargo_amount;	next++;
+root.chemin.RList[next]=road.ROUTE.essai;		next++;
 root.chemin.RList[next]=road.ROUTE.money;	
 }
 
@@ -348,6 +352,7 @@ toReturn.ROUTE.cargo_id=root.chemin.RList[next];	next++;
 toReturn.ROUTE.cargo_name=root.chemin.RList[next];	next++;
 toReturn.ROUTE.cargo_value=root.chemin.RList[next];	next++;
 toReturn.ROUTE.cargo_amount=root.chemin.RList[next];	next++;
+toReturn.ROUTE.essai=root.chemin.RList[next];	next++;
 toReturn.ROUTE.money=root.chemin.RList[next];	next++;
 return toReturn;
 }

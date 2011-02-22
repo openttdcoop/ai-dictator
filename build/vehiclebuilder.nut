@@ -61,7 +61,7 @@ root.carrier.do_profit.SetValue(veh, oldprofit);
 return oldprofit;
 }
 
-function cCarrier::CanAddNewVehicle(roadidx, start)
+function cCarrier::CanAddNewVehicle(roadidx, start) // TODO: the new RoadStationUpgrade can now support easy upto 6 stations
 // check if we can add another vehicle at the start/end station of that route
 {
 local road=root.chemin.RListGetItem(roadidx);
@@ -78,7 +78,7 @@ switch (road.ROUTE.kind)
 			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false; 
 			}
 		else	{ // not yet upgrade
-			if (thatstation.STATION.e_count+1 > root.chemin.road_max_onroute && root.secureStart == 0)
+			//if (thatstation.STATION.e_count > root.chemin.road_max_onroute && root.secureStart == 0)
 				root.builder.RoadStationNeedUpgrade(roadidx,start);
 			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false;
 			}

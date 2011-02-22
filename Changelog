@@ -1,5 +1,13 @@
-changeset:   68:db9a6ae182dd
+changeset:   69:002bfaade172
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 22 00:47:10 2011 +0100
+files:       Changelog TODO.txt handler/vehiclehandler.nut
+description:
+- Don't check profit if we are at month < 3
+
+
+changeset:   68:db9a6ae182dd
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Tue Feb 22 00:25:47 2011 +0100
 files:       Changelog build/vehiclebuilder.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut utils/debug.nut

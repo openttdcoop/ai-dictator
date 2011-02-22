@@ -94,6 +94,7 @@ switch (eventType)
 		DInfo("Vehicle "+root.carrier.VehicleGetFormatString(vehicle)+" has crashed. I suspect everyone ! Some heads will fall !!!",0);
 		if (!AIVehicle.IsValidVehicle(vehicle)) break;
 		DInfo("Vehicle state: " + AIVehicle.GetState(vehicle),1);
+		root.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
 	break;
 	case AIEvent.AI_ET_VEHICLE_WAITING_IN_DEPOT:
 		root.carrier.VehicleIsWaitingInDepot();

@@ -65,7 +65,7 @@ class DictatorAI extends AIController
    	{
 	chemin=cChemin(this);
 	minRank = 5000;		// ranking below that are drop jobs
-	secureStart= 0;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
+	secureStart= 2;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
 	bank = cBanker(this);
 	eventManager= cEvents(this);
 	builder=cBuilder(this);
@@ -92,8 +92,8 @@ function DictatorAI::Start()
 		DInfo("We have "+(chemin.GListGetSize()-1)+" stations",0);
 		DInfo("We know "+(chemin.RListGetSize()-1)+" routes",0);
 		DInfo(" ");
-		secureStart=0;
 		chemin.RemapGroupsToRoutes();
+		if (!chemin.map_group_to_route.Count.IsEmpty())	secureStart=0;
 		chemin.RouteMaintenance();
 		}
 	 else 	{
@@ -107,18 +107,18 @@ function DictatorAI::Start()
 		this.CheckCurrentSettings();
 		if (use_train) builder.BaseStationRailBuilder(80835);
 		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
-		bank.CashFlow();
+		//bank.CashFlow();
 		this.ClearSignsALL();
+		chemin.ShowStationCapacity();
 		if (bank.canBuild)
 				{
-				chemin.ShowStationCapacity();
 				if (chemin.nowRoute==-1)	chemin.nowRoute=chemin.StartingJobFinder();
 				if (chemin.nowRoute>-1)
 					{
 					local costsbuild=bank.GetConstructionsCosts(chemin.nowRoute);
 					bank.RaiseFundsTo(costsbuild);
 					DInfo("Route #"+chemin.nowRoute+" estimate costs to build : "+costsbuild,1);
-					if (builder.route_start >= 0)	{ coststobuild=-10000; } // continue building the same route
+					if (builder.route_start >= 0)	{ costsbuild=-1000000; } // continue building the same route
 					if (bank.CanBuyThat(costsbuild))	builder.TryBuildThatRoute(chemin.nowRoute);
 									else	{
 										DInfo("Route is too expansive for us",1);

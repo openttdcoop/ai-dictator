@@ -18,7 +18,7 @@ class cChemin
 	{
 static	IDX_HELPER = 512;		// use to create an uniq ID (also use to set handicap value)
 static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that value population
-static	TRANSPORT_DISTANCE=[40,150,200, 30,80,110, 40,90,150, 40,150,200];
+static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,150,200];
 // min, limited, max distance for rail, road, water & air vehicle
 	root = null;
 	Item = null;            // Item = our values for a route define by CCheminItem class
@@ -110,16 +110,10 @@ root.chemin.min_transport_distance=small;
 return toret;
 }
 
-function cChemin::RouteTownsInjector_GetUniqID(srctown, dsttown, cargo, kind)
-// create a uniqID for the routes we pre-build
-{
-if (dsttown == -1)	return 
-return (root.chemin.IDX_HELPER*3*srctown+dsttown)+(kind*4)+cargo;
-}
-
 function cChemin::RouteTownsInjector_CreateRoute(src_id, dst_id, distance, cargo, roadtype)
 // Add a new town pre-build town job
 {
+return;
 local road=cCheminItem();
 road.ROUTE.isServed=false;
 road.ROUTE.cargo_id=cargo;
@@ -138,7 +132,7 @@ road.ROUTE.kind=roadtype;
 if (road.ROUTE.dst_id==-1)	road.ROUTE.vehicule=0;
 			else	road.ROUTE.vehicule=-1;
 road.ROUTE.length=distance;
-road.ROUTE.uniqID=root.chemin.RouteTownsInjector_GetUniqID(src_id, dst_id, cargo, roadtype);
+road.ROUTE.uniqID=root.chemin.RListGetSize();
 root.chemin.RListAddItem(road);
 local rtypename=root.chemin.RouteTypeToString(road.ROUTE.kind);
 DInfo("Creating a new service: "+((root.chemin.RList.len()/road.ROUTE.len())-1)+":"+road.ROUTE.uniqID+" "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name+" for "+road.ROUTE.cargo_name+", "+road.ROUTE.length+"m"+" using "+rtypename,1);
@@ -152,15 +146,15 @@ function cChemin::RouteTownsInjector()
 // We also remove undoable/unwanted connections (like dup connections)
 // We will keep only bigtowns->smalltowns jobs and drop smalltowns->bigtowns jobs, this will force shared station limit to be reach faster on bigtowns and new stations build on big towns to handle the flow
 {
-//local transport_list=[AIVehicle.VT_AIR, AIVehicle.VT_ROAD, AIVehicle.VT_WATER];
-local transport_list=[AIVehicle.VT_AIR, AIVehicle.VT_ROAD];
+local transport_list=[AIVehicle.VT_AIR, AIVehicle.VT_ROAD, AIVehicle.VT_WATER];
+//local transport_list=[AIVehicle.VT_AIR, AIVehicle.VT_ROAD];
 local towns=AITownList();
 local alttowns=AIList();
 local town_connector=[];
 local towndone=AIList();
 towns.Valuate(AITown.GetPopulation);
 towns.Sort(AIList.SORT_BY_VALUE,false);
-//towns.KeepTop(20);
+towns.KeepTop(20);
 alttowns.AddList(towns);
 alttowns.KeepTop(20); // TODO: fixme
 foreach (town, dummy in towns)
@@ -180,6 +174,9 @@ foreach (town, dummy in towns)
 local mailcargo=root.carrier.GetMailCargo();
 local passcargo=root.carrier.GetPassengerCargo();
 root.bank.unleash_road=true; // make sure it's true before filtering distances
+local maxboatjob=10;
+local boatjob=0;
+local mailornot=true;
 for (local i=0; i < town_connector.len(); i++)
 	{
 	local srctown=town_connector[i];
@@ -189,13 +186,17 @@ for (local i=0; i < town_connector.len(); i++)
 	if (distance < root.chemin.min_transport_distance)	{ i++; continue; }
 	foreach (transport in transport_list)
 		{
+		if (transport == AIVehicle.VT_WATER && boatjob > maxboatjob)	continue;
+									else	boatjob+=2;
 		local maxdist=root.chemin.GetTransportDistance(transport,true);
 		if (distance > maxdist)	continue;
 		root.chemin.RouteTownsInjector_CreateRoute(srctown, dsttown, distance, passcargo, transport);
 		if (transport == AIVehicle.VT_AIR) // Add also a mail work for aircrafts
 			root.chemin.RouteTownsInjector_CreateRoute(srctown, dsttown, distance, mailcargo, transport);
+		if (transport == AIVehicle.VT_WATER) // Add also a mail work for boats
+			root.chemin.RouteTownsInjector_CreateRoute(srctown, dsttown, distance, mailcargo, transport);
 		}
-	AIController.Sleep(2);
+	AIController.Sleep(1);
 	i++;
 	}
 root.bank.unleash_road=false;
@@ -434,7 +435,7 @@ if (isTown)	{
 		road.ROUTE.src_name=AIIndustry.GetName(industryID);
 		road.ROUTE.src_place=AIIndustry.GetLocation(industryID);
 		}
-road.ROUTE.uniqID=RouteGetUniqID(cargoID,industryID,isTown);
+road.ROUTE.uniqID=root.chemin.RListGetSize();
 root.chemin.RListAddItem(road);
 DInfo("Creating a new service: "+((root.chemin.RList.len()/road.ROUTE.len())-1)+":"+road.ROUTE.uniqID+" "+road.ROUTE.src_name+" for "+road.ROUTE.cargo_name,1);
 }
@@ -451,7 +452,7 @@ road.ROUTE.src_id=-10;
 road.ROUTE.dst_id=-10;
 road.ROUTE.kind=1000; // aircraft network
 road.ROUTE.status=999;
-road.ROUTE.uniqID=root.chemin.IDX_HELPER*10;
+road.ROUTE.uniqID=root.chemin.RListGetSize();
 road.ROUTE.src_name="Virtual aircraft network";
 road.ROUTE.dst_name="Virtual aircraft network";
 road.ROUTE.group_name="Virtual airnet pass";
@@ -484,14 +485,6 @@ function cChemin::ValuateCargo(cargoID)
 return AICargo.GetCargoIncome(cargoID,80,10);
 }
 
-function cChemin::RouteGetUniqID(cargoID,industryID,istown)
-// return an uniq ID
-{
-if (istown)
-		{ return (industryID+1)*(root.chemin.IDX_HELPER*2)+cargoID; }
-	else 	{ return (industryID+1)*(root.chemin.IDX_HELPER)+cargoID; }
-}
-
 function cChemin::RouteCreateIndustry(industryID)
 // Create & add one new industry to list of jobs
 {
@@ -515,11 +508,10 @@ local cargoList=AICargoList();
 local villeList=AITownList();
 DInfo(villeList.Count()+" towns on map",0);
 DInfo("Finding routes...",0);
-root.chemin.RouteTownsInjector();
 // first, let's find industries
 foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
+root.chemin.RouteTownsInjector();
 //² now towns
-
 /*
 foreach(c, dummy in cargoList)
 	{
@@ -654,7 +646,7 @@ local endroute=root.chemin.RListGetItem(idx);
 if (endroute.ROUTE.status!=1)	return -2; // tell caller we know where to go already
 if (endroute.ROUTE.vehicule==-1)	return -2; // fixed routes will have it set to -1 until they works
 DInfo("Finding where to drop cargo ("+endroute.ROUTE.cargo_name+") for service "+idx,0);
-local previous_try=endroute.ROUTE.dst_entry; // we store in dst_entry the value of the previous try
+local previous_try=endroute.ROUTE.essai; 
 root.chemin.RouteCreateEndingList(idx);
 DInfo("Found "+root.chemin.DList.Count()+" possible destinations",2);
 if (root.chemin.DList.Count() == 0)
@@ -677,7 +669,7 @@ DInfo("Pickup destination #"+bestDest,2);
 if (bestDest < 0)	return bestDest; // fail to find a destination or we know it already
 local road=root.chemin.RListGetItem(idx);
 road.ROUTE.dst_id=ListGetItem(root.chemin.DList, bestDest);
-road.ROUTE.dst_entry=bestDest;
+road.ROUTE.essai=bestDest;
 road.ROUTE.dst_istown=(root.chemin.DList.GetValue(bestDest)==1);
 if (road.ROUTE.dst_istown)	
 	{
@@ -965,6 +957,7 @@ function cChemin::DutyOnRoute()
 if (root.chemin.under_upgrade)
 	{
 	root.bank.busyRoute=true;
+	DInfo("We're upgrading something, buys are blocked...",1);
 	return;
 	}
 root.carrier.VehicleMaintenance();
@@ -1052,11 +1045,9 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 		{
 		if (root.carrier.vehnextprice > 0)
 			{
-			DInfo("We're upgrading some vehicles, not adding new vehicle until its done to keep the money... "+root.carrier.vehnextprice,1);
-			root.carrier.vehnextprice-=(root.carrier.vehnextprice / 20);
-			if (root.carrier.vehnextprice < 0) root.carrier.vehnextprice=0;
+			DInfo("We're upgrading a vehicle, not adding new vehicle until its done to keep the money... "+root.carrier.vehnextprice,1);
 			root.bank.busyRoute=true;
-			continue; // no add... while we have an vehicle upgrade on its way
+			vehneed = 0; // no add... while we have an vehicle upgrade on its way
 			}
 		/*if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true;
 							else	oldveh=false;*/
