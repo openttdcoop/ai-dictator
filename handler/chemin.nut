@@ -113,7 +113,7 @@ return toret;
 function cChemin::RouteTownsInjector_CreateRoute(src_id, dst_id, distance, cargo, roadtype)
 // Add a new town pre-build town job
 {
-return;
+//return;
 local road=cCheminItem();
 road.ROUTE.isServed=false;
 road.ROUTE.cargo_id=cargo;
@@ -582,7 +582,7 @@ function cChemin::RouteMaintenance()
 // Update our starting depot infos
 {
 local listCounter=root.chemin.RListGetSize();
-DInfo("Checking "+(listCounter-1)+" routes for maintenance",0);
+DInfo("Checking "+listCounter+" routes for maintenance",0);
 local uniqList=[];
 for (local i=0; i < listCounter; i++)
 	{

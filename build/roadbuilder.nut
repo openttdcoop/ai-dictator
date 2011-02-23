@@ -461,7 +461,7 @@ function cBuilder::CheckRoadHealth(idx)
 {
 local good=true;
 local road=root.chemin.RListGetItem(idx);
-if (road == -1) return false;
+if (road == -1) return true;
 local space="        ";
 local correction=false;
 local temp=null;
@@ -524,7 +524,7 @@ msg=space+"Source Depot "+src_depotid+" is ";
 if (!AIRoad.IsRoadDepotTile(src_depotid))
 	{
 	msg+="invalid. ";
-	if (src_depotid=root.builder.BuildRoadDepotAtTile(AIStation.GetLocation(src_stationid), AIRoad.ROADVEHTYPE_BUS+100000))	msg+=error_repair;
+	if (src_depotid=root.builder.BuildRoadDepotAtTile(AIStation.GetLocation(src_stationid)))	msg+=error_repair;
 		else	{ msg+=error_error; good=false; }
 	}
 else	msg+="valid";
@@ -575,7 +575,7 @@ msg=space+"Target Depot "+tgt_depotid+" is ";
 if (!AIRoad.IsRoadDepotTile(tgt_depotid))
 	{
 	msg+="invalid. ";
-	if (tgt_depotid=root.builder.BuildRoadDepotAtTile(AIStation.GetLocation(tgt_stationid), AIRoad.ROADVEHTYPE_BUS+100000))	msg+=error_repair;
+	if (tgt_depotid=root.builder.BuildRoadDepotAtTile(AIStation.GetLocation(tgt_stationid)))	msg+=error_repair;
 		else	{ msg+=error_error; good=false; }
 	}
 else	msg+="valid";

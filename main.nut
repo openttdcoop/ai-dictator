@@ -28,8 +28,10 @@ require("utils/banker.nut");
 require("utils/misc.nut");
 require("handler/chemin.nut");
 require("handler/array.nut");
+require("handler/jobs.nut");
 require("utils/debug.nut");
 require("utils/tile.nut");
+
 
 
  

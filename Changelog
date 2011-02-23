@@ -1,5 +1,20 @@
-changeset:   69:002bfaade172
+changeset:   70:54d9ccb5e590
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Tue Feb 22 21:13:53 2011 +0100
+files:       Changelog build/roadbuilder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut main.nut utils/banker.nut utils/misc.nut
+description:
+- Build a road depot is now handle in a function that look for another depot
+before building a new one
+- Rework road health checker to handle road stations size > 1
+- Rework road station upgrade to handle road stations size upto 6
+- Don't check vehicle profits before 3rd month of the year
+- Don't set orders to vehicle create after upgrading, the non upgrade version
+have depots orders as orders (if orders correction don't catch them i will fix
+that later)
+
+
+changeset:   69:002bfaade172
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Tue Feb 22 00:47:10 2011 +0100
 files:       Changelog TODO.txt handler/vehiclehandler.nut

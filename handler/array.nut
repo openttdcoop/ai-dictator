@@ -325,6 +325,7 @@ function cChemin::RListGetItem(idx)
 local toReturn=cCheminItem();
 local next=root.chemin.RListGetIndex(idx);
 if (next == -1) return -1;
+if (next+toReturn.ROUTE.len() > root.chemin.RList.len())	return -1;
 toReturn.ROUTE.uniqID=root.chemin.RList[next];		next++;
 toReturn.ROUTE.isServed=root.chemin.RList[next];	next++;
 toReturn.ROUTE.vehicule=root.chemin.RList[next];	next++;

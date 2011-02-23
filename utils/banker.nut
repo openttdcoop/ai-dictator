@@ -11,6 +11,8 @@
  *
 **/
 
+// TODO: vehicle buy block and we can't buy one, sell everyone 3 months instead of when checking veh
+//
 class cBanker
 	{
 	root = null;
