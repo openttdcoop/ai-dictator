@@ -1,5 +1,13 @@
-changeset:   70:54d9ccb5e590
+changeset:   71:361c8a120031
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Wed Feb 23 09:44:12 2011 +0100
+files:       Changelog TODO.txt build/roadbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut main.nut utils/banker.nut
+description:
+- Some bugs corrections about array limits
+
+
+changeset:   70:54d9ccb5e590
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Tue Feb 22 21:13:53 2011 +0100
 files:       Changelog build/roadbuilder.nut build/stationbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/checks.nut handler/chemin.nut handler/events.nut handler/vehiclehandler.nut main.nut utils/banker.nut utils/misc.nut

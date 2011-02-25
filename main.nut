@@ -23,6 +23,7 @@ require("build/stationbuilder.nut");
 require("build/stationremover.nut");
 require("handler/events.nut");
 require("handler/checks.nut");
+require("handler/cargo.nut");
 require("handler/vehiclehandler.nut");
 require("utils/banker.nut");
 require("utils/misc.nut");
@@ -63,6 +64,8 @@ class DictatorAI extends AIController
 	lastroute = null;
 	loadedgame = null;
 
+	jobs = null;
+
    constructor()
    	{
 	chemin=cChemin(this);
@@ -77,6 +80,7 @@ class DictatorAI extends AIController
 	OneMonth=0;		// this one is use to set a monthly check for some operations
 	SixMonth=0;		// same as OneMonth but every half year
 	TwelveMonth=0;		// again for year
+	jobs=cJobs();
 	} 
  }
  
@@ -84,9 +88,12 @@ class DictatorAI extends AIController
 function DictatorAI::Start()
 {
 	DInfo("DicatorAI started.");
+	::INSTANCE <- this;
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	AICompany.SetAutoRenewStatus(false);
+	this.CheckCurrentSettings();
 	bank.SaveMoney();
+
 	local dontcare=chemin.GetTransportDistance(AIVehicle.VT_ROAD,true); // don't care, just to have min&max distance set
 	if (loadedgame) 
 		{
@@ -105,6 +112,7 @@ function DictatorAI::Start()
 	bank.Update();
 	while(true)
 		{
+
 		this.SetRailType();
 		this.CheckCurrentSettings();
 		if (use_train) builder.BaseStationRailBuilder(80835);

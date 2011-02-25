@@ -32,5 +32,4 @@ handler/vehiclehandler.nut:if (homedepot==-1)	homedepot=root.builder.GetDepotID(
 handler/checks.nut:					{ // don't push the vehicle that is loading, TODO: might fail if 2 vehicles with a bit of cargo enter the station, better found a way to test station. But it's a rare case
 handler/events.nut:				// TODO: Handle it. 
 main.nut:TODO: find how the internal ttd name vehicle.max_boats vehicle.max_aircrafts
-new.txt:+function cCarrier::CanAddNewVehicle(roadidx, start) // TODO: the new RoadStationUpgrade can now support easy upto 6 stations
-new.txt: alttowns.KeepTop(20); // TODO: fixme
+utils/banker.nut:// TODO: vehicle buy block and we can't buy one, sell everyone 3 months instead of when checking veh
