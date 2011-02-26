@@ -352,16 +352,12 @@ DInfo("Choosen train: "+AIEngine.GetName(veh),2);
 return veh;
 }
 
-function cCarrier::GetRoadVehicle(idx)
+function cCarrier::GetRoadVehicle()
 // get a road vehicle
 {
-local road= root.chemin.RListGetItem(idx);
-local veh = root.carrier.ChooseRoadVeh(road.ROUTE.cargo_id);
+local veh = INSTANCE.carrier.ChooseRoadVeh();
 if (veh == null)	{
 			DError("No suitable road vehicle to buy !",1);
-			road=root.chemin.RouteMalusHigher(road);
-			root.chemin.RListUpdateItem(idx,road);
-			return -1;
 			}
 DInfo("Choosen road vehicle: "+AIEngine.GetName(veh),2);
 return veh;
@@ -438,10 +434,9 @@ local runningcost=AIEngine.GetRunningCost(engine);
 return (price+(lifetime*runningcost))/capacity;
 }
 
-function cCarrier::ChooseRoadVeh(cargo)
+function cCarrier::ChooseRoadVeh()
 /**
 * Pickup a road vehicle base on -> max capacity > max speed > max reliability
-* @param cargo the cargo we should carry
 * @return the vehicle engine id
 */
 {
@@ -504,23 +499,26 @@ if (vehlist.Count() > 0)	veh=vehlist.Begin();
 return veh;
 }
 
-function cCarrier::GetVehicle(idx)
+function cCarrier::GetVehicle()
 // Get current choosen vehicle, reroute depending on road type
 {
-local what=root.chemin.RListGetItem(idx);
 local success=-1;
-switch (what.ROUTE.kind)
+switch (INSTANCE.route.route_type)
 	{
-	case AIVehicle.VT_ROAD:
-	success=root.carrier.GetRoadVehicle(idx);
+	case ::RouteType.ROAD:
+	success=INSTANCE.carrier.GetRoadVehicle();
 	break;
-	case AIVehicle.VT_RAIL:
-	success=root.carrier.GetRailVehicle(idx);
+	case INSTANCE.RouteType.RAIL:
+	//success=root.carrier.GetRailVehicle(idx);
+	successs=false;
 	break;
-	/*case AIVehicle.VT_WATER:*/
+	case INSTANCE.RouteType.WATER:
+	success=false;
 	break;
-	case AIVehicle.VT_AIR:
-	success=root.carrier.GetAirVehicle(idx);
+	case INSTANCE.RouteType.AIR:
+	case INSTANCE.RouteType.AIRNET:
+	case INSTANCE.RouteType.AIRSLAVE:
+	success=INSTANCE.carrier.GetAirVehicle();
 	break;
 	}
 return success;

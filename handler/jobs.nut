@@ -156,7 +156,7 @@ function cJobs::QuickRefresh()
 	local smallList=AIList();
 	smallList.AddList(jobIndexer);
 	smallList.KeepValue(1);
-	smallList.KeepTop(5);
+	smallList.KeepTop(4);
 	foreach (item, value in smallList)	{ cJobs.RefreshValue(item); }
 	return smallList;
 	}
@@ -172,9 +172,11 @@ function cJobs::GetRanking(jobID)
 function cJobs::GetNextJob()
 // Return the next job uniqID to do, -1 if we have none to do
 	{
+	DInfo("JOBS -> GetNextJob()");
 	local smallList=QuickRefresh();
-	if (smallList.IsEmpty())	return -1;
+	if (smallList.IsEmpty())	{ DInfo("Can't find any good jobs to do",1); return -1; }
 	smallList.Sort(AIList.SORT_BY_VALUE, false);
+	DInfo("JOBS -> Smalllist "+smallList.Count(),2);
 	return smallList.Begin();
 	}
 

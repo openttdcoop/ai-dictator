@@ -11,14 +11,6 @@
  *
 **/
 
-enum RouteType {
-	RAIL,	// AIVehicle.VT_RAIL
-	ROAD,	// AIVehicle.VT_ROAD
-	WATER,	// AIVehicle.VT_WATER
-	AIR,	// AIVehicle.VT_AIR
-	AIRNET,
-	AIRSLAVE }
-
 class cRoute
 	{
 static	database = {};
@@ -48,7 +40,7 @@ static	function GetRouteObject(uniqID)
 				// 5 - need checks
 				// 100 - all done, finish route
 //	distance	= null; // distance from source station -> target station
-	group_id	= null; // groupid of the group for that route
+	groupID		= null; // groupid of the group for that route
 	source_entry	= null;	// true if we have a working station
 	source_stationID= null; // source station id
 	target_entry	= null;	// true if we have a working station
@@ -58,7 +50,7 @@ static	function GetRouteObject(uniqID)
 	date_lastCheck	= null;	// date of last time we check route health
 	}
 
-function CheckEntry()
+function cRoute::CheckEntry()
 // setup entries infos
 	{
 	this.source_entry = (source_stationID != null);
@@ -69,7 +61,7 @@ function CheckEntry()
 			else	target=null;
 	}
 
-function RouteBuildGroup()
+function cRoute::RouteBuildGroup()
 // Build a group for that route
 	{
 	local gid = AIGroup.CreateGroup(this.route_type);
@@ -80,7 +72,7 @@ function RouteBuildGroup()
 	AIGroup.SetName(this.groupID, groupname);
 	}
 
-function RouteSave()
+function cRoute::RouteSave()
 // save that route to the database
 	{
 	this.RouteGetName();
@@ -89,11 +81,11 @@ function RouteSave()
 			else		{
 					DInfo("ROUTE -> Adding route "+this.uniqID+" to the route database",2);
 					database[this.uniqID] <- this;
-					routeIndexer.AddItem(this.uniqID, 1);
+					RouteIndexer.AddItem(this.uniqID, 1);
 					}
 	}
 
-function RouteTypeToString(that_type)
+function cRoute::RouteTypeToString(that_type)
 // return a string for that_type road type
 	{
 	switch (that_type)
@@ -111,13 +103,18 @@ function RouteTypeToString(that_type)
 		}
 	}
 
-function RouteGetName()
+function cRoute::RouteGetName()
 // set a string for that route
 	{
 	local src=null;
 	local dst=null;
 	local toret=null;
-	local rtype=RouteTypeToString(this.road_type);
+	local rtype=RouteTypeToString(this.route_type);
+	if (this.route_type == RouteType.AIRNET)
+		{
+		this.name="Virtual Air Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+		return;
+		}
 	if (source_entry)	src=AIStation.GetName(source_stationID);
 			else	{
 				if (source_istown)	src=AITown.GetName(sourceID);
@@ -128,15 +125,14 @@ function RouteGetName()
 				if (source_istown)	src=AITown.GetName(sourceID);
 						else	src=AIIndustry.GetName(sourceID);
 				}
-	if (uniqID < 2)
-		{ this.name="Virtual Air Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype; }
-	else	{ this.name="From "+src+" to "+dst+" for "+AICargo.GetLabel(cargoID)+" using "+rtype; }
+	this.name="From "+src+" to "+dst+" for "+AICargo.GetLabel(cargoID)+" using "+rtype;
 	}
 
-function CreateNewRoute(uniqID)
+function cRoute::CreateNewRoute(uniqID)
 // Create and add to database a new route with informations taken from cJobs
 	{
 	local jobs=cJobs.GetJobObject(uniqID);
+	DInfo("jobs="+jobs+" uniqID="+uniqID);
 	jobs.isUse = true;
 	this.uniqID = jobs.uniqID;
 	this.sourceID = jobs.sourceID;
@@ -149,10 +145,10 @@ function CreateNewRoute(uniqID)
 	this.status = 0;
 	this.cargoID = jobs.cargoID;
 	this.CheckEntry();
-	this.RouteSave();
+	//this.RouteSave();
 	}
 
-function RouteInitNetwork()
+function cRoute::RouteInitNetwork()
 // Add the network routes to the database
 	{
 	local mailRoute=cRoute();
@@ -184,4 +180,12 @@ function RouteInitNetwork()
 				else	DWarn("Cannot create group !",1);
 	AIGroup.SetName(n, "Virtual Network Passenger");
 	passRoute.RouteSave();
+	}
+
+function cRoute::RouteRebuildIndex()
+// Rebuild our routes index from our datase
+	{
+	RouteIndexer.Clear();
+	foreach (item in database)
+		RouteIndex.AddItem(item, 1);	
 	}

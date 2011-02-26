@@ -14,6 +14,7 @@
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
+require("handler/routes.nut");
 require("build/builder.nut");
 require("build/railbuilder.nut");
 require("build/roadbuilder.nut");
@@ -33,6 +34,14 @@ require("handler/jobs.nut");
 require("utils/debug.nut");
 require("utils/tile.nut");
 
+
+enum RouteType {
+	RAIL,	// AIVehicle.VT_RAIL
+	ROAD,	// AIVehicle.VT_ROAD
+	WATER,	// AIVehicle.VT_WATER
+	AIR,	// AIVehicle.VT_AIR
+	AIRNET,
+	AIRSLAVE }
 
 
  
@@ -66,6 +75,7 @@ class DictatorAI extends AIController
 
 	jobs = null;
 	jobs_obj = null;
+	route = null;
 
    constructor()
    	{
@@ -74,7 +84,7 @@ class DictatorAI extends AIController
 	secureStart= 2;		// we secure # routes with road before allowing other transport, it's an anti-bankrupt option
 	bank = cBanker(this);
 	eventManager= cEvents(this);
-	builder=cBuilder(this);
+	builder=cBuilder();
 	carrier=cCarrier(this);
 	builddelay=false;
 	loadedgame = false;
@@ -82,6 +92,7 @@ class DictatorAI extends AIController
 	SixMonth=0;		// same as OneMonth but every half year
 	TwelveMonth=0;		// again for year
 	jobs=cJobs();
+	route=cRoute();
 	} 
  }
  
@@ -90,11 +101,11 @@ function DictatorAI::Start()
 {
 	DInfo("DicatorAI started.");
 	::INSTANCE <- this;
+	DInfo("Enum"+RouteType.RAIL);
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	AICompany.SetAutoRenewStatus(false);
 	this.CheckCurrentSettings();
 	bank.SaveMoney();
-
 	//local dontcare=chemin.GetTransportDistance(AIVehicle.VT_ROAD,true); // don't care, just to have min&max distance set
 	if (loadedgame) 
 		{
@@ -102,50 +113,38 @@ function DictatorAI::Start()
 		DInfo("We have "+(chemin.GListGetSize()-1)+" stations",0);
 		DInfo("We know "+(chemin.RListGetSize()-1)+" routes",0);
 		DInfo(" ");
-		chemin.RemapGroupsToRoutes();
-		if (!chemin.map_group_to_route.Count.IsEmpty())	secureStart=0;
-		chemin.RouteMaintenance();
+		//chemin.RemapGroupsToRoutes();
+		//if (!chemin.map_group_to_route.Count.IsEmpty())	secureStart=0;
+		//chemin.RouteMaintenance();
 		}
 	 else 	{
 		AIInit();
 		//chemin.RouteCreateALL();
+		route.RouteInitNetwork();
 		}
 	bank.Update();
 	jobs.PopulateJobs();
 	while(true)
 		{
-		local oneid=jobs.GetNextJob();
-		local oneobj=jobs.GetJobObject(oneid);
-		DInfo("Before: oneobj.moneyToBuild  = "+oneobj.moneyToBuild);
-		oneobj.moneyToBuild=666;
-		local twoobj=jobs.GetJobObject(oneid);
-		DInfo("Before: oneobj.moneyToBuild  = "+oneobj.moneyToBuild+" twoobj.moneytobuild="+twoobj.moneyToBuild);
 		this.SetRailType();
 		this.CheckCurrentSettings();
 		if (use_train) builder.BaseStationRailBuilder(80835);
 		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
 		//bank.CashFlow();
 		this.ClearSignsALL();
-		chemin.ShowStationCapacity();
+		//chemin.ShowStationCapacity();
 		if (bank.canBuild)
 				{
-				if (chemin.nowRoute==-1)	chemin.nowRoute=jobs.GetNextJob();
-				if (chemin.nowRoute > -1)
+				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
+DInfo("GetNextJob return "+builder.building_route);
+				if (builder.building_route != -1)
 					{
-					jobs_obj=cJobs.GetJobObject(chemin.nowRoute);
-					//local costsbuild=bank.GetConstructionsCosts(chemin.nowRoute);
+					jobs_obj=cJobs.GetJobObject(builder.building_route);
+					route.CreateNewRoute(builder.building_route);
 					bank.RaiseFundsTo(jobs.moneyToBuild);
-					DInfo("Route #"+chemin.nowRoute+" estimate costs to build : "+jobs_obj.moneyToBuild,1);
-DInfo("dump: "+jobs_obj.sourceID+" "+jobs_obj.targetID);
-
-
-
+//DInfo("dump: "+jobs_obj.sourceID+" "+jobs_obj.targetID);
+					builder.TryBuildThatRoute();
 					//if (builder.route_start >= 0)	{ costsbuild=-1000000; } // continue building the same route
-					if (bank.CanBuyThat(jobs_obj.moneyToBuild))	builder.TryBuildThatRoute(chemin.nowRoute);
-									else	{
-										DInfo("Route is too expansive for us",1);
-										jobs_obj.isdoable=false;
-										}
 					DInfo(" ");
 					// now jump to build stage
 					}
