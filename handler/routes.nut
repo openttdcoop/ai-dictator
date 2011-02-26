@@ -11,49 +11,177 @@
  *
 **/
 
+enum RouteType {
+	RAIL,	// AIVehicle.VT_RAIL
+	ROAD,	// AIVehicle.VT_ROAD
+	WATER,	// AIVehicle.VT_WATER
+	AIR,	// AIVehicle.VT_AIR
+	AIRNET,
+	AIRSLAVE }
 
-
-class cBasicStation
+class cRoute
 	{
 static	database = {};
-static	jobIndexer = AIList();	// this list have all uniqID in the database, 1 when doable as value
-static	jobDoable = AIList();	// same as upper, but all 0 are gone and now value = ranking
-static	distanceLimits = [0, 0];	// store [min, max] distances we can do, share to every instance so we can discover if this change
-static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,150,200];
-
-
-static	function GetJobObject(uniqID)
+static	RouteIndexer = AIList(); // list all uniqID of routes we are handling
+static	function GetRouteObject(uniqID)
 		{
-		return uniqID in cJobs.database ? cJobs.database[uniqID] : null;
+		return uniqID in cRoute.database ? cRoute.database[uniqID] : null;
 		}
 
-	sourceID = null;	// id of industry/town
-	source_location= null;	// location of source
-	targetID = null;	// id of industry/town
-	target_location = null;	// location of target
-	cargoID = null;		// cargo id
-	roadType = null;	// AIVehicle.RoadType + 256 for aircraft network
-	uniqID = null;		// a uniqID for the job
-	parentID = null;	// a uniqID that a similar job will share with another similar (like other tansport or other destination)
-	isUse = false;		// is build & in use
-	cargoValue = 0;		// value for that cargo
-	cargoAmount = 0;	// amount of cargo at source
-	distance = 0;		// distance from source to target
-	moneyToBuild = 0;	// money need to build the job
-	moneyGains = 0;		// money we should grab from doing the job
-	source_istown = null;	// if source is a town
-	target_istown = null;	// if target is a town
-	isdoable = true;	// true if we can actually do that job (if isUse -> false)
-	ranking = 0;		// our ranking system
-	foule = 0;		// number of opponent/stations near it
+	uniqID		= null; // uniqID for that route, 0/1 for airnetwork, else = the one calc in cJobs
+	name		= null;	// string with the route name
+	sourceID	= null;	// id of source town/industry
+	source_istown	= null;	// if source is town
+	source		= null; // shortcut to the source station object
+	targetID	= null;	// id of target town/industry
+	target_istown	= null;	// if target is town
+	target		= null; // shortcut to the target station object
+	vehicle_count	= null; // numbers of vehicle using it
+	route_type	= null; // type of vehicle using that route (It's enum RouteType)
+	isWorking	= null; // true if the route is working
+	status		= null; // current status of the route
+				// 0 - need a destination pickup
+				// 1 - source/destination find compatible station or create new
+				// 2 - need build source station
+				// 3 - need build destination station
+				// 4 - need do pathfinding
+				// 5 - need checks
+				// 100 - all done, finish route
+//	distance	= null; // distance from source station -> target station
+	group_id	= null; // groupid of the group for that route
+	source_entry	= null;	// true if we have a working station
+	source_stationID= null; // source station id
+	target_entry	= null;	// true if we have a working station
+	target_stationID= null;	// target station id
+	cargoID		= null;	// the cargo id
+	date_VehicleDel	= null;	// date of last time we remove a vehicle
+	date_lastCheck	= null;	// date of last time we check route health
+	}
 
-	constructor()
-		{
-		//CheckLimitedStatus();
-		}
-}
-
-class cRawStation
+function CheckEntry()
+// setup entries infos
 	{
-	id = null;
-	
+	this.source_entry = (source_stationID != null);
+	this.target_entry = (target_stationID != null);
+	if (this.source_entry)	source=cStation.GetObject(this.source_stationID);
+			else	source=null;
+	if (this.target_entry)	target=cStation.GetObject(this.target_stationID);
+			else	target=null;
+	}
+
+function RouteBuildGroup()
+// Build a group for that route
+	{
+	local gid = AIGroup.CreateGroup(this.route_type);
+	if (!AIGroup.IsValidGroup(gid))	return;
+	local groupname = AICargo.GetCargoLabel(this.cargoID)+"*"+this.sourceID+"*"+this.targetID;
+	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
+	this.groupID = gid;
+	AIGroup.SetName(this.groupID, groupname);
+	}
+
+function RouteSave()
+// save that route to the database
+	{
+	this.RouteGetName();
+	DInfo("Init a new route. "+this.name,0);
+	if (this.uniqID in database)	DWarn("ROUTE -> Route "+this.uniqID+" is already in database",2);
+			else		{
+					DInfo("ROUTE -> Adding route "+this.uniqID+" to the route database",2);
+					database[this.uniqID] <- this;
+					routeIndexer.AddItem(this.uniqID, 1);
+					}
+	}
+
+function RouteTypeToString(that_type)
+// return a string for that_type road type
+	{
+	switch (that_type)
+		{
+		case	RouteType.RAIL:
+			return "Trains";
+		case	RouteType.ROAD:
+			return "Bus & Trucks";
+		case	RouteType.AIR:
+			return "Aircrafts";
+		case	RouteType.WATER:
+			return "Boats";
+		case	RouteType.AIRNET:
+			return "Aircrafts";
+		}
+	}
+
+function RouteGetName()
+// set a string for that route
+	{
+	local src=null;
+	local dst=null;
+	local toret=null;
+	local rtype=RouteTypeToString(this.road_type);
+	if (source_entry)	src=AIStation.GetName(source_stationID);
+			else	{
+				if (source_istown)	src=AITown.GetName(sourceID);
+						else	src=AIIndustry.GetName(sourceID);
+				}
+	if (target_entry)	dst=AIStation.GetName(target_stationID);
+			else	{
+				if (source_istown)	src=AITown.GetName(sourceID);
+						else	src=AIIndustry.GetName(sourceID);
+				}
+	if (uniqID < 2)
+		{ this.name="Virtual Air Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype; }
+	else	{ this.name="From "+src+" to "+dst+" for "+AICargo.GetLabel(cargoID)+" using "+rtype; }
+	}
+
+function CreateNewRoute(uniqID)
+// Create and add to database a new route with informations taken from cJobs
+	{
+	local jobs=cJobs.GetJobObject(uniqID);
+	jobs.isUse = true;
+	this.uniqID = jobs.uniqID;
+	this.sourceID = jobs.sourceID;
+	this.source_istown = jobs.source_istown;
+	this.targetID = jobs.targetID;
+	this.target_istown = jobs.target_istown;
+	this.vehicle_count = 0;
+	this.route_type	= jobs.roadType;
+	this.isWorking = false;
+	this.status = 0;
+	this.cargoID = jobs.cargoID;
+	this.CheckEntry();
+	this.RouteSave();
+	}
+
+function RouteInitNetwork()
+// Add the network routes to the database
+	{
+	local mailRoute=cRoute();
+	mailRoute.cargoID=cCargo.GetMailCargo();
+	mailRoute.source_entry=false;
+	mailRoute.target_entry=false;
+	mailRoute.isWorking=true;
+	mailRoute.uniqID=0;
+	mailRoute.route_type = RouteType.AIRNET;
+	mailRoute.status=100;
+	mailRoute.vehicle_count=0;
+	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
+	if (AIGroup.IsValidGroup(n))	this.groupID=n;
+				else	DWarn("Cannot create group !",1);
+	AIGroup.SetName(n, "Virtual Network Mail");
+	mailRoute.RouteSave();
+
+	local passRoute=cRoute();
+	passRoute.cargoID=cCargo.GetPassengerCargo();
+	passRoute.source_entry=false;
+	passRoute.target_entry=false;
+	passRoute.isWorking=true;
+	passRoute.uniqID=1;
+	passRoute.route_type = RouteType.AIRNET;
+	passRoute.status=100;
+	passRoute.vehicle_count=0;
+	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
+	if (AIGroup.IsValidGroup(n))	this.groupID=n;
+				else	DWarn("Cannot create group !",1);
+	AIGroup.SetName(n, "Virtual Network Passenger");
+	passRoute.RouteSave();
+	}

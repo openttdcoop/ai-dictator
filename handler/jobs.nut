@@ -35,7 +35,7 @@ static	function GetJobObject(uniqID)
 	targetID = null;	// id of industry/town
 	target_location = null;	// location of target
 	cargoID = null;		// cargo id
-	roadType = null;	// AIVehicle.RoadType + 256 for aircraft network
+	roadType = null;	// AIVehicle.RoadType
 	uniqID = null;		// a uniqID for the job
 	parentID = null;	// a uniqID that a similar job will share with another similar (like other tansport or other destination)
 	isUse = false;		// is build & in use
