@@ -1,5 +1,17 @@
-changeset:   71:361c8a120031
+changeset:   72:6f2d7dda058d
 tag:         tip
+user:        Pagnon Stéphane <krinn@chez.com>
+date:        Fri Feb 25 02:08:41 2011 +0100
+files:       Changelog TODO.txt handler/cargo.nut handler/chemin.nut handler/events.nut handler/jobs.nut main.nut
+description:
+- I'm rewriting my handling of routes, i will use a job pool that will
+be kept for all routes and one route will be picked when we need to
+build a new job
+- This will imply lot of rewrites everywhere, as i've learned more about
+squirrel might be the good time to apply this new knowledge.
+
+
+changeset:   71:361c8a120031
 user:        Pagnon Stéphane <krinn@chez.com>
 date:        Wed Feb 23 09:44:12 2011 +0100
 files:       Changelog TODO.txt build/roadbuilder.nut build/vehiclebuilder.nut handler/array.nut handler/chemin.nut main.nut utils/banker.nut

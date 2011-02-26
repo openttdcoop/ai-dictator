@@ -30,7 +30,6 @@ static	function GetJobObject(uniqID)
 		return uniqID in cJobs.database ? cJobs.database[uniqID] : null;
 		}
 
-	roadLimited=true;	// true if max distance is limited by money
 	sourceID = null;	// id of industry/town
 	source_location= null;	// location of source
 	targetID = null;	// id of industry/town
@@ -53,24 +52,39 @@ static	function GetJobObject(uniqID)
 
 	constructor()
 		{
-		roadLimited = (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 50000 && AICompany.GetLoanAmount()==0);
+		//CheckLimitedStatus();
 		}
 }
 
+function cJobs::CheckLimitedStatus()
+// Check & set the limited status
+	{
+	local oldmax=distanceLimits[1];
+	local testLimitChange= GetTransportDistance(AIVehicle.VT_RAIL, false, INSTANCE.bank.unleash_road); // get max distance a train could do
+	if (oldmax != distanceLimits[1])
+	DInfo("JOBS -> Distance limit status change to "+INSTANCE.bank.unleash_road,2);
+	}
+
 function cJobs::GetUniqID()
+// Create a uniqID for a job, if not in database, add the job to database
+// This also update JobIndexer and parentID
+// Return the uniqID for that job
 	{
 	local uID=null;
 	local parentID = null;
 	if (this.uniqID == null && this.sourceID != null && this.targetID != null && this.cargoID != null && this.roadType != null)
 			{
 			local v1=this.roadType+1;
-			local v2=(this.cargoID+1)*v1*2;
-			local v3=(this.targetID+1)*v2*8;
-			local v4=(this.sourceID+1)*v3*32;
-			parentID = (this.sourceID+1)*100+this.cargoID;
-			uID = v1+v2+v3+v4;
+			local v2=(this.cargoID+10);
+			local v3=(this.targetID+100);
+			if (this.target_istown)	v3+=566;
+			local v4=(this.sourceID+5000);
+			if (this.source_istown) v4+=4000;
+			parentID = (this.sourceID)*500+this.cargoID;
+			uID = (v3*v4)+(v1*v2);
 			this.uniqID=uID;
 			this.parentID=parentID;
+		//DInfo("JOBS -> "+uID+" src="+this.sourceID+" tgt="+this.targetID+" crg="+this.cargoID+" rt="+this.roadType);
 			if (this.uniqID in database)	DWarn("JOBS -> Job "+uID+" already in database",2);
 			else	{
 				DInfo("JOBS -> Adding job "+uID+" ("+parentID+") to job database",2);
@@ -81,14 +95,54 @@ function cJobs::GetUniqID()
 	return this.uniqID;
 	}
 
+function cJobs::RankThisJob()
+// rank the current job
+	{
+	local valuerank=0;
+	local stationrank=0;
+	local cargorank=this.cargoValue;
+	if (INSTANCE.chemin.cargo_fav==this.cargoID)	cargorank=1.2*cargoValue; // 20% bonus for our favorite cargo
+	valuerank= cargorank * cargoAmount;
+	if (this.source_istown)
+		{
+		stationrank= (100- this.foule);
+		if (INSTANCE.fairlevel == 2)	stationrank=100; // no malus for level 2
+		}
+	else	switch (INSTANCE.fairlevel)
+			{	
+			case	0:
+				stationrank= (100 - (this.foule *100));	// give up when 1 station is present
+			break;
+			case	1:
+				stationrank= (100- (this.foule *100));	// give up when 2 stations are there
+			break;
+			case	2:
+				stationrank= (100- (this.foule *100));	// give up after 4 stations
+			break;
+			}
+	if (stationrank <=0 && INSTANCE.fairlevel > 0)	stationrank=1;
+	// even crowd, one small chance to get pickup with 1&2 fairlevel, fairlevel 0 will never do that job
+	this.ranking = stationrank * valuerank;
+	}
+
 function cJobs::RefreshValue(jobID)
 // refresh the datas from object
-{
-::AIController.Sleep(1);
-local myjob = GetJobObject(jobID);
-if (myjob == null) return null;
-// foule, moneyGains, ranking & cargoAmount
-}
+	{
+	::AIController.Sleep(1);
+	local myjob = GetJobObject(jobID);
+	if (myjob == null) return null;
+	// foule, moneyGains, ranking & cargoAmount
+	if (myjob.source_istown)
+		{
+		myjob.cargoAmount=AITown.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
+		myjob.foule=AITown.GetLastMonthTransported(myjob.sourceID, myjob.cargoID);
+		}
+	else	{ // industry
+		myjob.cargoAmount=AIIndustry.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
+		myjob.foule=cChemin.GetAmountOfCompetitorStationAround(myjob.sourceID);
+		}
+	myjob.RankThisJob();
+	}
 
 function cJobs::RefreshAllValue()
 // refesh datas of all objects
@@ -96,7 +150,7 @@ function cJobs::RefreshAllValue()
 foreach (item, value in jobIndexer)	RefreshValue(item);
 }
 
-function cJobs::QuickRefesh()
+function cJobs::QuickRefresh()
 // refresh datas on first 5 doable objects
 	{
 	local smallList=AIList();
@@ -110,16 +164,16 @@ function cJobs::QuickRefesh()
 function cJobs::GetRanking(jobID)
 // return the ranking for jobID
 	{
-	local myjob = GetJobObject(jobID);
+	local myjob = cJobs.GetJobObject(jobID);
 	if (myjob == null) return 0;
 	return myjob.ranking;
 	}
 
 function cJobs::GetNextJob()
-// Return the next job uniqID to do, null if we have none
+// Return the next job uniqID to do, -1 if we have none to do
 	{
 	local smallList=QuickRefresh();
-	smallList.Valuate(GetRanking);
+	if (smallList.IsEmpty())	return -1;
 	smallList.Sort(AIList.SORT_BY_VALUE, false);
 	return smallList.Begin();
 	}
@@ -140,7 +194,6 @@ function cJobs::JobIsNotDoable()
 function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	{
 	local newjob=cJobs();
-	newjob.sourceID=srcID;
 	newjob.sourceID = srcID;
 	newjob.targetID = tgtID;
 	newjob.source_istown = src_istown;
@@ -150,7 +203,6 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	if (newjob.target_istown)	newjob.target_location=AITown.GetLocation(tgtID);
 			else		newjob.target_location=AIIndustry.GetLocation(tgtID);
 	newjob.distance=AITile.GetDistanceManhattanToTile(newjob.source_location, newjob.target_location);
-	DInfo("Distance="+newjob.distance,2);
 	newjob.roadType=road_type;
 	newjob.cargoID=cargo_id;
 	local money = 0;
@@ -190,22 +242,19 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 			// 2 vehicle + 2 airports
 			money+=engineprice*2;
 			money+=2*(AIAirport.GetPrice(INSTANCE.builder.GetAirportType()));
-			daystransit=4;
+			daystransit=6;
 		break;
 		}
-	newjob.moneyToBuild=money;
 	newjob.cargoValue=AICargo.GetCargoIncome(newjob.cargoID, newjob.distance, daystransit);
-	if (newjob.source_istown)	newjob.cargoAmount= AITown.GetLastMonthProduction (srcID, cargo_id);
-				else	newjob.cargoAmount= AIIndustry.GetLastMonthProduction (srcID, cargo_id);
-	newjob.moneyGains=newjob.cargoAmount * newjob.cargoValue;
+	newjob.moneyToBuild=money;
 	newjob.GetUniqID();
+	cJobs.RefreshValue(newjob); // update ranking, cargo amount, foule values, must be call after GetUniqID
 	}
 
-function cJobs::GetTransportDistance(transport_type, get_min)
+function cJobs::GetTransportDistance(transport_type, get_min, limited)
 // Return the transport distance a transport_type could do
 // get_min = true return minimum distance
 // get_min = false return maximum distance
-// if roadLimited is true, we limit maximum return distance, else we return the real max distance
 	{
 	local small=1000;
 	local big=0;
@@ -219,7 +268,7 @@ function cJobs::GetTransportDistance(transport_type, get_min)
 		if (target == i)
 			{
 			if (get_min)	toret=min;
-				else	toret=(roadLimited) ? lim : max;
+				else	toret=(limited) ? lim : max;
 			}
 		if (min < small)	small=min;
 		if (lim > big)		big=lim;
@@ -235,7 +284,7 @@ function cJobs::GetJobTarget(src_id, cargo_id, src_istown)
 	{
 	local retList=AIList();
 	local srcloc=null;
-	local rmax=GetTransportDistance(0,false); // just to make sure min&max are init
+	local rmax=GetTransportDistance(0,false,false); // just to make sure min&max are init
 	if (src_istown)	srcloc=AITown.GetLocation(src_id);
 		else	srcloc=AIIndustry.GetLocation(src_id);
 	if (cCargo.IsCargoForTown(cargo_id))
@@ -280,14 +329,14 @@ function cJobs::GetTransportList(distance)
 	if (!INSTANCE.use_air) v_air=0;
 	if (!INSTANCE.use_road) v_road=0;
 	local tweaklist=AIList();
-	local road_maxdistance=GetTransportDistance(AIVehicle.VT_ROAD,false);
-	local road_mindistance=GetTransportDistance(AIVehicle.VT_ROAD,true);
-	local rail_maxdistance=GetTransportDistance(AIVehicle.VT_RAIL,false);
-	local rail_mindistance=GetTransportDistance(AIVehicle.VT_RAIL,true);
-	local air_maxdistance=GetTransportDistance(AIVehicle.VT_AIR,false);
-	local air_mindistance=GetTransportDistance(AIVehicle.VT_AIR,true);
-	local water_maxdistance=GetTransportDistance(AIVehicle.VT_WATER,false);
-	local water_mindistance=GetTransportDistance(AIVehicle.VT_WATER,true);
+	local road_maxdistance=GetTransportDistance(AIVehicle.VT_ROAD,false,false);
+	local road_mindistance=GetTransportDistance(AIVehicle.VT_ROAD,true,false);
+	local rail_maxdistance=GetTransportDistance(AIVehicle.VT_RAIL,false,false);
+	local rail_mindistance=GetTransportDistance(AIVehicle.VT_RAIL,true,false);
+	local air_maxdistance=GetTransportDistance(AIVehicle.VT_AIR,false,false);
+	local air_mindistance=GetTransportDistance(AIVehicle.VT_AIR,true,false);
+	local water_maxdistance=GetTransportDistance(AIVehicle.VT_WATER,false,false);
+	local water_mindistance=GetTransportDistance(AIVehicle.VT_WATER,true,false);
 	//DInfo("Distances: Truck="+road_mindistance+"/"+road_maxdistance+" Aircraft="+air_mindistance+"/"+air_maxdistance+" Train="+rail_mindistance+"/"+rail_maxdistance+" Boat="+water_mindistance+"/"+water_maxdistance,2);
 	local goal=distance;
 //	if (kind==AICargo.TE_MAIL || kind==AICargo.TE_PASSENGERS)
@@ -326,6 +375,7 @@ function cJobs::IsTransportTypeEnable(transport_type)
 function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
+	CheckLimitedStatus();
 	DInfo("JOBS -> Upating job indexer and doable list",2);
 	local parentListID=AIList();
 	jobDoable.Clear();
@@ -343,7 +393,7 @@ function cJobs::UpdateDoableJobs()
 		if (doable)
 		// not doable if max distance is limited and lower the job distance
 			{
-			local curmax = GetTransportDistance(myjob.roadType, false);
+			local curmax = GetTransportDistance(myjob.roadType, false, !INSTANCE.bank.unleash_road);
 			if (curmax < myjob.distance)	doable=false;
 			DInfo("currmax="+curmax+" dist="+myjob.distance+" ");
 			}
@@ -361,30 +411,63 @@ function cJobs::UpdateDoableJobs()
 	//foreach (id, value in jobDoable)	{ DInfo("After update: "+id+" - "+value,2); }
 	}
 
-function cJobs::AddNewIndustry(industryID)
-// Add a new industry possible jobs
+function cJobs::AddNewIndustryOrTown(industryID, istown)
+// Add a new industry/town job: this will add all possibles jobs doable with it (transport type + all cargos)
 	{
-	local smaxLimit= roadLimited; // backup road limited
-	roadLimited = false;
+	local position=0;
+	if (istown)	position=AITown.GetLocation(industryID);
+		else	position=AIIndustry.GetLocation(industryID);
+//	local smaxLimit= INSTANCE.bank.unleash_road; // backup 
+//	INSTANCE.bank.unleash_road=true;
 	local cargoList=GetJobSourceCargoList(industryID, false);
 	//DInfo("Industry provide "+cargoList.Count()+" cargo",2);
 	foreach (cargoid, cargodummy in cargoList)
 		{
-		local targetList=GetJobTarget(industryID, cargoid, false);
+		local targetList=GetJobTarget(industryID, cargoid, istown);
 		//DInfo("Found "+targetList.Count()+" possible destinations",2);
 		foreach (destination, locations in targetList)
 			{
-			distance=AIIndustry.GetDistanceManhattanToTile(industryID, locations)
+			distance=AITile.GetDistanceManhattanToTile(position, locations)
 			// now find possible ways to transport that
 			local transportList=GetTransportList(distance);
 			//DInfo("Found "+transportList.Count()+" possible transport type",2);
 			foreach (transtype, dummy2 in transportList)
 				{
 				this.uniqID=null;
-				CreateNewJob(industryID, destination, false, cargoid, transtype);
+				CreateNewJob(industryID, destination, istown, cargoid, transtype);
 				}
 			}
 		}
-	roadLimited=smaxLimit; // now restore it's real value
-	smaxLimit = GetTransportDistance(0,false); // now re-set our real max limit
+	//INSTANCE.bank.unleash_road=smaxLimit; // now restore it's real value
+	//smaxLimit = GetTransportDistance(0,false); // now re-set our real max limit
 	}
+
+function cJobs::PopulateJobs()
+// Find towns and industries and add any jobs we could do with them
+{
+local indjobs=AIIndustryList();
+local townjobs=AITownList();
+local curr=0;
+DInfo("Finding all industries & towns jobs, this will take a while !",0);
+foreach (ID, dummy in indjobs)
+	{
+	AddNewIndustryOrTown(ID, false);
+	curr++;
+	if (curr % 4 == 0)
+		{
+		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()));
+		INSTANCE.Sleep(1);
+		}
+	}
+foreach (ID, dummy in townjobs)
+	{
+	AddNewIndustryOrTown(ID, true);
+	curr++;
+	if (curr % 4 == 0)
+		{
+		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()));
+		INSTANCE.Sleep(1);
+		}
+	}
+
+}

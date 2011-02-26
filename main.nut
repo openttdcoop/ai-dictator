@@ -65,6 +65,7 @@ class DictatorAI extends AIController
 	loadedgame = null;
 
 	jobs = null;
+	jobs_obj = null;
 
    constructor()
    	{
@@ -94,7 +95,7 @@ function DictatorAI::Start()
 	this.CheckCurrentSettings();
 	bank.SaveMoney();
 
-	local dontcare=chemin.GetTransportDistance(AIVehicle.VT_ROAD,true); // don't care, just to have min&max distance set
+	//local dontcare=chemin.GetTransportDistance(AIVehicle.VT_ROAD,true); // don't care, just to have min&max distance set
 	if (loadedgame) 
 		{
 		DInfo("We are promoting "+AICargo.GetCargoLabel(chemin.cargo_fav),0);
@@ -107,12 +108,18 @@ function DictatorAI::Start()
 		}
 	 else 	{
 		AIInit();
-		chemin.RouteCreateALL();
+		//chemin.RouteCreateALL();
 		}
 	bank.Update();
+	jobs.PopulateJobs();
 	while(true)
 		{
-
+		local oneid=jobs.GetNextJob();
+		local oneobj=jobs.GetJobObject(oneid);
+		DInfo("Before: oneobj.moneyToBuild  = "+oneobj.moneyToBuild);
+		oneobj.moneyToBuild=666;
+		local twoobj=jobs.GetJobObject(oneid);
+		DInfo("Before: oneobj.moneyToBuild  = "+oneobj.moneyToBuild+" twoobj.moneytobuild="+twoobj.moneyToBuild);
 		this.SetRailType();
 		this.CheckCurrentSettings();
 		if (use_train) builder.BaseStationRailBuilder(80835);
@@ -122,18 +129,22 @@ function DictatorAI::Start()
 		chemin.ShowStationCapacity();
 		if (bank.canBuild)
 				{
-				if (chemin.nowRoute==-1)	chemin.nowRoute=chemin.StartingJobFinder();
-				if (chemin.nowRoute>-1)
+				if (chemin.nowRoute==-1)	chemin.nowRoute=jobs.GetNextJob();
+				if (chemin.nowRoute > -1)
 					{
-					local costsbuild=bank.GetConstructionsCosts(chemin.nowRoute);
-					bank.RaiseFundsTo(costsbuild);
-					DInfo("Route #"+chemin.nowRoute+" estimate costs to build : "+costsbuild,1);
-					if (builder.route_start >= 0)	{ costsbuild=-1000000; } // continue building the same route
-					if (bank.CanBuyThat(costsbuild))	builder.TryBuildThatRoute(chemin.nowRoute);
+					jobs_obj=cJobs.GetJobObject(chemin.nowRoute);
+					//local costsbuild=bank.GetConstructionsCosts(chemin.nowRoute);
+					bank.RaiseFundsTo(jobs.moneyToBuild);
+					DInfo("Route #"+chemin.nowRoute+" estimate costs to build : "+jobs_obj.moneyToBuild,1);
+DInfo("dump: "+jobs_obj.sourceID+" "+jobs_obj.targetID);
+
+
+
+					//if (builder.route_start >= 0)	{ costsbuild=-1000000; } // continue building the same route
+					if (bank.CanBuyThat(jobs_obj.moneyToBuild))	builder.TryBuildThatRoute(chemin.nowRoute);
 									else	{
 										DInfo("Route is too expansive for us",1);
-										chemin.RouteMalusHigher(chemin.nowRoute);
-										chemin.nowRoute=-1;
+										jobs_obj.isdoable=false;
 										}
 					DInfo(" ");
 					// now jump to build stage

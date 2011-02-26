@@ -510,7 +510,7 @@ DInfo(villeList.Count()+" towns on map",0);
 DInfo("Finding routes...",0);
 // first, let's find industries
 //foreach(i, dummy in it)	{ root.chemin.RouteCreateIndustry(i); }
-foreach (i, dummy in it)	{ INSTANCE.jobs.AddNewIndustry(i); }
+//foreach (i, dummy in it)	{ INSTANCE.jobs.AddNewIndustry(i); }
 //root.chemin.RouteTownsInjector();
 //² now towns
 /*
@@ -526,6 +526,7 @@ foreach(c, dummy in cargoList)
 		}
 	}
 */
+INSTANCE.jobs.PopulateJobs();
 local goodjob=AIList();
 INSTANCE.jobs.UpdateDoableJobs();
 goodjob.AddList(INSTANCE.jobs.jobIndexer);
