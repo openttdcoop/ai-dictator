@@ -19,15 +19,15 @@
 class cJobs
 {
 static	database = {};
-static	jobIndexer = AIList();	// this list have all uniqID in the database, 1 when doable as value
+static	jobIndexer = AIList();	// this list have all UID in the database, 1 when doable as value
 static	jobDoable = AIList();	// same as upper, but all 0 are gone and now value = ranking
 static	distanceLimits = [0, 0];	// store [min, max] distances we can do, share to every instance so we can discover if this change
 static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,150,200];
 
 
-static	function GetJobObject(uniqID)
+static	function GetJobObject(UID)
 		{
-		return uniqID in cJobs.database ? cJobs.database[uniqID] : null;
+		return UID in cJobs.database ? cJobs.database[UID] : null;
 		}
 
 	sourceID = null;	// id of industry/town
@@ -36,8 +36,8 @@ static	function GetJobObject(uniqID)
 	target_location = null;	// location of target
 	cargoID = null;		// cargo id
 	roadType = null;	// AIVehicle.RoadType
-	uniqID = null;		// a uniqID for the job
-	parentID = null;	// a uniqID that a similar job will share with another similar (like other tansport or other destination)
+	UID = null;		// a UID for the job
+	parentID = null;	// a UID that a similar job will share with another similar (like other tansport or other destination)
 	isUse = false;		// is build & in use
 	cargoValue = 0;		// value for that cargo
 	cargoAmount = 0;	// amount of cargo at source
@@ -65,14 +65,14 @@ function cJobs::CheckLimitedStatus()
 	DInfo("JOBS -> Distance limit status change to "+INSTANCE.bank.unleash_road,2);
 	}
 
-function cJobs::GetUniqID()
-// Create a uniqID for a job, if not in database, add the job to database
+function cJobs::GetUID()
+// Create a UID for a job, if not in database, add the job to database
 // This also update JobIndexer and parentID
-// Return the uniqID for that job
+// Return the UID for that job
 	{
 	local uID=null;
 	local parentID = null;
-	if (this.uniqID == null && this.sourceID != null && this.targetID != null && this.cargoID != null && this.roadType != null)
+	if (this.UID == null && this.sourceID != null && this.targetID != null && this.cargoID != null && this.roadType != null)
 			{
 			local v1=this.roadType+1;
 			local v2=(this.cargoID+10);
@@ -82,17 +82,17 @@ function cJobs::GetUniqID()
 			if (this.source_istown) v4+=4000;
 			parentID = (this.sourceID)*500+this.cargoID;
 			uID = (v3*v4)+(v1*v2);
-			this.uniqID=uID;
+			this.UID=uID;
 			this.parentID=parentID;
 		//DInfo("JOBS -> "+uID+" src="+this.sourceID+" tgt="+this.targetID+" crg="+this.cargoID+" rt="+this.roadType);
-			if (this.uniqID in database)	DWarn("JOBS -> Job "+uID+" already in database",2);
+			if (this.UID in database)	DWarn("JOBS -> Job "+uID+" already in database",2);
 			else	{
 				DInfo("JOBS -> Adding job "+uID+" ("+parentID+") to job database",2);
-				database[this.uniqID] <- this;
-				jobIndexer.AddItem(this.uniqID, 1);
+				database[this.UID] <- this;
+				jobIndexer.AddItem(this.UID, 1);
 				}
 			}
-	return this.uniqID;
+	return this.UID;
 	}
 
 function cJobs::RankThisJob()
@@ -170,7 +170,7 @@ function cJobs::GetRanking(jobID)
 	}
 
 function cJobs::GetNextJob()
-// Return the next job uniqID to do, -1 if we have none to do
+// Return the next job UID to do, -1 if we have none to do
 	{
 	DInfo("JOBS -> GetNextJob()");
 	local smallList=QuickRefresh();
@@ -188,7 +188,7 @@ function cJobs::RecheckDoable()
 function cJobs::JobIsNotDoable()
 // mark the job as not doable
 	{
-	local myjob=GetJobObject(this.uniqID)
+	local myjob=GetJobObject(this.UID)
 	if (myjob == null) return;
 	myjob.isdoable=false;
 	}
@@ -249,8 +249,8 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 		}
 	newjob.cargoValue=AICargo.GetCargoIncome(newjob.cargoID, newjob.distance, daystransit);
 	newjob.moneyToBuild=money;
-	newjob.GetUniqID();
-	cJobs.RefreshValue(newjob); // update ranking, cargo amount, foule values, must be call after GetUniqID
+	newjob.GetUID();
+	cJobs.RefreshValue(newjob); // update ranking, cargo amount, foule values, must be call after GetUID
 	}
 
 function cJobs::GetTransportDistance(transport_type, get_min, limited)
@@ -435,7 +435,7 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 			//DInfo("Found "+transportList.Count()+" possible transport type",2);
 			foreach (transtype, dummy2 in transportList)
 				{
-				this.uniqID=null;
+				this.UID=null;
 				CreateNewJob(industryID, destination, istown, cargoid, transtype);
 				}
 			}

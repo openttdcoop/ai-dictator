@@ -11,10 +11,37 @@
  *
 **/
 
+enum RouteType {
+	RAIL,	// AIVehicle.VT_RAIL
+	ROAD,	// AIVehicle.VT_ROAD
+	WATER,	// AIVehicle.VT_WATER
+	AIR,	// AIVehicle.VT_AIR
+	AIRNET,
+	AIRSLAVE,
+	CHOPPER }
+
+enum StationType
+	{
+	STATION_TRAIN,
+	STATION_TRUCK_STOP,
+	STATION_BUS_STOP,
+	STATION_DOCK,
+	STATION_PLATFORM,
+	STATION_AIRPORT_SMALL,
+	STATION_AIRPORT_LARGE,
+	STATION_AIRPORT_METROPOLITAN,
+	STATION_AIRPORT_INTERNATIONAL,
+	STATION_AIRPORT_INTERCON
+	}
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
 require("handler/routes.nut");
+require("handler/events.nut");
+require("handler/checks.nut");
+require("handler/cargo.nut");
+require("handler/vehiclehandler.nut");
+require("handler/stationhandler.nut");
 require("build/builder.nut");
 require("build/railbuilder.nut");
 require("build/roadbuilder.nut");
@@ -22,10 +49,6 @@ require("build/vehiclebuilder.nut");
 require("build/airbuilder.nut");
 require("build/stationbuilder.nut");
 require("build/stationremover.nut");
-require("handler/events.nut");
-require("handler/checks.nut");
-require("handler/cargo.nut");
-require("handler/vehiclehandler.nut");
 require("utils/banker.nut");
 require("utils/misc.nut");
 require("handler/chemin.nut");
@@ -34,14 +57,6 @@ require("handler/jobs.nut");
 require("utils/debug.nut");
 require("utils/tile.nut");
 
-
-enum RouteType {
-	RAIL,	// AIVehicle.VT_RAIL
-	ROAD,	// AIVehicle.VT_ROAD
-	WATER,	// AIVehicle.VT_WATER
-	AIR,	// AIVehicle.VT_AIR
-	AIRNET,
-	AIRSLAVE }
 
 
  
@@ -85,7 +100,7 @@ class DictatorAI extends AIController
 	bank = cBanker(this);
 	eventManager= cEvents(this);
 	builder=cBuilder();
-	carrier=cCarrier(this);
+	carrier=cCarrier();
 	builddelay=false;
 	loadedgame = false;
 	OneMonth=0;		// this one is use to set a monthly check for some operations

@@ -14,13 +14,13 @@
 class cRoute
 	{
 static	database = {};
-static	RouteIndexer = AIList(); // list all uniqID of routes we are handling
-static	function GetRouteObject(uniqID)
+static	RouteIndexer = AIList();   // list all UID of routes we are handling
+static	function GetRouteObject(UID)
 		{
-		return uniqID in cRoute.database ? cRoute.database[uniqID] : null;
+		return UID in cRoute.database ? cRoute.database[UID] : null;
 		}
 
-	uniqID		= null; // uniqID for that route, 0/1 for airnetwork, else = the one calc in cJobs
+	UID		= null; // UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
 	name		= null;	// string with the route name
 	sourceID	= null;	// id of source town/industry
 	source_istown	= null;	// if source is town
@@ -77,11 +77,11 @@ function cRoute::RouteSave()
 	{
 	this.RouteGetName();
 	DInfo("Init a new route. "+this.name,0);
-	if (this.uniqID in database)	DWarn("ROUTE -> Route "+this.uniqID+" is already in database",2);
+	if (this.UID in database)	DWarn("ROUTE -> Route "+this.UID+" is already in database",2);
 			else		{
-					DInfo("ROUTE -> Adding route "+this.uniqID+" to the route database",2);
-					database[this.uniqID] <- this;
-					RouteIndexer.AddItem(this.uniqID, 1);
+					DInfo("ROUTE -> Adding route "+this.UID+" to the route database",2);
+					database[this.UID] <- this;
+					RouteIndexer.AddItem(this.UID, 1);
 					}
 	}
 
@@ -128,13 +128,13 @@ function cRoute::RouteGetName()
 	this.name="From "+src+" to "+dst+" for "+AICargo.GetLabel(cargoID)+" using "+rtype;
 	}
 
-function cRoute::CreateNewRoute(uniqID)
+function cRoute::CreateNewRoute(UID)
 // Create and add to database a new route with informations taken from cJobs
 	{
-	local jobs=cJobs.GetJobObject(uniqID);
-	DInfo("jobs="+jobs+" uniqID="+uniqID);
+	local jobs=cJobs.GetJobObject(UID);
+	DInfo("jobs="+jobs+" UID="+UID);
 	jobs.isUse = true;
-	this.uniqID = jobs.uniqID;
+	this.UID = jobs.UID;
 	this.sourceID = jobs.sourceID;
 	this.source_istown = jobs.source_istown;
 	this.targetID = jobs.targetID;
@@ -156,7 +156,7 @@ function cRoute::RouteInitNetwork()
 	mailRoute.source_entry=false;
 	mailRoute.target_entry=false;
 	mailRoute.isWorking=true;
-	mailRoute.uniqID=0;
+	mailRoute.UID=0;
 	mailRoute.route_type = RouteType.AIRNET;
 	mailRoute.status=100;
 	mailRoute.vehicle_count=0;
@@ -171,7 +171,7 @@ function cRoute::RouteInitNetwork()
 	passRoute.source_entry=false;
 	passRoute.target_entry=false;
 	passRoute.isWorking=true;
-	passRoute.uniqID=1;
+	passRoute.UID=1;
 	passRoute.route_type = RouteType.AIRNET;
 	passRoute.status=100;
 	passRoute.vehicle_count=0;

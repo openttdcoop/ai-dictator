@@ -88,14 +88,14 @@ root.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,false);
 }
 
 function cBuilder::GetAirportType()
-// return an airport type to build
+// return an airport type to build or null
 {
-local AirType=-1;
-if (AIAirport.IsValidAirportType(AIAirport.AT_SMALL))	{ AirType=AIAirport.AT_SMALL; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_LARGE))	{ AirType=AIAirport.AT_LARGE; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_METROPOLITAN))	{ AirType=AIAirport.AT_METROPOLITAN; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_INTERNATIONAL))	{ AirType=AIAirport.AT_INTERNATIONAL; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_INTERCON))	{ AirType=AIAirport.AT_INTERCON; }
+local AirType=null;
+if (AIAirport.IsValidAirportType(AIAirport.AT_SMALL))	{ AirType=StationType.STATION_AIRPORT_SMALL; }
+if (AIAirport.IsValidAirportType(AIAirport.AT_LARGE))	{ AirType=StationType.STATION_AIRPORT_LARGE; }
+if (AIAirport.IsValidAirportType(AIAirport.AT_METROPOLITAN))	{ AirType=StationType.STATION_AIRPORT_METROPOLITAN; }
+if (AIAirport.IsValidAirportType(AIAirport.AT_INTERNATIONAL))	{ AirType=StationType.STATION_INTERNATIONAL; }
+if (AIAirport.IsValidAirportType(AIAirport.AT_INTERCON))	{ AirType=StationType.STATION_INTERCON; }
 return AirType;
 }
 

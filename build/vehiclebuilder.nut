@@ -19,24 +19,24 @@ enum AircraftType {
 }
 
 class cCarrier
-	{
+{
+static	AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
 	root = null;
 	vehnextprice=null;	// we just use that to upgrade vehicle
-	AirportTypeLimit=null;  // can't make it a const, squirrel is so weird
 	top_vehicle=null;	// the list of vehicle engine id we know cannot be upgrade
 	to_depot=null;		// list the vehicle going to depot
 	do_profit=null;		// Record each vehicle profits
 
-	constructor(that)
+	constructor()
 		{
-		root=that;
+		//root=that;
 		vehnextprice=0;
 		top_vehicle=AIList();
 		to_depot=AIList();
 		do_profit=AIList();
-		AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
+		
 		}
-	}
+}
 
 function cCarrier::VehicleGetCargoType(veh)
 // return cargo type the vehicle is handling
@@ -363,20 +363,17 @@ DInfo("Choosen road vehicle: "+AIEngine.GetName(veh),2);
 return veh;
 }
 
-function cCarrier::GetAirVehicle(idx)
+function cCarrier::GetAirVehicle()
 // get an aircraft
 {
-local road= root.chemin.RListGetItem(idx);
 local modele=AircraftType.EFFICIENT;
-if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
-if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
-local veh = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
+if (INSTANCE.route.route_type == RouteType.AIRNET)	modele=AircraftType.BEST;
+if (INSTANCE.route.route_type == RouteType.AIRSLAVE)	modele=AircraftType.BEST;
+if (INSTANCE.route.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER;
+local veh = ChooseAircraft(INSTANCE.route.cargoID,modele);
 if (veh == null)	{
-			if (road.ROUTE.src_entry)	DError("No suitable aircraft to buy !",1);
-				else	DError("No suitable choppers to buy !");
-			road=root.chemin.RouteMalusHigher(road);
-			root.chemin.RListUpdateItem(idx,road);
-			return -1;
+			if (INSTANCE.route.route_type == RouteType.CHOPPER)	DWarn("No suitable chopper to buy !",1);
+									else	DWarn("No suitable aircraft to buy !");
 			}
 DInfo("Choosen aircraft: "+AIEngine.GetName(veh),2);
 return veh;
@@ -445,7 +442,7 @@ vehlist.Valuate(AIEngine.GetRoadType);
 vehlist.KeepValue(AIRoad.ROADTYPE_ROAD);
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
-vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
+vehlist.Valuate(AIEngine.CanRefitCargo, INSTANCE.route.cargoID);
 vehlist.KeepValue(1);
 local top=null;
 vehlist.Valuate(AIEngine.GetCapacity);
@@ -505,19 +502,19 @@ function cCarrier::GetVehicle()
 local success=-1;
 switch (INSTANCE.route.route_type)
 	{
-	case ::RouteType.ROAD:
+	case RouteType.ROAD:
 	success=INSTANCE.carrier.GetRoadVehicle();
 	break;
-	case INSTANCE.RouteType.RAIL:
+	case RouteType.RAIL:
 	//success=root.carrier.GetRailVehicle(idx);
 	successs=false;
 	break;
-	case INSTANCE.RouteType.WATER:
+	case RouteType.WATER:
 	success=false;
 	break;
-	case INSTANCE.RouteType.AIR:
-	case INSTANCE.RouteType.AIRNET:
-	case INSTANCE.RouteType.AIRSLAVE:
+	case RouteType.AIR:
+	case RouteType.AIRNET:
+	case RouteType.AIRSLAVE:
 	success=INSTANCE.carrier.GetAirVehicle();
 	break;
 	}

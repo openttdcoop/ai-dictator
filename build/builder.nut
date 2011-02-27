@@ -316,11 +316,10 @@ DInfo(ss+" station is compatible with "+ds,1);
 return true;
 }
 
-function cBuilder::FindCompatibleStationExists(idx)
+function cBuilder::FindCompatibleStationExists()
 // Find if we already have a station on a place
 // if compatible, we could link to use that station too
 {
-local road=INSTANCE.chemin.RListGetItem(idx);
 local sdepot=-1;
 local sstation=-1;
 local edepot=-1;
@@ -406,27 +405,16 @@ DInfo("Route #"+INSTANCE.builder.building_route+" Status:"+INSTANCE.route.status
 if (INSTANCE.route.status==0) // not using switch/case so we can advance steps in one pass
 	{
 	success=INSTANCE.carrier.GetVehicle();
-if (success < 0)
-	{
-	DWarn("There's no vehicle for that transport type we could use to carry that cargo",2);
-	return false;
-	root.chemin.RouteIsNotDoable(idx);
-	}
-
-	success=INSTANCE.chemin.PickupTransportType(idx)
-	// this check that we could pickup a vehicle to validate road type can be used, also recalc that route distance
-	if (!success)
+	if (success < 0)
 		{
-		INSTANCE.chemin.RouteIsNotDoable(idx); // retry that road real later
+		DWarn("There's no vehicle for that transport type we could use to carry that cargo",2);
 		return false;
 		}
-	else	{ INSTANCE.chemin.RouteStatusChange(idx,3); } // advance to phase 3
+	else	{ INSTANCE.route.status=1; } // advance to phase 3
 	}
-INSTANCE.bank.RaiseFundsBy(rr.ROUTE.money);
-rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==3)
+if (INSTANCE.route.status==1)
 	{
-	success=INSTANCE.builder.FindCompatibleStationExists(idx);
+	success=INSTANCE.builder.FindCompatibleStationExists();
 	if (!success)
 		{
 		// failure to find a compatible station isn't critical, just mean we don't find one
@@ -443,9 +431,9 @@ if (rr.ROUTE.status==3)
 	}
 
 rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==4)
+if (INSTANCE.route.status==4)
 	{
-	if (rr.ROUTE.src_station==-1)	{ success=INSTANCE.builder.BuildStation(idx,true); }
+	if (INSTANCE.route.src_station==-1)	{ success=INSTANCE.builder.BuildStation(idx,true); }
 		else	{ success=true; DInfo("Source station is already build, we're reusing an existing one",0); }
 	if (!success)
 		{ // it's bad we cannot build our source station, that's really bad !
@@ -461,9 +449,9 @@ if (rr.ROUTE.status==4)
 	}
 
 rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==5)	
+if (INSTANCE.route.status==5)	
 	{
-	if (rr.ROUTE.dst_station==-1)	{ success=INSTANCE.builder.BuildStation(idx,false); }
+	if (INSTANCE.route.dst_station==-1)	{ success=INSTANCE.builder.BuildStation(idx,false); }
 		else	{ success=true; DInfo("Destination station is already build, we're reusing an existing one",0); }
 	if (!success)
 		{ // we cannot do destination station
@@ -478,7 +466,7 @@ if (rr.ROUTE.status==5)
 	else	{ INSTANCE.chemin.RouteStatusChange(idx,6); }
 	}
 rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==6)
+if (INSTANCE.route.status==6)
 	{
 	INSTANCE.builder.route_start=idx;
 	success=INSTANCE.builder.BuildRoadByType(idx);
@@ -495,9 +483,9 @@ if (rr.ROUTE.status==6)
 			} // and nothing more, stay at phase 6 to repathfind/rebuild the road when possible
 	}
 rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==7)
+if (INSTANCE.route.status==7)
 	{ // check the route is really valid
-	if (rr.ROUTE.kind == AIVehicle.VT_ROAD)
+	if (INSTANCE.route.kind == AIVehicle.VT_ROAD)
 		{
 		success=INSTANCE.builder.CheckRoadHealth(idx);
 		}
@@ -506,22 +494,22 @@ if (rr.ROUTE.status==7)
 		else	{ INSTANCE.chemin.RouteIsNotDoable(idx); return false; }
 	}	
 rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (rr.ROUTE.status==8)
+if (INSTANCE.route.status==8)
 	{
-	DInfo("Route contruction complete ! "+rr.ROUTE.src_name+" to "+rr.ROUTE.dst_name,0);
-	rr.ROUTE.isServed=true;
-	rr.ROUTE.group_id=AIGroup.CreateGroup(rr.ROUTE.kind);
-	local groupname = AICargo.GetCargoLabel(rr.ROUTE.cargo_id)+"*"+INSTANCE.builder.GetStationID(idx,true)+"*"+INSTANCE.builder.GetStationID(idx,false);
+	DInfo("Route contruction complete ! "+INSTANCE.route.src_name+" to "+INSTANCE.route.dst_name,0);
+	INSTANCE.route.isServed=true;
+	INSTANCE.route.group_id=AIGroup.CreateGroup(INSTANCE.route.kind);
+	local groupname = AICargo.GetCargoLabel(INSTANCE.route.cargo_id)+"*"+INSTANCE.builder.GetStationID(idx,true)+"*"+INSTANCE.builder.GetStationID(idx,false);
 	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
-	rr.ROUTE.group_name=groupname;
-	rr.ROUTE.vehicule=0;
-	AIGroup.SetName(rr.ROUTE.group_id, rr.ROUTE.group_name);
+	INSTANCE.route.group_name=groupname;
+	INSTANCE.route.vehicule=0;
+	AIGroup.SetName(INSTANCE.route.group_id, INSTANCE.route.group_name);
 	INSTANCE.chemin.RListUpdateItem(idx,rr);
 	INSTANCE.chemin.RouteStatusChange(idx,100);
 	INSTANCE.builder.StationIsAccepting(INSTANCE.builder.GetStationID(idx,false));
 	INSTANCE.builder.StationIsProviding(INSTANCE.builder.GetStationID(idx,true));
 	INSTANCE.builddelay=true;
-	INSTANCE.chemin.map_group_to_route.AddItem(rr.ROUTE.group_id, idx);
+	INSTANCE.chemin.map_group_to_route.AddItem(INSTANCE.route.group_id, idx);
 	INSTANCE.chemin.nowRoute=-1; // Allow us to work on a new route now
 	INSTANCE.builder.route_start=-1;
 	}
