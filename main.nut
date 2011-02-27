@@ -19,7 +19,7 @@ enum RouteType {
 	AIRNET,
 	AIRSLAVE,
 	CHOPPER }
-
+/*
 enum StationType
 	{
 	STATION_TRAIN,
@@ -33,6 +33,7 @@ enum StationType
 	STATION_AIRPORT_INTERNATIONAL,
 	STATION_AIRPORT_INTERCON
 	}
+*/
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
