@@ -15,16 +15,14 @@
 //
 class cBanker
 	{
-	root = null;
 	canBuild= null;		// true if we can build new route
 	unleash_road = null;	// true to build big road, false for small size
 	mincash=null;
 	busyRoute=null;		// true if we are still busy handling a route, we need false to build new route
 	basePrice=null;		// it's just a base price cost to remove a rock tile
 	
-	constructor(that)
+	constructor()
 		{
-		root=that;
 		unleash_road=false;
 		canBuild=true;
 		mincash=10000;
@@ -38,29 +36,29 @@ function cBanker::Update()
 local ourLoan=AICompany.GetLoanAmount();
 local maxLoan=AICompany.GetMaxLoanAmount();
 local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-local goodcash=root.bank.mincash*cBanker.GetInflationRate();
-if (goodcash < root.bank.mincash) goodcash=root.bank.mincash;
-if (ourLoan==0 && cash>=root.bank.mincash)	{ root.bank.unleash_road=true; }
-	else	{ root.bank.unleash_road=false; }
-if (cash < goodcash)	{ root.bank.canBuild=false; }
-if (maxLoan > 2000000 && ourLoan > 0)	{ DInfo("Trying to repay loan",2); root.bank.canBuild=false; } // wait to repay loan
-if (ourLoan < maxLoan+(4*AICompany.GetLoanInterval()))	{ root.bank.canBuild=true; }
+local goodcash=INSTANCE.bank.mincash*cBanker.GetInflationRate();
+if (goodcash < INSTANCE.bank.mincash) goodcash=INSTANCE.bank.mincash;
+if (ourLoan==0 && cash>=INSTANCE.bank.mincash)	{ INSTANCE.bank.unleash_road=true; }
+	else	{ INSTANCE.bank.unleash_road=false; }
+if (cash < goodcash)	{ INSTANCE.bank.canBuild=false; }
+if (maxLoan > 2000000 && ourLoan > 0)	{ DInfo("Trying to repay loan",2); INSTANCE.bank.canBuild=false; } // wait to repay loan
+if (ourLoan < maxLoan+(4*AICompany.GetLoanInterval()))	{ INSTANCE.bank.canBuild=true; }
 local veh=AIVehicleList();
-if (root.bank.busyRoute)	root.bank.canBuild=false;
-if (root.builddelay)	root.bank.canBuild=false;
-if (root.carrier.vehnextprice >0)	root.bank.canBuild=false;
-if (root.chemin.map_group_to_route.Count() == 0)	root.bank.canBuild=true; // we have 0 route force a build
-if (root.bank.canBuild) DInfo("Construction is now allowed",1);
-DInfo("canBuild="+root.bank.canBuild+" busyRoute="+root.bank.busyRoute+" goodcash="+goodcash+" unleash="+root.bank.unleash_road+" nowroute="+root.chemin.nowRoute,2);
+if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
+if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;
+if (INSTANCE.carrier.vehnextprice >0)	INSTANCE.bank.canBuild=false;
+if (INSTANCE.route.GroupIndexer.Count() == 0)	INSTANCE.bank.canBuild=true; // we have 0 route force a build
+if (INSTANCE.bank.canBuild) DInfo("Construction is now allowed",1);
+DInfo("canBuild="+INSTANCE.bank.canBuild+" busyRoute="+INSTANCE.bank.busyRoute+" goodcash="+goodcash+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route,2);
 }
 
 function cBanker::GetConstructionsCosts(idx)
 // return estimate costs to try build that route
 {
-local road=root.chemin.RListGetItem(idx);
+local road=INSTANCE.chemin.RListGetItem(idx);
 local money=0;
 local clean=AITile.GetBuildCost(AITile.BT_CLEAR_HOUSE);
-local engine=root.carrier.GetVehicle(idx);
+local engine=INSTANCE.carrier.GetVehicle(idx);
 local engineprice=0;
 if (engine != -1)	engineprice=AIEngine.GetPrice(engine);
 switch (road.ROUTE.kind)
@@ -91,7 +89,7 @@ switch (road.ROUTE.kind)
 	case	AIVehicle.VT_AIR:
 		// 2 vehicle + 2 airports
 		money+=engineprice*2;
-		money+=2*(AIAirport.GetPrice(root.builder.GetAirportType()));
+		money+=2*(AIAirport.GetPrice(INSTANCE.builder.GetAirportType()));
 	break;
 	}
 DInfo("Estimated costs to build route "+idx+" : "+money,2);
@@ -122,7 +120,7 @@ function cBanker::RaiseFundsBigTime()
 local tomax=5000000;
 local max=tomax;
 if (AICompany.GetMaxLoanAmount() < tomax)	max=(AICompany.GetMaxLoanAmount()*80/100);
-root.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
+INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
 }
 
 function cBanker::CanBuyThat(money)
@@ -163,11 +161,11 @@ function cBanker::PayLoan()
 
 function cBanker::CashFlow()
 {
-root.bank.PayLoan();
-local goodcash=root.bank.mincash;
-if (goodcash < root.bank.mincash) goodcash=root.bank.mincash;
-root.bank.RaiseFundsTo(goodcash);
-root.bank.Update();
+INSTANCE.bank.PayLoan();
+local goodcash=INSTANCE.bank.mincash;
+if (goodcash < INSTANCE.bank.mincash) goodcash=INSTANCE.bank.mincash;
+INSTANCE.bank.RaiseFundsTo(goodcash);
+INSTANCE.bank.Update();
 }
 
 function cBanker::GetInflationRate()

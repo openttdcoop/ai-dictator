@@ -14,7 +14,7 @@
 function PutSign(place,msg)
 // put a sign at place
 {
-if (!root.debug) return;
+if (!INSTANCE.debug) return;
 if (DictatorAI.GetSetting("debug") < 2) return;
 AISign.BuildSign(place,msg);
 }
@@ -30,99 +30,39 @@ foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); 
 function showLogic(item)
 // this will draw sign with item so we see item influence
 {
-if (!root.debug) return;
+if (!INSTANCE.debug) return;
 foreach (i, dummy in item)
 	{
 	PutSign(i,dummy);
 	}
 }
 
-function cChemin::GListDumpOne(idx)
-// dump one item
+function cBuilder::DumpRoute()
 {
-if (!root.debug) return;
-local start=root.chemin.GListGetIndex(idx);
-local wtf="GList["+idx+"] ";
-local j=0;
-local dummy=cStation();
-
-for (local i=start; i < start+dummy.STATION.len(); i++)
-	{
-	wtf=wtf+root.chemin.GList[i]+" ";
-	}
-DInfo(wtf,2);
+DInfo("Route #"+INSTANCE.route.UID+" "+INSTANCE.route.name,2);
+local srcname="";
+local tgtname="";
+if (INSTANCE.route.source_istown)	srcname=AITown.GetName(INSTANCE.route.sourceID);
+				else	srcname=AIIndustry.GetName(INSTANCE.route.sourceID);
+if (INSTANCE.route.target_istown)	tgtname=AITown.GetName(INSTANCE.route.targetID);
+				else	tgtname=AIIndustry.GetName(INSTANCE.route.targetID);
+srcname=INSTANCE.route.sourceID+":"+srcname;
+tgtname=INSTANCE.route.targetID+":"+tgtname;
+DInfo("Source: "+srcname+" Target: "+tgtname+" route_type: "+cRoute.RouteTypeToString(INSTANCE.route.route_type)+" status: "+INSTANCE.route.status+" Cargo:"+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+if (!INSTANCE.route.source_entry) return;
+DInfo("Source station "+INSTANCE.route.source_stationID+"("+AIStation.GetName(INSTANCE.route.source_stationID)+")",2);
+DInfo("# "+INSTANCE.route.source.stationID+" Station type: "+INSTANCE.route.source.stationType+" specialType: "+INSTANCE.route.source.specialType+" produce "+INSTANCE.route.source.cargo_produce.Count()+" cargos, accept "+INSTANCE.route.source.cargo_accept.Count()+" cargos",2);
+if (!INSTANCE.route.target_entry) return;
+DInfo("# "+INSTANCE.route.target.stationID+" Station type: "+INSTANCE.route.target.stationType+" specialType: "+INSTANCE.route.target.specialType+" produce "+INSTANCE.route.target.cargo_produce.Count()+" cargos, accept "+INSTANCE.route.target.cargo_accept.Count()+" cargos",2);
 }
 
-function cChemin::RListDumpOne(idx)
-// dump one item
+/*function cChemin::ShowStationCapacity()
 {
-if (!root.debug) return;
-local start=root.chemin.RListGetIndex(idx);
-local wtf="RList["+idx+"] ";
-local j=0;
-local dummy=cCheminItem();
-
-for (local i=start; i < start+dummy.ROUTE.len(); i++)
-	{
-	wtf=wtf+root.chemin.RList[i]+" ";
-	}
-DInfo(wtf,2);
-}
-
-function cChemin::RListDumpALL()
-// dump the RList table idx
-{
-if (!root.debug) return;
-local dummy=cCheminItem();
-for (local i=0; i < (root.chemin.RListGetSize()); i++)
-	{
-	root.chemin.RListDumpOne(i);
-	}
-}
-
-function cChemin::RListStatus()
-// count route, invalid, done, with handicap... for stats
-{
-if (!root.debug) return;
-local invalid=0;
-local running=0;
-local advance=0;
-local handicap=0;
-local notdone=0;
-local average=0;
-local toopoor=0;
-for (local i=0; i < root.chemin.RListGetSize(); i++)
-	{
-	local temp=root.chemin.RListGetItem(i);
-	switch (temp.ROUTE.status)
-		{
-		case 0:
-		invalid++;
-		case 1:
-		notdone++;
-		}
-	if (temp.ROUTE.handicap>0)	{ handicap++; average+=temp.ROUTE.handicap;}
-	if (temp.ROUTE.isServed)	running++;
-	if (temp.ROUTE.ranking < root.minRank)	toopoor++;
-	local ispromote="";
-	if (temp.ROUTE.cargo_id == cargo_fav) ispromote="*";
-	if (temp.ROUTE.handicap > 0)
-		{
-		DInfo("#"+i+" "+temp.ROUTE.src_name+"-"+temp.ROUTE.dst_name+"("+ispromote+temp.ROUTE.cargo_name+") rating: "+temp.ROUTE.ranking+" handicap: "+temp.ROUTE.handicap+" foule: "+temp.ROUTE.foule+" status="+temp.ROUTE.status,2);
-		}
-	}
-advance=root.chemin.RListGetSize()-1-running-invalid-toopoor;
-if (handicap > 0) { average=average / handicap; }
-DInfo("Routes: "+(root.chemin.RListGetSize()-1)+" invalid:"+invalid+" running: "+running+" todo:"+advance+" handcap:"+handicap+" average="+average,2);
-}
-
-function cChemin::ShowStationCapacity()
-{
-if (!root.debug) return;
+if (!INSTANCE.debug) return;
 local stations=null;
-for (local i=0; i < root.chemin.GListGetSize(); i++)
+for (local i=0; i < INSTANCE.chemin.GListGetSize(); i++)
 	{
-	stations=root.chemin.GListGetItem(i);
+	stations=INSTANCE.chemin.GListGetItem(i);
 	local stuck="CLOSE - ";
 	if (stations.STATION.type != 0) stuck="UPGRADE -";
 	local outtxt=stuck+stations.STATION.e_count+" - "+stations.STATION.s_count;
@@ -130,20 +70,6 @@ for (local i=0; i < root.chemin.GListGetSize(); i++)
 	PutSign(outpos,outtxt);
 	}
 }
-
-function cChemin::FewRouteDump()
-{
-local cc=0;
-for (local i=0; i < root.chemin.RListGetSize(); i++)
-	{
-	local road=root.chemin.RListGetItem(i);
-	if (road.ROUTE.isServed) continue;
-	DInfo("ID:"+road.ROUTE.uniqID+" status="+road.ROUTE.status+" source="+road.ROUTE.src_name+" cargo="+road.ROUTE.cargo_name+" ranking="+road.ROUTE.ranking+" handicap="+road.ROUTE.handicap+"/"+road.ROUTE.foule);
-	cc++;
-	if (cc > 12) break;
-	}
-
-}
-
+*/
 
 

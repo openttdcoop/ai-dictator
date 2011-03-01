@@ -108,10 +108,10 @@ return new.Begin();
 function AIGetCargoFavorite()
 {
 local crglist=AICargoList();
-chemin.cargo_fav=AIBase.RandRange(crglist.Count());
-chemin.cargo_fav=ListGetItem(crglist, chemin.cargo_fav);
-DInfo("max cargo: "+crglist.Count()+" pick="+chemin.cargo_fav,1);
-DInfo("We will promote "+AICargo.GetCargoLabel(chemin.cargo_fav),0);
+cargo_favorite=AIBase.RandRange(crglist.Count());
+cargo_favorite=ListGetItem(crglist, cargo_favorite);
+DInfo("max cargo: "+crglist.Count()+" pick="+cargo_favorite,1);
+DInfo("We will promote "+AICargo.GetCargoLabel(cargo_favorite),0);
 }
 
 

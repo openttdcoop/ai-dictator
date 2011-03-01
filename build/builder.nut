@@ -31,15 +31,11 @@ static	DIR_SW = 3;
 	holestart=null;
 	holeend=null;
 	holes=null;
-	station_take=null;		// list of stations where we take products
-	station_drop=null;		// list of stations where we drop products
 	savedepot = null; 		// the tile of the last depot we have build
 	building_route = null;		// Keep here what route we are working on
 	
 	constructor()
 		{
-		station_take=AIList();
-		station_drop=AIList();
 		CriticalError=false;
 		building_route = -1;
 		}
@@ -70,6 +66,7 @@ switch (lasterror)
 	{
 	case AIError.ERR_NOT_ENOUGH_CASH:
 		INSTANCE.builder.CriticalError=false;
+		INSTANCE.bank.RaiseFundsBigTime();
 		return true;
 	break;
 	case AIError.ERR_NONE:
@@ -151,43 +148,38 @@ function cBuilder::GetDirection(tilefrom, tileto)
 	return ret;	
 }
 
-function cBuilder::BuildStation(idx,start)
+function cBuilder::BuildStation(start)
 // Build start station, reroute to the correct station builder depending on the road type to build
 {
-local what=INSTANCE.chemin.RListGetItem(idx);
 local success=false;
-switch (what.ROUTE.kind)
+switch (INSTANCE.route.route_type)
 	{
 	case AIVehicle.VT_ROAD:
-	success=INSTANCE.builder.BuildRoadStation(idx,start);
+	success=INSTANCE.builder.BuildRoadStation(start);
 	break;
 	case AIVehicle.VT_RAIL:
-	success=INSTANCE.builder.BuildTrainStation(idx,start);
+	success=INSTANCE.builder.BuildTrainStation(start);
 	break;
 	case AIVehicle.VT_WATER:
 	break;
 	case AIVehicle.VT_AIR:
-	success=INSTANCE.builder.BuildAirStation(idx,start);
+	success=INSTANCE.builder.BuildAirStation(start);
 	break;
 	}
 return success;
 }
 
-function cBuilder::BuildRoadByType(idx)
+function cBuilder::BuildRoadByType()
 // build the road, reroute to correct function depending on road type
 // for all except trains, src & dst = station location of start & destination station
-// for trains, src & dst = false stationID for trains pointing to our GList
 {
-local road=INSTANCE.chemin.RListGetItem(idx);
-INSTANCE.chemin.RListDumpOne(idx);
 local success=false;
-switch (road.ROUTE.kind)
+switch (INSTANCE.route.route_type)
 	{
 	case AIVehicle.VT_ROAD:
-	local srcstation=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
-	local dststation=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
-	local fromsrc=srcstation.STATION.e_loc; // road only use entry station
-	local todst=dststation.STATION.e_loc;
+	DInfo("source instance "+INSTANCE.route.source,1);
+	local fromsrc=INSTANCE.route.source.GetRoadStationEntry();
+	local todst=INSTANCE.route.target.GetRoadStationEntry();
 	DInfo("Calling road pathfinder: from src="+fromsrc+" to dst="+todst,2);
 	return INSTANCE.builder.BuildRoadROAD(fromsrc,todst);
 	break;
@@ -226,72 +218,40 @@ switch (road.ROUTE.kind)
 return success;
 }
 
-function cBuilder::FindCompatibleStationExistForAllCases(source, t_index, s_start, t_start)
-// Find if we have a station that can be re-use for nowRoute
-// source is our cChemin objet that is looking for a station
-// t_index is the index where we have stations to compare with source ones
-// s_start = source station start or end
-// t_start = target start or end
+function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
+// Find if we have a station that can be re-use for building_route
+// compare start(source/target) station we need vs stationID
 // return true if compatible
 {
-local target=INSTANCE.chemin.RListGetItem(t_index);
-local compareStationType=-1;
-local comparerealid=INSTANCE.builder.GetStationID(t_index,t_start);
-DInfo("Station id ="+comparerealid,2);
-// check the station is valid
-//if (!AIStation.IsValidStation(comparerealid))	{ return false; }
-// We need to find if the station can provide or accept the cargo we need
-local comparelocation=AIStation.GetLocation(comparerealid);
-compareStationType=INSTANCE.builder.GetStationType(comparerealid);
-DInfo("Station is type : "+compareStationType,2);
-if (compareStationType == -1) return false;
-// first the easy passengers road cases
-local cargo=AICargo.GetTownEffect(source.ROUTE.cargo_id);
-DInfo("cargo type="+source.ROUTE.cargo_name,2);
-if (compareStationType == AIStation.STATION_BUS_STOP && cargo != AICargo.TE_PASSENGERS) return false; // can only do pass
-if (compareStationType == AIStation.STATION_TRUCK_STOP && cargo == AICargo.TE_PASSENGERS) return false; // truck cannot do pass
-DInfo("We pass thru cargo checking",2);
-local radius=AIStation.GetCoverageRadius(compareStationType);
-local level=0;
-if (s_start)	level=AITile.GetCargoProduction(comparelocation,source.ROUTE.cargo_id,1,1,radius)+7; 
-	else	level=AITile.GetCargoAcceptance(comparelocation,source.ROUTE.cargo_id,1,1,radius);
-if (s_start)	{ DInfo("Station production level : "+level,2); }
-	else	{ DInfo("Station accept level : "+level,2); }
-if (compareStationType != 8) // airports are 8, we don't do that check, assume it will be ok
+local compare=cStation.GetStationObject(stationID);
+
+// find if station will accept our cargo
+if (start)
 	{
-	if (level < 8) { DInfo("Station doesn't accept/provide "+source.ROUTE.cargo_name,2); return false; }
+	if (!compare.cargo_produce.HasItem(INSTANCE.route.cargoID))	return false;
 	}
-else	{ DInfo("No production check for airports",2); }
+else	{
+	if (!compare.cargo_accept.HasItem(INSTANCE.route.cargoID))	return false;
+	}
 // here station are compatible, but still do that station is within our original station area ?
 DInfo("Checking if station is within area of our industry/town",2);
 local tilecheck = null;
 local goal=null;
 local startistown=false;
-if (s_start)	{ startistown=source.ROUTE.src_istown; goal=source.ROUTE.src_id; }
-	else	{ startistown=source.ROUTE.dst_istown; goal=source.ROUTE.dst_id; }
+if (start)	{ startistown=INSTANCE.route.source_istown; goal=INSTANCE.route.sourceID; }
+	else	{ startistown=INSTANCE.route.target_istown; goal=INSTANCE.route.targetID; }
 if (startistown)
 	{ // check if the station is also influencing our town
-	tilecheck=AIStation.IsWithinTownInfluence(comparerealid,goal);
-	if (compareStationType ==8)	// airports: as i don't really want to find the airport width and height
-		{ 			// and then compare each points within that w*h area for town influce
-		local aircheck=null;	// i just assume the airport was nicelly put and so if both id are equal
-		if (t_start)	{ aircheck=target.ROUTE.src_id; } // the airport is under the town influence
-			else	{ aircheck=target.ROUTE.dst_id; }
-		if (aircheck == goal)	tilecheck=true;
-				else	tilecheck=false;
-		}
-	if (tilecheck)	
-		{ DInfo("Station is within "+AITown.GetName(goal)+" influence",2); }
-	else	{
-		DInfo("Station is outside "+AITown.GetName(goal)+" influence",2);
-		return false;
-		}
+	tilecheck=AIStation.IsWithinTownInfluence(compare.stationID,goal);
+	if (!tilecheck)	return false;
 	}
 else	{ // check the station is within our industry
-	if (s_start)	tilecheck=AITileList_IndustryProducing(goal, radius);
-		else	tilecheck=AITileList_IndustryAccepting(goal, radius);
-	// if the station is in that list, the station touch the industry, nice
-	local touching=tilecheck.HasItem(comparelocation);
+	if (start)	tilecheck=AITileList_IndustryProducing(goal, compare.radius);
+		else	tilecheck=AITileList_IndustryAccepting(goal, compare.radius);
+	// if the station location is in that list, the station touch the industry, nice
+	local touching = false;
+	foreach (position, dummy in compare.locations)
+		{	if (tilecheck.HasItem(position))	touching = true; }
 	if (touching)
 		{ DInfo("Station is within our industry radius",2); }
 	else	{ DInfo("Station is outside "+AIIndustry.GetName(goal)+" radius",2);
@@ -300,19 +260,11 @@ else	{ // check the station is within our industry
 	}
 
 DInfo("Checking if station can accept more vehicles",1);
-if (!INSTANCE.carrier.CanAddNewVehicle(t_index, t_start))
+if (!INSTANCE.carrier.CanAddNewVehicle(compare.stationID))
 	{
 	DInfo("Station cannot get more vehicle, even compatible, we need a new one",1);
 	return false;
 	}
-
-local ss=null;
-local ds=null;
-if (s_start) ss="Source start";
-else	ss="Source end";
-if (t_start) ds="destination start";
-else	ds="destination end";
-DInfo(ss+" station is compatible with "+ds,1);
 return true;
 }
 
@@ -320,81 +272,28 @@ function cBuilder::FindCompatibleStationExists()
 // Find if we already have a station on a place
 // if compatible, we could link to use that station too
 {
-local sdepot=-1;
-local sstation=-1;
-local edepot=-1;
-local estation=-1;
-local sfound=false;
-local efound=false;
-local sidx=-1;
-local eidx=-1;
-local success=false;
+// find source station compatible
+local sList=AIStationList(INSTANCE.route.route_type);
 DInfo("Looking for a compatible station",1);
-for (local i=0; i < INSTANCE.chemin.RListGetSize(); i++)
+INSTANCE.builder.DumpRoute();
+local source_success=false;
+local target_success=false;
+if (!sList.IsEmpty())
 	{
-	if (i == idx)	continue; // ignore ourself
-	local temp=INSTANCE.chemin.RListGetItem(i); // load our compare chemin
-	if (!temp.ROUTE.isServed)	continue; // we only work on fully functional station
-	if (temp.ROUTE.kind != road.ROUTE.kind)	continue; // not same road type, station cannot be re-used
-	// upper filters should have removed a lot of incompatibles cases
-	DInfo("Analysing route "+i,2);
-	INSTANCE.chemin.RListDumpOne(i);
-	local test=false;
-	if (!sfound)
+	foreach (stations_check, dummy in sList)
 		{
-		test=INSTANCE.builder.FindCompatibleStationExistForAllCases(road,i,true,true);
-		if (test)	{ sidx=i; sfound=true; sdepot=temp.ROUTE.src_entry; sstation=temp.ROUTE.src_station; }
+		source_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(true, stations_check);
+		target_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(false, stations_check);
+		if (source_succcess)	INSTANCE.route.source_stationID=stations_check;
+		if (target_success)	INSTANCE.route.target_stationID=stations_check;
+		if (source_success && target_success)	break;
 		}
-	if (!sfound)
-		{
-		test=INSTANCE.builder.FindCompatibleStationExistForAllCases(road,i,true,false);
-		if (test)	{ sidx=i; sfound=true; sdepot=temp.ROUTE.dst_entry; sstation=temp.ROUTE.dst_station; }
-		}
-	if (!efound)
-		{
-		test=INSTANCE.builder.FindCompatibleStationExistForAllCases(road,i,false,true);
-		if (test)	{ eidx=i; efound=true; edepot=temp.ROUTE.src_entry; estation=temp.ROUTE.src_station; }
-		}
-	if (!efound)
-		{
-		test=INSTANCE.builder.FindCompatibleStationExistForAllCases(road,i,false,false);
-		if (test)	{ eidx=i; efound=true; edepot=temp.ROUTE.dst_entry; estation=temp.ROUTE.dst_station; }
-		}
-	if (sfound && efound)	break; // we have all we need
 	}
-if (sfound)	{
-		DInfo("Found a compatible station for our source station !",1);
-		road.ROUTE.src_entry=sdepot; road.ROUTE.src_station=sstation; }
-	else { DInfo("Failure, creating a new station for our source station.",1); }
-if (efound)	{
-		DInfo("Found a compatible station for our destination station !",1);
-		road.ROUTE.dst_entry=edepot; road.ROUTE.dst_station=estation; }
-	else { DInfo("Failure, creating a new station for our destination station.",1); }
-if (sfound && efound)
-	{
-/* this indicate we have found a starting & ending station re-usable -> that was our goal
-But our new road and that road could be a dual road like the case BUS:PASS:Paris->Nice and BUS:PASS:Nice->Paris
-We should delete Nice->Paris or Paris->Nice to keep only one route to enforce our vehicle limitation / route but it also could be not the case !!!
-like ROAD:GOLD:Paris->Nice & ROAD:MAIL:Nice->Paris or ROAD:MAIL:Paris-Nice, not doing the same work, but using the same road stations to carry the gold & mail, it would be really bad to remove such a route
-*/
-	if (eidx == sidx)
-		{ // both station have the same road idx, so it's two stations from same road == still we're not a dup if we don't carry the same thing. Like we do ROAD:MAIL:Paris->Nice/Paris and we just found a ROAD:GOLD:Paris/Nice route
-		local temp=INSTANCE.chemin.RListGetItem(sidx);
-		if (road.ROUTE.cargo_id == temp.ROUTE.cargo_id)
-				{ // now we're sure it's a dup (a twoway route and oneway is already running)
-				DInfo("Dup dual route found ! Ignoring it",1);
-				INSTANCE.chemin.RouteIsNotDoable(idx);
-				INSTANCE.builder.CriticalError=false; // tell caller about it
-				// here 2 choices: telling CriticalError=true so caller will just build 2 new stations & continue or CriticalError=false so caller will stop construction thinking we lack funds or something not critical, caller will end stopping construction
-				return false;
-				}
-			else	success=true;
-		}
-	else	{ success=true; }
-	}
-else	success=true;
-INSTANCE.chemin.RListUpdateItem(idx,road); // save it
-return success;
+
+if (source_success)	DInfo("Found a compatible station for our source station !",1);
+		else 	DInfo("Failure, creating a new station for our source station.",1);
+if (target_success)	DInfo("Found a compatible station for our destination station !",1);
+		else 	DInfo("Failure, creating a new station for our destination station.",1);
 }
 
 function cBuilder::TryBuildThatRoute()
@@ -410,108 +309,88 @@ if (INSTANCE.route.status==0) // not using switch/case so we can advance steps i
 		DWarn("There's no vehicle for that transport type we could use to carry that cargo",2);
 		return false;
 		}
-	else	{ INSTANCE.route.status=1; } // advance to phase 3
+	else	{ INSTANCE.route.status=1; } // advance to next phase
 	}
 if (INSTANCE.route.status==1)
 	{
-	success=INSTANCE.builder.FindCompatibleStationExists();
-	if (!success)
+	INSTANCE.builder.FindCompatibleStationExists();
+	if (INSTANCE.builder.IsCriticalError())	// we could get an error when checking to upgrade station
 		{
-		// failure to find a compatible station isn't critical, just mean we don't find one
-		// but we might have find one that wasn't able to be upgrade for a reason
-		if (!INSTANCE.builder.CriticalError)
-			{ // reason is not critical, lacking funds...
-			INSTANCE.chemin.RouteMalusHigher(idx);
+		if (INSTANCE.builder.CriticalError)
+			{
+			INSTANCE.builder.CriticalError = false; // unset it and keep going
+			}
+		else	{ // reason is not critical, lacking funds...
+			INSTANCE.build_delay=true;;
 			return false; // let's get out, so we still have a chance to upgrade the station & find its compatibility
 			}
-		// for a critical reason, we just continue to build with a new station
-		INSTANCE.builder.CriticalError=false; // unset it
 		}
-	INSTANCE.chemin.RouteStatusChange(idx,4);
+	INSTANCE.route.status=2;
 	}
 
-rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (INSTANCE.route.status==4)
+if (INSTANCE.route.status==2)
 	{
-	if (INSTANCE.route.src_station==-1)	{ success=INSTANCE.builder.BuildStation(idx,true); }
+	if (INSTANCE.route.source_stationID==null)	{ success=INSTANCE.builder.BuildStation(true); }
 		else	{ success=true; DInfo("Source station is already build, we're reusing an existing one",0); }
 	if (!success)
 		{ // it's bad we cannot build our source station, that's really bad !
 		if (INSTANCE.builder.CriticalError)
 			{
 			INSTANCE.builder.CriticalError=false;
-			INSTANCE.chemin.RouteIsNotDoable(idx); // get back to retry everything
+			INSTANCE.route.RouteIsNotDoable();
 			return false;
 			}
-		else	{ INSTANCE.chemin.RouteMalusHigher(idx); return false; }
+		else	{ INSTANCE.build_delay=true; return false; }
 		}
-	else { INSTANCE.chemin.RouteStatusChange(idx,5); }
+	else { INSTANCE.route.status=3; }
 	}
 
-rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (INSTANCE.route.status==5)	
+if (INSTANCE.route.status==3)	
 	{
-	if (INSTANCE.route.dst_station==-1)	{ success=INSTANCE.builder.BuildStation(idx,false); }
+	if (INSTANCE.route.target_stationID==null)	{ success=INSTANCE.builder.BuildStation(false); }
 		else	{ success=true; DInfo("Destination station is already build, we're reusing an existing one",0); }
 	if (!success)
 		{ // we cannot do destination station
 		if (INSTANCE.builder.CriticalError)
 			{
 			INSTANCE.builder.CriticalError=false;
-			INSTANCE.chemin.RouteIsNotDoable(idx);
+			INSTANCE.route.RouteIsNotDoable();
 			return false;
 			}
-		else	{ INSTANCE.chemin.RouteMalusHigher(idx); return false; }
+		else	{ INSTANCE.build_delay=true; return false; }
 		}
-	else	{ INSTANCE.chemin.RouteStatusChange(idx,6); }
+	else	{ INSTANCE.route.status=4 }
 	}
-rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (INSTANCE.route.status==6)
+if (INSTANCE.route.status==4)
 	{
-	INSTANCE.builder.route_start=idx;
-	success=INSTANCE.builder.BuildRoadByType(idx);
-	if (success)	{ INSTANCE.chemin.RouteStatusChange(idx,7); }
+	success=INSTANCE.builder.BuildRoadByType();
+	if (success)	{ INSTANCE.route.status=5; }
 		else	{
 			if (INSTANCE.builder.CriticalError)
 				{
-				INSTANCE.builder.DeleteStation(idx);
 				INSTANCE.builder.CriticalError=false;
-				INSTANCE.chemin.RouteIsNotDoable(idx);
+				INSTANCE.route.RouteIsNotDoable();
 				return false;
 				}
-			else	{ if (INSTANCE.secureStart > 0)	INSTANCE.builder.DeleteStation(idx);	}
-			} // and nothing more, stay at phase 6 to repathfind/rebuild the road when possible
+			else	{ if (INSTANCE.secureStart > 0)	INSTANCE.station.DeleteStation(INSTANCE.route.source_stationID); }
+			} // and nothing more, stay at that phase & rebuild road when possible
 	}
-rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (INSTANCE.route.status==7)
+if (INSTANCE.route.status==5)
 	{ // check the route is really valid
-	if (INSTANCE.route.kind == AIVehicle.VT_ROAD)
+	if (INSTANCE.route.route_type == AIVehicle.VT_ROAD)
 		{
-		success=INSTANCE.builder.CheckRoadHealth(idx);
+		success=INSTANCE.builder.CheckRoadHealth(INSTANCE.route.UID);
 		}
 	else	{ success=true; } // other route type for now are ok
-	if (success)	{ INSTANCE.chemin.RouteStatusChange(idx,8); }
-		else	{ INSTANCE.chemin.RouteIsNotDoable(idx); return false; }
+	if (success)	{ INSTANCE.route.status=6; }
+		else	{ INSTANCE.route.RouteIsnotDoable(); return false; }
 	}	
-rr=INSTANCE.chemin.RListGetItem(idx); // reload datas
-if (INSTANCE.route.status==8)
+if (INSTANCE.route.status==6)
 	{
-	DInfo("Route contruction complete ! "+INSTANCE.route.src_name+" to "+INSTANCE.route.dst_name,0);
-	INSTANCE.route.isServed=true;
-	INSTANCE.route.group_id=AIGroup.CreateGroup(INSTANCE.route.kind);
-	local groupname = AICargo.GetCargoLabel(INSTANCE.route.cargo_id)+"*"+INSTANCE.builder.GetStationID(idx,true)+"*"+INSTANCE.builder.GetStationID(idx,false);
-	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
-	INSTANCE.route.group_name=groupname;
-	INSTANCE.route.vehicule=0;
-	AIGroup.SetName(INSTANCE.route.group_id, INSTANCE.route.group_name);
-	INSTANCE.chemin.RListUpdateItem(idx,rr);
-	INSTANCE.chemin.RouteStatusChange(idx,100);
-	INSTANCE.builder.StationIsAccepting(INSTANCE.builder.GetStationID(idx,false));
-	INSTANCE.builder.StationIsProviding(INSTANCE.builder.GetStationID(idx,true));
+	INSTANCE.route.RouteDone();
+	DInfo("Route contruction complete ! "+INSTANCE.route.name,0);
 	INSTANCE.builddelay=true;
-	INSTANCE.chemin.map_group_to_route.AddItem(INSTANCE.route.group_id, idx);
-	INSTANCE.chemin.nowRoute=-1; // Allow us to work on a new route now
-	INSTANCE.builder.route_start=-1;
+	INSTANCE.builder.building_route=-1; // Allow us to work on a new route now
 	}
 return success;
 }

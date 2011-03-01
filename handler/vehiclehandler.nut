@@ -153,10 +153,10 @@ function cCarrier::AirNetworkOrdersHandler()
 local road=null;
 local isfirst=true;
 local rabbit=null;
-root.chemin.airnet_count=0;
-for (local j=0; j < root.chemin.RListGetSize(); j++)
+INSTANCE.chemin.airnet_count=0;
+for (local j=0; j < INSTANCE.chemin.RListGetSize(); j++)
 	{
-	road=root.chemin.RListGetItem(j);
+	road=INSTANCE.chemin.RListGetItem(j);
 	if (road.ROUTE.status!=999) continue; // only check 999 status, it's the "i'm part of network" status
 	//if (road.ROUTE.kind == 1000) continue;
 	local airlist=AIVehicleList_Group(road.ROUTE.group_id);
@@ -168,14 +168,14 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			{
 			rabbit=vehicle;
 			isfirst=false;
-			root.chemin.airnet_count++;
+			INSTANCE.chemin.airnet_count++;
 			numorders=AIOrder.GetOrderCount(rabbit);
-			if (numorders != root.chemin.virtual_air.len())
+			if (numorders != INSTANCE.chemin.virtual_air.len())
 				{
-				for (local i=0; i < root.chemin.virtual_air.len(); i++)
-				//foreach (town, location in root.chemin.virtual_air)
+				for (local i=0; i < INSTANCE.chemin.virtual_air.len(); i++)
+				//foreach (town, location in INSTANCE.chemin.virtual_air)
 					{
-				local location=root.chemin.virtual_air[i];
+				local location=INSTANCE.chemin.virtual_air[i];
 					if (!AIOrder.AppendOrder(rabbit, location, AIOrder.AIOF_FULL_LOAD_ANY))
 						{ DError("Aircraft network order refuse",2); }
 					}
@@ -189,7 +189,7 @@ for (local j=0; j < root.chemin.RListGetSize(); j++)
 			} // isfirst
 		else	{
 			AIOrder.ShareOrders(vehicle,rabbit);
-			root.chemin.airnet_count++;
+			INSTANCE.chemin.airnet_count++;
 			}
 		}
 	}
@@ -211,12 +211,12 @@ function cCarrier::VehicleBuildOrders(groupID)
 local vehlist=AIVehicleList_Group(groupID);
 if (vehlist.IsEmpty()) return false;
 local veh=vehlist.Begin();
-local idx=root.carrier.VehicleFindRouteIndex(veh);
-local road=root.chemin.RListGetItem(idx);
+local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
+local road=INSTANCE.chemin.RListGetItem(idx);
 local oneorder=null;
 local twoorder=null;
-local srcStation=root.chemin.GListGetItem(road.ROUTE.src_station);
-local dstStation=root.chemin.GListGetItem(road.ROUTE.dst_station);
+local srcStation=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
+local dstStation=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
 local srcplace=null;
 local dstplace=null;
 // setup everything before removing orders, as it could be dangerous for the poor vehicle to stay without orders a long time
@@ -247,19 +247,19 @@ switch (road.ROUTE.kind)
 	case AIVehicle.VT_WATER:
 	break;
 	case 1000: // it's the air network
-		root.carrier.AirNetworkOrdersHandler();
+		INSTANCE.carrier.AirNetworkOrdersHandler();
 		return true;
 	break;
 	}
 if (srcplace == null) srcplace=-1;
 if (dstplace == null) dstplace=-1;
 DInfo("Setting orders for route "+idx,2);
-root.carrier.VehicleOrdersReset(veh);
+INSTANCE.carrier.VehicleOrdersReset(veh);
 if (!AIOrder.AppendOrder(veh, srcplace, oneorder))
 	{ DError("First order refuse",2); }
 if (!AIOrder.AppendOrder(veh, dstplace, twoorder))
 	{ DError("Second order refuse",2); }
-root.carrier.AirNetworkOrdersHandler(); // re-add network aircraft to route
+INSTANCE.carrier.AirNetworkOrdersHandler(); // re-add network aircraft to route
 return true;
 }
 
@@ -287,13 +287,13 @@ local vehlist=null;
 local veh=null;
 local orderpos=null;
 local group=null;
-for (local i=0; i < root.chemin.RListGetSize(); i++)
+for (local i=0; i < INSTANCE.chemin.RListGetSize(); i++)
 	{
-	road=root.chemin.RListGetItem(i);
+	road=INSTANCE.chemin.RListGetItem(i);
 	orderpos=-1;
-	local srcstation=root.builder.GetStationID(i,true);
+	local srcstation=INSTANCE.builder.GetStationID(i,true);
 	if (srcstation == stationID)	orderpos=0;
-	local dststation=root.builder.GetStationID(i,false);
+	local dststation=INSTANCE.builder.GetStationID(i,false);
 	if (dststation == stationID)	orderpos=1;
 	group=road.ROUTE.group_id;
 	if (orderpos > -1)
@@ -307,7 +307,7 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
 				{ DError("Fail to remove order for vehicle "+veh,2); }
 			}
-		else	{ root.carrier.VehicleBuildOrders(group); }
+		else	{ INSTANCE.carrier.VehicleBuildOrders(group); }
 		}
 	}
 }
@@ -315,12 +315,12 @@ for (local i=0; i < root.chemin.RListGetSize(); i++)
 function cCarrier::VehicleSetDepotOrder(veh)
 // set all orders of the vehicle to force it going to a depot
 {
-local idx=root.carrier.VehicleFindRouteIndex(veh);
+local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 // One day i should check rogues vehicles running out of control from a route, but this shouldn't happen :p
-local homedepot=root.builder.GetDepotID(idx,true);
-if (homedepot==-1)	homedepot=root.builder.GetDepotID(idx,false); // TODO: might fail if vehicle don't have any depot to go
+local homedepot=INSTANCE.builder.GetDepotID(idx,true);
+if (homedepot==-1)	homedepot=INSTANCE.builder.GetDepotID(idx,false); // TODO: might fail if vehicle don't have any depot to go
 AIOrder.UnshareOrders(veh);
-root.carrier.VehicleOrdersReset(veh);
+INSTANCE.carrier.VehicleOrdersReset(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
 // And another one day i will kills all vehicles that refuse to go to a depot !!!
@@ -334,13 +334,13 @@ function cCarrier::VehicleSendToDepot(veh)
 // send a vehicle to depot
 {
 if (!AIVehicle.IsValidVehicle(veh))	return false;
-if (root.carrier.to_depot.HasItem(veh))	return false;
-root.carrier.VehicleSetDepotOrder(veh);
+if (INSTANCE.carrier.to_depot.HasItem(veh))	return false;
+INSTANCE.carrier.VehicleSetDepotOrder(veh);
 local understood=false;
 understood=AIVehicle.SendVehicleToDepot(veh);
 if (!understood) { DInfo(AIVehicle.GetName(veh)+" refuse to go to depot",1); }
-DInfo("Vehicle "+root.carrier.VehicleGetFormatString(veh)+" is going to depot ",0);
-root.carrier.to_depot.AddItem(veh,veh);
+DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot ",0);
+INSTANCE.carrier.to_depot.AddItem(veh,veh);
 }
 
 function cCarrier::VehicleGetFullCapacity(veh)
@@ -368,7 +368,7 @@ function cCarrier::VehicleFindRouteIndex(veh)
 // return index of the route the veh vehicle is running on
 {
 local group=AIVehicle.GetGroupID(veh);
-foreach (sgroup, sidx in root.chemin.map_group_to_route)
+foreach (sgroup, sidx in INSTANCE.chemin.map_group_to_route)
 	{
 	if (group == sgroup)	return sidx;
 	}
@@ -378,21 +378,21 @@ return -1;
 function cCarrier::VehicleUpgradeEngineAndWagons(veh)
 // we will try to upgrade engine and wagons for vehicle veh
 {
-local idx=root.carrier.VehicleFindRouteIndex(veh);
+local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 if (idx < 0)
 	{
-	DError("This vehicle "+root.carrier.VehicleGetFormatString(veh)+" is not use by any route !!!",1);
-	root.carrier.VehicleSell(veh);
+	DError("This vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is not use by any route !!!",1);
+	INSTANCE.carrier.VehicleSell(veh);
 	return false;
 	}
-local road=root.chemin.RListGetItem(idx);
+local road=INSTANCE.chemin.RListGetItem(idx);
 local group = AIVehicle.GetGroupID(veh);
 local engine = null;
 local wagon = null;
 local numwagon=AIVehicle.GetNumWagons(veh);
-local railtype = root.chemin.RouteGetRailType(idx);
+local railtype = INSTANCE.chemin.RouteGetRailType(idx);
 local newveh=null;
-local homedepot=root.builder.GetDepotID(idx,true);
+local homedepot=INSTANCE.builder.GetDepotID(idx,true);
 DInfo("Upgrading using depot at "+homedepot,2);
 PutSign(homedepot,"D");
 local money=0;
@@ -401,8 +401,8 @@ switch (AIVehicle.GetVehicleType(veh))
 	{
 	case AIVehicle.VT_RAIL:
 		AIRail.SetCurrentRailType(railtype);
-		engine = root.carrier.ChooseTrainEngine();
-		wagon = root.carrier.ChooseWagon(road.ROUTE.cargo_id);
+		engine = INSTANCE.carrier.ChooseTrainEngine();
+		wagon = INSTANCE.carrier.ChooseWagon(road.ROUTE.cargo_id);
 		newveh=AIVehicle.BuildVehicle(homedepot,engine);
 		AIVehicle.RefitVehicle(newveh, road.ROUTE.cargo_id);
 		local first=null;
@@ -412,7 +412,7 @@ switch (AIVehicle.GetVehicleType(veh))
 		AIVehicle.MoveWagonChain(first, 0, newveh, AIVehicle.GetNumWagons(veh) - 1);
 	break;
 	case AIVehicle.VT_ROAD:
-		engine = root.carrier.ChooseRoadVeh(road.ROUTE.cargo_id);
+		engine = INSTANCE.carrier.ChooseRoadVeh(road.ROUTE.cargo_id);
 		newveh=AIVehicle.BuildVehicle(homedepot,engine);
 		AIVehicle.RefitVehicle(newveh, road.ROUTE.cargo_id);
 	break;
@@ -420,38 +420,38 @@ switch (AIVehicle.GetVehicleType(veh))
 		local modele=AircraftType.EFFICIENT;
 		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
 		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
-		engine = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
-		root.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
+		engine = INSTANCE.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
+		INSTANCE.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
 		newveh = AIVehicle.BuildVehicle(homedepot,engine);
 	break;
 	case AIVehicle.VT_WATER:
 	return;
 	break;
 	}
-root.builder.IsCriticalError();
-root.builder.CriticalError=false;
+INSTANCE.builder.IsCriticalError();
+INSTANCE.builder.CriticalError=false;
 AIGroup.MoveVehicle(road.ROUTE.group_id,newveh);
 local oldenginename=AIEngine.GetName(AIVehicle.GetEngineType(veh));
 local newenginename=AIVehicle.GetName(newveh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(newveh))+")";
 if (AIVehicle.IsValidVehicle(newveh))
 	{
-	DInfo("-> Vehicle "+root.carrier.VehicleGetFormatString(veh)+" replace with "+root.carrier.VehicleGetFormatString(newveh),0);
+	DInfo("-> Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" replace with "+INSTANCE.carrier.VehicleGetFormatString(newveh),0);
 	AIVehicle.StartStopVehicle(newveh); // send it without orders, it should get catch
 	AIVehicle.SellWagonChain(veh,0);
-	root.carrier.VehicleSell(veh);
-	root.carrier.vehnextprice=0;
+	INSTANCE.carrier.VehicleSell(veh);
+	INSTANCE.carrier.vehnextprice=0;
 	}
 else	{
-	root.carrier.VehicleOrdersReset(veh); // because its orders are now goto depot, next vehicle check will catch it
+	INSTANCE.carrier.VehicleOrdersReset(veh); // because its orders are now goto depot, next vehicle check will catch it
 	AIVehicle.StartStopVehicle(veh);
 	}
-root.carrier.vehnextprice=0;
+INSTANCE.carrier.vehnextprice=0;
 }
 
 function cCarrier::VehicleIsTop_GetUniqID(engine, cargo)
 // return a uniqID for a vehicle engine type + cargo, as we can't have dup in a AIList()
 {
-return (engine+1)*root.chemin.IDX_HELPER+cargo;
+return (engine+1)*INSTANCE.chemin.IDX_HELPER+cargo;
 }
 
 function cCarrier::VehicleIsTop(veh)
@@ -467,34 +467,34 @@ local ourEngine=AIVehicle.GetEngineType(veh);
 switch (AIVehicle.GetVehicleType(veh))
 	{
 	case AIVehicle.VT_ROAD:
-		cargo=root.carrier.VehicleGetCargoType(veh);
-		uniqID=root.carrier.VehicleIsTop_GetUniqID(ourEngine, cargo);
-		if (root.carrier.top_vehicle.HasItem(uniqID))	return -1; // we know that engine is at top already
-		top = root.carrier.ChooseRoadVeh(cargo);
+		cargo=INSTANCE.carrier.VehicleGetCargoType(veh);
+		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, cargo);
+		if (INSTANCE.carrier.top_vehicle.HasItem(uniqID))	return -1; // we know that engine is at top already
+		top = INSTANCE.carrier.ChooseRoadVeh(cargo);
 	break;
 	case AIVehicle.VT_RAIL:
-		uniqID=root.carrier.VehicleIsTop_GetUniqID(ourEngine, 100);
-		if (root.carrier.top_vehicle.HasItem(uniqID))	return -1;
-		idx=root.carrier.VehicleFindRouteIndex(veh);
-		top = root.carrier.ChooseRailVeh(idx);
+		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, 100);
+		if (INSTANCE.carrier.top_vehicle.HasItem(uniqID))	return -1;
+		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
+		top = INSTANCE.carrier.ChooseRailVeh(idx);
 	break;
 	case AIVehicle.VT_WATER:
 	return;
 	break;
 	case AIVehicle.VT_AIR:
-		idx=root.carrier.VehicleFindRouteIndex(veh);
-		road=root.chemin.RListGetItem(idx);
+		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
+		road=INSTANCE.chemin.RListGetItem(idx);
 		local modele=AircraftType.EFFICIENT;
 		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
 		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
-		uniqID=root.carrier.VehicleIsTop_GetUniqID(ourEngine, modele);
-		if (root.carrier.top_vehicle.HasItem(uniqID))	return -1;
-		top = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
+		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, modele);
+		if (INSTANCE.carrier.top_vehicle.HasItem(uniqID))	return -1;
+		top = INSTANCE.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 	break;
 	}
 if (ourEngine == top)	{
 			DInfo("Adding engine "+AIEngine.GetName(ourEngine)+" to vehicle top list",1);
-			root.carrier.top_vehicle.AddItem(uniqID, ourEngine);
+			INSTANCE.carrier.top_vehicle.AddItem(uniqID, ourEngine);
 			return -1;
 			}
 		else	return top;
@@ -504,7 +504,7 @@ function cCarrier::VehicleOrderIsValid(vehicle,orderpos)
 // Really check if a vehicle order is valid
 {
 // for now i just disable orders check for chopper, find a better fix if this trouble us later
-local chopper=root.carrier.AircraftIsChopper(vehicle);
+local chopper=INSTANCE.carrier.AircraftIsChopper(vehicle);
 if (chopper) return true;
 
 local ordercount=AIOrder.GetOrderCount(vehicle);
@@ -548,9 +548,9 @@ return true;
 function cCarrier::VehicleMaintenance()
 // lookout our vehicles for troubles
 {
-if (root.chemin.under_upgrade)
+if (INSTANCE.chemin.under_upgrade)
 	{
-	root.bank.busyRoute=true;
+	INSTANCE.bank.busyRoute=true;
 	return;
 	}
 local tlist=AIVehicleList();
@@ -564,53 +564,53 @@ local name="";
 local price=0;
 foreach (vehicle, dummy in tlist)
 	{
-	if (root.carrier.to_depot.HasItem(vehicle))	continue;
+	if (INSTANCE.carrier.to_depot.HasItem(vehicle))	continue;
 	age=AIVehicle.GetAgeLeft(vehicle);
-	local topengine=root.carrier.VehicleIsTop(vehicle);
+	local topengine=INSTANCE.carrier.VehicleIsTop(vehicle);
 	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
 		else	 price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	price+=(0.5*price);
 	// add a 50% to price to avoid try changing an engine and running low on money because of fluctuating money
-	name=root.carrier.VehicleGetFormatString(vehicle);
+	name=INSTANCE.carrier.VehicleGetFormatString(vehicle);
 	local groupid=AIVehicle.GetGroupID(vehicle);
 	local vehgroup=AIVehicleList_Group(groupid);
 	if (age < 1095)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
-		if (!root.bank.CanBuyThat(price+root.carrier.vehnextprice)) continue;
+		if (!INSTANCE.bank.CanBuyThat(price+INSTANCE.carrier.vehnextprice)) continue;
 		DInfo("-> Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" days left), replacing it",0);
-		root.carrier.VehicleSendToDepot(vehicle);
-		root.bank.busyRoute=true;
+		INSTANCE.carrier.VehicleSendToDepot(vehicle);
+		INSTANCE.bank.busyRoute=true;
 		continue;
 		}
-	price=root.carrier.VehicleGetProfit(vehicle);
+	price=INSTANCE.carrier.VehicleGetProfit(vehicle);
 	DInfo("-> Vehicle "+name+" profits : "+price,2);
 	age=AIVehicle.GetAge(vehicle);
-	if (age > 240 && price < 0 && root.OneMonth > 3) // (3 months after new year)
+	if (age > 240 && price < 0 && INSTANCE.OneMonth > 3) // (3 months after new year)
 		{
 		DInfo("-> Vehicle "+name+" is not making profit, sending it to depot",0);
-		root.carrier.VehicleSendToDepot(vehicle);
-		age=root.carrier.VehicleFindRouteIndex(vehicle);
-		root.builder.RouteIsDamage(age);
+		INSTANCE.carrier.VehicleSendToDepot(vehicle);
+		age=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
+		INSTANCE.builder.RouteIsDamage(age);
 		}
 	age=AIVehicle.GetReliability(vehicle);
 	if (age < 30)
 		{
 		DInfo("-> Vehicle "+name+" reliability is low ("+age+"%), sending it for servicing at depot",0);
 		AIVehicle.SendVehicleToDepotForServicing(vehicle);
-		local idx=root.carrier.VehicleFindRouteIndex(vehicle);
-		root.builder.RouteIsDamage(idx);
-		root.bank.busyRoute=true;
+		local idx=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
+		INSTANCE.builder.RouteIsDamage(idx);
+		INSTANCE.bank.busyRoute=true;
 		continue;
 		}
 	if (topengine != -1)
 		{
 		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		// reserving money for the upgrade
-		if (root.carrier.vehnextprice==0)	root.carrier.vehnextprice+=price;
+		if (INSTANCE.carrier.vehnextprice==0)	INSTANCE.carrier.vehnextprice+=price;
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
-		root.carrier.VehicleSendToDepot(vehicle);
-		root.bank.busyRoute=true;
+		INSTANCE.carrier.VehicleSendToDepot(vehicle);
+		INSTANCE.bank.busyRoute=true;
 		continue;
 		}
 	age=AIOrder.GetOrderCount(vehicle);
@@ -618,17 +618,17 @@ foreach (vehicle, dummy in tlist)
 		{
 		local groupid=AIVehicle.GetGroupID(vehicle);
 		DInfo("-> Vehicle "+name+" have too few orders, trying to correct it",0);
-		root.carrier.VehicleBuildOrders(groupid);
+		INSTANCE.carrier.VehicleBuildOrders(groupid);
 		}
 	age=AIOrder.GetOrderCount(vehicle);
 	if (age < 2)
 		{
 		DInfo("-> Vehicle "+name+" have too few orders, sending it to depot",0);
-		root.carrier.VehicleSendToDepot(vehicle);
+		INSTANCE.carrier.VehicleSendToDepot(vehicle);
 		}
 	for (local z=AIOrder.GetOrderCount(vehicle)-1; z >=0; z--)
 		{ // I check backward to prevent z index gone wrong if an order is remove
-		if (!root.carrier.VehicleOrderIsValid(vehicle, z))
+		if (!INSTANCE.carrier.VehicleOrderIsValid(vehicle, z))
 			{
 			DInfo("-> Vehicle "+name+" have invalid order, removing orders "+z,0);
 			AIOrder.RemoveOrder(vehicle, z);
@@ -638,30 +638,30 @@ foreach (vehicle, dummy in tlist)
 local dlist=AIVehicleList();
 dlist.Valuate(AIVehicle.IsStoppedInDepot);
 dlist.KeepValue(1);
-if (!dlist.IsEmpty())	root.carrier.VehicleIsWaitingInDepot();
+if (!dlist.IsEmpty())	INSTANCE.carrier.VehicleIsWaitingInDepot();
 }
 
 function cCarrier::VehicleSell(veh)
 // sell the vehicle and update route info
 {
-local idx=root.carrier.VehicleFindRouteIndex(veh);
+local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 AIVehicle.SellWagonChain(veh, 0);
 AIVehicle.SellVehicle(veh);
 if (idx >= 0)
-	{ root.carrier.RouteAndStationVehicleCounterUpdate(idx); } // remove 1 from vehicle counters
+	{ INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(idx); } // remove 1 from vehicle counters
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 // Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
 {
-local road=root.chemin.RListGetItem(idx);
+local road=INSTANCE.chemin.RListGetItem(idx);
 local vehlist=null;
 if (road.ROUTE.group_id != -1)
 	{
 	vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 	foreach (vehicle in vehlist)
 		{
-		root.carrier.VehicleSendToDepot(vehicle);
+		INSTANCE.carrier.VehicleSendToDepot(vehicle);
 		}
 	foreach (vehicle in vehlist)
 		{
@@ -670,7 +670,7 @@ if (road.ROUTE.group_id != -1)
 		local wait=false;
 		do	{
 			AIController.Sleep(10);
-			root.carrier.VehicleIsWaitingInDepot();
+			INSTANCE.carrier.VehicleIsWaitingInDepot();
 			if (AIVehicle.IsValidVehicle(vehicle))	wait=true;
 			waitcount++;
 			if (waitcount > waitmax)	wait=false;
@@ -688,11 +688,11 @@ tlist.Valuate(AIVehicle.IsStoppedInDepot);
 tlist.KeepValue(1);
 foreach (i, dummy in tlist)
 	{
-	if (root.carrier.to_depot.HasItem(i))	root.carrier.to_depot.RemoveValue(i);
-	local istop=root.carrier.VehicleIsTop(i);
-	if (istop != -1)	{ root.carrier.VehicleUpgradeEngineAndWagons(i); }
-	DInfo("-> Sold Vehicle "+root.carrier.VehicleGetFormatString(i),0);
-	root.carrier.VehicleSell(i);
+	if (INSTANCE.carrier.to_depot.HasItem(i))	INSTANCE.carrier.to_depot.RemoveValue(i);
+	local istop=INSTANCE.carrier.VehicleIsTop(i);
+	if (istop != -1)	{ INSTANCE.carrier.VehicleUpgradeEngineAndWagons(i); }
+	DInfo("-> Sold Vehicle "+INSTANCE.carrier.VehicleGetFormatString(i),0);
+	INSTANCE.carrier.VehicleSell(i);
 	AIController.Sleep(1);
 	}
 }

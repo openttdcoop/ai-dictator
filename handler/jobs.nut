@@ -101,7 +101,7 @@ function cJobs::RankThisJob()
 	local valuerank=0;
 	local stationrank=0;
 	local cargorank=this.cargoValue;
-	if (INSTANCE.chemin.cargo_fav==this.cargoID)	cargorank=1.2*cargoValue; // 20% bonus for our favorite cargo
+	if (INSTANCE.cargo_favorite==this.cargoID)	cargorank=1.2*cargoValue; // 20% bonus for our favorite cargo
 	valuerank= cargorank * cargoAmount;
 	if (this.source_istown)
 		{
@@ -154,8 +154,8 @@ function cJobs::QuickRefresh()
 // refresh datas on first 5 doable objects
 	{
 	local smallList=AIList();
-	smallList.AddList(jobIndexer);
-	smallList.KeepValue(1);
+	smallList.AddList(jobDoable);
+//	smallList.KeepValue(1);
 	smallList.KeepTop(4);
 	foreach (item, value in smallList)	{ cJobs.RefreshValue(item); }
 	return smallList;
@@ -180,25 +180,14 @@ function cJobs::GetNextJob()
 	return smallList.Begin();
 	}
 
-function cJobs::RecheckDoable()
-// rebuild our doable list
-{
-}
-
-function cJobs::JobIsNotDoable()
-// mark the job as not doable
-	{
-	local myjob=GetJobObject(this.UID)
-	if (myjob == null) return;
-	myjob.isdoable=false;
-	}
-
 function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	{
 	local newjob=cJobs();
 	newjob.sourceID = srcID;
 	newjob.targetID = tgtID;
 	newjob.source_istown = src_istown;
+	// filters unwanted jobs, don't let aircraft do something other than pass/mail
+	if (road_type == AIVehicle.VT_AIR && (cargo_id != cCargo.GetMailCargo() || cargo_id != cCargo.GetPassengerCargo())) return;
 	newjob.target_istown = cCargo.IsCargoForTown(cargo_id);
 	if (newjob.source_istown)	newjob.source_location=AITown.GetLocation(srcID);
 			else		newjob.source_location=AIIndustry.GetLocation(srcID);
@@ -341,19 +330,10 @@ function cJobs::GetTransportList(distance)
 	local water_mindistance=GetTransportDistance(AIVehicle.VT_WATER,true,false);
 	//DInfo("Distances: Truck="+road_mindistance+"/"+road_maxdistance+" Aircraft="+air_mindistance+"/"+air_maxdistance+" Train="+rail_mindistance+"/"+rail_maxdistance+" Boat="+water_mindistance+"/"+water_maxdistance,2);
 	local goal=distance;
-//	if (kind==AICargo.TE_MAIL || kind==AICargo.TE_PASSENGERS)
-//	{
 	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(1,2*v_road); }
 	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(0,1*v_train); }
 	if (goal >= air_mindistance && goal <= air_maxdistance)		{ tweaklist.AddItem(3,4*v_air); }
 	if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(2,3*v_boat); }
-//	}
-//else	{ // indudstries have that effect, i won't allow something other than trucks&trains
-//	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(1,1*v_road); }
-//	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(2,2*v_train); }
-//	}
-	//DInfo("tweaklist "+tweaklist.Count());
-	//foreach (ttype, value in tweaklist)	DInfo("ttype = "+ttype+" value="+value);
 	tweaklist.RemoveValue(0);
 	return tweaklist;
 	}
@@ -374,6 +354,14 @@ function cJobs::IsTransportTypeEnable(transport_type)
 		}
 	}
 	
+function cJobs::JobIsNotDoable(uid)
+// set the undoable status for that jobs & rebuild our index
+	{
+	local badjob=cJobs.GetJobObject(uid);
+	badjob.isdoable=false;
+	cJobs.UpdateDoableJobs();
+	}
+
 function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
@@ -385,7 +373,6 @@ function cJobs::UpdateDoableJobs()
 		{
 		local doable=1;
 		local myjob=GetJobObject(id);
-		DInfo("Dump: "+myjob.sourceID+" "+myjob.targetID+" "+myjob.distance,2);
 		doable=myjob.isdoable;
 		// not doable if not doable
 		if (doable && myjob.isUse)	doable=false;
@@ -397,7 +384,6 @@ function cJobs::UpdateDoableJobs()
 			{
 			local curmax = GetTransportDistance(myjob.roadType, false, !INSTANCE.bank.unleash_road);
 			if (curmax < myjob.distance)	doable=false;
-			DInfo("currmax="+curmax+" dist="+myjob.distance+" ");
 			}
 		if (doable)
 		// not doable if any parent is already in use
@@ -408,7 +394,7 @@ function cJobs::UpdateDoableJobs()
 		//INSTANCE.Sleep(1);
 		}
 	jobDoable.Sort(AIList.SORT_BY_VALUE, false);
-	DInfo("JOBS -> "+jobIndexer.Count()+" jobs known",2);
+	DInfo("JOBS -> "+jobIndexer.Count()+" jobs found",2);
 	DInfo("JOBS -> "+jobDoable.Count()+" jobs doable",2);
 	//foreach (id, value in jobDoable)	{ DInfo("After update: "+id+" - "+value,2); }
 	}
@@ -421,7 +407,7 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 		else	position=AIIndustry.GetLocation(industryID);
 //	local smaxLimit= INSTANCE.bank.unleash_road; // backup 
 //	INSTANCE.bank.unleash_road=true;
-	local cargoList=GetJobSourceCargoList(industryID, false);
+	local cargoList=GetJobSourceCargoList(industryID, istown);
 	//DInfo("Industry provide "+cargoList.Count()+" cargo",2);
 	foreach (cargoid, cargodummy in cargoList)
 		{
@@ -471,5 +457,5 @@ foreach (ID, dummy in townjobs)
 		INSTANCE.Sleep(1);
 		}
 	}
-
+cJobs.UpdateDoableJobs();
 }

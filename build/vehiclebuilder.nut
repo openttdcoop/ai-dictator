@@ -21,7 +21,19 @@ enum AircraftType {
 class cCarrier
 {
 static	AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
-	root = null;
+static	IDX_HELPER = 512;		// use to create an uniq ID (also use to set handicap value)
+static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that value population
+
+	rail_max=null;		// maximum trains vehicle a station can handle
+	road_max=null;		// maximum road vehicle a station can handle
+	air_max=null;		// maximum aircraft a station can handle
+	airnet_max=null;	// maximum aircraft on a network
+	airnet_count=null;	// current number of aircrafts running the network
+	water_max=null;		// maximum ships a station can handle
+	road_max_onroute=null;  // maximum road vehicle on a route
+
+//	under_upgrade=null;	// true when we are doing upgrade on something
+
 	vehnextprice=null;	// we just use that to upgrade vehicle
 	top_vehicle=null;	// the list of vehicle engine id we know cannot be upgrade
 	to_depot=null;		// list the vehicle going to depot
@@ -53,34 +65,34 @@ function cCarrier::VehicleGetProfit(veh)
 {
 local profit=AIVehicle.GetProfitThisYear(veh);
 local oldprofit=0;
-if (root.carrier.do_profit.HasItem(veh))	oldprofit=root.carrier.do_profit.GetValue(veh);
-					else	root.carrier.do_profit.AddItem(veh,0);
+if (INSTANCE.carrier.do_profit.HasItem(veh))	oldprofit=INSTANCE.carrier.do_profit.GetValue(veh);
+					else	INSTANCE.carrier.do_profit.AddItem(veh,0);
 if (profit > oldprofit)	oldprofit=profit - oldprofit;
 		else	oldprofit=oldprofit+profit;
-root.carrier.do_profit.SetValue(veh, oldprofit);
+INSTANCE.carrier.do_profit.SetValue(veh, oldprofit);
 return oldprofit;
 }
 
 function cCarrier::CanAddNewVehicle(roadidx, start) // TODO: the new RoadStationUpgrade can now support easy upto 6 stations
 // check if we can add another vehicle at the start/end station of that route
 {
-local road=root.chemin.RListGetItem(roadidx);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
 local thatstation=null;
 local thatentry=null;
-if (start)	{ thatstation=root.chemin.GListGetItem(road.ROUTE.src_station);	}
-else		{ thatstation=root.chemin.GListGetItem(road.ROUTE.dst_station);	}
+if (start)	{ thatstation=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);	}
+else		{ thatstation=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);	}
 local divisor=0;
 switch (road.ROUTE.kind)
 	{
 	case AIVehicle.VT_ROAD:
 		if (thatstation.STATION.type==0)
 			{ // max size already
-			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false; 
+			if (thatstation.STATION.e_count+1 > INSTANCE.chemin.road_max) return false; 
 			}
 		else	{ // not yet upgrade
-			if (thatstation.STATION.e_count > root.chemin.road_max_onroute && root.secureStart == 0)
-				root.builder.RoadStationNeedUpgrade(roadidx,start);
-			if (thatstation.STATION.e_count+1 > root.chemin.road_max) return false;
+			if (thatstation.STATION.e_count > INSTANCE.chemin.road_max_onroute && INSTANCE.secureStart == 0)
+				INSTANCE.builder.RoadStationNeedUpgrade(roadidx,start);
+			if (thatstation.STATION.e_count+1 > INSTANCE.chemin.road_max) return false;
 			}
 	break;
 	case AIVehicle.VT_RAIL:
@@ -91,22 +103,22 @@ switch (road.ROUTE.kind)
 			// can't build more than the station size
 			}
 		else	{ // we could upgrade it, assuming it can be upgrade, we still don't go higher than our limit
-			return root.builder.TrainStationNeedUpgrade(roadidx,start);
+			return INSTANCE.builder.TrainStationNeedUpgrade(roadidx,start);
 			}
 	break;
 	case AIVehicle.VT_WATER:
-	if (thatstation.STATION.e_count+1 > root.chemin.water_max) return false;
+	if (thatstation.STATION.e_count+1 > INSTANCE.chemin.water_max) return false;
 	break;
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
-		local aircraftMax=root.chemin.air_max; // max aircraft for non network airport
+		local aircraftMax=INSTANCE.chemin.air_max; // max aircraft for non network airport
 		local aircraftCurrent=thatstation.STATION.e_count+1; // number of aircraft for non network airport
-		local currAirport=root.builder.GetAirportType();
-		local maxperairport=root.carrier.AirportTypeLimit[currAirport];
+		local currAirport=INSTANCE.builder.GetAirportType();
+		local maxperairport=INSTANCE.carrier.AirportTypeLimit[currAirport];
 		DInfo("currAirportType="+currAirport+" limit/airport="+maxperairport,2);
 		if (road.ROUTE.kind==1000)
 			{ // in the network
-			aircraftCurrent=root.chemin.airnet_count+1;
-			aircraftMax=root.chemin.airnet_max * (root.chemin.virtual_air.len()-1);
+			aircraftCurrent=INSTANCE.chemin.airnet_count+1;
+			aircraftMax=INSTANCE.chemin.airnet_max * (INSTANCE.chemin.virtual_air.len()-1);
 			}
 		if (aircraftMax > maxperairport)	aircraftMax=maxperairport; // per airport type limitation
 		DInfo("Limit for aircraft "+aircraftCurrent+"/"+aircraftMax,2);
@@ -119,7 +131,7 @@ return true;
 function cCarrier::CloneRoadVehicle(roadidx)
 // add another Vehicle on that route, sharing orders
 {
-local road=root.chemin.RListGetItem(roadidx);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
 local vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 vehlist.Valuate(AIOrder.IsGotoDepotOrder,AIOrder.ORDER_CURRENT);
 vehlist.KeepValue(0);
@@ -129,14 +141,14 @@ if (vehlist.IsEmpty())
 	return false;
 	}
 // first check we can add one more vehicle to start or ending station
-if (!root.carrier.CanAddNewVehicle(roadidx,true) || !root.carrier.CanAddNewVehicle(roadidx,false))
+if (!INSTANCE.carrier.CanAddNewVehicle(roadidx,true) || !INSTANCE.carrier.CanAddNewVehicle(roadidx,false))
 	{
 	DWarn("One station on that route is full, cannot add more vehicle",1);
 	return false;
 	}
 local veh=vehlist.Begin();
 local price = AIEngine.GetPrice(AIVehicle.GetEngineType(veh));
-root.bank.RaiseFundsBy(price);
+INSTANCE.bank.RaiseFundsBy(price);
 local startdepot=true;
 local switcher=false;
 if (AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_PASSENGERS || AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_MAIL)
@@ -148,11 +160,11 @@ if (road.ROUTE.vehicule%2 != 0 && switcher) // impair Vehicle selection, because
 	{ startdepot=false; }*/ // we are creating a new bus, we don't really care where it will start
 // but it's a good idea to build it at destination, and route it directly to destination station
 
-local newveh=AIVehicle.CloneVehicle(root.builder.GetDepotID(roadidx,startdepot),veh,true);
+local newveh=AIVehicle.CloneVehicle(INSTANCE.builder.GetDepotID(roadidx,startdepot),veh,true);
 if (!AIVehicle.IsValidVehicle(newveh))
 	{ DWarn("Cannot buy the vehicle : "+price,2); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(newveh),1); }
-root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
+INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 if (!AIVehicle.StartStopVehicle(newveh))
 	{ DError("Cannot start the vehicle :",1); return false; }
 if (!startdepot)	AIOrder.SkipToOrder(newveh, 1);
@@ -163,27 +175,27 @@ return true;
 function cCarrier::BuildAndStartVehicle(idx,duplicate)
 // Create a new vehicle on route or duplicate one
 {
-local road=root.chemin.RListGetItem(idx);
+local road=INSTANCE.chemin.RListGetItem(idx);
 local res=true;
 switch (road.ROUTE.kind)
 	{
 	case AIVehicle.VT_ROAD:
-	if (duplicate)	res=root.carrier.CloneRoadVehicle(idx);
-		else	res=root.carrier.CreateRoadVehicle(idx);
+	if (duplicate)	res=INSTANCE.carrier.CloneRoadVehicle(idx);
+		else	res=INSTANCE.carrier.CreateRoadVehicle(idx);
 	break;
 	case AIVehicle.VT_RAIL:
-	if (duplicate)	{ } //root.carrier.CloneRoadVehicle(idx);
-		else	res=root.carrier.CreateRailVehicle(idx);
+	if (duplicate)	{ } //INSTANCE.carrier.CloneRoadVehicle(idx);
+		else	res=INSTANCE.carrier.CreateRailVehicle(idx);
 	break;
 	case AIVehicle.VT_WATER:
 	break;
 	case AIVehicle.VT_AIR:
-	if (duplicate)	{ res=root.carrier.CloneAirVehicle(idx); }
-		else	{ res=root.carrier.CreateAirVehicle(idx); }
+	if (duplicate)	{ res=INSTANCE.carrier.CloneAirVehicle(idx); }
+		else	{ res=INSTANCE.carrier.CreateAirVehicle(idx); }
 	break;
 	case 1000:
-	if (duplicate)	{ res=root.carrier.CloneAirVehicle(idx); }
-		else	{ res=root.carrier.CreateAirVehicle(idx); }
+	if (duplicate)	{ res=INSTANCE.carrier.CloneAirVehicle(idx); }
+		else	{ res=INSTANCE.carrier.CreateAirVehicle(idx); }
 	break;
 	}
 return res;
@@ -192,7 +204,7 @@ return res;
 function cCarrier::RouteAndStationVehicleCounterUpdate(roadidx)
 // Update the route and stations vehicle counters
 {
-local road=root.chemin.RListGetItem(roadidx);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
 local entry=true;
 local station_id=0;
 local station=null;
@@ -204,34 +216,34 @@ if (road.ROUTE.group_id > -1)
 	}
 else	road.ROUTE.vehicule=0;
 
-station=root.chemin.GListGetItem(road.ROUTE.src_station);
+station=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
 vehgroup=AIVehicleList_Station(station.STATION.station_id);
 entry=road.ROUTE.src_entry;
 if (entry)	{ station.STATION.e_count=vehgroup.Count(); }
 	else	{ station.STATION.s_count=vehgroup.Count(); }
-root.chemin.GListUpdateItem(road.ROUTE.src_station,station);
-station=root.chemin.GListGetItem(road.ROUTE.dst_station);
+INSTANCE.chemin.GListUpdateItem(road.ROUTE.src_station,station);
+station=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
 vehgroup=AIVehicleList_Station(station.STATION.station_id);
 entry=road.ROUTE.dst_entry;
 if (entry)	{ station.STATION.e_count=vehgroup.Count(); }
 	else	{ station.STATION.s_count=vehgroup.Count(); }
-root.chemin.GListUpdateItem(road.ROUTE.dst_station,station);
-root.chemin.RListUpdateItem(roadidx,road);
+INSTANCE.chemin.GListUpdateItem(road.ROUTE.dst_station,station);
+INSTANCE.chemin.RListUpdateItem(roadidx,road);
 }
 
 function cCarrier::CreateRoadVehicle(roadidx)
 // Build first Vehicle of a road
 {
-local road=root.chemin.RListGetItem(roadidx);
-local srcplace = AIStation.GetLocation(root.builder.GetStationID(roadidx,true));
-local dstplace = AIStation.GetLocation(root.builder.GetStationID(roadidx,false));
+local road=INSTANCE.chemin.RListGetItem(roadidx);
+local srcplace = AIStation.GetLocation(INSTANCE.builder.GetStationID(roadidx,true));
+local dstplace = AIStation.GetLocation(INSTANCE.builder.GetStationID(roadidx,false));
 local cargoid= road.ROUTE.cargo_id;
-local veh = root.carrier.ChooseRoadVeh(cargoid);
-local homedepot = root.builder.GetDepotID(roadidx,true);
+local veh = INSTANCE.carrier.ChooseRoadVeh(cargoid);
+local homedepot = INSTANCE.builder.GetDepotID(roadidx,true);
 local price = AIEngine.GetPrice(veh);
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
-root.bank.RaiseFundsBy(price);
+INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
 	{ DWarn("Cannot buy the vehicle :",1); return false; }
@@ -252,14 +264,14 @@ AIGroup.MoveVehicle(road.ROUTE.group_id, firstveh);
 AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
-root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
+INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 return true;
 }
 
 function cCarrier::CloneAirVehicle(roadidx)
 // add another Vehicle on that route, sharing orders
 {
-local road=root.chemin.RListGetItem(roadidx);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
 local vehlist=AIVehicleList_Group(road.ROUTE.group_id);
 if (vehlist.IsEmpty())
 	{
@@ -267,25 +279,25 @@ if (vehlist.IsEmpty())
 	return false;
 	}
 // first check we can add one more vehicle to start or ending station
-if (!root.carrier.CanAddNewVehicle(roadidx,true) || !root.carrier.CanAddNewVehicle(roadidx,false))
+if (!INSTANCE.carrier.CanAddNewVehicle(roadidx,true) || !INSTANCE.carrier.CanAddNewVehicle(roadidx,false))
 	{
 	DWarn("One airport is full, cannot add more aircrafts",1);
 	return false;
 	}
 local veh=vehlist.Begin();
 local price = AIEngine.GetPrice(AIVehicle.GetEngineType(veh));
-root.bank.RaiseFundsBy(price);
+INSTANCE.bank.RaiseFundsBy(price);
 local startdepot=true;
 local switcher=true;
 if (road.ROUTE.vehicule%2 != 0 && switcher) // impair vehicule selection, because impair+1 = pair :)
 	{ startdepot=false; }
 // but it's a good idea to build it at destination, and route it directly to destination station
 if (!road.ROUTE.src_entry)	startdepot=false;
-local newveh=AIVehicle.CloneVehicle(root.builder.GetDepotID(roadidx,startdepot),veh,true);
+local newveh=AIVehicle.CloneVehicle(INSTANCE.builder.GetDepotID(roadidx,startdepot),veh,true);
 if (!AIVehicle.IsValidVehicle(newveh))
 	{ DWarn("Cannot buy the vehicle :"+price,2); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(newveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(newveh)),1); }
-root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
+INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 if (!startdepot)	AIOrder.SkipToOrder(newveh, 1);
 if (!AIVehicle.StartStopVehicle(newveh))
 	{ DError("Cannot start the vehicle :",1); return false; }
@@ -297,15 +309,15 @@ return true;
 function cCarrier::CreateAirVehicle(roadidx)
 // Build first vehicule of an air route
 {
-local road=root.chemin.RListGetItem(roadidx);
-local srcplace = AIStation.GetLocation(root.builder.GetStationID(roadidx,true));
-local dstplace = AIStation.GetLocation(root.builder.GetStationID(roadidx,false));
-local homedepot = root.builder.GetDepotID(roadidx,true);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
+local srcplace = AIStation.GetLocation(INSTANCE.builder.GetStationID(roadidx,true));
+local dstplace = AIStation.GetLocation(INSTANCE.builder.GetStationID(roadidx,false));
+local homedepot = INSTANCE.builder.GetDepotID(roadidx,true);
 local cargoid = road.ROUTE.cargo_id;
 if (!road.ROUTE.src_entry) // platform use no entry
 	{
 	srcplace = AIIndustry.GetHeliportLocation(road.ROUTE.src_place);
-	homedepot = root.builder.GetDepotID(roadidx,false);
+	homedepot = INSTANCE.builder.GetDepotID(roadidx,false);
 	}
 DInfo("srcplace="+srcplace+" dstplace="+dstplace,2);
 PutSign(srcplace,"Route "+roadidx+" Source Airport ");
@@ -313,11 +325,11 @@ PutSign(dstplace,"Route "+roadidx+" Destination Airport");
 local modele=AircraftType.EFFICIENT;
 if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST; // top speed/capacity for network
 if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER; // need a chopper
-local veh = root.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
+local veh = INSTANCE.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
 local price = AIEngine.GetPrice(veh);
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
-root.bank.RaiseFundsBy(price);
+INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
 	{ DWarn("Cannot buy the vehicle :",1); return false; }
@@ -333,19 +345,19 @@ AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!road.ROUTE.src_entry)	AIOrder.SkipToOrder(firstveh, 1);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
 AIGroup.MoveVehicle(road.ROUTE.group_id, firstveh);
-root.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
+INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 return true;
 }
 
 function cCarrier::GetRailVehicle(idx)
 // get a rail vehicle
 {
-local road= root.chemin.RListGetItem(idx);
-local veh = root.carrier.ChooseRailVeh(idx);
+local road= INSTANCE.chemin.RListGetItem(idx);
+local veh = INSTANCE.carrier.ChooseRailVeh(idx);
 if (veh == null)	{
 			DError("No suitable train to buy !",1);
-			road=root.chemin.RouteMalusHigher(road);
-			root.chemin.RListUpdateItem(root.chemin.nowJob,road);
+			road=INSTANCE.chemin.RouteMalusHigher(road);
+			INSTANCE.chemin.RListUpdateItem(INSTANCE.chemin.nowJob,road);
 			return -1;
 			}
 DInfo("Choosen train: "+AIEngine.GetName(veh),2);
@@ -506,7 +518,7 @@ switch (INSTANCE.route.route_type)
 	success=INSTANCE.carrier.GetRoadVehicle();
 	break;
 	case RouteType.RAIL:
-	//success=root.carrier.GetRailVehicle(idx);
+	//success=INSTANCE.carrier.GetRailVehicle(idx);
 	successs=false;
 	break;
 	case RouteType.WATER:
@@ -523,16 +535,16 @@ return success;
 
 function cCarrier::CreateRailVehicle(roadidx)
 {
-local road=root.chemin.RListGetItem(roadidx);
-local real_src_id=root.chemin.GListGetItem(road.ROUTE.src_station);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
+local real_src_id=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
 local srcplace = real_src_id.STATION.station_id; // train real station is there
 DInfo("src station is valid :"+AIStation.IsValidStation(srcplace),1);
-local real_dst_id=root.chemin.GListGetItem(road.ROUTE.dst_station);
+local real_dst_id=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
 local dstplace = real_dst_id.STATION.station_id;
 DInfo("dst station is valid :"+AIStation.IsValidStation(dstplace),1);
 local cargoid= road.ROUTE.cargo_id;
-local veh = root.carrier.ChooseRailVeh(roadidx);
-local wagon = root.carrier.ChooseWagon(road.ROUTE.cargo_id);
+local veh = INSTANCE.carrier.ChooseRailVeh(roadidx);
+local wagon = INSTANCE.carrier.ChooseWagon(road.ROUTE.cargo_id);
 local homedepot = real_src_id.STATION.e_depot;
 local price = AIEngine.GetPrice(veh);
 price+=AIEngine.GetPrice(wagon)*5;
@@ -540,7 +552,7 @@ local length = 5;
 DInfo("Stationid: "+srcplace+" "+AIStation.GetName(srcplace),2);
 DInfo("Depotid: "+homedepot,2);
 if (veh == null) return false;
-if (!root.bank.RaiseFundsBy(price))
+if (!INSTANCE.bank.RaiseFundsBy(price))
 	{
 	DWarn("I don't have enough money to buy that train and its wagons "+AIEngine.GetName(veh),1);
 	return false;

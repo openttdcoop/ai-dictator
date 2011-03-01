@@ -31,25 +31,25 @@ local stationfakeID=-1;
 local start=true;
 DInfo("looking for "+thatstat,2);
 
-for (local i=0; i < root.chemin.GListGetSize(); i++) // loop gare
+for (local i=0; i < INSTANCE.chemin.GListGetSize(); i++) // loop gare
 	{
-	temp=root.chemin.GListGetItem(i);
+	temp=INSTANCE.chemin.GListGetItem(i);
 	if (temp.STATION.station_id == thatstat)	{ stationfakeID=i; break;}
 	else DInfo("Fail with "+temp.STATION.station_id+" at "+i,2);
 	}
 DInfo("StationID ="+stationfakeID,2);
 local tempr=null;
 local idx=-1;
-for (local j=0; j < root.chemin.RListGetSize(); j++) // loop routes
+for (local j=0; j < INSTANCE.chemin.RListGetSize(); j++) // loop routes
 	{
-	tempr=root.chemin.RListGetItem(j);
+	tempr=INSTANCE.chemin.RListGetItem(j);
 	if (tempr.ROUTE.src_station == stationfakeID)	{ idx=j; break; start=true;}
 	if (tempr.ROUTE.dst_station == stationfakeID)	{ idx=j; break; start=false;}
 	}
 DInfo("Route that use that station is "+idx,2);
 if (idx != -1)
 	{
-	root.builder.TrainStationNeedUpgrade(idx,start);
+	INSTANCE.builder.TrainStationNeedUpgrade(idx,start);
 	}
 }
 
@@ -58,8 +58,8 @@ function cBuilder::TrainStationNeedUpgrade(roadidx,start)
 // many many failures could occurs, in the best world, we can go upto a 2 in/ou usable 12 ways railway
 // we return true on success
 {
-local road=root.chemin.RListGetItem(roadidx);
-if (root.builder.TryUpgradeTrainStation(roadidx,start))
+local road=INSTANCE.chemin.RListGetItem(roadidx);
+if (INSTANCE.builder.TryUpgradeTrainStation(roadidx,start))
 	{
 	DInfo("Train station "+AIStation.GetName(stationobj.STATION.station_id)+" has been upgrade",0);
 	}
@@ -67,13 +67,13 @@ else	{
 	local station=null;
 	if (start)	station=road.ROUTE.src_station;
 		else	station=road.ROUTE.dst_station;
-	local stationobj=root.chemin.GListGetItem(station);
-	if (root.builder.CriticalError)
+	local stationobj=INSTANCE.chemin.GListGetItem(station);
+	if (INSTANCE.builder.CriticalError)
 		{
-		root.builder.CriticalError=false;
+		INSTANCE.builder.CriticalError=false;
 		DInfo("Critical failure to upgrade station "+AIStation.GetName(stationobj.STATION.station_id),1);
 		stationobj.STATION.type=0; // no more upgrade possible
-		root.chemin.GListUpdateItem(station,stationobj);
+		INSTANCE.chemin.GListUpdateItem(station,stationobj);
 		}
 	else	{ DInfo("Cannot upgrade train station "+AIStation.GetName(stationobj.STATION.station_id)+" for now, will retry later",1); }
 	}
@@ -84,11 +84,11 @@ return false;
 function cBuilder::TryUpgradeTrainStation(roadidx,start)
 // called by TrainStationNeedUpgrade, do the upgrade, just return false on error
 {
-local road=root.chemin.RListGetItem(roadidx);
-local stationID = root.builder.GetStationID(roadidx,start);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
+local stationID = INSTANCE.builder.GetStationID(roadidx,start);
 local stationInfo = null;
-if (start) 	stationInfo=root.chemin.GListGetItem(road.ROUTE.src_station);
-	else	stationInfo=root.chemin.GListGetItem(road.ROUTE.dst_station);
+if (start) 	stationInfo=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
+	else	stationInfo=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
 local location=AIStation.GetLocation(stationInfo.STATION.station_id);
 local direction=AIRail.GetRailStationDirection(location);
 local railtype=AIRail.GetRailType(location);
@@ -124,10 +124,10 @@ switch (direction)
 	break;
 	}
 local leftSide=false;
-local testSide=root.builder.ValidateLocation(location, direction, width, 4); // ok
+local testSide=INSTANCE.builder.ValidateLocation(location, direction, width, 4); // ok
 if (!testSide) // left side cannot be upgrade
 	{
-	testSide==root.builder.ValidateLocation(location+right, direction, width, 4); // ok
+	testSide==INSTANCE.builder.ValidateLocation(location+right, direction, width, 4); // ok
 	if (testSide)	{ leftSide=false; } // right can be upgrade
 		else	{ return false; } // tell caller we fail & let it handle that
 	}
@@ -141,8 +141,8 @@ if (leftSide)	{ basetile=sleft; }
 
 //if (!AIRail.BuildRailStation(basetile
 /*testSide=AIRail.BuildRailStation(basetile+location, direction, 1, 5, AIStation.STATION_JOIN_ADJACENT);
-if (root.builder.IsCriticalError()) return false;*/
-root.builder.BaseStationRailBuilder(stationInfo,location+basetile);
+if (INSTANCE.builder.IsCriticalError()) return false;*/
+INSTANCE.builder.BaseStationRailBuilder(stationInfo,location+basetile);
 return true;
 }
 
@@ -163,12 +163,12 @@ local fakestation=[0,0, 0,1, -1,1, -2,1, -3,1, -4,1]; // 5 simple rail
 
 local connectionbase=[1,1 1,8, 2,2]; // that's the one rail in front + rail going right to join another rail at its right
 local connectionvoisin=[0,0, -2,3]; // that's one rail connecting to the left neightbourg rail + the - rail to connect them
-root.bank.RaiseFundsBigTime();
+INSTANCE.bank.RaiseFundsBigTime();
 
-success=root.builder.CreateRailStationByPlan(basepoint, entry, direction, fakestation);
-success=root.builder.CreateRailStationByPlan(otherbase, entry, otherdir, fakestation);
-success=root.builder.CreateRailStationByPlan(basepoint, entry, direction, connectionbase);
-success=root.builder.CreateRailStationByPlan(otherbase, entry, otherdir, connectionbase);
+success=INSTANCE.builder.CreateRailStationByPlan(basepoint, entry, direction, fakestation);
+success=INSTANCE.builder.CreateRailStationByPlan(otherbase, entry, otherdir, fakestation);
+success=INSTANCE.builder.CreateRailStationByPlan(basepoint, entry, direction, connectionbase);
+success=INSTANCE.builder.CreateRailStationByPlan(otherbase, entry, otherdir, connectionbase);
 }
 
 function cBuilder::RoadFindCompatibleDepot(tile)
@@ -209,7 +209,7 @@ local new_location=[AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(0,1), AIMap.Get
 // left, right, behind middle, front middle, behind left, behind right, front left, front right
 local new_facing=[AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1)];
 // 0 will be same as original station, north, south, east, west
-local road=root.chemin.RListGetItem(roadidx);
+local road=INSTANCE.chemin.RListGetItem(roadidx);
 if (road == -1)	return false;
 local station_obj=null;
 local station_index=null;
@@ -217,10 +217,10 @@ local other_index=null;
 local other_obj=null;
 if (start)	{ station_index=road.ROUTE.src_station; other_index=road.ROUTE.dst_station; }
 	else	{ station_index=road.ROUTE.dst_station; other_index=road.ROUTE.src_station; }
-station_obj=root.chemin.GListGetItem(station_index);
+station_obj=INSTANCE.chemin.GListGetItem(station_index);
 if (station_obj == -1)	{ DInfo("Route "+roadidx+" doesn't have a road station to upgrade.",2); return false; }
 DInfo("Road station index "+station_index,2);
-other_obj=root.chemin.GListGetItem(other_index);
+other_obj=INSTANCE.chemin.GListGetItem(other_index);
 local station_id=station_obj.STATION.station_id;
 DInfo("Upgrading road station "+AIStation.GetName(station_id),0);
 local depot_id=station_obj.STATION.e_depot;
@@ -241,7 +241,7 @@ local new_dep_pos=-1;
 local success=false;
 local sta_pos_list=AIList();
 local sta_front_list=AIList();
-facing=root.builder.GetDirection(sta_pos, sta_front);
+facing=INSTANCE.builder.GetDirection(sta_pos, sta_front);
 local p_left=0;
 local p_right=0;
 local p_back=0;
@@ -284,9 +284,9 @@ sta_front_list.AddItem(sta_pos+p_back+p_back+p_right,	sta_pos+p_back+p_right);
 local allfail=true;
 foreach (direction, tile in sta_front_list)
 	{
-	new_sta_pos=root.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, false);
-	if (!root.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
-	root.builder.CriticalError=false; // discard it
+	new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, false);
+	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
+	INSTANCE.builder.CriticalError=false; // discard it
 	if (new_sta_pos != -1)	break;
 	AIController.Sleep(1);
 	}
@@ -299,8 +299,8 @@ if (new_sta_pos == dep_front)
 if (depotdead)	
 	{
 	DWarn("Road depot was destroy while upgrading",1);
-	new_dep_pos=root.builder.BuildRoadDepotAtTile(new_sta_pos);
-	root.builder.CriticalError=false;
+	new_dep_pos=INSTANCE.builder.BuildRoadDepotAtTile(new_sta_pos);
+	INSTANCE.builder.CriticalError=false;
 	// Should be more than enough
 	}
 else	{ new_dep_pos=depot_id; }
@@ -312,8 +312,8 @@ if (new_sta_pos > -1)
 	station_obj.STATION.size++;
 	station_obj.STATION.e_depot=new_dep_pos;
 	}
-root.chemin.GListUpdateItem(station_index,station_obj); // save it
-root.builder.RouteIsDamage(roadidx); // ask ourselves a check
+INSTANCE.chemin.GListUpdateItem(station_index,station_obj); // save it
+INSTANCE.builder.RouteIsDamage(roadidx); // ask ourselves a check
 return success;
 }
 
@@ -331,30 +331,28 @@ function cBuilder::BuildRoadStationOrDepotAtTile(tile, direction, stationtype, s
 {
 // before spending money on a "will fail" structure, check the structure could be connected to a road
 if (AITile.IsStationTile(tile))	return -1; // don't destroy a station, might even not be our
-root.bank.RaiseFundsBigTime(); 
+INSTANCE.bank.RaiseFundsBigTime(); 
 if (!AIRoad.IsRoadTile(direction))
 	{
 	if (!cTileTools.DemolishTile(direction))
 		{
 		DWarn("Can't remove that tile at "+tile,2); PutSign(tile,"X");
-		root.builder.IsCriticalError();
-		if (root.builder.CriticalError)	root.builder.BlacklistThatTile(tile);
+		INSTANCE.builder.IsCriticalError();
 		return -1;
 		}
 	if (!AIRoad.BuildRoad(direction,tile))
 		{
 		DWarn("Can't build road entrance for the station/depot structure",2);
-		root.builder.IsCriticalError();
-		if (root.builder.CriticalError)	root.builder.BlacklistThatTile(tile);
+		INSTANCE.builder.IsCriticalError();
 		return -1;
 		}
 	}
+INSTANCE.builder.CriticalError=false;
 if (!cTileTools.DemolishTile(tile))
 	{
 	DWarn("Can't remove that tile at "+tile,2); PutSign(tile,"X");
-	root.builder.IsCriticalError();
-	if (root.builder.CriticalError)	root.builder.BlacklistThatTile(tile);
-	root.builder.CriticalError=false;		
+	INSTANCE.builder.IsCriticalError();
+	INSTANCE.builder.CriticalError=false;		
 	return -1;
 	}
 local success=false;
@@ -362,9 +360,9 @@ local newstation=AIStation.STATION_JOIN_ADJACENT;
 if (stationnew)	newstation=AIStation.STATION_NEW;
 if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 	{
-	root.bank.RaiseFundsBigTime();
+	INSTANCE.bank.RaiseFundsBigTime();
 	// first let's hack another depot if we can
-	local hackdepot=root.builder.RoadFindCompatibleDepot(tile);
+	local hackdepot=INSTANCE.builder.RoadFindCompatibleDepot(tile);
 	if (hackdepot == -1)	success=AIRoad.BuildRoadDepot(tile,direction);
 			else	{
 				tile=hackdepot;
@@ -375,7 +373,7 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 	if (!success)
 		{
 		DWarn("Can't built a road depot at "+tile,2);
-		root.builder.IsCriticalError();
+		INSTANCE.builder.IsCriticalError();
 		}
 	else	{
 		if (hackdepot == -1)	DInfo("Built a road depot at "+tile,0);
@@ -383,19 +381,18 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 		}
 	}
 else	{
-	root.bank.RaiseFundsBigTime();
+	INSTANCE.bank.RaiseFundsBigTime();
 	success=AIRoad.BuildRoadStation(tile, direction, stationtype, newstation);
 	PutSign(tile,"S");
 	if (!success)
 		{
 		DWarn("Can't built the road station at "+tile,2);
-		root.builder.IsCriticalError();
+		INSTANCE.builder.IsCriticalError();
 		}
 	else	DInfo("Built a road station at "+tile,0);
 	}
 if (!success)
 	{
-	if (root.builder.CriticalError)	root.builder.BlacklistThatTile(tile);
 	return -1;
 	}
 else	{
@@ -403,8 +400,7 @@ else	{
 		if (!AIRoad.BuildRoad(tile, direction))
 		{
 		DWarn("Fail to connect the road structure with the road in front of it",2);
-		root.builder.IsCriticalError();
-		root.builder.BlacklistThatTile(direction);
+		INSTANCE.builder.IsCriticalError();
 		if (!cTileTools.DemolishTile(tile))
 			{
 			DWarn("Can't remove bad road structure !",2);
@@ -437,12 +433,12 @@ return -1;
 function cBuilder::GetStationID(idx, start)
 // this function return the real station id
 {
-local obj=root.chemin.RListGetItem(idx);
+local obj=INSTANCE.chemin.RListGetItem(idx);
 local objStation=obj.ROUTE.dst_station;
 local realID=-1;
 if (start)	{ objStation=obj.ROUTE.src_station; }
 if (objStation == -1) return -1;
-local Station=root.chemin.GListGetItem(objStation);
+local Station=INSTANCE.chemin.GListGetItem(objStation);
 realID=Station.STATION.station_id;
 if (AIStation.IsValidStation(realID))	return realID;
 return -1;
@@ -452,11 +448,11 @@ function cBuilder::GetDepotID(idx, start)
 // this function return the depot id
 // no longer reroute to another depot_id if fail to find one, but mark route as damage
 {
-local road=root.chemin.RListGetItem(idx);
+local road=INSTANCE.chemin.RListGetItem(idx);
 if (road == -1) return -1;
 local station_obj=null;
-if (start)	station_obj=root.chemin.GListGetItem(road.ROUTE.src_station);
-	else	station_obj=root.chemin.GListGetItem(road.ROUTE.dst_station);
+if (start)	station_obj=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
+	else	station_obj=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
 if (station_obj==-1)	return -1; // no station = no depot to find
 local realID=-1;
 local depotchecklist=0;
@@ -484,7 +480,7 @@ if (start)	entry_check=road.ROUTE.src_entry;
 if (entry_check)	depotid=station_obj.STATION.e_depot;
 		else	depotid=station_obj.STATION.s_depot;
 if (depotList.HasItem(depotid)) return depotid;
-root.builder.RouteIsDamage(idx); // if we are here, we fail to find a depotid
+INSTANCE.builder.RouteIsDamage(idx); // if we are here, we fail to find a depotid
 return -1;
 }
 
@@ -605,9 +601,9 @@ foreach (voisin in directions)
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; } 
 	if (valid)	walkedtiles.AddItem(direction,0);
-	//if (valid && root.debug)	PutSign(direction,"*");
-	//if (root.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
-	if (!found && valid)	found=root.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
+	//if (valid && INSTANCE.debug)	PutSign(direction,"*");
+	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
+	if (!found && valid)	found=INSTANCE.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
 	if (found) return found;
 	}
 return found;
@@ -681,7 +677,7 @@ if (objtype==2) // depot
 			success=AIRail.BuildRailTrack(t,f);
 			success=success && AIRail.BuildRailTrack(t,s);
 			success=success && AIRail.BuildRailDepot(depottile, t);
-			root.builder.savedepot=depottile;
+			INSTANCE.builder.savedepot=depottile;
 			}
 	}
 if (!success)
@@ -698,7 +694,7 @@ local success=true;
 local i=0;
 for (i=0; i < oneway.len(); i++)
 	{
-	success=root.builder.StationAPutRail(src, oneway[i], oneway[i+1], false);
+	success=INSTANCE.builder.StationAPutRail(src, oneway[i], oneway[i+1], false);
 	i++;
 	if (!success)	break;
 	}
@@ -706,7 +702,7 @@ if (!success)
 	{ // failure, removing rail by demolish, not removing the station
 	for (local j=0; j <= i; j++)
 		{
-		root.builder.StationAPutRail(src, oneway[j], oneway[j+1], true);
+		INSTANCE.builder.StationAPutRail(src, oneway[j], oneway[j+1], true);
 		j++;
 		}
 	}
@@ -748,8 +744,8 @@ DInfo("STATIONTYPE: "+station_type,2);
 switch (station_type)
 	{
 	case 1:
-	root.bank.RaiseFundsBigTime();
-	success=root.builder.CreateRailStationSchematic(src, oneway);
+	INSTANCE.bank.RaiseFundsBigTime();
+	success=INSTANCE.builder.CreateRailStationSchematic(src, oneway);
 	break;
 	}
 if (success)
@@ -758,12 +754,12 @@ if (success)
 	if (entry)	
 		{
 		src.STATION.query=src.STATION.e_loc;
-		src.STATION.e_depot=root.builder.savedepot;
+		src.STATION.e_depot=INSTANCE.builder.savedepot;
 		a+="entry";
 		} // success, really add the train
 	else	{
 		src.STATION.query=src.STATION.s_loc;
-		src.STATION.s_depot=root.builder.savedepot;
+		src.STATION.s_depot=INSTANCE.builder.savedepot;
 		//src.STATION.s_count++;
 		a+="exit";
 		} 
@@ -778,8 +774,8 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 // Create the connections in front of that stations
 {
 local success=false;
-local srcStation=root.chemin.GListGetItem(fromObj);
-local dstStation=root.chemin.GListGetItem(toObj);
+local srcStation=INSTANCE.chemin.GListGetItem(fromObj);
+local dstStation=INSTANCE.chemin.GListGetItem(toObj);
 DInfo("Connecting rail station "+AIStation.GetName(srcStation.STATION.station_id)+" to "+AIStation.GetName(dstStation.STATION.station_id),1);
 local retry=true;
 local fst= true;
@@ -789,9 +785,9 @@ local sss=srcStation.STATION.s_count;
 local dse=dstStation.STATION.e_count;
 local dss=dstStation.STATION.s_count;
 do	{
-	retry=root.builder.FindStationEntryToExitPoint(srcStation, dstStation);
+	retry=INSTANCE.builder.FindStationEntryToExitPoint(srcStation, dstStation);
 
-	fst=root.builder.CreateRailForBestWay(srcStation);
+	fst=INSTANCE.builder.CreateRailForBestWay(srcStation);
 	if (!fst)	{ // we weren't able to build the connection, but from other entry it might work
 			if (srcStation.bestWay==srcStation.STATION.e_loc)
 					{ srcStation.STATION.haveEntry=false; }
@@ -801,8 +797,8 @@ do	{
 	DInfo("Retry="+retry+" fst="+fst+" srcentry="+srcStation.STATION.haveEntry+" srcexit="+srcStation.STATION.haveExit,2);
 	} while (retry);
 do	{ 
-	retry=root.builder.FindStationEntryToExitPoint(srcStation, dstStation);
-	sst=root.builder.CreateRailForBestWay(dstStation);
+	retry=INSTANCE.builder.FindStationEntryToExitPoint(srcStation, dstStation);
+	sst=INSTANCE.builder.CreateRailForBestWay(dstStation);
 	if (!sst)	{ // we weren't able to build the connection, but from other entry it might work
 			if (dstStation.bestWay==dstStation.STATION.e_loc)
 					{ dstStation.STATION.haveEntry=false; }
@@ -820,8 +816,8 @@ if (!success)
 	return false; // leave critical status for caller
 	}
 else	{ // ok save our new stations status
-	root.chemin.GListUpdateItem(fromObj,srcStation);
-	root.chemin.GListUpdateItem(toObj,dstStation);
+	INSTANCE.chemin.GListUpdateItem(fromObj,srcStation);
+	INSTANCE.chemin.GListUpdateItem(toObj,dstStation);
 	}
 return success;
 }
@@ -840,8 +836,8 @@ obj.STATION.direction=direction;
 obj.STATION.station_id=AIStation.GetStationID(tilepos);
 obj.STATION.railtype=AIRail.GetRailType(tilepos);
 obj.STATION.type=1;
-root.builder.RailStationFindEntrancePoints(obj);
-root.chemin.GListAddItem(obj);
+INSTANCE.builder.RailStationFindEntrancePoints(obj);
+INSTANCE.chemin.GListAddItem(obj);
 return true;
 }
 
@@ -855,9 +851,9 @@ if (!AIStation.HasStationType(stationid,AIStation.STATION_TRUCK_STOP))	return fa
 local veh_using_station=AIVehicleList_Station(stationid);
 if (veh_using_station.IsEmpty())	return false;
 local station_tiles=cTileTools.FindRoadStationTiles(AIStation.GetLocation(stationid));
-local station_index=root.chemin.GListGetStationIndex(stationid);
+local station_index=INSTANCE.chemin.GListGetStationIndex(stationid);
 if (station_index == false)	return false;
-local station_obj=root.chemin.GListGetItem(station_index);
+local station_obj=INSTANCE.chemin.GListGetItem(station_index);
 veh_using_station.Valuate(AITile.GetDistanceManhattanToTile, AIStation.GetLocation(stationid));
 
 }

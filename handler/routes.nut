@@ -14,7 +14,10 @@
 class cRoute
 	{
 static	database = {};
-static	RouteIndexer = AIList();   // list all UID of routes we are handling
+static	RouteIndexer = AIList();	// list all UID of routes we are handling
+static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
+static	RouteDamage = AIList(); 	// list of routes that need repairs
+
 static	function GetRouteObject(UID)
 		{
 		return UID in cRoute.database ? cRoute.database[UID] : null;
@@ -23,9 +26,11 @@ static	function GetRouteObject(UID)
 	UID		= null; // UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
 	name		= null;	// string with the route name
 	sourceID	= null;	// id of source town/industry
+	source_location	= null;	// location of source
 	source_istown	= null;	// if source is town
 	source		= null; // shortcut to the source station object
 	targetID	= null;	// id of target town/industry
+	target_location	= null;	// location of target
 	target_istown	= null;	// if target is town
 	target		= null; // shortcut to the target station object
 	vehicle_count	= null; // numbers of vehicle using it
@@ -51,14 +56,14 @@ static	function GetRouteObject(UID)
 	}
 
 function cRoute::CheckEntry()
-// setup entries infos
+// setup entries infos, this pointed our shortcut to the correct station object and mark them
 	{
-	this.source_entry = (source_stationID != null);
-	this.target_entry = (target_stationID != null);
-	if (this.source_entry)	source=cStation.GetObject(this.source_stationID);
-			else	source=null;
-	if (this.target_entry)	target=cStation.GetObject(this.target_stationID);
-			else	target=null;
+	this.source_entry = (this.source_stationID != null);
+	this.target_entry = (this.target_stationID != null);
+	if (this.source_entry)	this.source=cStation.GetStationObject(this.source_stationID);
+			else	this.source=null;
+	if (this.target_entry)	this.target=cStation.GetStationObject(this.target_stationID);
+			else	this.target=null;
 	}
 
 function cRoute::RouteBuildGroup()
@@ -70,13 +75,32 @@ function cRoute::RouteBuildGroup()
 	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
 	this.groupID = gid;
 	AIGroup.SetName(this.groupID, groupname);
+	GroupIndexer.AddItem(this.groupID, this.UID);
+	}
+
+function cRoute::RouteDone()
+// called when a route is finish
+	{
+	this.RouteBuildGroup();
+	this.vehicle_count=0;
+	this.status=100;
+	this.isWorking=true;
+	this.RouteSave();
+	}
+
+function cRoute::RouteUpdate()
+// when something change, update the route
+	{
+	this.CheckEntry();
+	this.RouteGetName();
+	DInfo("ROUTE -> Route "+name+" has been update",2);
 	}
 
 function cRoute::RouteSave()
 // save that route to the database
 	{
-	this.RouteGetName();
-	DInfo("Init a new route. "+this.name,0);
+	this.RouteUpdate();
+	DInfo("Saving a new route. "+this.name,0);
 	if (this.UID in database)	DWarn("ROUTE -> Route "+this.UID+" is already in database",2);
 			else		{
 					DInfo("ROUTE -> Adding route "+this.UID+" to the route database",2);
@@ -125,14 +149,13 @@ function cRoute::RouteGetName()
 				if (source_istown)	src=AITown.GetName(sourceID);
 						else	src=AIIndustry.GetName(sourceID);
 				}
-	this.name="From "+src+" to "+dst+" for "+AICargo.GetLabel(cargoID)+" using "+rtype;
+	this.name="#"+this.UID+": From "+src+" to "+dst+" for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
 	}
 
 function cRoute::CreateNewRoute(UID)
 // Create and add to database a new route with informations taken from cJobs
 	{
 	local jobs=cJobs.GetJobObject(UID);
-	DInfo("jobs="+jobs+" UID="+UID);
 	jobs.isUse = true;
 	this.UID = jobs.UID;
 	this.sourceID = jobs.sourceID;
@@ -144,8 +167,11 @@ function cRoute::CreateNewRoute(UID)
 	this.isWorking = false;
 	this.status = 0;
 	this.cargoID = jobs.cargoID;
+	if (source_istown)	source_location=AITown.GetLocation(sourceID);
+			else	source_location=AIIndustry.GetLocation(sourceID);
+	if (target_istown)	target_location=AITown.GetLocation(targetID);
+			else	target_location=AIIndustry.GetLocation(targetID);
 	this.CheckEntry();
-	//this.RouteSave();
 	}
 
 function cRoute::RouteInitNetwork()
@@ -188,4 +214,32 @@ function cRoute::RouteRebuildIndex()
 	RouteIndexer.Clear();
 	foreach (item in database)
 		RouteIndex.AddItem(item, 1);	
+	}
+
+function cRoute::RouteIsNotDoable()
+// When a route is dead, we remove it this way
+	{
+	if (this.vehicle_count > 0)	{ DWarn("Can't delete route still have "+this.vehicle_count+" running on it !",1); return false }
+	cJobs.JobIsNotDoable(this.UID);
+	if (this.groupID != null)	AIGroup.DeleteGroup(this.groupID);
+	if (this.source_stationID != null)	cStation.DeleteStation(this.source_stationID);
+	if (this.target_stationID != null)	cStation.DeleteStation(this.target_stationID);
+	if (this.UID in database)
+		{
+		delete database[this.UID];
+		RouteIndexer.RemoveItem(this.UID);
+		}	
+	}
+
+function cRoute::CreateNewStation(start)
+// Create a new station for that route at source or destination
+	{
+	local scheck=this.source_stationID;
+	if (!start)	scheck=this.target_stationID;
+	if (!AIStation.IsValidStation(scheck))
+		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1); }
+	local station=cStation();
+	station.stationID=scheck;
+	station.InitNewStation();
+	this.RouteUpdate();
 	}
