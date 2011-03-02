@@ -152,47 +152,34 @@ function cCarrier::AirNetworkOrdersHandler()
 {
 local road=null;
 local isfirst=true;
-local rabbit=null;
-INSTANCE.chemin.airnet_count=0;
-for (local j=0; j < INSTANCE.chemin.RListGetSize(); j++)
+local rabbit=null; // this will be our rabbit aircraft that take orders & everyone share with it
+local mailgroup=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
+local passgroup=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
+local allgroup=AIList();
+allgroup.AddList(mailgroup);
+allgroup.AddList(passgroup);
+if (allgroup.IsEmpty())	return;
+allgroup.Valuate(AIVehicle.GetAge);
+allgroup.Sort(AIList.SORT_BY_VALUE, false);
+rabbit=allgroup.Begin();
+allgroup.RemoveTop(1);
+local numorders=AIOrder.GetOrderCount(rabbit);
+if (numorders != cCarrier.VirtualAirRoute.len())
 	{
-	road=INSTANCE.chemin.RListGetItem(j);
-	if (road.ROUTE.status!=999) continue; // only check 999 status, it's the "i'm part of network" status
-	//if (road.ROUTE.kind == 1000) continue;
-	local airlist=AIVehicleList_Group(road.ROUTE.group_id);
-	if (airlist.IsEmpty()) continue; // no aircrafts on that group
-	local numorders=0;
-	foreach (vehicle, dummy in airlist)
+	for (local i=0; i < INSTANCE.carrier.VirtualAirRoute.len(); i++)
 		{
-		if (isfirst)
-			{
-			rabbit=vehicle;
-			isfirst=false;
-			INSTANCE.chemin.airnet_count++;
-			numorders=AIOrder.GetOrderCount(rabbit);
-			if (numorders != INSTANCE.chemin.virtual_air.len())
-				{
-				for (local i=0; i < INSTANCE.chemin.virtual_air.len(); i++)
-				//foreach (town, location in INSTANCE.chemin.virtual_air)
-					{
-				local location=INSTANCE.chemin.virtual_air[i];
-					if (!AIOrder.AppendOrder(rabbit, location, AIOrder.AIOF_FULL_LOAD_ANY))
-						{ DError("Aircraft network order refuse",2); }
-					}
-				if (numorders > 0)
-					{
-					// now remove previous rabbit orders, should not make the aircrafts gone too crazy
-					for (local i=0; i < numorders; i++)
-						{ AIOrder.RemoveOrder(rabbit, AIOrder.ResolveOrderPosition(rabbit,0)); }
-					}
-				}
-			} // isfirst
-		else	{
-			AIOrder.ShareOrders(vehicle,rabbit);
-			INSTANCE.chemin.airnet_count++;
-			}
+		local destination=INSTANCE.carrier.VirtualAirRoute[i];
+		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_FULL_LOAD_ANY))
+			{ DError("Aircraft network order refuse",2); }
+		}
+	if (numorders > 0)
+		{
+	// now remove previous rabbit orders, should not make the aircrafts gone too crazy
+		for (local i=0; i < numorders; i++)
+				{ AIOrder.RemoveOrder(rabbit, AIOrder.ResolveOrderPosition(rabbit,0)); }
 		}
 	}
+foreach (vehicle, dummy in allgroup)	AIOrder.ShareOrders(vehicle,rabbit);
 }
 
 function cCarrier::VehicleOrdersReset(veh)
@@ -301,9 +288,9 @@ local vehlist=null;
 local veh=null;
 local orderpos=null;
 local group=null;
-for (local i=0; i < INSTANCE.chemin.RListGetSize(); i++)
+for (local i=0; i < INSTANCE.route.RListGetSize(); i++)
 	{
-	road=INSTANCE.chemin.RListGetItem(i);
+	road=INSTANCE.route.RListGetItem(i);
 	orderpos=-1;
 	local srcstation=INSTANCE.builder.GetStationID(i,true);
 	if (srcstation == stationID)	orderpos=0;
@@ -396,12 +383,12 @@ if (idx < 0)
 	INSTANCE.carrier.VehicleSell(veh);
 	return false;
 	}
-local road=INSTANCE.chemin.RListGetItem(idx);
+local road=INSTANCE.route.RListGetItem(idx);
 local group = AIVehicle.GetGroupID(veh);
 local engine = null;
 local wagon = null;
 local numwagon=AIVehicle.GetNumWagons(veh);
-local railtype = INSTANCE.chemin.RouteGetRailType(idx);
+local railtype = INSTANCE.route.RouteGetRailType(idx);
 local newveh=null;
 local homedepot=INSTANCE.builder.GetDepotID(idx,true);
 DInfo("Upgrading using depot at "+homedepot,2);
@@ -462,7 +449,7 @@ INSTANCE.carrier.vehnextprice=0;
 function cCarrier::VehicleIsTop_GetUniqID(engine, cargo)
 // return a uniqID for a vehicle engine type + cargo, as we can't have dup in a AIList()
 {
-return (engine+1)*INSTANCE.chemin.IDX_HELPER+cargo;
+return (engine+1)*2048+cargo;
 }
 
 function cCarrier::VehicleIsTop(veh)
@@ -494,7 +481,7 @@ switch (AIVehicle.GetVehicleType(veh))
 	break;
 	case AIVehicle.VT_AIR:
 		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
-		road=INSTANCE.chemin.RListGetItem(idx);
+		road=INSTANCE.route.RListGetItem(idx);
 		local modele=AircraftType.EFFICIENT;
 		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
 		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
@@ -659,7 +646,7 @@ if (idx >= 0)
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 // Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
 {
-local road=INSTANCE.chemin.RListGetItem(idx);
+local road=INSTANCE.route.RListGetItem(idx);
 local vehlist=null;
 if (road.ROUTE.group_id != -1)
 	{

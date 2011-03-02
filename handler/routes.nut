@@ -25,7 +25,7 @@ static	function GetRouteObject(UID)
 		}
 
 	UID		= null; // UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
-	name		= null;	// string with the route name
+	name		= "UNKNOWN";	// string with the route name
 	sourceID	= null;	// id of source town/industry
 	source_location	= null;	// location of source
 	source_istown	= null;	// if source is town
@@ -34,10 +34,10 @@ static	function GetRouteObject(UID)
 	target_location	= null;	// location of target
 	target_istown	= null;	// if target is town
 	target		= null; // shortcut to the target station object
-	vehicle_count	= null; // numbers of vehicle using it
+	vehicle_count	= 0; // numbers of vehicle using it
 	route_type	= null; // type of vehicle using that route (It's enum RouteType)
-	isWorking	= null; // true if the route is working
-	status		= null; // current status of the route
+	isWorking	= false; // true if the route is working
+	status		= 0; // current status of the route
 				// 0 - need a destination pickup
 				// 1 - source/destination find compatible station or create new
 				// 2 - need build source station
@@ -59,13 +59,13 @@ static	function GetRouteObject(UID)
 function cRoute::GetVirtualAirMailGroup()
 // return the groupID for the mail virtual air group
 	{
-	return VirtualAirGroup[0];
+	return cRoute.VirtualAirGroup[0];
 	}
 
 function cRoute::GetVirtualAirPassengerGroup()
 // return the groupID for the passenger virtual air group
 	{
-	return VirtualAirGroup[0];
+	return cRoute.VirtualAirGroup[0];
 	}
 
 function cRoute::CheckEntry()
@@ -77,6 +77,14 @@ function cRoute::CheckEntry()
 			else	this.source=null;
 	if (this.target_entry)	this.target=cStation.GetStationObject(this.target_stationID);
 			else	this.target=null;
+	}
+
+function cRoute::RouteAddVehicle()
+// Add a new vehicle to the route, update route stations with it too
+	{
+	this.vehicle_count++;
+	if (this.source_entry)	this.source.vehicle_count++;
+	if (this.target_entry)	this.target.vehicle_count++;
 	}
 
 function cRoute::RouteBuildGroup()

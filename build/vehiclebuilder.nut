@@ -99,16 +99,18 @@ switch (chem.route_type)
 					local fake=thatstation.CanUpgradeStation(); // to see if upgrade success
 					}
 				else	return true; // cannot upgrade but assuming we will success and tell we're ok
+				}
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
 			// limit by the max the station could handle
-			if (thatstation.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
+			if (chem.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
 			// limit by number of vehicle per route
 			if (!use_road)	return false;
 			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
+			}
 		else	{ // max size already
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
 			// limit by the max the station could handle
-			if (thatstation.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
+			if (chem.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
 			// limit by number of vehicle per route
 			if (!INSTANCE.use_road)	return false;
 			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
@@ -153,56 +155,12 @@ switch (chem.route_type)
 return true;
 }
 
-function cCarrier::CloneRoadVehicle(roadidx)
-// add another Vehicle on that route, sharing orders
-{
-local road=INSTANCE.chemin.RListGetItem(roadidx);
-local vehlist=AIVehicleList_Group(road.ROUTE.group_id);
-vehlist.Valuate(AIOrder.IsGotoDepotOrder,AIOrder.ORDER_CURRENT);
-vehlist.KeepValue(0);
-if (vehlist.IsEmpty())
-	{
-	DError("Can't find any vehicle to duplicated on that route",1);
-	return false;
-	}
-// first check we can add one more vehicle to start or ending station
-if (!INSTANCE.carrier.CanAddNewVehicle(roadidx,true) || !INSTANCE.carrier.CanAddNewVehicle(roadidx,false))
-	{
-	DWarn("One station on that route is full, cannot add more vehicle",1);
-	return false;
-	}
-local veh=vehlist.Begin();
-local price = AIEngine.GetPrice(AIVehicle.GetEngineType(veh));
-INSTANCE.bank.RaiseFundsBy(price);
-local startdepot=true;
-local switcher=false;
-if (AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_PASSENGERS || AICargo.GetTownEffect(road.ROUTE.cargo_id)==AICargo.TE_MAIL)
-	{ switcher = true; }
-
-if (road.ROUTE.vehicule%2 != 0 && switcher) // impair Vehicle selection, because impair+1 = pair :)
-	{ startdepot=false; }
-/*if (road.ROUTE.kind == AIVehicle.VT_ROAD && AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_PASSENGERS)
-	{ startdepot=false; }*/ // we are creating a new bus, we don't really care where it will start
-// but it's a good idea to build it at destination, and route it directly to destination station
-
-local newveh=AIVehicle.CloneVehicle(INSTANCE.builder.GetDepotID(roadidx,startdepot),veh,true);
-if (!AIVehicle.IsValidVehicle(newveh))
-	{ DWarn("Cannot buy the vehicle : "+price,2); return false; }
-else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(newveh),1); }
-INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
-if (!AIVehicle.StartStopVehicle(newveh))
-	{ DError("Cannot start the vehicle :",1); return false; }
-if (!startdepot)	AIOrder.SkipToOrder(newveh, 1);
-// we skip first order to force the vehicle goes to destination station first
-return true;
-}
-
 function cCarrier::BuildAndStartVehicle(routeid)
 // Create a new vehicle on route
 {
 local road=cRoute.GetRouteObject(routeid);
 if (road == null)	{ DWarn("Building a vehicle cannot be done on unknown route !",1); }
-local res=true;
+local res=false;
 switch (road.route_type)
 	{
 	case AIVehicle.VT_ROAD:
@@ -224,48 +182,19 @@ switch (road.route_type)
 		res=INSTANCE.carrier.CreateAirVehicle(routeid);
 	break;
 	}
+if (res)	road.RouteAddVehicle();
 return res;
 }
 
-function cCarrier::RouteAndStationVehicleCounterUpdate(roadidx)
-// Update the route and stations vehicle counters
-{
-local road=INSTANCE.chemin.RListGetItem(roadidx);
-local entry=true;
-local station_id=0;
-local station=null;
-local vehgroup=null;
-if (road.ROUTE.group_id > -1)
-	{
-	vehgroup=AIVehicleList_Group(road.ROUTE.group_id);
-	road.ROUTE.vehicule=vehgroup.Count();
-	}
-else	road.ROUTE.vehicule=0;
-
-station=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
-vehgroup=AIVehicleList_Station(station.STATION.station_id);
-entry=road.ROUTE.src_entry;
-if (entry)	{ station.STATION.e_count=vehgroup.Count(); }
-	else	{ station.STATION.s_count=vehgroup.Count(); }
-INSTANCE.chemin.GListUpdateItem(road.ROUTE.src_station,station);
-station=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
-vehgroup=AIVehicleList_Station(station.STATION.station_id);
-entry=road.ROUTE.dst_entry;
-if (entry)	{ station.STATION.e_count=vehgroup.Count(); }
-	else	{ station.STATION.s_count=vehgroup.Count(); }
-INSTANCE.chemin.GListUpdateItem(road.ROUTE.dst_station,station);
-INSTANCE.chemin.RListUpdateItem(roadidx,road);
-}
-
 function cCarrier::CreateRoadVehicle(roadidx)
-// Build first Vehicle of a road
+// Build a road vehicle for route roadidx
 {
 local road=cRoute.GetRouteObject(roadidx);
-local srcplace = AIStation.GetLocation(INSTANCE.builder.GetStationID(roadidx,true));
-local dstplace = AIStation.GetLocation(INSTANCE.builder.GetStationID(roadidx,false));
-local cargoid= road.ROUTE.cargo_id;
+local srcplace = road.source.locations.Begin();
+local dstplace = road.target.locations.Begin();
+local cargoid= road.cargoID;
 local veh = INSTANCE.carrier.ChooseRoadVeh(cargoid);
-local homedepot = INSTANCE.builder.GetDepotID(roadidx,true);
+local homedepot = road.GetRouteDepot();
 local price = AIEngine.GetPrice(veh);
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
@@ -286,11 +215,10 @@ else	{
 	firstorderflag = AIOrder.AIOF_FULL_LOAD_ANY + AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 	}
-AIGroup.MoveVehicle(road.ROUTE.group_id, firstveh);
+AIGroup.MoveVehicle(road.groupID, firstveh);
 AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
-INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 return true;
 }
 
@@ -323,16 +251,11 @@ else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(firstveh)+" "+AIEn
 local firstorderflag = null;
 local secondorderflag = null;
 secondorderflag = AIOrder.AIOF_FULL_LOAD_ANY;
-
 AIOrder.AppendOrder(firstveh, srcplace, secondorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
-
 AIGroup.MoveVehicle(road.groupID, firstveh);
 if (road.route_type == RouteType.CHOPPER)	VehicleOrderSkipCurrent(firstveh);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
-
-road.vehicle_count++;
-//INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(roadidx);
 return true;
 }
 
@@ -354,7 +277,7 @@ return veh;
 function cCarrier::GetRoadVehicle()
 // get a road vehicle
 {
-local veh = INSTANCE.carrier.ChooseRoadVeh();
+local veh = INSTANCE.carrier.ChooseRoadVeh(cCargo.GetPassengerCargo());
 if (veh == null)	{
 			DError("No suitable road vehicle to buy !",1);
 			}
@@ -431,7 +354,7 @@ local runningcost=AIEngine.GetRunningCost(engine);
 return (price+(lifetime*runningcost))/capacity;
 }
 
-function cCarrier::ChooseRoadVeh()
+function cCarrier::ChooseRoadVeh(cargoid)
 /**
 * Pickup a road vehicle base on -> max capacity > max speed > max reliability
 * @return the vehicle engine id
@@ -442,7 +365,7 @@ vehlist.Valuate(AIEngine.GetRoadType);
 vehlist.KeepValue(AIRoad.ROADTYPE_ROAD);
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
-vehlist.Valuate(AIEngine.CanRefitCargo, INSTANCE.route.cargoID);
+vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 vehlist.KeepValue(1);
 local top=null;
 vehlist.Valuate(AIEngine.GetCapacity);

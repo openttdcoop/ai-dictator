@@ -33,10 +33,10 @@ foreach (airport_id, location in airports)
 virtualpath.Sort(AIList.SORT_BY_VALUE, false);
 // now validairports = only airports where towns population is > AIR_NET_CONNECTOR, value is airportid
 // and virtualpath the town where those airports are, value = population of those towns
+cStation.VirtualAirports.Clear();
 foreach (towns, airportid in validairports)
 	{
-	local claimstation=cStation.GetStationObject(airportid);
-	claimstation.virtualized=true;
+	cStation.VirtualAirports.AddItem(airportid, town);
 	}
 local bigtown=virtualpath.Begin();
 local bigtown_location=AITown.GetLocation(bigtown);
@@ -62,7 +62,7 @@ foreach (town, airport_location in virtualpath)
 	INSTANCE.carrier.virtual_air.push(airport_locations);
 	}
 */
-INSTANCE.carrier.VirtualAirRoute=[];
+INSTANCE.carrier.VirtualAirRoute.clear(); // don't try reassign a static variable!
 foreach (towns, dummy in pairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
 foreach (towns, dummy in impairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
 INSTANCE.carrier.AirNetworkOrdersHandler();
@@ -98,8 +98,8 @@ function cRoute::DutyOnAirNetwork()
 {
 if (INSTANCE.carrier.VirtualAirRoute.len()==0) return;
 local vehlist=AIList();
-local maillist=AIVehicle_ListGroup(INSTANCE.route.GetVirtualAirMailGroup());
-local passlist=AIVehicle_ListGroup(INSTANCE.route.GetVirtualAirPassengerGroup());
+local maillist=AIVehicleList_Group(INSTANCE.route.GetVirtualAirMailGroup());
+local passlist=AIVehicleList_Group(INSTANCE.route.GetVirtualAirPassengerGroup());
 vehlist.AddList(maillist);
 vehlist.AddList(passlist);
 local totalcapacity=0;
@@ -242,14 +242,14 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (firstveh && road.route_type != RouteType.RAIL) { vehneed = 2; }
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
-	if (GetCargoRating(road.source.stationID) < 25 || GetCargoRating(road.target.stationID) < 25)	vehneed++;
-	local canaddonemore=INSTANCE.carrier.CanAddNewVehicle(j, true);
+	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 || AIStation.GetCargoRating(road.target.stationID,cargoid) < 25)	vehneed++;
+	local canaddonemore=INSTANCE.carrier.CanAddNewVehicle(uid, true);
 	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be able to buy it	
 	DInfo("CanAddNewVehicle for source station says "+canaddonemore,2);
-	canaddonemore=INSTANCE.carrier.CanAddNewVehicle(j, false);
+	canaddonemore=INSTANCE.carrier.CanAddNewVehicle(uid, false);
 	DInfo("CanAddNewVehicle for destination station says "+canaddonemore,2);
 	if (!canaddonemore)	vehneed=0;
-	DInfo("Route="+j+"-"+road.ROUTE.src_name+"/"+road.ROUTE.dst_name+"/"+road.ROUTE.cargo_name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.ROUTE.vehicule+"/"+maxveh+" firstveh="+firstveh,2);
+	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
 //	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
 //		else		profit=true;
 	vehList.Valuate(AIVehicle.GetAge);
@@ -275,15 +275,15 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			INSTANCE.bank.busyRoute=true;
 			if (firstveh && vehneed > 0 && oldveh)
 				{
-				if (INSTANCE.carrier.BuildAndStartVehicle(j,false))
+				if (INSTANCE.carrier.BuildAndStartVehicle(uid))
 					{
-					DInfo("Adding a vehicle to route #"+j+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
+					DInfo("Adding a vehicle to route "+road.name,0);
 					firstveh=false; vehneed--;
 					}
 				}
 			if (!firstveh && vehneed > 0)
 					{
-					priority.AddItem(road.ROUTE.group_id,vehneed);
+					priority.AddItem(road.groupID,vehneed);
 					continue; // skip to next route, we won't check removing for that turn
 					}
 			}
@@ -320,7 +320,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 if (priority.IsEmpty())	return;
 local priosave=AIList();
 priosave.AddList(priority); // save it because value is = number of vehicle we need
-priority.Valuate(INSTANCE.chemin.VehicleGroupProfitRatio);
+priority.Valuate(INSTANCE.route.VehicleGroupProfitRatio);
 priority.Sort(AIList.SORT_BY_VALUE,false);
 local vehneed=0;
 local vehvalue=0;
@@ -331,20 +331,14 @@ foreach (groupid, ratio in priority)
 	if (vehneed == 0) continue;
 	local vehvaluegroup=AIVehicleList_Group(groupid);	
 	vehvalue=AIEngine.GetPrice(AIVehicle.GetEngineType(vehvaluegroup.Begin()));
-	for (local i=0; i < INSTANCE.chemin.RListGetSize(); i++)
+	local uid=INSTANCE.route.GroupIndexer.GetValue(groupid);
+	for (local z=0; z < vehneed; z++)
 		{
-		road=INSTANCE.chemin.RListGetItem(i);
-		if (road.ROUTE.group_id == groupid)
-			{
-			for (local z=0; z < vehneed; z++)
+		if (INSTANCE.bank.CanBuyThat(vehvalue))
+			if (INSTANCE.carrier.BuildAndStartVehicle(uid))
 				{
-				if (INSTANCE.bank.CanBuyThat(vehvalue))
-					if (INSTANCE.carrier.BuildAndStartVehicle(i,true))
-						{
-						DInfo("Adding a vehicle to route #"+i+" "+road.ROUTE.cargo_name+" from "+road.ROUTE.src_name+" to "+road.ROUTE.dst_name,0);
-						}
+				DInfo("Adding a vehicle to route #"+road.name,0);
 				}
-			}
 		}
 	}
 }

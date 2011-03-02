@@ -18,17 +18,17 @@
 
 function cBuilder::CheckAirportUpgrade()
 {
-INSTANCE.chemin.VirtualAirNetworkUpdate();
+INSTANCE.route.VirtualAirNetworkUpdate();
 DInfo("Checking if any airport need to be upgrade...",2);
 local newairporttype=INSTANCE.builder.GetAirportType();
-for (local i=0; i < INSTANCE.chemin.RListGetSize(); i++)
+for (local i=0; i < INSTANCE.route.RListGetSize(); i++)
 	{
-	local road=INSTANCE.chemin.RListGetItem(i);
+	local road=INSTANCE.route.RListGetItem(i);
 	if (road.ROUTE.kind!=AIVehicle.VT_AIR)	continue;
 	if (!road.ROUTE.isServed) continue;
 	local stationtype=0;
-	local src=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
-	local dst=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
+	local src=INSTANCE.route.GListGetItem(road.ROUTE.src_station);
+	local dst=INSTANCE.route.GListGetItem(road.ROUTE.dst_station);
 	local upgrade=false;
 	if (src.STATION.type < newairporttype)
 		{
@@ -52,7 +52,7 @@ local month=AIDate.GetMonth(AIDate.GetCurrentDate());
 if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++;}
 		else	return false;
 DInfo("Montly checks run...",1);
-INSTANCE.builder.CheckAirportUpgrade();
+//INSTANCE.builder.CheckAirportUpgrade();
 INSTANCE.builder.RouteNeedRepair();
 if (INSTANCE.SixMonth % 3 == 0) INSTANCE.builddelay=false; // Wait 3 months, now allow us to build again
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
@@ -64,36 +64,36 @@ function cBuilder::HalfYearChecks()
 INSTANCE.SixMonth=0;
 INSTANCE.TwelveMonth++;
 DInfo("Half year checks run...",1);
-if (INSTANCE.chemin.airnet_count > 0) DInfo("Aircraft network have "+INSTANCE.chemin.airnet_count+" aircrafts running",0);
+if (INSTANCE.route.airnet_count > 0) DInfo("Aircraft network have "+INSTANCE.route.airnet_count+" aircrafts running",0);
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
 }
 
 function cBuilder::RouteIsDamage(idx)
 // Set the route idx as damage
 {
-local road=INSTANCE.chemin.RListGetItem(idx);
+local road=INSTANCE.route.RListGetItem(idx);
 if (road == -1) return;
 if (road.ROUTE.kind != AIVehicle.VT_ROAD)	return;
 if (!road.ROUTE.isServed)	return;
-if (!INSTANCE.chemin.repair_routes.HasItem(idx))	INSTANCE.chemin.repair_routes.AddItem(idx,0);
+if (!INSTANCE.route.RouteDamage.HasItem(idx))	INSTANCE.route.RouteDamage.AddItem(idx,0);
 }
 
 function cBuilder::RouteNeedRepair()
 {
-DInfo("Damage routes: "+INSTANCE.chemin.repair_routes.Count(),1);
-if (INSTANCE.chemin.repair_routes.IsEmpty()) return;
+DInfo("Damage routes: "+INSTANCE.route.RouteDamage.Count(),1);
+if (INSTANCE.route.RouteDamage.IsEmpty()) return;
 local deletethatone=-1;
-foreach (routes, dummy in INSTANCE.chemin.repair_routes)
+foreach (routes, dummy in INSTANCE.route.RouteDamage)
 	{
 	local trys=dummy;
 	trys++;
 	DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1);
 	local test=INSTANCE.builder.CheckRoadHealth(routes);
-	if (test)	INSTANCE.chemin.repair_routes.SetValue(routes, -1)
-		else	INSTANCE.chemin.repair_routes.SetValue(routes, trys);
+	if (test)	INSTANCE.route.RouteDamage.SetValue(routes, -1)
+		else	INSTANCE.route.RouteDamage.SetValue(routes, trys);
 	if (trys >= 12)	{ deletethatone=routes }
 	}
-INSTANCE.chemin.repair_routes.RemoveValue(-1);
+INSTANCE.route.RouteDamage.RemoveValue(-1);
 if (deletethatone != -1)	{ INSTANCE.builder.RouteIsInvalid(deletethatone); }
 }
 
@@ -186,7 +186,7 @@ foreach (stations, dummy in truckstation)
 	local truck_getter_waiting=AIList();
 	local truck_dropper_loading=AIList();
 	local truck_dropper_waiting=AIList();
-	local station_tile=cTileTools.FindRoadStationTiles(AIStation.GetLocation(stations));
+	local station_tile=cTileTools.FindStationTiles(AIStation.GetLocation(stations));
 	DInfo("Station tiles found: "+station_tile.Count(),1);
 	local station_accept_cargo=AIList();
 	local station_produce_cargo=AIList();

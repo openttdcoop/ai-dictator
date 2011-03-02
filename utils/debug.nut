@@ -56,6 +56,13 @@ if (!INSTANCE.route.target_entry) return;
 DInfo("# "+INSTANCE.route.target.stationID+" Station type: "+INSTANCE.route.target.stationType+" specialType: "+INSTANCE.route.target.specialType+" produce "+INSTANCE.route.target.cargo_produce.Count()+" cargos, accept "+INSTANCE.route.target.cargo_accept.Count()+" cargos",2);
 }
 
+function cBuilder::DumpJobs(uid)
+{
+local tjob=cJobs.GetJobObject(uid);
+DInfo("Jobs #"+uid+" s/t="+tjob.sourceID+"->"+tjob.targetID+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID),0);
+INSTANCE.NeedDelay(60);
+}
+
 /*function cChemin::ShowStationCapacity()
 {
 if (!INSTANCE.debug) return;

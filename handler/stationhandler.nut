@@ -14,7 +14,7 @@ class cStation
 {
 static	stationdatabase = {};
 //static	routeParent = AIList();	// map route uid to stationid (as value)
-static	virtual_airport = AIList();	// list stations currently in the air network
+static	VirtualAirports = AIList();	// stations in the air network as item, value=towns
 static	function GetStationObject(stationID)
 		{
 		return stationID in cStation.stationdatabase ? cStation.stationdatabase[stationID] : null;
@@ -27,7 +27,7 @@ static	function GetStationObject(stationID)
 				// for road = AIRoad.RoadType
 				// for airport: AirportType
 	virtualized	= false; // true when part of the airnetwork
-	size		= null;	// size of station: road = number of stations, trains=width, airport=width*height
+	size		= 1;	// size of station: road = number of stations, trains=width, airport=width*height
 	maxsize		= null; // maximum size a station could be
 	locations	= AIList();	// locations of station tiles
 					// for road, value = front tile location
@@ -38,8 +38,8 @@ static	function GetStationObject(stationID)
 	cargo_rating	= AIList(); // cargos ID, rating as value
 	cargo_accept	= AIList(); // cargos ID, amount as value of cargos the station handle
 	radius		= null;	// radius of the station
-	vehicle_count	= null;	// vehicle using that station
-	vehicle_max	= null;	// max vehicle that station could handle
+	vehicle_count	= 0;	// vehicle using that station
+	vehicle_max	= 0;	// max vehicle that station could handle
 }
 
 function cStation::StationSave()
@@ -77,8 +77,9 @@ function cStation::CanUpgradeStation()
 			this.vehicle_max=INSTANCE.carrier.water_max;
 			return false;
 		break;
-		case	AIStation.STATION_BUS:
+		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
+	DInfo("size "+this.size+" max "+INSTANCE.carrier.road_max_onroute);
 			this.vehicle_max=this.size*INSTANCE.carrier.road_max_onroute;
 			if (this.size >= this.maxsize)	return false;
 		break;
@@ -166,6 +167,7 @@ function cStation::InitNewStation()
 		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
 			this.maxsize=INSTANCE.carrier.road_max;
+			this.size=locations.Count();
 			if (AIRoad.HasRoadType(locations.Begin(), AIRoad.ROADTYPE_ROAD))
 				{
 				this.specialType=AIRoad.ROADTYPE_ROAD;	// set road type the station use

@@ -77,10 +77,10 @@ function cJobs::GetUID()
 			local v1=this.roadType+1;
 			local v2=(this.cargoID+10);
 			local v3=(this.targetID+100);
-			if (this.target_istown)	v3+=566;
-			local v4=(this.sourceID+5000);
+			if (this.target_istown)	v3+=1000;
+			local v4=(this.sourceID+10000);
 			if (this.source_istown) v4+=4000;
-			parentID = (this.sourceID)*500+this.cargoID;
+			parentID = (this.sourceID+1)*1024+this.cargoID;
 			uID = (v3*v4)+(v1*v2);
 			this.UID=uID;
 			this.parentID=parentID;
@@ -101,7 +101,7 @@ function cJobs::RankThisJob()
 	local valuerank=0;
 	local stationrank=0;
 	local cargorank=this.cargoValue;
-	if (INSTANCE.cargo_favorite==this.cargoID)	cargorank=1.2*cargoValue; // 20% bonus for our favorite cargo
+	if (INSTANCE.cargo_favorite==this.cargoID)	cargorank=(20*cargoValue)/100;// 20% bonus for favorite cargo
 	valuerank= cargorank * cargoAmount;
 	if (this.source_istown)
 		{
@@ -139,7 +139,7 @@ function cJobs::RefreshValue(jobID)
 		}
 	else	{ // industry
 		myjob.cargoAmount=AIIndustry.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
-		myjob.foule=cChemin.GetAmountOfCompetitorStationAround(myjob.sourceID);
+		myjob.foule=cRoute.GetAmountOfCompetitorStationAround(myjob.sourceID);
 		}
 	myjob.RankThisJob();
 	}
@@ -147,7 +147,12 @@ function cJobs::RefreshValue(jobID)
 function cJobs::RefreshAllValue()
 // refesh datas of all objects
 {
-foreach (item, value in jobIndexer)	RefreshValue(item);
+DInfo("Refreshing jobs, will take time...",0);
+foreach (item, value in jobIndexer)
+	{
+	::AIController.Sleep(1);
+	RefreshValue(item);
+	}
 }
 
 function cJobs::QuickRefresh()
@@ -157,7 +162,11 @@ function cJobs::QuickRefresh()
 	smallList.AddList(jobDoable);
 //	smallList.KeepValue(1);
 	smallList.KeepTop(4);
-	foreach (item, value in smallList)	{ cJobs.RefreshValue(item); }
+	foreach (item, value in smallList)
+		{
+		cJobs.RefreshValue(item);
+		cBuilder.DumpJobs(item);
+		}
 	return smallList;
 	}
 
@@ -389,6 +398,7 @@ function cJobs::UpdateDoableJobs()
 							else	parentListID.AddItem(myjob.parentID,1);
 		if (doable)	{ jobIndexer.SetValue(id, 1); jobDoable.AddItem(id, myjob.ranking); }
 			else	jobIndexer.SetValue(id, 0);
+		if (doable)	DInfo("Doable job "+myjob.UID+" rankng="+myjob.ranking,2);
 		//INSTANCE.Sleep(1);
 		}
 	jobDoable.Sort(AIList.SORT_BY_VALUE, false);
@@ -455,5 +465,6 @@ foreach (ID, dummy in townjobs)
 		INSTANCE.Sleep(1);
 		}
 	}
+cJobs.RefreshAllValue();
 cJobs.UpdateDoableJobs();
 }
