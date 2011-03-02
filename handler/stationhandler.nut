@@ -26,9 +26,9 @@ static	function GetStationObject(stationID)
 				// for trains = AIRail.RailType
 				// for road = AIRoad.RoadType
 				// for airport: AirportType
-	virtualized	= false;// true if in the virtual network
+	virtualized	= false; // true when part of the airnetwork
 	size		= null;	// size of station: road = number of stations, trains=width, airport=width*height
-	canUpgrade	= true;	// false if we cannot upgrade it more
+	maxsize		= null; // maximum size a station could be
 	locations	= AIList();	// locations of station tiles
 					// for road, value = front tile location
 					// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper
@@ -39,6 +39,7 @@ static	function GetStationObject(stationID)
 	cargo_accept	= AIList(); // cargos ID, amount as value of cargos the station handle
 	radius		= null;	// radius of the station
 	vehicle_count	= null;	// vehicle using that station
+	vehicle_max	= null;	// max vehicle that station could handle
 }
 
 function cStation::StationSave()
@@ -70,13 +71,29 @@ function cStation::CanUpgradeStation()
 // check if station could be upgrade
 // just return canUpgrade value or for airports true or false if we find a better airport
 	{
-	if (this.stationType >= StationType.STATION_AIRPORT_SMALL)
-		{ // it's an airport
-		local newairport = cBuilder.GetAirportType();
-		if (newairport > this.stationType)	this.canUpgrade=true;
-						else	this.canUpgrade=false;
+	switch (this.stationType)
+		{
+		case	AIStation.STATION_DOCK:
+			this.vehicle_max=INSTANCE.carrier.water_max;
+			return false;
+		break;
+		case	AIStation.STATION_BUS:
+		case	AIStation.STATION_TRUCK_STOP:
+			this.vehicle_max=this.size*INSTANCE.carrier.road_max_onroute;
+			if (this.size >= this.maxsize)	return false;
+		break;
+		case	AIStation.STATION_TRAIN:
+			this.vehicle_max=this.size;
+			if (this.size >= this.maxsize)	return false;
+		break;
+		case	AIStation.STATION_AIRPORT:
+			local newairport = cBuilder.GetAirportType();
+			this.vehicle_max=INSTANCE.carrier.AirportTypeLimit[this.specialType];
+			// the per airport type limit doesn't apply to network aircrafts that bypass this check
+			if (newairport > this.specialType)	return true;
+							else	return false;
+		break;
 		}
-	if (this.stationType == StationType.STATION_PLATFORM)	this.canUpgrade=false;
 	}
 
 function cStation::FindStationType(stationid)
@@ -135,18 +152,20 @@ function cStation::InitNewStation()
 	//if (this.stationType == -1)	{ DError("BUG ! Don't call cStation::InitNewStation() without a real station !",1); return; }
 	local loc=AIStation.GetLocation(this.stationID);
 	locations=cTileTools.FindStationTiles(loc);
-	this.size=locations.Count();
 	if (this.stationType != AIStation.STATION_AIRPORT)	this.radius=AIStation.GetCoverageRadius(this.stationType);
 	// avoid getting the warning message for coverage of airport with that function
 	switch	(this.stationType)
 		{
 		case	AIStation.STATION_TRAIN:		// TODO:
 			this.specialType=AIRail.GetRailType(locations.Begin()); // set rail type the station use
+			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 		break;
 		case	AIStation.STATION_DOCK:		// TODO:
+			this.maxsize=1; this.size=1;
 		break;
 		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
+			this.maxsize=INSTANCE.carrier.road_max;
 			if (AIRoad.HasRoadType(locations.Begin(), AIRoad.ROADTYPE_ROAD))
 				{
 				this.specialType=AIRoad.ROADTYPE_ROAD;	// set road type the station use
@@ -154,6 +173,8 @@ function cStation::InitNewStation()
 			foreach(loc, dummy in this.locations)	this.locations.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
 		break;
 		case	AIStation.STATION_AIRPORT:
+			this.maxsize=1000; // airport size is limited by airport avaiability
+			this.size=this.locations.Count();
 			this.specialType=AIAirport.GetAirportType(this.locations.Begin());
 			this.radius=AIAirport.GetCoverageRadius(this.specialType);
 			local planetype=0;	// big planes
@@ -165,6 +186,7 @@ function cStation::InitNewStation()
 	// for everyone, the cargos
 	this.vehicle_count=0;
 	this.CargosUpdate();
+	local dummy=this.CanUpgradeStation(); // just to set max_vehicle
 	DInfo("STATIONS-> save going");
 	this.StationSave();
 	}

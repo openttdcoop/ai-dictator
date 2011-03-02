@@ -14,13 +14,10 @@
 
 class cEvents
 {
-	root = null;
-	todepotlist = null;
 	eventList = null;
 	event	= null;
 
 	constructor() {
-		todepotlist = AIList();
 		eventList = [];
 		event=0;
 	}
@@ -61,14 +58,14 @@ while (AIEventController.IsEventWaiting())
 			if (event.AcceptPreview()) 
 				{
 				DInfo("New engine available for preview: " + event.GetName(),0);
-				INSTANCE.carrier.top_vehicle.Clear(); // reset top vehicle list
+				INSTANCE.carrier.TopEngineList.Clear(); // reset top vehicle list
 				}
 		break;
 		case AIEvent.AI_ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
 			DInfo("New engine available: " + AIEngine.GetName(engine),0);
-			INSTANCE.carrier.top_vehicle.Clear(); // reset top vehicle list
+			INSTANCE.carrier.TopEngineList.Clear(); // reset top vehicle list
 		break;
 		case AIEvent.AI_ET_VEHICLE_CRASHED:
 			local vehicle = null;

@@ -301,7 +301,6 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 				else tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
 			tilelist.Sort(AIList.SORT_BY_VALUE, false);
 			}
-		showLogic(tilelist);
 		}
 	else	{
 		if (!istown)
@@ -348,7 +347,6 @@ if ((statile==-1 || deptile==-1) && !istown && isneartown)
 	}
 if (!isneartown)
 	{
-	showLogic(tilelist);
 	foreach (tile, dummy in tilelist)
 		{
 		if (cBuilder.CanBuildRoadStation(tile, dir))

@@ -109,7 +109,6 @@ switch (direction)
 	break;
 	}
 tiletester.AddRectangle(location, location+checker);
-showLogic(tiletester);
 local tile=null;
 local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 // we will demolish anything that can prevent us from building, except if that thing is own by us

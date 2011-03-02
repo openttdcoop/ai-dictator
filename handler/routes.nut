@@ -17,6 +17,7 @@ static	database = {};
 static	RouteIndexer = AIList();	// list all UID of routes we are handling
 static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
 static	RouteDamage = AIList(); 	// list of routes that need repairs
+static	VirtualAirGroup = [];		// 0=mail & 1=passenger
 
 static	function GetRouteObject(UID)
 		{
@@ -53,6 +54,18 @@ static	function GetRouteObject(UID)
 	cargoID		= null;	// the cargo id
 	date_VehicleDel	= null;	// date of last time we remove a vehicle
 	date_lastCheck	= null;	// date of last time we check route health
+	}
+
+function cRoute::GetVirtualAirMailGroup()
+// return the groupID for the mail virtual air group
+	{
+	return VirtualAirGroup[0];
+	}
+
+function cRoute::GetVirtualAirPassengerGroup()
+// return the groupID for the passenger virtual air group
+	{
+	return VirtualAirGroup[0];
 	}
 
 function cRoute::CheckEntry()
@@ -174,6 +187,13 @@ function cRoute::CreateNewRoute(UID)
 	this.CheckEntry();
 	}
 
+function cRoute::GetRouteDepot()
+// Return a depot, try return source depot, if it fail backup to target depot
+// Platform are the kind of route that can make source depot fail
+	{
+	if (this.source.depot != null)	return	this.source.depot;
+				else	return	this.target.depot;
+	}
 function cRoute::RouteInitNetwork()
 // Add the network routes to the database
 	{
@@ -190,6 +210,7 @@ function cRoute::RouteInitNetwork()
 	if (AIGroup.IsValidGroup(n))	this.groupID=n;
 				else	DWarn("Cannot create group !",1);
 	AIGroup.SetName(n, "Virtual Network Mail");
+	VirtualAirGroup.push(n);
 	mailRoute.RouteSave();
 
 	local passRoute=cRoute();
@@ -205,6 +226,7 @@ function cRoute::RouteInitNetwork()
 	if (AIGroup.IsValidGroup(n))	this.groupID=n;
 				else	DWarn("Cannot create group !",1);
 	AIGroup.SetName(n, "Virtual Network Passenger");
+	VirtualAirGroup.push(n);
 	passRoute.RouteSave();
 	}
 

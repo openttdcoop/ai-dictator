@@ -161,7 +161,6 @@ if (!helipadonly)
 	tilelist.Valuate(AITile.GetCargoAccept, INSTANCE.route.cargoID, 1, 1, rad);
 	tilelist.RemoveBelowValue(8);
 	tilelist.Sort(AIList.SORT_BY_VALUE,false);
-	showLogic(tilelist);
 	INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 	foreach (i, dummy in tilelist)
 		{
@@ -185,9 +184,13 @@ else	{ success=true; }
 DInfo("Success to build airport "+success);
 if (success)
 	{
-	if (start)	INSTANCE.route.source_stationID=AIStation.GetStationID(newStation);
-		else	INSTANCE.route.target_stationID=AIStation.GetStationID(newStation);
-	INSTANCE.route.CreateNewStation(start);
+	if (!helipadonly)
+		{
+		if (start)	INSTANCE.route.source_stationID=AIStation.GetStationID(newStation);
+			else	INSTANCE.route.target_stationID=AIStation.GetStationID(newStation);
+		INSTANCE.route.CreateNewStation(start);
+		}
+	else	{ INSTANCE.route.route_type = RouteType.CHOPPER; }
 /*	if (helipadonly)
 		{
 		newStation.stationID = AIStation.GetStationID(AIIndustry.GetLocation(INSTANCE.route.sourceID));
