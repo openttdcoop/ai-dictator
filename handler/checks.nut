@@ -64,7 +64,7 @@ function cBuilder::HalfYearChecks()
 INSTANCE.SixMonth=0;
 INSTANCE.TwelveMonth++;
 DInfo("Half year checks run...",1);
-if (INSTANCE.route.airnet_count > 0) DInfo("Aircraft network have "+INSTANCE.route.airnet_count+" aircrafts running",0);
+//if (INSTANCE.route.airnet_count > 0) DInfo("Aircraft network have "+INSTANCE.route.airnet_count+" aircrafts running",0);
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
 }
 

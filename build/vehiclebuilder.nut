@@ -196,6 +196,8 @@ local cargoid= road.cargoID;
 local veh = INSTANCE.carrier.ChooseRoadVeh(cargoid);
 local homedepot = road.GetRouteDepot();
 local price = AIEngine.GetPrice(veh);
+local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0);
+if (altplace)	homedepot = road.target.depot;
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
 INSTANCE.bank.RaiseFundsBy(price);
@@ -218,6 +220,7 @@ else	{
 AIGroup.MoveVehicle(road.groupID, firstveh);
 AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
+if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(firstveh);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
 return true;
 }

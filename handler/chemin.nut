@@ -290,9 +290,10 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		}
 
 // Removing vehicle when station is too crowd & vehicle get stuck
+/*
 	if (cargowait == 0 && oldveh) // this happen if we load everything at the station
 		{
-		local busyList=AIVehicleList_Group(road.ROUTE.group_id);
+		local busyList=AIVehicleList_Group(road.groupID);
 		local runningList=AIList();
 		if (busyList.IsEmpty()) continue;
 		busyList.Valuate(AIVehicle.GetState);
@@ -314,7 +315,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",1);
 		INSTANCE.carrier.VehicleSendToDepot(veh);
 		AIVehicle.ReverseVehicle(veh); // try to make it move away from the queue
-		}
+		}*/
 	}
 // now we can try add others needed vehicles here but base on priority
 if (priority.IsEmpty())	return;

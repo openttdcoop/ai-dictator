@@ -53,20 +53,7 @@ function cStation::StationSave()
 		}
 
 	}
-/* 
-function cStation::StationOwnByRoute(uid)	// TODO: not sure it's useful, will see, until then, in that form it's not useful 
-// add that station as use by route uid
-	{
-	if (!this.routeParent.HasItem(uid))	this.routeParent.AddItem(uid, stationid);
-	}
 
-function cStation::IsUseByRoute(uid)
-// return true if that uid route use that station
-// route must claim it first thru cStation.StationOwnByRoute
-	{
-	return (routeParent.HasItem(uid) && routeParent.GetValue(uid)==this.stationID);
-	}
-*/
 function cStation::CanUpgradeStation()
 // check if station could be upgrade
 // just return canUpgrade value or for airports true or false if we find a better airport
@@ -79,7 +66,6 @@ function cStation::CanUpgradeStation()
 		break;
 		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
-	DInfo("size "+this.size+" max "+INSTANCE.carrier.road_max_onroute);
 			this.vehicle_max=this.size*INSTANCE.carrier.road_max_onroute;
 			if (this.size >= this.maxsize)	return false;
 		break;
@@ -189,7 +175,6 @@ function cStation::InitNewStation()
 	this.vehicle_count=0;
 	this.CargosUpdate();
 	local dummy=this.CanUpgradeStation(); // just to set max_vehicle
-	DInfo("STATIONS-> save going");
 	this.StationSave();
 	}
 

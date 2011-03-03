@@ -220,10 +220,16 @@ function cBuilder::BuildRoadStation(start)
 {
 INSTANCE.bank.RaiseFundsBigTime();
 local stationtype = null;
+local rad=null;
 if (AICargo.GetTownEffect(INSTANCE.route.cargoID) == AICargo.TE_PASSENGERS)
-		{ stationtype = AIRoad.ROADVEHTYPE_BUS; }
-	else 	{ stationtype = AIRoad.ROADVEHTYPE_TRUCK; }
-local rad = AIStation.GetCoverageRadius(stationtype);
+		{
+		rad= AIStation.GetCoverageRadius(AIStation.STATION_BUS_STOP);
+		stationtype = AIRoad.ROADVEHTYPE_BUS;
+		}
+	else	{
+		rad= AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
+		stationtype = AIRoad.ROADVEHTYPE_TRUCK;
+		}
 local dir, tilelist, checklist, otherplace, istown, isneartown=null;
 if (start)	{
 		dir = INSTANCE.builder.GetDirection(INSTANCE.route.source_location, INSTANCE.route.target_location);
@@ -247,10 +253,6 @@ if (start)	{
 			{
 			tilelist = cTileTools.GetTilesAroundTown(INSTANCE.route.targetID);
 			checklist= cTileTools.GetTilesAroundTown(INSTANCE.route.targetID);
-			//tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
-			//tilelist.KeepAboveValue(8);
-			//checklist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
-			//checklist.KeepAboveValue(8);
 			isneartown=true; istown=true;
 			}
 		else	{
@@ -291,17 +293,15 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 		tilelist.KeepAboveValue(0);
 		tilelist.Valuate(AIRoad.IsRoadTile);
 		tilelist.KeepValue(0);
-		if (!istown && !start)	// not a town, and start = only industry as destination
+		if (!istown && !start)	// not a town, and not start = only industry as destination
 			{
 			tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
 			tilelist.Sort(AIList.SORT_BY_VALUE,true); // little distance first
 			}
 		else	{ // town or (industry at start)
-//			if (!istown)
-DInfo("CargoID now is "+INSTANCE.route.cargoID);
- tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.route.cargoID, 1, 1, rad);
-			//	else tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
-			showLogic(tilelist);
+			if (!istown)
+	 			tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.route.cargoID, 1, 1, rad);
+				else tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
 			tilelist.Sort(AIList.SORT_BY_VALUE, false);
 			}
 		}
@@ -601,7 +601,6 @@ if (good)
 		}
 	else	{ DInfo(msg+"Working",1); }
 	}
-INSTANCE.NeedDelay(50);
 ClearSignsALL();
 return good;
 }

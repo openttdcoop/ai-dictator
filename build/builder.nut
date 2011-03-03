@@ -223,14 +223,23 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 // return true if compatible
 {
 local compare=cStation.GetStationObject(stationID);
-
+DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
 // find if station will accept our cargo
 if (start)
 	{
-	if (!compare.cargo_produce.HasItem(INSTANCE.route.cargoID))	return false;
+	if (!compare.cargo_produce.HasItem(INSTANCE.route.cargoID))
+		{
+		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't handle "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		return false;
+		}
 	}
 else	{
-	if (!compare.cargo_accept.HasItem(INSTANCE.route.cargoID))	return false;
+	if (!compare.cargo_accept.HasItem(INSTANCE.route.cargoID))
+		{
+		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't handle "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		return false;
+		}
+
 	}
 // here station are compatible, but still do that station is within our original station area ?
 DInfo("Checking if station is within area of our industry/town",2);
@@ -259,11 +268,13 @@ else	{ // check the station is within our industry
 	}
 
 DInfo("Checking if station can accept more vehicles",1);
-if (!INSTANCE.carrier.CanAddNewVehicle(compare.stationID))
+// TODO: fix that fast !!! We are giving stationID to a function that need routeID
+/*
+if (!INSTANCE.carrier.CanAddNewVehicle(compare.stationID,start))
 	{
 	DInfo("Station cannot get more vehicle, even compatible, we need a new one",1);
 	return false;
-	}
+	}*/
 return true;
 }
 
@@ -272,8 +283,9 @@ function cBuilder::FindCompatibleStationExists()
 // if compatible, we could link to use that station too
 {
 // find source station compatible
-local sList=AIStationList(INSTANCE.route.route_type);
-DInfo("Looking for a compatible station",1);
+local sList=AIStationList(INSTANCE.route.station_type);
+DInfo("Looking for a compatible station sList="+sList.Count(),2);
+DInfo("statyppe="+INSTANCE.route.station_type+" BUS="+AIStation.STATION_BUS_STOP+" TRUCK="+AIStation.STATION_TRUCK_STOP,1);
 INSTANCE.builder.DumpRoute();
 local source_success=false;
 local target_success=false;
@@ -281,14 +293,14 @@ if (!sList.IsEmpty())
 	{
 	foreach (stations_check, dummy in sList)
 		{
-		source_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(true, stations_check);
-		target_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(false, stations_check);
-		if (source_succcess)	INSTANCE.route.source_stationID=stations_check;
+		if (!source_success)	source_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(true, stations_check);
+		if (!target_success)	target_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(false, stations_check);
+		if (source_success)	INSTANCE.route.source_stationID=stations_check;
 		if (target_success)	INSTANCE.route.target_stationID=stations_check;
 		if (source_success && target_success)	break;
 		}
 	}
-
+INSTANCE.NeedDelay(100);
 if (source_success)	DInfo("Found a compatible station for our source station !",1);
 		else 	DInfo("Failure, creating a new station for our source station.",1);
 if (target_success)	DInfo("Found a compatible station for our destination station !",1);
@@ -305,7 +317,8 @@ if (INSTANCE.route.status==0) // not using switch/case so we can advance steps i
 	success=INSTANCE.carrier.GetVehicle();
 	if (success < 0)
 		{
-		DWarn("There's no vehicle for that transport type we could use to carry that cargo",2);
+		DWarn("There's no vehicle for that transport type we could use to carry that cargo:"+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		INSTANCE.route.RouteIsNotDoable();
 		return false;
 		}
 	else	{ INSTANCE.route.status=1; } // advance to next phase
@@ -371,7 +384,7 @@ if (INSTANCE.route.status==4)
 				INSTANCE.route.RouteIsNotDoable();
 				return false;
 				}
-			else	{ if (INSTANCE.secureStart > 0)	INSTANCE.station.DeleteStation(INSTANCE.route.source_stationID); }
+		else	{ INSTANCE.build_delay=true; return false; }
 			} // and nothing more, stay at that phase & rebuild road when possible
 	}
 if (INSTANCE.route.status==5)

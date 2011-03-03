@@ -36,6 +36,7 @@ static	function GetRouteObject(UID)
 	target		= null; // shortcut to the target station object
 	vehicle_count	= 0; // numbers of vehicle using it
 	route_type	= null; // type of vehicle using that route (It's enum RouteType)
+	station_type	= null; // type of station (it's AIStation.StationType)
 	isWorking	= false; // true if the route is working
 	status		= 0; // current status of the route
 				// 0 - need a destination pickup
@@ -185,9 +186,27 @@ function cRoute::CreateNewRoute(UID)
 	this.target_istown = jobs.target_istown;
 	this.vehicle_count = 0;
 	this.route_type	= jobs.roadType;
+	DInfo("ROUTE : JOBS report roadType: "+this.route_type);
+	this.cargoID = jobs.cargoID;
+	switch (this.route_type)
+		{
+		case	RouteType.RAIL:
+			this.station_type=AIStation.STATION_TRAIN;
+		break;
+		case	RouteType.ROAD:
+			this.station_type=AIStation.STATION_TRUCK_STOP;
+			if (this.cargoID == cCargo.GetPassengerCargo())	this.station_type=AIStation.STATION_BUS_STOP;
+		break;
+		case	RouteType.WATER:
+			this.station_type=AIStation.STATION_DOCK;
+		break;
+		case	RouteType.AIR:
+			this.station_type=AIStation.STATION_AIRPORT;
+		break;
+		}
+	DInfo("ROUTE : ROUTE report route_type: "+this.route_type+" station_type: "+this.station_type);
 	this.isWorking = false;
 	this.status = 0;
-	this.cargoID = jobs.cargoID;
 	if (source_istown)	source_location=AITown.GetLocation(sourceID);
 			else	source_location=AIIndustry.GetLocation(sourceID);
 	if (target_istown)	target_location=AITown.GetLocation(targetID);
@@ -212,6 +231,7 @@ function cRoute::RouteInitNetwork()
 	mailRoute.isWorking=true;
 	mailRoute.UID=0;
 	mailRoute.route_type = RouteType.AIRNET;
+	mailRoute.station_type = AIStation.STATION_AIRPORT;
 	mailRoute.status=100;
 	mailRoute.vehicle_count=0;
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
@@ -228,6 +248,7 @@ function cRoute::RouteInitNetwork()
 	passRoute.isWorking=true;
 	passRoute.UID=1;
 	passRoute.route_type = RouteType.AIRNET;
+	passRoute.station_type = AIStation.STATION_AIRPORT;
 	passRoute.status=100;
 	passRoute.vehicle_count=0;
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);

@@ -148,10 +148,17 @@ function cJobs::RefreshAllValue()
 // refesh datas of all objects
 {
 DInfo("Refreshing jobs, will take time...",0);
+local curr=0;
 foreach (item, value in jobIndexer)
 	{
-	::AIController.Sleep(1);
 	RefreshValue(item);
+	curr++;
+	if (curr % 4 == 0)
+		{
+		DInfo(curr+" / "+jobIndexer.Count(),0);
+		INSTANCE.Sleep(1);
+		}
+
 	}
 }
 
@@ -160,12 +167,10 @@ function cJobs::QuickRefresh()
 	{
 	local smallList=AIList();
 	smallList.AddList(jobDoable);
-//	smallList.KeepValue(1);
 	smallList.KeepTop(4);
 	foreach (item, value in smallList)
 		{
 		cJobs.RefreshValue(item);
-		cBuilder.DumpJobs(item);
 		}
 	return smallList;
 	}
@@ -181,6 +186,7 @@ function cJobs::GetRanking(jobID)
 function cJobs::GetNextJob()
 // Return the next job UID to do, -1 if we have none to do
 	{
+	cJobs.UpdateDoableJobs();
 	local smallList=QuickRefresh();
 	if (smallList.IsEmpty())	{ DInfo("Can't find any good jobs to do",1); return -1; }
 	smallList.Sort(AIList.SORT_BY_VALUE, false);
@@ -372,14 +378,15 @@ function cJobs::JobIsNotDoable(uid)
 function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
-	CheckLimitedStatus();
-	DInfo("JOBS -> Upating job indexer and doable list",2);
+	INSTANCE.jobs.CheckLimitedStatus();
+	DInfo("Upating our job pool",0);
 	local parentListID=AIList();
-	jobDoable.Clear();
-	foreach (id, value in jobIndexer)
+	INSTANCE.jobs.jobDoable.Clear();
+	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
+		::AIController.Sleep(1);
 		local doable=1;
-		local myjob=GetJobObject(id);
+		local myjob=cJobs.GetJobObject(id);
 		doable=myjob.isdoable;
 		// not doable if not doable
 		if (doable && myjob.isUse)	doable=false;
@@ -389,21 +396,21 @@ function cJobs::UpdateDoableJobs()
 		if (doable)
 		// not doable if max distance is limited and lower the job distance
 			{
-			local curmax = GetTransportDistance(myjob.roadType, false, !INSTANCE.bank.unleash_road);
+			local curmax = INSTANCE.jobs.GetTransportDistance(myjob.roadType, false, !INSTANCE.bank.unleash_road);
 			if (curmax < myjob.distance)	doable=false;
 			}
 		if (doable)
 		// not doable if any parent is already in use
 			if (myjob.parentID in parentListID)	doable=false;
 							else	parentListID.AddItem(myjob.parentID,1);
-		if (doable)	{ jobIndexer.SetValue(id, 1); jobDoable.AddItem(id, myjob.ranking); }
-			else	jobIndexer.SetValue(id, 0);
+		if (doable)	{ myjob.jobIndexer.SetValue(id, 1); myjob.jobDoable.AddItem(id, myjob.ranking); }
+			else	myjob.jobIndexer.SetValue(id, 0);
 		if (doable)	DInfo("Doable job "+myjob.UID+" rankng="+myjob.ranking,2);
 		//INSTANCE.Sleep(1);
 		}
-	jobDoable.Sort(AIList.SORT_BY_VALUE, false);
-	DInfo("JOBS -> "+jobIndexer.Count()+" jobs found",2);
-	DInfo("JOBS -> "+jobDoable.Count()+" jobs doable",2);
+	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
+	DInfo("JOBS -> "+INSTANCE.jobs.jobIndexer.Count()+" jobs found",2);
+	DInfo("JOBS -> "+INSTANCE.jobs.jobDoable.Count()+" jobs doable",2);
 	//foreach (id, value in jobDoable)	{ DInfo("After update: "+id+" - "+value,2); }
 	}
 
@@ -443,6 +450,8 @@ function cJobs::PopulateJobs()
 {
 local indjobs=AIIndustryList();
 local townjobs=AITownList();
+//townjobs.KeepTop(8);
+//indjobs.KeepTop(5);
 local curr=0;
 DInfo("Finding all industries & towns jobs, this will take a while !",0);
 foreach (ID, dummy in indjobs)
@@ -466,5 +475,4 @@ foreach (ID, dummy in townjobs)
 		}
 	}
 cJobs.RefreshAllValue();
-cJobs.UpdateDoableJobs();
 }
