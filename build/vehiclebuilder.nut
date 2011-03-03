@@ -93,12 +93,8 @@ switch (chem.route_type)
 			{ // can still upgrade
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)
 				{ // we must upgrade
-				if (INSTANCE.secureStart ==0)
-					{ // we can upgrade
-					INSTANCE.builder.RoadStationNeedUpgrade(roadidx, start);
-					local fake=thatstation.CanUpgradeStation(); // to see if upgrade success
-					}
-				else	return true; // cannot upgrade but assuming we will success and tell we're ok
+				INSTANCE.builder.RoadStationNeedUpgrade(roadidx, start);
+				local fake=thatstation.CanUpgradeStation(); // to see if upgrade success
 				}
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
 			// limit by the max the station could handle

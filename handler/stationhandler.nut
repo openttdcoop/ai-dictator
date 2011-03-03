@@ -123,6 +123,17 @@ function cStation::CargosUpdate()
 	
 	}
 
+function cStation::DeleteStation(stationid)
+// Delete the station from database & airport ref
+	{
+	if (stationid in cStation.stationdatabase)
+		{
+		DInfo("STATION -> Removing station #"+stationid+" from station database",1);
+		delete cStation.stationdatabase[stationid];
+		cStation.VirtualAirports.RemoveItem(stationid);
+		}
+	}
+
 function cStation::GetRoadStationEntry(entrynum=-1)
 // return the front road station entrynum
 	{

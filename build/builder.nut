@@ -293,18 +293,28 @@ if (!sList.IsEmpty())
 	{
 	foreach (stations_check, dummy in sList)
 		{
-		if (!source_success)	source_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(true, stations_check);
-		if (!target_success)	target_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(false, stations_check);
-		if (source_success)	INSTANCE.route.source_stationID=stations_check;
-		if (target_success)	INSTANCE.route.target_stationID=stations_check;
-		if (source_success && target_success)	break;
+		source_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(true, stations_check);
+		if (source_success)
+			{
+			INSTANCE.route.source_stationID=stations_check;
+			DInfo("Found a compatible station for the source station",1);
+			break;
+			}
+		}
+	foreach (stations_check, dummy in sList)
+		{
+		target_success=INSTANCE.builder.FindCompatibleStationExistForAllCases(false, stations_check);
+		if (target_success)
+			{
+			INSTANCE.route.target_stationID=stations_check;
+			DInfo("Found a compatible station for the target station",1);
+			break;
+			}
 		}
 	}
 INSTANCE.NeedDelay(100);
-if (source_success)	DInfo("Found a compatible station for our source station !",1);
-		else 	DInfo("Failure, creating a new station for our source station.",1);
-if (target_success)	DInfo("Found a compatible station for our destination station !",1);
-		else 	DInfo("Failure, creating a new station for our destination station.",1);
+if (!source_success)	DInfo("Failure, creating a new station for our source station.",1);
+if (!target_success)	DInfo("Failure, creating a new station for our destination station.",1);
 }
 
 function cBuilder::TryBuildThatRoute()
@@ -333,7 +343,7 @@ if (INSTANCE.route.status==1)
 			INSTANCE.builder.CriticalError = false; // unset it and keep going
 			}
 		else	{ // reason is not critical, lacking funds...
-			INSTANCE.build_delay=true;;
+			INSTANCE.builddelay=true;;
 			return false; // let's get out, so we still have a chance to upgrade the station & find its compatibility
 			}
 		}
@@ -343,7 +353,11 @@ if (INSTANCE.route.status==1)
 if (INSTANCE.route.status==2)
 	{
 	if (INSTANCE.route.source_stationID==null)	{ success=INSTANCE.builder.BuildStation(true); }
-		else	{ success=true; DInfo("Source station is already build, we're reusing an existing one",0); }
+		else	{
+			success=true;
+			DInfo("Source station is already build, we're reusing an existing one",0);
+			INSTANCE.route.RouteUpdate();
+			}
 	if (!success)
 		{ // it's bad we cannot build our source station, that's really bad !
 		if (INSTANCE.builder.CriticalError)
@@ -352,7 +366,7 @@ if (INSTANCE.route.status==2)
 			INSTANCE.route.RouteIsNotDoable();
 			return false;
 			}
-		else	{ INSTANCE.build_delay=true; return false; }
+		else	{ INSTANCE.builddelay=true; return false; }
 		}
 	else { INSTANCE.route.status=3; }
 	}
@@ -360,7 +374,11 @@ if (INSTANCE.route.status==2)
 if (INSTANCE.route.status==3)	
 	{
 	if (INSTANCE.route.target_stationID==null)	{ success=INSTANCE.builder.BuildStation(false); }
-		else	{ success=true; DInfo("Destination station is already build, we're reusing an existing one",0); }
+		else	{
+			success=true;
+			DInfo("Destination station is already build, we're reusing an existing one",0);
+			INSTANCE.route.RouteUpdate();
+			}
 	if (!success)
 		{ // we cannot do destination station
 		if (INSTANCE.builder.CriticalError)
@@ -369,7 +387,7 @@ if (INSTANCE.route.status==3)
 			INSTANCE.route.RouteIsNotDoable();
 			return false;
 			}
-		else	{ INSTANCE.build_delay=true; return false; }
+		else	{ INSTANCE.builddelay=true; return false; }
 		}
 	else	{ INSTANCE.route.status=4 }
 	}
@@ -384,7 +402,7 @@ if (INSTANCE.route.status==4)
 				INSTANCE.route.RouteIsNotDoable();
 				return false;
 				}
-		else	{ INSTANCE.build_delay=true; return false; }
+		else	{ INSTANCE.builddelay=true; return false; }
 			} // and nothing more, stay at that phase & rebuild road when possible
 	}
 if (INSTANCE.route.status==5)

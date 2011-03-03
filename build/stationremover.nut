@@ -11,16 +11,14 @@
  *
 **/
 
-function cBuilder::DeleteStationSourceOrDestination(idx, start)
-// remove a start or end station from idx
+function cBuilder::DeleteStation(uid, stationid)
+// Remove stationid from uid route
 // check no one else use it before doing that
 {
 local exist=false;
-local obj=root.chemin.RListGetItem(idx);
-local realidobj=root.builder.GetStationID(idx,start);
-for (local i=0; i < root.chemin.RListGetSize(); i++)
+foreach (uidbrowse, dummy in cRoute.RouteIndexer)
 	{
-	if (i == idx) continue; // ignore ourselves
+	if (uid == uidbrowse)	continue; // ignore ourselves
 	local temp=root.chemin.RListGetItem(i);
 	if (!temp.ROUTE.isServed) continue; // we need an already built route, even our isn't ready
 	local realidtemp=root.builder.GetStationID(i,start);
@@ -61,25 +59,6 @@ function cBuilder::DeleteDepot(tile)
 {
 local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
 if (isDepot)	cTileTools.DemolishTile(tile);
-}
-
-function cBuilder::DeleteStation(idx)
-{
-local realidobj=root.builder.GetStationID(idx,true);
-local depot=null;
-if (realidobj!=-1)
-	{
-	depot=root.builder.GetDepotID(idx,true);
-	root.builder.DeleteDepot(depot);
-	root.builder.DeleteStationSourceOrDestination(idx,true);
-	}
-realidobj=root.builder.GetStationID(idx,false);
-if (realidobj!=-1)
-	{
-	depot=root.builder.GetDepotID(idx,false);
-	root.builder.DeleteDepot(depot);
-	root.builder.DeleteStationSourceOrDestination(idx,false);
-	}
 }
 
 function cBuilder::RouteIsInvalid(idx)

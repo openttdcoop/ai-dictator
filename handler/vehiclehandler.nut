@@ -369,7 +369,7 @@ function cCarrier::VehicleFindRouteIndex(veh)
 // return UID of the route the veh vehicle is running on
 {
 local group=AIVehicle.GetGroupID(veh);
-if (group in GroupIndexer)	return GroupIndexer.GetValue(group);
+if (group in cRoute.GroupIndexer)	return cRoute.GroupIndexer.GetValue(group);
 return null;
 }
 

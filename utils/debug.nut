@@ -60,6 +60,17 @@ function cBuilder::DumpJobs(uid)
 {
 local tjob=cJobs.GetJobObject(uid);
 DInfo("Jobs #"+uid+" s/t="+tjob.sourceID+"->"+tjob.targetID+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID),0);
+}
+
+function cBuilder::DumpTopJobs()
+{
+local i=0;
+foreach (uid, ranking in INSTANCE.jobs.jobDoable)
+	{
+	INSTANCE.builder.DumpJobs(uid);
+	if (i==12)	break;
+	i++;
+	}
 INSTANCE.NeedDelay(60);
 }
 

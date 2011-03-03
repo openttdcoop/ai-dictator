@@ -133,8 +133,6 @@ DInfo(lastrand+" will rules the company with an iron fist");
 AICompany.SetPresidentName(lastrand);
 AIGetCargoFavorite();
 checkHQ();
-if (AIGameSettings.GetValue("difficulty.max_loan") > 100000) secureStart=0;
-AIController.Sleep(20);
 }
 
 

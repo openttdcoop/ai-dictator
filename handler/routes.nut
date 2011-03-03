@@ -93,7 +93,11 @@ function cRoute::RouteBuildGroup()
 	{
 	local gid = AIGroup.CreateGroup(this.route_type);
 	if (!AIGroup.IsValidGroup(gid))	return;
-	local groupname = AICargo.GetCargoLabel(this.cargoID)+"*"+this.sourceID+"*"+this.targetID;
+	local st="I";
+	if (this.source_istown)	st="T";
+	local dt="I";
+	if (this.target_istown)	dt="T";
+	local groupname = AICargo.GetCargoLabel(this.cargoID)+"*"+st+this.sourceID+"*"+dt+this.targetID;
 	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
 	this.groupID = gid;
 	AIGroup.SetName(this.groupID, groupname);
@@ -273,10 +277,19 @@ function cRoute::RouteIsNotDoable()
 	if (this.vehicle_count > 0)	{ DWarn("Can't delete route still have "+this.vehicle_count+" running on it !",1); return false }
 	cJobs.JobIsNotDoable(this.UID);
 	if (this.groupID != null)	AIGroup.DeleteGroup(this.groupID);
-	if (this.source_stationID != null)	cStation.DeleteStation(this.source_stationID);
-	if (this.target_stationID != null)	cStation.DeleteStation(this.target_stationID);
+	if (this.source_stationID != null)	
+		{
+		INSTANCE.builder.DeleteStation(this.UID, this.source_stationID);
+		cStation.DeleteStation(this.source_stationID);
+		}
+	if (this.target_stationID != null)	
+		{
+		INSTANCE.builder.DeleteStation(this.UID, this.target_stationID);
+		cStation.DeleteStation(this.source_stationID);
+		}
 	if (this.UID in database)
 		{
+		DInfo("ROUTE -> Removing route "+this.UID+" from database",1);
 		delete database[this.UID];
 		RouteIndexer.RemoveItem(this.UID);
 		}	

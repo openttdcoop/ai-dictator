@@ -252,6 +252,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
 //	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
 //		else		profit=true;
+	profit=true; // TODO: fix me, remove or put a real profit check
 	vehList.Valuate(AIVehicle.GetAge);
 	vehList.Sort(AIList.SORT_BY_VALUE,true);
 	if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true; // ~ 8 months

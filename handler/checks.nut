@@ -71,10 +71,10 @@ if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
 function cBuilder::RouteIsDamage(idx)
 // Set the route idx as damage
 {
-local road=INSTANCE.route.RListGetItem(idx);
-if (road == -1) return;
-if (road.ROUTE.kind != AIVehicle.VT_ROAD)	return;
-if (!road.ROUTE.isServed)	return;
+local road=cRoute.GetRouteObjects(idx);
+if (road == null) return;
+if (road.route_type != AIVehicle.VT_ROAD)	return;
+if (!road.ROUTE.isWorking)	return;
 if (!INSTANCE.route.RouteDamage.HasItem(idx))	INSTANCE.route.RouteDamage.AddItem(idx,0);
 }
 
