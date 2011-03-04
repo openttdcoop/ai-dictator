@@ -54,18 +54,25 @@ if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++;}
 DInfo("Montly checks run...",1);
 //INSTANCE.builder.CheckAirportUpgrade();
 INSTANCE.builder.RouteNeedRepair();
-if (INSTANCE.SixMonth % 3 == 0) INSTANCE.builddelay=false; // Wait 3 months, now allow us to build again
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
-//if (bank.canBuild && builder.building_route == -1)	
+//if (bank.canBuild && builder.building_route == -1)
+if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
+if (INSTANCE.buildTimer == 6)
+	{
+	INSTANCE.builddelay=false;
+	INSTANCE.buildTimer=0;
+	}	
 }
 
 function cBuilder::HalfYearChecks()
 {
+INSTANCE.builddelay=false; // Wait 6 months, now allow us to build again
 INSTANCE.SixMonth=0;
 INSTANCE.TwelveMonth++;
 DInfo("Half year checks run...",1);
 //if (INSTANCE.route.airnet_count > 0) DInfo("Aircraft network have "+INSTANCE.route.airnet_count+" aircrafts running",0);
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
+
 }
 
 function cBuilder::RouteIsDamage(idx)

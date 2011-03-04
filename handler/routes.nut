@@ -117,6 +117,14 @@ function cRoute::RouteAddVehicle()
 	if (this.target_entry)	this.target.vehicle_count++;
 	}
 
+function cRoute::RouteRemoveVehicle()
+// Remove a vehicle from the route, updating stations too
+	{
+	this.vehicle_count--;
+	if (this.source_entry)	this.source.vehicle_count--;
+	if (this.target_entry)	this.target.vehicle_count--;
+	}
+
 function cRoute::RouteBuildGroup()
 // Build a group for that route
 	{

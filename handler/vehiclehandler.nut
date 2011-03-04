@@ -636,21 +636,24 @@ if (!dlist.IsEmpty())	INSTANCE.carrier.VehicleIsWaitingInDepot();
 function cCarrier::VehicleSell(veh)
 // sell the vehicle and update route info
 {
+DInfo("-> Sold Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),0);
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 AIVehicle.SellWagonChain(veh, 0);
 AIVehicle.SellVehicle(veh);
-if (idx >= 0)
-	{ INSTANCE.carrier.RouteAndStationVehicleCounterUpdate(idx); } // remove 1 from vehicle counters
+local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
+local road=cRoute.GetRouteObject(uid);
+if (road == null) return;
+road.RouteRemoveVehicle();
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 // Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
 {
-local road=INSTANCE.route.RListGetItem(idx);
+local road=INSTANCE.route.GetRouteObject(idx);
 local vehlist=null;
-if (road.ROUTE.group_id != -1)
+if (road.groupID != null)
 	{
-	vehlist=AIVehicleList_Group(road.ROUTE.group_id);
+	vehlist=AIVehicleList_Group(road.groupID);
 	foreach (vehicle in vehlist)
 		{
 		INSTANCE.carrier.VehicleSendToDepot(vehicle);
@@ -683,7 +686,6 @@ foreach (i, dummy in tlist)
 	if (INSTANCE.carrier.ToDepotList.HasItem(i))	INSTANCE.carrier.ToDepotList.RemoveValue(i);
 	local istop=INSTANCE.carrier.VehicleIsTop(i);
 	if (istop != -1)	{ INSTANCE.carrier.VehicleUpgradeEngineAndWagons(i); }
-	DInfo("-> Sold Vehicle "+INSTANCE.carrier.VehicleGetFormatString(i),0);
 	INSTANCE.carrier.VehicleSell(i);
 	AIController.Sleep(1);
 	}

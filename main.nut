@@ -46,7 +46,6 @@ class DictatorAI extends AIController
 	pathfinder = null;
 	builder = null;
 	bank = null;
-	chemin=null;
 	minRank = null;
 	eventManager = null;
 	carrier=null;
@@ -65,21 +64,32 @@ class DictatorAI extends AIController
 	jobs = null;
 	jobs_obj = null;
 	route = null;
+	buildTimer=null;
 
    constructor()
    	{
-	minRank = 5000;		// ranking below that are drop jobs
+	pathfinder = null;
+	builder = cBuilder();
 	bank = cBanker();
-	eventManager= cEvents();
-	builder=cBuilder();
+	minRank = 5000;
+	eventManager = cEvents();
 	carrier=cCarrier();
+	use_road = false;
+	use_train = false;
+	use_boat = false;
+	use_air = false;
+	fairlevel = 0;
+	debug = false;
 	builddelay=false;
+	OneMonth=0;
+	SixMonth=0;
+	TwelveMonth=0;
+	cargo_favorite=0;
 	loadedgame = false;
-	OneMonth=0;		// this one is use to set a monthly check for some operations
-	SixMonth=0;		// same as OneMonth but every half year
-	TwelveMonth=0;		// again for year
-	jobs=cJobs();
-	route=cRoute();
+	jobs = cJobs();
+	jobs_obj = null;
+	route = cRoute();
+	buildTimer=0;
 	} 
  }
  
@@ -91,7 +101,7 @@ function DictatorAI::Start()
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	AICompany.SetAutoRenewStatus(false);
 	CheckCurrentSettings();
-	bank.SaveMoney();
+	//bank.SaveMoney();
 	if (loadedgame) 
 		{
 		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0);
@@ -102,9 +112,11 @@ function DictatorAI::Start()
 		}
 	 else 	{
 		AIInit();
+		checkHQ();
+		bank.SaveMoney();
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
-		checkHQ();
+
 		}
 	bank.Update();
 	while(true)
@@ -115,7 +127,7 @@ function DictatorAI::Start()
 		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
 		bank.CashFlow();
 		this.ClearSignsALL();
-		builder.ShowStationCapacity();
+		//builder.ShowStationCapacity();
 		if (bank.canBuild)
 				{
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();

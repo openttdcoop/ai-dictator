@@ -24,34 +24,21 @@ foreach (uidbrowse, dummy in cRoute.RouteIndexer)
 	if (temp.source_stationID == stationid || temp.target_stationID == stationid)
 		{
 		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by another route",0);
-		temp=null;
 		return false;
 		}
 	}
 // didn't find someone else use it
-temp=null;
 // check if we have a vehicle using it
-root.carrier.VehicleGroupSendToDepotAndSell(idx);
-local vehcheck=AIVehicleList_Station(realidobj);
+INSTANCE.carrier.VehicleGroupSendToDepotAndSell(uid);
+local vehcheck=AIVehicleList_Station(stationid);
 if (!vehcheck.IsEmpty())
 	{
-	DInfo("Can't delete station "+AIStation.GetName(realidobj)+" ! Station is use by "+vehcheck.Count()+" vehicles",0);
+	DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+vehcheck.Count()+" vehicles",0);
 	return false;
 	}
-local wasnamed=AIStation.GetName(realidobj);
-if (!AITile.DemolishTile(AIStation.GetLocation(realidobj))) return false;
+local wasnamed=AIStation.GetName(stationid);
+if (!AITile.DemolishTile(AIStation.GetLocation(stationid))) return false;
 DInfo("Removing station "+wasnamed+" unused by anyone",0);
-local fakeid=-1;
-if (start)	fakeid=obj.ROUTE.src_station;
-	else	fakeid=obj.ROUTE.dst_station;
-for (local j=0; j < root.chemin.RListGetSize(); j++)
-	{
-	local road=root.chemin.RListGetItem(j);
-	if (road.ROUTE.src_station >= fakeid) road.ROUTE.src_station--;	
-	if (road.ROUTE.dst_station >= fakeid) road.ROUTE.dst_station--;
-	root.chemin.RListUpdateItem(j,road);
-	}
-root.chemin.GListDeleteItem(fakeid);
 return true;
 }
 

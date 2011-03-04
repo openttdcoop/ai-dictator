@@ -198,7 +198,7 @@ if (veh == null)
 INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
-	{ DWarn("Cannot buy the vehicle :",1); return false; }
+	{ DWarn("Cannot buy the vehicle : "+price,1); return false; }
 else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(firstveh),1); }
 if (AIEngine.GetCargoType(veh) != cargoid) AIVehicle.RefitVehicle(firstveh, cargoid);
 local firstorderflag = null;
