@@ -71,10 +71,10 @@ if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
 function cBuilder::RouteIsDamage(idx)
 // Set the route idx as damage
 {
-local road=cRoute.GetRouteObjects(idx);
+local road=cRoute.GetRouteObject(idx);
 if (road == null) return;
 if (road.route_type != AIVehicle.VT_ROAD)	return;
-if (!road.ROUTE.isWorking)	return;
+if (!road.isWorking)	return;
 if (!INSTANCE.route.RouteDamage.HasItem(idx))	INSTANCE.route.RouteDamage.AddItem(idx,0);
 }
 
@@ -116,7 +116,7 @@ foreach (i, dummy in airID)
 	local count=vehlist.Count();
 	//DInfo("Airport "+AIStation.GetName(i)+" is busy with "+vehlist.Count(),2);
 	if (vehlist.Count() < 2)	continue;
-	local passcargo=INSTANCE.carrier.GetPassengerCargo(); // i don't care mail
+	local passcargo=cCargo.GetPassengerCargo(); // i don't care mail
 	local cargowaiting=AIStation.GetCargoWaiting(i,passcargo);
 	if (cargowaiting > 100)
 		{

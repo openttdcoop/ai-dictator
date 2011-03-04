@@ -204,7 +204,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		break;
 		case AIVehicle.VT_AIR:
 			maxveh=INSTANCE.carrier.air_max;
-			cargoid=INSTANCE.carrier.GetPassengerCargo(); // for aircraft, force a check vs passenger
+			cargoid=cCargo.GetPassengerCargo(); // for aircraft, force a check vs passenger
 			// so mail aircraft runner will be add if passenger is high enough, this only affect routes not in the network
 		break;
 		case AIVehicle.VT_WATER:

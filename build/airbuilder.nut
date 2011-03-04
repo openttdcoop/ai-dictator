@@ -93,7 +93,7 @@ function cBuilder::GetAirportType()
 local AirType=null;
 if (AIAirport.IsValidAirportType(AIAirport.AT_SMALL))	{ AirType=AIAirport.AT_SMALL; }
 if (AIAirport.IsValidAirportType(AIAirport.AT_LARGE))	{ AirType=AIAirport.AT_LARGE; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_METROPOLITAN))	{ AirType=AT_METROPOLITAN; }
+if (AIAirport.IsValidAirportType(AIAirport.AT_METROPOLITAN))	{ AirType=AIAirport.AT_METROPOLITAN; }
 if (AIAirport.IsValidAirportType(AIAirport.AT_INTERNATIONAL))	{ AirType=AIAirport.AT_INTERNATIONAL; }
 if (AIAirport.IsValidAirportType(AIAirport.AT_INTERCON))	{ AirType=AIAirport.AT_INTERCON; }
 return AirType;
@@ -158,7 +158,7 @@ if (!helipadonly)
 	DInfo("Building an airport",2);
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.RemoveValue(0);
-	tilelist.Valuate(AITile.GetCargoAccept, INSTANCE.route.cargoID, 1, 1, rad);
+	tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
 	tilelist.RemoveBelowValue(8);
 	tilelist.Sort(AIList.SORT_BY_VALUE,false);
 	INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));

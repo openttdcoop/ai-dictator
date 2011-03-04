@@ -209,39 +209,28 @@ local new_location=[AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(0,1), AIMap.Get
 // left, right, behind middle, front middle, behind left, behind right, front left, front right
 local new_facing=[AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1)];
 // 0 will be same as original station, north, south, east, west
-local road=INSTANCE.chemin.RListGetItem(roadidx);
-if (road == -1)	return false;
-local station_obj=null;
-local station_index=null;
-local other_index=null;
-local other_obj=null;
-if (start)	{ station_index=road.ROUTE.src_station; other_index=road.ROUTE.dst_station; }
-	else	{ station_index=road.ROUTE.dst_station; other_index=road.ROUTE.src_station; }
-station_obj=INSTANCE.chemin.GListGetItem(station_index);
-if (station_obj == -1)	{ DInfo("Route "+roadidx+" doesn't have a road station to upgrade.",2); return false; }
-DInfo("Road station index "+station_index,2);
-other_obj=INSTANCE.chemin.GListGetItem(other_index);
-local station_id=station_obj.STATION.station_id;
-DInfo("Upgrading road station "+AIStation.GetName(station_id),0);
-local depot_id=station_obj.STATION.e_depot;
-// as depot id seems to be = tile index, depot location = depot id so
-local facing=station_obj.STATION.direction;
+local road=cRoute.GetRouteObject(roadidx);
+if (road == null)	return false;
+local work=null;
+if (start)	work=road.source;
+	else	work=road.target;
+DInfo("Upgrading road station "+AIStation.GetName(work.stationID),0);
+local depot_id=work.depot;
 DInfo("Road depot is at "+depot_id,2);
 // first lookout where is the station, where is its entry, where is the depot, where is the depot entry
-local sta_pos=AIStation.GetLocation(station_id);
+local sta_pos=AIStation.GetLocation(work.stationID);
 local sta_front=AIRoad.GetRoadStationFrontTile(sta_pos);
 local dep_pos=depot_id;
-local dep_front=AIRoad.GetRoadDepotFrontTile(dep_pos);
+local dep_front=AIRoad.GetRoadDepotFrontTile(depot_id);
 local depotdead=false;
-local statype=AIRoad.ROADVEHTYPE_BUS;
-if (station_obj.STATION.railtype == 11)	{ statype=AIRoad.ROADVEHTYPE_TRUCK; }
+local statype=work.stationType;
 local deptype=AIRoad.ROADVEHTYPE_BUS+100000; // we add 100000
 local new_sta_pos=-1;
 local new_dep_pos=-1;
 local success=false;
 local sta_pos_list=AIList();
 local sta_front_list=AIList();
-facing=INSTANCE.builder.GetDirection(sta_pos, sta_front);
+local facing=INSTANCE.builder.GetDirection(sta_pos, sta_front);
 local p_left=0;
 local p_right=0;
 local p_back=0;
@@ -284,6 +273,7 @@ sta_front_list.AddItem(sta_pos+p_back+p_back+p_right,	sta_pos+p_back+p_right);
 local allfail=true;
 foreach (direction, tile in sta_front_list)
 	{
+	if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
 	new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, false);
 	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
 	INSTANCE.builder.CriticalError=false; // discard it
@@ -300,20 +290,29 @@ if (depotdead)
 	{
 	DWarn("Road depot was destroy while upgrading",1);
 	new_dep_pos=INSTANCE.builder.BuildRoadDepotAtTile(new_sta_pos);
+	work.depot=new_dep_pos;
 	INSTANCE.builder.CriticalError=false;
 	// Should be more than enough
 	}
-else	{ new_dep_pos=depot_id; }
 if (new_sta_pos > -1)
 	{
-	station_obj.STATION.e_depot=new_dep_pos;
-	station_obj.STATION.type=0; // no more upgrade for it
-	DInfo("Station "+AIStation.GetName(station_obj.STATION.station_id)+" has been upgrade",0);
-	station_obj.STATION.size++;
-	station_obj.STATION.e_depot=new_dep_pos;
+	DInfo("Station "+AIStation.GetName(work.stationID)+" has been upgrade",0);
+	local loc=AIStation.GetLocation(this.stationID);
+	work.locations=cTileTools.FindStationTiles(loc);
+	work.size=locations.Count();
+	DInfo("New station size: "+work.size+"/"+work.maxsize,2);
 	}
-INSTANCE.chemin.GListUpdateItem(station_index,station_obj); // save it
-INSTANCE.builder.RouteIsDamage(roadidx); // ask ourselves a check
+else	{ // fail to upgrade station
+	DInfo("Failure to upgrade "+AIStation.GetName(work.stationID),1);
+	if (allfail)
+		{
+		work.maxsize=work.size;
+		DInfo("Cannot upgrade "+AIStation.GetName(work.stationID)+" anymore !",1);
+		}
+	success=false;
+	}
+foreach (uid, dummy in work.owner)	{ INSTANCE.builder.RouteIsDamage(uid); }
+// ask ourselves a check for every routes that own that station, because station or depot might have change
 return success;
 }
 
@@ -453,7 +452,7 @@ if (road == null) return -1;
 local station_obj=null;
 local realID=-1;
 local depotchecklist=0;
-switch (road.ROUTE.kind)
+switch (road.route_type)
 	{
 	case	1000: // air network is also air type, in case, because i don't think i will use that function for that case
 	case	AIVehicle.VT_AIR:
@@ -470,7 +469,7 @@ switch (road.ROUTE.kind)
 	break;
 	}
 local depotList=AIDepotList(depotchecklist);
-local depotid=road.RouteGetDepot();
+local depotid=road.GetRouteDepot();
 if (depotList.HasItem(depotid)) return depotid;
 INSTANCE.builder.RouteIsDamage(idx); // if we are here, we fail to find a depotid
 return -1;

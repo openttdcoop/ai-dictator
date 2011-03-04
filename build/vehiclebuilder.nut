@@ -32,24 +32,27 @@ static	function GetVehicleObject(vehicleID)
 		return vehicleID in cCarrier.vehicle_database ? cCarrier.vehicle_database[vehicleID] : null;
 		}
 
-	rail_max=null;		// maximum trains vehicle a station can handle
-	road_max=null;		// maximum a road station can upgarde (max: 6)
-	air_max=null;		// maximum aircraft a station can handle
-	airnet_max=null;	// maximum aircraft on a network
-	airnet_count=null;	// current number of aircrafts running the network
-	water_max=null;		// maximum ships a station can handle
+	rail_max	=null;	// maximum trains vehicle a station can handle
+	road_max	=null;	// maximum a road station can upgarde (max: 6)
+	air_max		=null;	// maximum aircraft a station can handle
+	airnet_max	=null;	// maximum aircraft on a network
+	airnet_count	=null;	// current number of aircrafts running the network
+	water_max	=null;	// maximum ships a station can handle
 	road_max_onroute=null;  // maximum road vehicle on a route
-
-//	under_upgrade=null;	// true when we are doing upgrade on something
-
-	vehnextprice=null;	// we just use that to upgrade vehicle
-	do_profit=null;		// Record each vehicle profits
+	vehnextprice	=null;	// we just use that to upgrade vehicle
+	do_profit	=null;	// Record each vehicle profits
 
 	constructor()
 		{
-		vehnextprice=0;
-		do_profit=AIList();
-		
+		rail_max	=0;
+		road_max	=0;
+		air_max		=0;
+		airnet_max	=0;
+		airnet_count	=0;
+		water_max	=0;
+		road_max_onroute=0;
+		vehnextprice	=0;
+		do_profit	=AIList();
 		}
 }
 
@@ -100,7 +103,7 @@ switch (chem.route_type)
 			// limit by the max the station could handle
 			if (chem.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
 			// limit by number of vehicle per route
-			if (!use_road)	return false;
+			if (!INSTANCE.use_road)	return false;
 			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 			}
 		else	{ // max size already
@@ -131,21 +134,17 @@ switch (chem.route_type)
 	break;
 // TODO: upgrade airport before adding new aircraft if upgrade is avaiable
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
-		if (INSTANCE.use_air)	return false;
-		local checklimit=thatstation.CanUpgradeStation(); // force recheck limits
-		local aircraftMax=INSTANCE.chemin.air_max; // max aircraft for non network airport
-		local aircraftCurrent=thatstation.STATION.e_count+1; // number of aircraft for non network airport
-		local currAirport=INSTANCE.builder.GetAirportType();
-		local maxperairport=INSTANCE.carrier.AirportTypeLimit[currAirport];
-		DInfo("currAirportType="+currAirport+" limit/airport="+maxperairport,2);
-		if (road.ROUTE.kind==1000)
-			{ // in the network
-			aircraftCurrent=INSTANCE.chemin.airnet_count+1;
-			aircraftMax=INSTANCE.chemin.airnet_max * (INSTANCE.chemin.virtual_air.len()-1);
-			}
-		if (aircraftMax > maxperairport)	aircraftMax=maxperairport; // per airport type limitation
-		DInfo("Limit for aircraft "+aircraftCurrent+"/"+aircraftMax,2);
-		if (aircraftCurrent > aircraftMax) return false;
+		local result=true;
+		if (!INSTANCE.use_air)	result=false;
+		thatstation.CheckAirportLimits(); // force recheck limits
+		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	result=false;
+		// limit by airport capacity
+		if (!thatstation.virtualized && chem.vehicle_count+1 > INSTANCE.carrier.air_max)	result=false;
+		// limit by route aircraft capacity when not networked
+		if (thatstation.virtualized)
+				DInfo("Limit for that airport (network): "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,2);
+			else	DInfo("Limit for that airport (classic): "+chem.vehicle_count+"/"+INSTANCE.carrier.air_max,2);
+		return result;
 	break;
 	}
 return true;
@@ -404,7 +403,7 @@ function cCarrier::ChooseWagon(cargo)
 	return wagonlist.Begin();
 }
 
-function cCarrier::ChooseRailVeh(idx) // TODO: recheck that, for case where a train could be better base on power
+function cCarrier::ChooseRailVeh() // TODO: fix&recheck that, for case where a train could be better base on power
 {
 local vehlist = AIEngineList(AIVehicle.VT_RAIL);
 vehlist.Valuate(AIEngine.HasPowerOnRail, AIRail.GetCurrentRailType());
@@ -429,7 +428,7 @@ switch (INSTANCE.route.route_type)
 	break;
 	case RouteType.RAIL:
 	//success=INSTANCE.carrier.GetRailVehicle(idx);
-	successs=false;
+	success=false;
 	break;
 	case RouteType.WATER:
 	success=false;

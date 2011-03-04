@@ -19,17 +19,17 @@ local exist=false;
 foreach (uidbrowse, dummy in cRoute.RouteIndexer)
 	{
 	if (uid == uidbrowse)	continue; // ignore ourselves
-	local temp=root.chemin.RListGetItem(i);
-	if (!temp.ROUTE.isServed) continue; // we need an already built route, even our isn't ready
-	local realidtemp=root.builder.GetStationID(i,start);
-	if (realidtemp == realidobj)
+	local temp=cRoute.GetRouteObject(uidbrowse);
+	if (!temp.isWorking) continue; // we need an already built route, even our isn't ready
+	if (temp.source_stationID == stationid || temp.target_stationID == stationid)
 		{
-		DInfo("Can't delete station "+AIStation.GetName(realidobj)+" ! Station is use by another route",0);
+		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by another route",0);
+		temp=null;
 		return false;
 		}
 	}
 // didn't find someone else use it
-
+temp=null;
 // check if we have a vehicle using it
 root.carrier.VehicleGroupSendToDepotAndSell(idx);
 local vehcheck=AIVehicleList_Station(realidobj);

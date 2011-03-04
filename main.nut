@@ -98,21 +98,24 @@ function DictatorAI::Start()
 		DInfo("We have "+(cStation.database.len())+" stations",0);
 		DInfo("We have "+(cRoute.database.len())+" routes running",0);
 		DInfo(" ");
+		jobs.PopulateJobs();
 		}
 	 else 	{
 		AIInit();
 		route.RouteInitNetwork();
+		jobs.PopulateJobs();
+		checkHQ();
 		}
 	bank.Update();
-	jobs.PopulateJobs();
 	while(true)
 		{
 		this.SetRailType();
 		this.CheckCurrentSettings();
 		if (use_train) builder.BaseStationRailBuilder(80835);
 		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
-		//bank.CashFlow();
+		bank.CashFlow();
 		this.ClearSignsALL();
+		builder.ShowStationCapacity();
 		if (bank.canBuild)
 				{
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();

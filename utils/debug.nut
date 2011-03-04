@@ -59,7 +59,7 @@ DInfo("# "+INSTANCE.route.target.stationID+" Station type: "+INSTANCE.route.targ
 function cBuilder::DumpJobs(uid)
 {
 local tjob=cJobs.GetJobObject(uid);
-DInfo("Jobs #"+uid+" s/t="+tjob.sourceID+"->"+tjob.targetID+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID),0);
+DInfo("Jobs #"+uid+" s/t="+tjob.sourceID+"->"+tjob.targetID+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID)+" "+cRoute.RouteTypeToString(tjob.roadType),0);
 }
 
 function cBuilder::DumpTopJobs()
@@ -71,23 +71,23 @@ foreach (uid, ranking in INSTANCE.jobs.jobDoable)
 	if (i==12)	break;
 	i++;
 	}
-INSTANCE.NeedDelay(60);
 }
 
-/*function cChemin::ShowStationCapacity()
+function cBuilder::ShowStationCapacity()
 {
 if (!INSTANCE.debug) return;
 local stations=null;
-for (local i=0; i < INSTANCE.chemin.GListGetSize(); i++)
+local sta_list=AIStationList(AIStation.STATION_BUS_STOP);
+if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	{
-	stations=INSTANCE.chemin.GListGetItem(i);
+	stations=cStation.GetStationObject(sta_id);
 	local stuck="CLOSE - ";
-	if (stations.STATION.type != 0) stuck="UPGRADE -";
-	local outtxt=stuck+stations.STATION.e_count+" - "+stations.STATION.s_count;
-	local outpos=stations.STATION.e_loc;
+	if (stations.CanUpgradeStation()) stuck="UPGRADE -";
+	local outtxt=stuck+stations.vehicle_count+" - "+stations.vehicle_max;
+	local outpos=stations.locations.Begin();
 	PutSign(outpos,outtxt);
 	}
 }
-*/
+
 
 

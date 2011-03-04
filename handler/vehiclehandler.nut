@@ -369,7 +369,7 @@ function cCarrier::VehicleFindRouteIndex(veh)
 // return UID of the route the veh vehicle is running on
 {
 local group=AIVehicle.GetGroupID(veh);
-if (group in cRoute.GroupIndexer)	return cRoute.GroupIndexer.GetValue(group);
+if (cRoute.GroupIndexer.HasItem(group))		return cRoute.GroupIndexer.GetValue(group);
 return null;
 }
 
@@ -481,13 +481,13 @@ switch (AIVehicle.GetVehicleType(veh))
 	break;
 	case AIVehicle.VT_AIR:
 		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
-		road=INSTANCE.route.RListGetItem(idx);
+		road=cRoute.GetRouteObject(idx);
 		local modele=AircraftType.EFFICIENT;
-		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
-		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
+		//if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
+		//if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
 		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, modele);
 		if (INSTANCE.carrier.TopEngineList.HasItem(uniqID))	return -1;
-		top = INSTANCE.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
+		top = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
 	break;
 	}
 if (ourEngine == top)	{

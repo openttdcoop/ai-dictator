@@ -21,7 +21,6 @@ return a;
 
 function getLastName(who)
 {
-DInfo("picking last name: "+who,1);
 local names = ["Castro", "Mussolini", "Lenin", "Stalin", "Batista", "Jong", "Mugabe", "Al-Bashir", "Milosevic",
 	"Bonaparte", "Caesar", "Tse-Tung"];
 if (who == 666) { who = AIBase.RandRange(12) };
@@ -30,7 +29,6 @@ return names[who];
 
 function getFirstName(who)
 {
-DInfo("picking first name: "+who,1);
 local names = ["Fidel", "Benito", "Vladamir", "Joseph", "Fulgencio", "Kim", "Robert", "Omar", "Slobodan",
 	"Napoleon", "Julius", "Mao"];
 if (who == 666) { who = AIBase.RandRange(12) };
@@ -110,7 +108,6 @@ function AIGetCargoFavorite()
 local crglist=AICargoList();
 cargo_favorite=AIBase.RandRange(crglist.Count());
 cargo_favorite=ListGetItem(crglist, cargo_favorite);
-DInfo("max cargo: "+crglist.Count()+" pick="+cargo_favorite,1);
 DInfo("We will promote "+AICargo.GetCargoLabel(cargo_favorite),0);
 }
 
@@ -132,7 +129,6 @@ lastrand = nickrand + " "+ getLastName(randomPresident);
 DInfo(lastrand+" will rules the company with an iron fist");
 AICompany.SetPresidentName(lastrand);
 AIGetCargoFavorite();
-checkHQ();
 }
 
 

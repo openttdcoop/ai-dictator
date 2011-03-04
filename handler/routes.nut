@@ -25,7 +25,7 @@ static	function GetRouteObject(UID)
 		}
 
 	UID		= null; // UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
-	name		= "UNKNOWN";	// string with the route name
+	name		= null;	// string with the route name
 	sourceID	= null;	// id of source town/industry
 	source_location	= null;	// location of source
 	source_istown	= null;	// if source is town
@@ -34,11 +34,11 @@ static	function GetRouteObject(UID)
 	target_location	= null;	// location of target
 	target_istown	= null;	// if target is town
 	target		= null; // shortcut to the target station object
-	vehicle_count	= 0; // numbers of vehicle using it
+	vehicle_count	= null; // numbers of vehicle using it
 	route_type	= null; // type of vehicle using that route (It's enum RouteType)
 	station_type	= null; // type of station (it's AIStation.StationType)
-	isWorking	= false; // true if the route is working
-	status		= 0; // current status of the route
+	isWorking	= null; // true if the route is working
+	status		= null; // current status of the route
 				// 0 - need a destination pickup
 				// 1 - source/destination find compatible station or create new
 				// 2 - need build source station
@@ -46,7 +46,6 @@ static	function GetRouteObject(UID)
 				// 4 - need do pathfinding
 				// 5 - need checks
 				// 100 - all done, finish route
-//	distance	= null; // distance from source station -> target station
 	groupID		= null; // groupid of the group for that route
 	source_entry	= null;	// true if we have a working station
 	source_stationID= null; // source station id
@@ -55,7 +54,36 @@ static	function GetRouteObject(UID)
 	cargoID		= null;	// the cargo id
 	date_VehicleDel	= null;	// date of last time we remove a vehicle
 	date_lastCheck	= null;	// date of last time we check route health
+
+	constructor()
+		{
+		UID= null;
+		name="UNKNOWN";
+		sourceID= null;
+		source_location	= 0;
+		source_istown	= false;
+		source		= null;
+		targetID	= null;
+		target_location	= 0;
+		target_istown	= false;
+		target		= null;
+		vehicle_count	= 0;
+		route_type	= null;
+		station_type	= null;
+		isWorking	= false;
+		status		= 0;
+		groupID		= null;
+		source_entry	= false;
+		source_stationID= null;
+		target_entry	= false;
+		target_stationID= null;
+		cargoID		= null;
+		date_VehicleDel	= null;
+		date_lastCheck	= null;
+		}
 	}
+
+
 
 function cRoute::GetVirtualAirMailGroup()
 // return the groupID for the mail virtual air group
@@ -74,10 +102,11 @@ function cRoute::CheckEntry()
 	{
 	this.source_entry = (this.source_stationID != null);
 	this.target_entry = (this.target_stationID != null);
-	if (this.source_entry)	this.source=cStation.GetStationObject(this.source_stationID);
+	if (this.source_entry)	{ this.source=cStation.GetStationObject(this.source_stationID); this.source.ClaimOwner(this.UID); }
 			else	this.source=null;
-	if (this.target_entry)	this.target=cStation.GetStationObject(this.target_stationID);
+	if (this.target_entry)	{ this.target=cStation.GetStationObject(this.target_stationID); this.target.ClaimOwner(this.UID); }
 			else	this.target=null;
+	DInfo("Route "+this.UID+" source="+this.source+" target="+this.target,1);
 	}
 
 function cRoute::RouteAddVehicle()

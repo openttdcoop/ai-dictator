@@ -26,20 +26,41 @@ static	function GetStationObject(stationID)
 				// for trains = AIRail.RailType
 				// for road = AIRoad.RoadType
 				// for airport: AirportType
-	virtualized	= false; // true when part of the airnetwork
-	size		= 1;	// size of station: road = number of stations, trains=width, airport=width*height
+	virtualized	= null; // true when part of the airnetwork
+	size		= null;	// size of station: road = number of stations, trains=width, airport=width*height
 	maxsize		= null; // maximum size a station could be
-	locations	= AIList();	// locations of station tiles
+	locations	= null;	// locations of station tiles
 					// for road, value = front tile location
 					// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper
 	depot		= null;	// depot position and id are the same
-	rating		= AIList(); // item=cargos, value=rating
-	cargo_produce	= AIList(); // cargos ID, amount waiting as value
-	cargo_rating	= AIList(); // cargos ID, rating as value
-	cargo_accept	= AIList(); // cargos ID, amount as value of cargos the station handle
+	rating		= null; // item=cargos, value=rating
+	cargo_produce	= null; // cargos ID, amount waiting as value
+	cargo_rating	= null; // cargos ID, rating as value
+	cargo_accept	= null; // cargos ID, amount as value of cargos the station handle
 	radius		= null;	// radius of the station
-	vehicle_count	= 0;	// vehicle using that station
-	vehicle_max	= 0;	// max vehicle that station could handle
+	vehicle_count	= null;	// vehicle using that station
+	vehicle_max	= null;	// max vehicle that station could handle
+	owner		= null;	// list routes that own that station
+	
+	constructor()
+		{
+		stationID	= null;
+		stationType	= null;
+		specialType	= null;
+		virtualized	= false;
+		size		= 1;
+		maxsize		= 1;
+		locations	= AIList();
+		depot		= null;
+		rating		= AIList();
+		cargo_produce	= AIList();
+		cargo_rating	= AIList();
+		cargo_accept	= AIList();
+		radius		= 0;
+		vehicle_count	= 0;	
+		vehicle_max	= 0;	
+		owner		= AIList();
+		}
 }
 
 function cStation::StationSave()
@@ -64,22 +85,21 @@ function cStation::CanUpgradeStation()
 			this.vehicle_max=INSTANCE.carrier.water_max;
 			return false;
 		break;
-		case	AIStation.STATION_BUS_STOP:
-		case	AIStation.STATION_TRUCK_STOP:
-			this.vehicle_max=this.size*INSTANCE.carrier.road_max_onroute;
-			if (this.size >= this.maxsize)	return false;
-		break;
 		case	AIStation.STATION_TRAIN:
 			this.vehicle_max=this.size;
 			if (this.size >= this.maxsize)	return false;
 		break;
 		case	AIStation.STATION_AIRPORT:
 			local newairport = cBuilder.GetAirportType();
-			this.vehicle_max=INSTANCE.carrier.AirportTypeLimit[this.specialType];
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
 			if (newairport > this.specialType)	return true;
 							else	return false;
 		break;
+		default: // bus or truck
+			this.vehicle_max=this.size*INSTANCE.carrier.road_max_onroute;
+			if (this.size >= this.maxsize)	return false;
+						else	return true;
+		break;		
 		}
 	}
 
@@ -141,6 +161,33 @@ function cStation::GetRoadStationEntry(entrynum=-1)
 	return this.locations.GetValue(entrynum);
 	}
 
+function cStation::ClaimOwner(uid)
+// Route claims orwnership of that station
+	{
+/*	DInfo("Dumping owner");
+	foreach (ruid, dummy in this.owner)	{ DInfo("station "+this.stationID+" owner="+ruid,1); }*/
+	if (!this.owner.HasItem(uid))
+		{
+		this.owner.AddItem(uid,1);
+		DInfo("STATIONS -> Route #"+uid+" claims station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
+		}
+	}
+
+function cStation::CheckAirportLimits()
+// Set limits for airports
+	{
+	this.specialType=AIAirport.GetAirportType(this.locations.Begin());
+	this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
+	local planetype=0;	// big planes
+	if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
+	this.locations.SetValue(this.locations.Begin(), planetype);
+	this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
+	if (this.virtualized && INSTANCE.carrier.VirtualAirRoute.len() < 2)	this.virtualized=false;
+	// get out of airnetwork if the network is too poor
+	this.vehicle_max=INSTANCE.carrier.AirportTypeLimit[this.specialType];
+	if (this.virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * INSTANCE.carrier.VirtualAirRoute.len();
+	}
+
 function cStation::InitNewStation()
 // Autofill most values for a station. stationID must be set
 // Should not be call as-is, cRoute.CreateNewStation is there for that task
@@ -154,11 +201,11 @@ function cStation::InitNewStation()
 	// avoid getting the warning message for coverage of airport with that function
 	switch	(this.stationType)
 		{
-		case	AIStation.STATION_TRAIN:		// TODO:
+		case	AIStation.STATION_TRAIN:		// TODO: fix & finish
 			this.specialType=AIRail.GetRailType(locations.Begin()); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 		break;
-		case	AIStation.STATION_DOCK:		// TODO:
+		case	AIStation.STATION_DOCK:		// TODO: do it
 			this.maxsize=1; this.size=1;
 		break;
 		case	AIStation.STATION_BUS_STOP:
@@ -175,7 +222,7 @@ function cStation::InitNewStation()
 			this.maxsize=1000; // airport size is limited by airport avaiability
 			this.size=this.locations.Count();
 			this.specialType=AIAirport.GetAirportType(this.locations.Begin());
-			this.radius=AIAirport.GetCoverageRadius(this.specialType);
+			this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
 			local planetype=0;	// big planes
 			if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
 			this.locations.SetValue(this.locations.Begin(), planetype);

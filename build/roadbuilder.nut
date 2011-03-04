@@ -198,7 +198,6 @@ reusedepot.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick 
 reusedepot.KeepAboveValue(0);
 reusedepot.Valuate(AIRoad.IsRoadTile);
 reusedepot.KeepValue(0);
-reusedepot=INSTANCE.builder.FilterBlacklistTiles(reusedepot);
 reusedepot.Valuate(AITile.GetDistanceManhattanToTile,tile);
 reusedepot.Sort(AIList.SORT_BY_VALUE, true);
 local newpos=-1;
