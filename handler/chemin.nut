@@ -89,7 +89,7 @@ foreach (towns, dummy in pairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStati
 foreach (towns, dummy in impairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
 DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+cStation.VirtualAirports.Count(),2);
 INSTANCE.route.RouteUpdateAirPath();
-INSTANCE.NeedDelay(100);
+INSTANCE.NeedDelay(10);
 INSTANCE.carrier.AirNetworkOrdersHandler();
 }
 
@@ -149,12 +149,12 @@ else	{
 		totalcapacity+=capacity;
 		if (capacity > 0)	onecapacity=capacity;
 		}
-	if (onecapacity == 0)	onecapacity=90; // estimation
 	vehlist.Valuate(AIVehicle.GetAge);
 	vehlist.Sort(AIList.SORT_BY_VALUE,true); // younger first
 	age=vehlist.GetValue(vehlist.Begin());
 	if (age < 90) { DInfo("We already buy an aircraft recently for the network: "+age,2); return; }
 	}
+if (onecapacity == 0)	onecapacity=90; // estimation
 DInfo("NETWORK -> Aircrafts in network: "+vehnumber,2);
 DInfo("NETWORK -> Total capacity of network: "+totalcapacity,2);
 local bigairportlocation=INSTANCE.carrier.VirtualAirRoute[0];
@@ -222,6 +222,7 @@ INSTANCE.route.DutyOnAirNetwork(); // we handle the network load here
 foreach (uid, dummy in cRoute.RouteIndexer)
 	{
 	road=cRoute.GetRouteObject(uid);
+	if (road==null)	continue;
 	if (road.route_type == RouteType.AIRNET)	continue;
 	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
 	local maxveh=0;
@@ -321,7 +322,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 					}
 			}
 		}
-
+	}
 // Removing vehicle when station is too crowd & vehicle get stuck
 /*
 	if (cargowait == 0 && oldveh) // this happen if we load everything at the station
@@ -348,9 +349,11 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",1);
 		INSTANCE.carrier.VehicleSendToDepot(veh);
 		AIVehicle.ReverseVehicle(veh); // try to make it move away from the queue
-		}*/
+		}
 	}
+*/
 // now we can try add others needed vehicles here but base on priority
+
 if (priority.IsEmpty())	return;
 local priosave=AIList();
 priosave.AddList(priority); // save it because value is = number of vehicle we need
@@ -361,7 +364,7 @@ local vehvalue=0;
 foreach (groupid, ratio in priority)
 	{
 	if (priosave.HasItem(groupid))	vehneed=priosave.GetValue(groupid);
-				else	vehneed=0;
+						else	vehneed=0;
 	if (vehneed == 0) continue;
 	local vehvaluegroup=AIVehicleList_Group(groupid);	
 	vehvalue=AIEngine.GetPrice(AIVehicle.GetEngineType(vehvaluegroup.Begin()));
@@ -371,7 +374,7 @@ foreach (groupid, ratio in priority)
 		if (INSTANCE.bank.CanBuyThat(vehvalue))
 			if (INSTANCE.carrier.BuildAndStartVehicle(uid))
 				{
-				DInfo("Adding a vehicle to route #"+road.name,0);
+				DInfo("Adding a vehicle to route #"+uid,0);
 				}
 		}
 	}

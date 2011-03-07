@@ -223,6 +223,10 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 // return true if compatible
 {
 local compare=cStation.GetStationObject(stationID);
+if (compare == null)	// might happen, we found a dead station
+	{
+	INSTANCE.builder.DeleteStation(-1, stationID);
+	}
 DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
 // find if station will accept our cargo
 local handling=true;
@@ -372,7 +376,6 @@ if (INSTANCE.route.status==2)
 			}
 	if (!success)
 		{ // it's bad we cannot build our source station, that's really bad !
-		DInfo("Criterror set?"+INSTANCE.builder.CriticalError,2);
 		if (INSTANCE.builder.CriticalError)
 			{
 			INSTANCE.builder.CriticalError=false;

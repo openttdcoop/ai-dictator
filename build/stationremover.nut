@@ -18,26 +18,33 @@ function cBuilder::DeleteStation(uid, stationid)
 {
 local exist=false;
 local temp=cStation.GetStationObject(stationid);
-if (temp.owner.Count() != 0)
+if (temp != null)	exist=true; // a case where a station exist but not in our base
+if (exist)
 	{
-	DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",0);
-	return false;
-	}
-// didn't find someone else use it
-// check if we have a vehicle using it
-INSTANCE.carrier.VehicleGroupSendToDepotAndSell(uid);
-local vehcheck=AIVehicleList_Station(stationid);
-if (!vehcheck.IsEmpty())
-	{
-	DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+vehcheck.Count()+" vehicles",0);
-	return false;
+	if (temp.owner.Count() != 0)
+		{
+		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",0);
+		return false;
+		}
+	// didn't find someone else use it
+	// check if we have a vehicle using it
+	INSTANCE.carrier.VehicleGroupSendToDepotAndSell(uid);
+	local vehcheck=AIVehicleList_Station(stationid);
+	if (!vehcheck.IsEmpty())
+		{
+		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+vehcheck.Count()+" vehicles",0);
+		return false;
+		}
 	}
 local wasnamed=AIStation.GetName(stationid);
-if (!INSTANCE.builder.DeleteDepot(temp.depot))	return false;
-							else	{ DInfo("Removing depot link to station "+wasnamed,0); }
 if (!AITile.DemolishTile(AIStation.GetLocation(stationid))) return false;
 DInfo("Removing station "+wasnamed+" unused by anyone",0);
-cStation.DeleteStation(stationid);
+if (exist)
+	{
+	if (!INSTANCE.builder.DeleteDepot(temp.depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
+								else	{ DInfo("Removing depot link to station "+wasnamed,0); }
+	cStation.DeleteStation(stationid);
+	}
 return true;
 }
 

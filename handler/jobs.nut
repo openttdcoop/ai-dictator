@@ -177,7 +177,7 @@ function cJobs::RefreshValue(jobID)
 	{
 	::AIController.Sleep(1);
 	if (jobID == 0 || jobID == 1)	return; // don't refresh virtual routes
-	local myjob = GetJobObject(jobID);
+	local myjob = cJobs.GetJobObject(jobID);
 	if (myjob == null) return null;
 	local badind=false;
 	if (!myjob.source_istown && !AIIndustry.IsValidIndustry(myjob.sourceID))	badind=true;
@@ -186,7 +186,7 @@ function cJobs::RefreshValue(jobID)
 		{
 		DInfo("JOBS -> Removing bad industry from the job pool: "+myjob.UID,0);
 		local deadroute=cRoute.GetRouteObject(myjob.UID);
-		deadroute.RouteIsNotDoable(myjob.UID);
+		if (deadroute != null)	deadroute.RouteIsNotDoable();
 		}
 	// foule, moneyGains, ranking & cargoAmount
 	if (myjob.source_istown)
@@ -211,13 +211,13 @@ function cJobs::RefreshAllValue()
 {
 DInfo("Collecting jobs infos, will take time...",0);
 local curr=0;
-foreach (item, value in jobIndexer)
+foreach (item, value in cJobs.jobIndexer)
 	{
-	RefreshValue(item);
+	cJobs.RefreshValue(item);
 	curr++;
 	if (curr % 5 == 0)
 		{
-		DInfo(curr+" / "+jobIndexer.Count(),0);
+		DInfo(curr+" / "+cJobs.jobIndexer.Count(),0);
 		INSTANCE.Sleep(1);
 		}
 	}
@@ -227,7 +227,7 @@ function cJobs::QuickRefresh()
 // refresh datas on first 8 doable objects
 	{
 	local smallList=AIList();
-	smallList.AddList(jobDoable);
+	smallList.AddList(cJobs.jobDoable);
 	smallList.KeepTop(8);
 	foreach (item, value in smallList)
 		{
@@ -517,7 +517,7 @@ function cJobs::UpdateDoableJobs()
 								else	parentListID.AddItem(myjob.parentID,1);
 		if (doable)	{ myjob.jobIndexer.SetValue(id, myjob.ranking); myjob.jobDoable.AddItem(id, myjob.ranking); }
 			else	myjob.jobIndexer.SetValue(id, 0);
-		if (doable)	DInfo("Doable job "+myjob.UID+" rank="+myjob.ranking,2);
+		//if (doable)	DInfo("Doable job "+myjob.UID+" rank="+myjob.ranking,2);
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
 	DInfo("JOBS -> "+INSTANCE.jobs.jobIndexer.Count()+" jobs found",2);

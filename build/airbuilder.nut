@@ -12,58 +12,57 @@
  *
 **/
 
-function cBuilder::AirportNeedUpgrade(idx,start)
+function cBuilder::AirportNeedUpgrade(stationid)
 // this upgrade an existing airport to a newer one
 {
-DInfo("Airport upgrader start for route "+idx,2);
+DInfo("Airport upgrader start for airport #"+stationid+" "+AIStation.GetName(stationid),2);
 // better check criticals stuff before stopping our traffic and find we're going to fail
-local road=INSTANCE.chemin.RListGetItem(idx);
-if (!road.ROUTE.isServed) return false; // don't upgrade a non working airport
-if (start && !road.ROUTE.src_entry) return false; // plaform are set to false, we cannot upgrade a platform
-if (road.ROUTE.kind != AIVehicle.VT_AIR) return false; // not an aircraft route
-if (start)	{ if (!road.ROUTE.src_istown) return false; } // make sure we work on a town
-	else	{ if (!road.ROUTE.dst_istown) return false; }
-local station=null;
-local stationfakeid=null;
-if (start)	stationfakeid=road.ROUTE.src_station;
-	else	stationfakeid=road.ROUTE.dst_station;
-station=INSTANCE.chemin.GListGetItem(stationfakeid);
+local station=cStation.GetStationObject(stationid);
 local townrating=0;
 local noiselevel=0;
-local townid=0;
+local townid=-1;
+local start=false;
+local saved_owners=AIList();
+saved_owners.AddList(station.owner);
+local firstroute=cRoute.GetRouteObject(station.owner.Begin());
+if (firstroute == null)	{ DInfo("Found an airport attach to no route ! Giving up.",1); return false }
+if (firstroute.source_stationID == stationid)	{ start=true; townid=firstroute.sourceID; }
+							else	{ start=false; townid=firstroute.targetID; }
+
 local airporttype=INSTANCE.builder.GetAirportType();
-if (start)	townid=road.ROUTE.src_id;
-	else	townid=road.ROUTE.dst_id;
 townrating=AITown.GetRating(townid,AICompany.COMPANY_SELF);
 noiselevel=AITown.GetAllowedNoise(townid);
 local ourloc=0;
 
-local ournoise=AIAirport.GetNoiseLevelIncrease(AIStation.GetLocation(station.STATION.e_loc),airporttype);
-DInfo("Upgrading airport "+AIStation.GetName(station.STATION.station_id),0);
+local ournoise=AIAirport.GetNoiseLevelIncrease(station.locations.Begin(),airporttype);
 DInfo("Town rating = "+townrating+" noiselevel="+noiselevel,2);
 if (townrating < AITown.TOWN_RATING_MEDIOCRE)
-	{ DInfo("Cannot upgrade airport, town will refuse that.",0); return false; }
+	{ DInfo("Cannot upgrade airport, town will refuse that.",1); return false; }
 local cost=AIAirport.GetPrice(airporttype);
 cost+=1000; // i'm not sure how much i need to destroy old airport
-INSTANCE.bank.RaiseFundsTo(cost);
+INSTANCE.bank.RaiseFundsBy(cost);
 if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
-	{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",0); return false; }
+	{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",1); return false; }
 
 // find traffic that use that airport & reroute it
-INSTANCE.chemin.under_upgrade=true;
+//INSTANCE.chemin.under_upgrade=true;
 // prior to reroute aircraft, make sure they have a route to go
-INSTANCE.carrier.VehicleBuildOrders(road.ROUTE.group_id); // and try to rebuild its orders
+foreach (ownID, dummy in station.owner)
+	{
+	local dummyObj=cRoute.GetRouteObject(ownID);
+	INSTANCE.carrier.VehicleBuildOrders(dummyObj.groupID);
+	}
 INSTANCE.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 
-INSTANCE.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,true);
-local oldtype=station.STATION.type;
-local oldplace=station.STATION.e_loc;
+INSTANCE.carrier.VehicleHandleTrafficAtStation(stationid,true);
+local oldtype=station.specialType;
+local oldplace=AIStation.GetLocation(stationid);
 local counter=0;
 local maxcount=100;
 local result=false;
 // time to pray a bit for success, we could invalidate a working route here
 do	{
-	result=AIAirport.RemoveAirport(station.STATION.e_loc);
+	result=AIAirport.RemoveAirport(station.locations.Begin());
 	counter++;
 	if (!result) 
 		{
@@ -72,20 +71,41 @@ do	{
 		}
 	} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);	
 if (!result)	{
-		INSTANCE.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,false);
-		return false;
-		}
-result=INSTANCE.builder.BuildAirStation(idx,start,stationfakeid);
-// TODO: if airport is moved away from previous point, route is still pointing to the old airport, need to correct that
-if (!result) // should have pray a bit more
+			INSTANCE.carrier.VehicleHandleTrafficAtStation(station.stationID,false);
+			return false;
+			}
+result=INSTANCE.builder.BuildAirStation(start, firstroute.UID);
+if (!result) // should have pray a bit more, fail to build a bigger airport
 	{
 	INSTANCE.builder.CriticalError=false;
 	local result=INSTANCE.builder.AirportMaker(oldplace, oldtype);
 	}
-if (!result)
-	{ INSTANCE.chemin.RouteIsNotDoable(idx); }
-INSTANCE.chemin.under_upgrade=false;
-INSTANCE.carrier.VehicleHandleTrafficAtStation(station.STATION.station_id,false);
+//INSTANCE.chemin.under_upgrade=false;
+if (!result) // and we also fail to rebuild the old one! We have kill that route (and maybe many more!)
+	{
+	foreach (uid, dummy in saved_owners)
+		{
+		local dead=cRoute.GetRouteObject(uid);
+		dead.RouteIsNotDoable();
+		}
+	return false;
+	}
+// now routes need to forget old stationid & reclaim the newstationid
+station.owner.Clear();
+local gotnewID=-1;
+if (start)	gotnewID=firstroute.source_stationID;
+	else	gotnewID=firstroute.target_stationID;
+DInfo("Old airport ID = "+stationid+" New airport ID = "+gotnewID+" owners="+saved_owners.Count(),1);
+foreach (uid, dummy in saved_owners)
+	{
+	local altered=cRoute.GetRouteObject(uid);
+	if (altered.source_stationID == stationid)	altered.source_stationID=gotnewID;
+	if (altered.target_stationID == stationid)	altered.target_stationID=gotnewID;
+	altered.CheckEntry(); // set shortcuts & reclaim the station...
+	altered.RouteUpdateVehicle();
+	}
+INSTANCE.carrier.VehicleHandleTrafficAtStation(gotnewID,false);
+if (gotnewID != stationid)	{ cStation.DeleteStation(stationid); }
 }
 
 function cBuilder::GetAirportType()
@@ -111,10 +131,13 @@ DInfo("Building an airport at "+tile+" type: "+airporttype+" success: "+essai,2)
 return essai;	
 }
 
-function cBuilder::BuildAirStation(start)
+function cBuilder::BuildAirStation(start, routeID=null)
 // Create an airport for our route at start/destination
 // if createstation is not given, create a new station, else re-use the createstation index
 {
+local road=null;
+if (routeID==null)	road=INSTANCE.route;
+		else		road=cRoute.GetRouteObject(routeID);
 DInfo("Looking for a place to build an airport",2);
 local helipadonly=false;
 // Pickup the airport we can build
@@ -128,29 +151,29 @@ local success=false;
 local allfail=true;
 local newStation=0;
 local heliloc=null;
-DInfo("Start="+start+" source="+INSTANCE.route.source_istown+" target="+INSTANCE.route.target_istown,2);
+DInfo("Start="+start+" source="+road.source_istown+" target="+road.target_istown,2);
 if (start)
 	{
-	if (INSTANCE.route.source_istown)
+	if (road.source_istown)
 		{
-		tilelist= cTileTools.GetTilesAroundTown(INSTANCE.route.sourceID);
+		tilelist= cTileTools.GetTilesAroundTown(road.sourceID);
 		helipadonly=false;
 		}
 	else	{
 		// no coverage need, we know exactly where we go
 		helipadonly=true;
-		heliloc=AIIndustry.GetLocation(INSTANCE.route.sourceID);
+		heliloc=AIIndustry.GetLocation(road.sourceID);
 		}
 	}
 else	{
-	if (INSTANCE.route.target_istown)
+	if (road.target_istown)
 		{
-		tilelist= cTileTools.GetTilesAroundTown(INSTANCE.route.targetID);
+		tilelist= cTileTools.GetTilesAroundTown(road.targetID);
 		helipadonly=false;
 		}
 	else	{
 		// we should never have a platform as destination station !!!
-		DError("BUG !!! We have select a platform for our destination station for route #"+INSTANCE.route.UID+" Please report that error with a savegame if you can",1);
+		DError("BUG !!! We have select a platform for our destination station for route #"+road.UID+" Please report that error with a savegame if you can",0);
 		helipadonly=true;
 		return false;
 		}
@@ -160,7 +183,7 @@ if (!helipadonly)
 	DInfo("Building an airport",2);
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.RemoveValue(0);
-	tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
+	tilelist.Valuate(AITile.GetCargoAcceptance, road.cargoID, 1, 1, rad);
 	tilelist.RemoveBelowValue(8);
 	tilelist.Sort(AIList.SORT_BY_VALUE,false);
 	INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
@@ -170,8 +193,10 @@ if (!helipadonly)
 		if (bestplace > -1)
 			{
 			success=INSTANCE.builder.AirportMaker(bestplace, airporttype);
-			if (success)	{
+			if (success)
+					{
 					newStation=bestplace;
+					allfail=false;
 					break;
 					}
 				else	{
@@ -188,11 +213,12 @@ if (success)
 	{
 	if (!helipadonly)
 		{
-		if (start)	INSTANCE.route.source_stationID=AIStation.GetStationID(newStation);
-			else	INSTANCE.route.target_stationID=AIStation.GetStationID(newStation);
-		INSTANCE.route.CreateNewStation(start);
+		if (start)	road.source_stationID=AIStation.GetStationID(newStation);
+			else	road.target_stationID=AIStation.GetStationID(newStation);
+		road.CreateNewStation(start);
+		road.CheckEntry();
 		}
-	else	{ INSTANCE.route.route_type = RouteType.CHOPPER; }
+	else	{ road.route_type = RouteType.CHOPPER; }
 /*	if (helipadonly)
 		{
 		newStation.stationID = AIStation.GetStationID(AIIndustry.GetLocation(INSTANCE.route.sourceID));
@@ -213,8 +239,6 @@ if (success)
 		else	INSTANCE.route.target_stationID=newStation.stationID;*/
 	}
 else	INSTANCE.builder.CriticalError=allfail;
-success=false; INSTANCE.builder.CriticalError=true;
-DInfo("Airport return criterror ? "+INSTANCE.builder.CriticalError,2);
 ClearSignsALL();
 return success;
 }

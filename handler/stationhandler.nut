@@ -31,7 +31,7 @@ static	function GetStationObject(stationID)
 	maxsize		= null; 	// maximum size a station could be
 	locations		= null;	// locations of station tiles
 						// for road, value = front tile location
-						// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper
+						// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper, 3=townID attach to it
 	depot			= null;	// depot position and id are the same
 	rating		= null;	// item=cargos, value=rating
 	cargo_produce	= null;	// cargos ID, amount waiting as value
@@ -91,6 +91,8 @@ function cStation::CanUpgradeStation()
 		case	AIStation.STATION_AIRPORT:
 			local newairport = cBuilder.GetAirportType();
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
+			if (newairport > this.specialType)
+				{ DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2); }
 			if (newairport > this.specialType)	return true;
 								else	return false;
 		break;
@@ -167,8 +169,6 @@ function cStation::GetRoadStationEntry(entrynum=-1)
 function cStation::ClaimOwner(uid)
 // Route claims orwnership of that station
 	{
-/*	DInfo("Dumping owner");
-	foreach (ruid, dummy in this.owner)	{ DInfo("station "+this.stationID+" owner="+ruid,1); }*/
 	if (!this.owner.HasItem(uid))
 		{
 		this.owner.AddItem(uid,1);
@@ -179,6 +179,7 @@ function cStation::ClaimOwner(uid)
 function cStation::CheckAirportLimits()
 // Set limits for airports
 	{
+	locations=cTileTools.FindStationTiles(AIStation.GetLocation(this.stationID));
 	this.specialType=AIAirport.GetAirportType(this.locations.Begin());
 	this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
 	local planetype=0;	// big planes

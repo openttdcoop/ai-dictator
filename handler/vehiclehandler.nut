@@ -284,32 +284,23 @@ function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
 // if reroute this function stop all vehicles that use stationID to goto stationID
 // if !rereroute this function restore vehicles orders
 {
+local station=cStation.GetStationObject(stationID);
 local road=null;
 local vehlist=null;
 local veh=null;
-local orderpos=null;
 local group=null;
-for (local i=0; i < INSTANCE.route.RListGetSize(); i++)
+foreach (ownID, dummy in station.owner)
 	{
-	road=INSTANCE.route.RListGetItem(i);
-	orderpos=-1;
-	local srcstation=INSTANCE.builder.GetStationID(i,true);
-	if (srcstation == stationID)	orderpos=0;
-	local dststation=INSTANCE.builder.GetStationID(i,false);
-	if (dststation == stationID)	orderpos=1;
-	group=road.ROUTE.group_id;
-	if (orderpos > -1)
-		{ // that route use that station
-		if (reroute)
-			{
-			DInfo("Re-routing traffic on route #"+i,0);
-			vehlist=AIVehicleList_Group(group);
-			veh=vehlist.Begin();
-			local orderindex=VehicleFindDestinationInOrders(veh, stationID);
-			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
-				{ DError("Fail to remove order for vehicle "+veh,2); }
-			}
-		else	{ INSTANCE.carrier.VehicleBuildOrders(group); }
+	road=cRoute.GetRouteObject(ownID);
+	if (reroute)
+		{
+		DInfo("Re-routing traffic on route "+road.name,0);
+		vehlist=AIVehicleList_Group(road.groupID);
+		veh=vehlist.Begin();
+		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
+		if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
+			{ DError("Fail to remove order for vehicle "+veh,2); }
+		else	{ INSTANCE.carrier.VehicleBuildOrders(road.groupID); }
 		}
 	}
 }
@@ -343,6 +334,7 @@ understood=AIVehicle.SendVehicleToDepot(veh);
 if (!understood) { DInfo(AIVehicle.GetName(veh)+" refuse to go to depot",1); }
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot ",0);
 INSTANCE.carrier.ToDepotList.AddItem(veh,veh);
+AIGroup.MoveVehicle(cRoute.GetGroupSolder(AIVehicle.GetVehicleType(veh)),veh);
 }
 
 function cCarrier::VehicleGetFullCapacity(veh)
@@ -390,7 +382,6 @@ local engine = null;
 local wagon = null;
 local numwagon=AIVehicle.GetNumWagons(veh);
 local railtype = null;
-if (INSTANCE.route.source_entry)	INSTANCE.route.source.specialType;
 local newveh=null;
 local homedepot=INSTANCE.route.GetRouteDepot();
 DInfo("Upgrading using depot at "+homedepot,2);
@@ -418,8 +409,9 @@ switch (AIVehicle.GetVehicleType(veh))
 	break;
 	case AIVehicle.VT_AIR:
 		local modele=AircraftType.EFFICIENT;
-		if (road.source.virtualized)	modele=AircraftType.BEST;
-		if (road.source.locations.GetValue(road.source.locations.Begin()) == 3)	modele=AircraftType.CHOPPER;
+		if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST; // top speed/capacity for network
+		if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER;
+		//if (road.source.locations.GetValue(road.source.locations.Begin()) == 3)	modele=AircraftType.CHOPPER;
 		engine = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
 		INSTANCE.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
 		newveh = AIVehicle.BuildVehicle(homedepot,engine);
@@ -562,7 +554,7 @@ foreach (vehicle, dummy in tlist)
 	age=AIVehicle.GetAgeLeft(vehicle);
 	local topengine=INSTANCE.carrier.VehicleIsTop(vehicle);
 	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
-		else	 price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
+				else	price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	price+=(0.5*price);
 	// add a 50% to price to avoid try changing an engine and running low on money because of fluctuating money
 	name=INSTANCE.carrier.VehicleGetFormatString(vehicle);

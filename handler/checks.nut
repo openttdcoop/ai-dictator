@@ -72,10 +72,10 @@ INSTANCE.TwelveMonth++;
 DInfo("Half year checks run...",1);
 if (cCarrier.VirtualAirRoute.len() > 1) 
 	{
-	local maillist=AIVehicleList_Group(this.GetVirtualAirMailGroup());
-	local passlist=AIVehicleList_Group(this.GetVirtualAirPassengerGroup());
+	local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
+	local passlist=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
 	local totair=maillist.Count()+passlist.Count();
-	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()" airports",0);
+	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 	}
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
 
@@ -117,6 +117,7 @@ INSTANCE.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
 INSTANCE.carrier.do_profit.Clear();
 INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
+cJobs.RefreshAllValue();
 }
 
 function cBuilder::AirportStationsBalancing()
@@ -286,6 +287,15 @@ foreach (stations, dummy in truckstation)
 					AIVehicle.ReverseVehicle(vehicle);
 					AIVehicle.SendVehicleToDepotForServicing(vehicle);
 					}
+				}
+			}
+		else	{ // only getter are waiting, too many vehicle so
+			if (truck_getter_waiting.Count() >0)
+				{
+				local vehicle=truck_getter_waiting.Begin();
+				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
+				INSTANCE.carrier.VehicleSendToDepot(vehicle);
+				AIVehicle.ReverseVehicle(vehicle);
 				}
 			}
 		}

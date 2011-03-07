@@ -66,7 +66,7 @@ if (tjob.source_istown)	src=AITown.GetName(tjob.sourceID)+src;
 		else	src=AIIndustry.GetName(tjob.sourceID)+src;
 if (tjob.target_istown)	dst=AITown.GetName(tjob.targetID)+dst;
 		else	dst=AIIndustry.GetName(tjob.targetID)+dst;
-DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" Amount="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild,0);
+DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" Amount="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,0);
 }
 
 function cBuilder::DumpTopJobs()

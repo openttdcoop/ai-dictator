@@ -23,7 +23,11 @@ static	VirtualAirGroup = [];		// 0=passenger & 1=mail groups for network
 
 static	function GetRouteObject(UID)
 		{
-		return UID in cRoute.database ? cRoute.database[UID] : null;
+		if (UID in cRoute.database)	return cRoute.database[UID];
+						else	{
+							cRoute.RouteRebuildIndex();
+							return null;
+							}
 		}
 
 	UID			= null;	// UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
@@ -215,7 +219,7 @@ function cRoute::RouteGetName()
 	if (source_entry)	src=AIStation.GetName(source_stationID);
 			else	{
 				if (source_istown)	src=AITown.GetName(sourceID);
-						else	src=AIIndustry.GetName(sourceID);
+							else	src=AIIndustry.GetName(sourceID);
 				}
 	if (target_entry)	dst=AIStation.GetName(target_stationID);
 			else	{
@@ -237,7 +241,6 @@ function cRoute::CreateNewRoute(UID)
 	this.target_istown = jobs.target_istown;
 	this.vehicle_count = 0;
 	this.route_type	= jobs.roadType;
-	DInfo("ROUTE : JOBS report roadType: "+this.route_type);
 	this.cargoID = jobs.cargoID;
 	switch (this.route_type)
 		{
@@ -255,7 +258,6 @@ function cRoute::CreateNewRoute(UID)
 			this.station_type=AIStation.STATION_AIRPORT;
 		break;
 		}
-	DInfo("ROUTE : ROUTE report route_type: "+this.route_type+" station_type: "+this.station_type);
 	this.isWorking = false;
 	this.status = 0;
 	if (source_istown)	source_location=AITown.GetLocation(sourceID);
@@ -263,6 +265,7 @@ function cRoute::CreateNewRoute(UID)
 	if (target_istown)	target_location=AITown.GetLocation(targetID);
 			else	target_location=AIIndustry.GetLocation(targetID);
 	this.CheckEntry();
+	//this.RouteSave();
 	}
 
 function cRoute::GetRouteDepot()
@@ -332,6 +335,8 @@ function cRoute::RouteInitNetwork()
 	AIGroup.SetName(n, "Virtual Network Mail");
 	VirtualAirGroup.push(n);
 	mailRoute.groupID=n;
+	RouteIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
+	RouteIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);
 	mailRoute.RouteSave();
 
 	local gid = AIGroup.CreateGroup(AIVehicle.VT_RAIL);
@@ -359,14 +364,16 @@ function cRoute::GetGroupSolder(route_type)
 function cRoute::RouteRebuildIndex()
 // Rebuild our routes index from our datase
 	{
-	RouteIndexer.Clear();
-	foreach (item in database)
-		RouteIndex.AddItem(item, 1);	
+	cRoute.RouteIndexer.Clear();
+	foreach (item in cRoute.database)
+		cRoute.RouteIndexer.AddItem(item.UID, 1);	
 	}
 
 function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way
 	{
+	if (this.UID < 2)	return; // don't touch virtual routes
+	DInfo("Marking route "+this.name+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
 	this.CheckEntry();
 	if (this.source_stationID != null)	

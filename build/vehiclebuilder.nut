@@ -85,6 +85,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start)
 // check if we can add another vehicle at the start/end station of that route
 {
 local chem=cRoute.GetRouteObject(roadidx);
+chem.RouteUpdateVehicle();
 local thatstation=null;
 local thatentry=null;
 if (start)	{ thatstation=chem.source; }
@@ -96,6 +97,10 @@ switch (chem.route_type)
 		if (thatstation.CanUpgradeStation())
 			{ // can still upgrade
 //			if (thatstation.vehicle_count+1 > thatstation.size)
+			if (chem.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
+			// limit by number of vehicle per route
+			if (!INSTANCE.use_road)	return false;
+			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)
 				{ // we must upgrade
 				INSTANCE.builder.RoadStationNeedUpgrade(roadidx, start);
@@ -103,10 +108,6 @@ switch (chem.route_type)
 				}
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
 			// limit by the max the station could handle
-			if (chem.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
-			// limit by number of vehicle per route
-			if (!INSTANCE.use_road)	return false;
-			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 			}
 		else	{ // max size already
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
@@ -136,6 +137,10 @@ switch (chem.route_type)
 	break;
 // TODO: upgrade airport before adding new aircraft if upgrade is avaiable
 	case RouteType.AIRNET:
+		if (thatstation.CanUpgradeStation())	INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID);
+		chem=cRoute.GetRouteObject(roadidx); // reload, airport update can change airportID, station...
+		if (start)	{ thatstation=chem.source; }
+			else	{ thatstation=chem.target; }
 		DInfo("Limit for air network: "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cStation.VirtualAirports.Count(),2);
 		if (chem.vehicle_count+1 > INSTANCE.carrier.airnet_max*cStation.VirtualAirports.Count()) return false;
 		return true;
@@ -144,7 +149,10 @@ switch (chem.route_type)
 		return true;
 	break;
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
-		chem.RouteUpdateVehicle(); // update the route vehicle counter
+		if (thatstation.CanUpgradeStation())	INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID);
+		chem=cRoute.GetRouteObject(roadidx);
+		if (start)	{ thatstation=chem.source; }
+			else	{ thatstation=chem.target; }
 		local result=true;
 		if (!INSTANCE.use_air)	result=false;
 		thatstation.CheckAirportLimits(); // force recheck limits
