@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -16,16 +17,11 @@ function cBuilder::DeleteStation(uid, stationid)
 // check no one else use it before doing that
 {
 local exist=false;
-foreach (uidbrowse, dummy in cRoute.RouteIndexer)
+local temp=cStation.GetStationObject(stationid);
+if (temp.owner.Count() != 0)
 	{
-	if (uid == uidbrowse)	continue; // ignore ourselves
-	local temp=cRoute.GetRouteObject(uidbrowse);
-	if (!temp.isWorking) continue; // we need an already built route, even our isn't ready
-	if (temp.source_stationID == stationid || temp.target_stationID == stationid)
-		{
-		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by another route",0);
-		return false;
-		}
+	DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",0);
+	return false;
 	}
 // didn't find someone else use it
 // check if we have a vehicle using it
@@ -37,29 +33,16 @@ if (!vehcheck.IsEmpty())
 	return false;
 	}
 local wasnamed=AIStation.GetName(stationid);
+if (!INSTANCE.builder.DeleteDepot(temp.depot))	return false;
+							else	{ DInfo("Removing depot link to station "+wasnamed,0); }
 if (!AITile.DemolishTile(AIStation.GetLocation(stationid))) return false;
 DInfo("Removing station "+wasnamed+" unused by anyone",0);
+cStation.DeleteStation(stationid);
 return true;
 }
 
 function cBuilder::DeleteDepot(tile)
 {
 local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
-if (isDepot)	cTileTools.DemolishTile(tile);
+if (isDepot)	return cTileTools.DemolishTile(tile);
 }
-
-function cBuilder::RouteIsInvalid(idx)
-// remove vehicles using that route & remove stations on that route if possible
-{
-root.carrier.VehicleGroupSendToDepotAndSell(idx);
-root.builder.DeleteStation(idx);
-}
-
-function cBuilder::RouteDelete(idx)
-// Delete a route, we may have vehicule on it...
-{
-root.builder.RouteIsInvalid(idx);
-root.chemin.RListDeleteItem(idx);
-root.chemin.RemapGroupsToRoutes();
-}
-

@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -116,7 +117,6 @@ function DictatorAI::Start()
 		bank.SaveMoney();
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
-
 		}
 	bank.Update();
 	while(true)
@@ -165,7 +165,7 @@ ClearSignsALL();
 function DictatorAI::NeedDelay(delay=30)
 {
 DInfo("We are waiting: "+delay,2);
-if (debug) AIController.Sleep(delay);
+if (debug) ::AIController.Sleep(delay);
 } 
  
 function DictatorAI::Save()

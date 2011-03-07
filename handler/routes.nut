@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -17,78 +18,77 @@ static	database = {};
 static	RouteIndexer = AIList();	// list all UID of routes we are handling
 static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
 static	RouteDamage = AIList(); 	// list of routes that need repairs
-static	VirtualAirGroup = [];		// 0=mail & 1=passenger
+static	GroupSolder = [0, 0, 0, 0];	// the four group to sold vehicle, rail, road, water, air
+static	VirtualAirGroup = [];		// 0=passenger & 1=mail groups for network
 
 static	function GetRouteObject(UID)
 		{
 		return UID in cRoute.database ? cRoute.database[UID] : null;
 		}
 
-	UID		= null; // UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
-	name		= null;	// string with the route name
-	sourceID	= null;	// id of source town/industry
+	UID			= null;	// UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
+	name			= null;	// string with the route name
+	sourceID		= null;	// id of source town/industry
 	source_location	= null;	// location of source
 	source_istown	= null;	// if source is town
-	source		= null; // shortcut to the source station object
-	targetID	= null;	// id of target town/industry
+	source		= null;	// shortcut to the source station object
+	targetID		= null;	// id of target town/industry
 	target_location	= null;	// location of target
 	target_istown	= null;	// if target is town
-	target		= null; // shortcut to the target station object
-	vehicle_count	= null; // numbers of vehicle using it
-	route_type	= null; // type of vehicle using that route (It's enum RouteType)
-	station_type	= null; // type of station (it's AIStation.StationType)
-	isWorking	= null; // true if the route is working
-	status		= null; // current status of the route
-				// 0 - need a destination pickup
-				// 1 - source/destination find compatible station or create new
-				// 2 - need build source station
-				// 3 - need build destination station
-				// 4 - need do pathfinding
-				// 5 - need checks
-				// 100 - all done, finish route
-	groupID		= null; // groupid of the group for that route
+	target		= null;	// shortcut to the target station object
+	vehicle_count	= null;	// numbers of vehicle using it
+	route_type		= null;	// type of vehicle using that route (It's enum RouteType)
+	station_type	= null;	// type of station (it's AIStation.StationType)
+	isWorking		= null;	// true if the route is working
+	status		= null;	// current status of the route
+						// 0 - need a destination pickup
+						// 1 - source/destination find compatible station or create new
+						// 2 - need build source station
+						// 3 - need build destination station
+						// 4 - need do pathfinding
+						// 5 - need checks
+						// 100 - all done, finish route
+	groupID		= null;	// groupid of the group for that route
 	source_entry	= null;	// true if we have a working station
-	source_stationID= null; // source station id
+	source_stationID	= null;	// source station id
 	target_entry	= null;	// true if we have a working station
-	target_stationID= null;	// target station id
+	target_stationID	= null;	// target station id
 	cargoID		= null;	// the cargo id
 	date_VehicleDel	= null;	// date of last time we remove a vehicle
 	date_lastCheck	= null;	// date of last time we check route health
 
 	constructor()
 		{
-		UID= null;
-		name="UNKNOWN";
-		sourceID= null;
+		UID			= null;
+		name			= "UNKNOWN";
+		sourceID		= null;
 		source_location	= 0;
 		source_istown	= false;
 		source		= null;
-		targetID	= null;
+		targetID		= null;
 		target_location	= 0;
 		target_istown	= false;
 		target		= null;
 		vehicle_count	= 0;
-		route_type	= null;
+		route_type		= null;
 		station_type	= null;
-		isWorking	= false;
+		isWorking		= false;
 		status		= 0;
 		groupID		= null;
 		source_entry	= false;
-		source_stationID= null;
+		source_stationID	= null;
 		target_entry	= false;
-		target_stationID= null;
+		target_stationID	= null;
 		cargoID		= null;
 		date_VehicleDel	= null;
 		date_lastCheck	= null;
 		}
 	}
 
-
-
 function cRoute::GetVirtualAirMailGroup()
 // return the groupID for the mail virtual air group
 	{
-	return cRoute.VirtualAirGroup[0];
+	return cRoute.VirtualAirGroup[1];
 	}
 
 function cRoute::GetVirtualAirPassengerGroup()
@@ -106,23 +106,33 @@ function cRoute::CheckEntry()
 			else	this.source=null;
 	if (this.target_entry)	{ this.target=cStation.GetStationObject(this.target_stationID); this.target.ClaimOwner(this.UID); }
 			else	this.target=null;
-	DInfo("Route "+this.UID+" source="+this.source+" target="+this.target,1);
+	//DInfo("Route "+this.UID+" source="+this.source+" target="+this.target,1);
 	}
 
-function cRoute::RouteAddVehicle()
-// Add a new vehicle to the route, update route stations with it too
+function cRoute::RouteUpdateVehicle()
+// Recount vehicle at stations & route, update route stations
 	{
-	this.vehicle_count++;
-	if (this.source_entry)	this.source.vehicle_count++;
-	if (this.target_entry)	this.target.vehicle_count++;
-	}
-
-function cRoute::RouteRemoveVehicle()
-// Remove a vehicle from the route, updating stations too
-	{
-	this.vehicle_count--;
-	if (this.source_entry)	this.source.vehicle_count--;
-	if (this.target_entry)	this.target.vehicle_count--;
+	if (this.route_type == RouteType.AIRNET)
+		{
+		local maillist=AIVehicleList_Group(this.GetVirtualAirMailGroup());
+		local passlist=AIVehicleList_Group(this.GetVirtualAirPassengerGroup());
+		this.vehicle_count=maillist.Count()+passlist.Count();
+		return;
+		}
+	if (this.source_entry)	this.source.vehicle_count=AIVehicleList_Station(this.source.stationID).Count();
+			else	this.source.vehicle_count=0;
+	if (this.target_entry)	this.target.vehicle_count=AIVehicleList_Station(this.target.stationID).Count();
+			else	this.target.vehicle_count=0;
+	if (this.target_entry && this.source_entry)
+			{
+			local ecart=0;
+			if (this.source.vehicle_count > this.target.vehicle_count)
+					ecart=this.source.vehicle_count - (this.source.vehicle_count-this.target.vehicle_count);
+				else	ecart=this.target.vehicle_count - (this.target.vehicle_count-this.source.vehicle_count);
+			this.vehicle_count=ecart;
+			}
+	else	this.vehicle_count=0;
+	//DInfo("ROUTE -> "+this.vehicle_count+" vehicle on "+this.name,2);
 	}
 
 function cRoute::RouteBuildGroup()
@@ -259,45 +269,91 @@ function cRoute::GetRouteDepot()
 // Return a depot, try return source depot, if it fail backup to target depot
 // Platform are the kind of route that can make source depot fail
 	{
-	if (this.source.depot != null)	return	this.source.depot;
-				else	return	this.target.depot;
+	if (this.source_entry && this.source.depot != null)	return	this.source.depot;
+	if (this.target_entry && this.target.depot != null)	return	this.target.depot;
 	}
+
+function cRoute::VirtualMailCopy()
+// this function copy infos from virtual passenger route to the mail one
+	{
+	local mailRoute=cRoute.GetRouteObject(1);
+	local passRoute=cRoute.GetRouteObject(0);
+	mailRoute.source_entry=passRoute.source_entry; // mailroute will follow passroute values
+	mailRoute.target_entry=passRoute.target_entry;
+	mailRoute.source_stationID=passRoute.source_stationID;
+	mailRoute.target_stationID=passRoute.target_stationID;
+	mailRoute.sourceID=passRoute.sourceID;
+	mailRoute.targetID=passRoute.targetID;
+	mailRoute.source=passRoute.source;
+	mailRoute.target=passRoute.target;
+	mailRoute.source_location=passRoute.source_location;
+	mailRoute.target_location=passRoute.target_location;
+	mailRoute.source_istown=passRoute.source_istown;
+	mailRoute.target_istown=passRoute.target_istown;
+	mailRoute.CheckEntry();
+	}
+
 function cRoute::RouteInitNetwork()
 // Add the network routes to the database
 	{
-	local mailRoute=cRoute();
-	mailRoute.cargoID=cCargo.GetMailCargo();
-	mailRoute.source_entry=false;
-	mailRoute.target_entry=false;
-	mailRoute.isWorking=true;
-	mailRoute.UID=0;
-	mailRoute.route_type = RouteType.AIRNET;
-	mailRoute.station_type = AIStation.STATION_AIRPORT;
-	mailRoute.status=100;
-	mailRoute.vehicle_count=0;
-	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
-	if (AIGroup.IsValidGroup(n))	this.groupID=n;
-				else	DWarn("Cannot create group !",1);
-	AIGroup.SetName(n, "Virtual Network Mail");
-	VirtualAirGroup.push(n);
-	mailRoute.RouteSave();
-
 	local passRoute=cRoute();
 	passRoute.cargoID=cCargo.GetPassengerCargo();
+	passRoute.source_istown=true;
+	passRoute.target_istown=true;
 	passRoute.source_entry=false;
 	passRoute.target_entry=false;
 	passRoute.isWorking=true;
-	passRoute.UID=1;
+	passRoute.UID=0;
 	passRoute.route_type = RouteType.AIRNET;
 	passRoute.station_type = AIStation.STATION_AIRPORT;
 	passRoute.status=100;
 	passRoute.vehicle_count=0;
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
 	if (AIGroup.IsValidGroup(n))	this.groupID=n;
-				else	DWarn("Cannot create group !",1);
+					else	DWarn("Cannot create group !",1);
 	AIGroup.SetName(n, "Virtual Network Passenger");
 	VirtualAirGroup.push(n);
+	passRoute.groupID=n;
 	passRoute.RouteSave();
+
+	local mailRoute=cRoute();
+	mailRoute.cargoID=cCargo.GetMailCargo();
+	mailRoute.source_istown=true;
+	mailRoute.target_istown=true;
+	mailRoute.isWorking=true;
+	mailRoute.UID=1;
+	mailRoute.route_type = RouteType.AIRNET;
+	mailRoute.station_type = AIStation.STATION_AIRPORT;
+	mailRoute.status=100;
+	mailRoute.vehicle_count=0;
+	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
+	if (AIGroup.IsValidGroup(n))	this.groupID=n;
+					else	DWarn("Cannot create group !",1);
+	AIGroup.SetName(n, "Virtual Network Mail");
+	VirtualAirGroup.push(n);
+	mailRoute.groupID=n;
+	mailRoute.RouteSave();
+
+	local gid = AIGroup.CreateGroup(AIVehicle.VT_RAIL);
+	// i won't test if group is valid, it must and it's early made, so it shouldn't fail
+	cRoute.GroupSolder[0]=gid;
+	AIGroup.SetName(gid, "Train Solder");
+	gid = AIGroup.CreateGroup(AIVehicle.VT_ROAD);
+	cRoute.GroupSolder[1]=gid;
+	AIGroup.SetName(gid, "Road Solder");
+	gid = AIGroup.CreateGroup(AIVehicle.VT_WATER);
+	cRoute.GroupSolder[2]=gid;
+	AIGroup.SetName(gid, "Water Solder");
+	gid = AIGroup.CreateGroup(AIVehicle.VT_AIR);
+	cRoute.GroupSolder[3]=gid;
+	AIGroup.SetName(gid, "Air Solder");
+	}
+
+function cRoute::GetGroupSolder(route_type)
+// return the groupid of the group we should use to sell a vehicle
+	{
+	if (route_type == RouteType.CHOPPER || route_type == RouteType.AIRNET)	route_type = AIVehicle.VT_AIR;
+	return cRoute.GroupSolder[route_type];
 	}
 
 function cRoute::RouteRebuildIndex()
@@ -311,25 +367,31 @@ function cRoute::RouteRebuildIndex()
 function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way
 	{
-	if (this.vehicle_count > 0)	{ DWarn("Can't delete route still have "+this.vehicle_count+" running on it !",1); return false }
 	cJobs.JobIsNotDoable(this.UID);
-	if (this.groupID != null)	AIGroup.DeleteGroup(this.groupID);
+	this.CheckEntry();
 	if (this.source_stationID != null)	
 		{
-		INSTANCE.builder.DeleteStation(this.UID, this.source_stationID);
-		cStation.DeleteStation(this.source_stationID);
+		if (this.source != null)	if (this.source.owner.HasItem(this.UID))	this.source.owner.RemoveItem(this.UID);
+		if (!INSTANCE.builder.DeleteStation(this.UID, this.source_stationID)) return;
+		// hmmm, better keep rogues vehicle everywhere or better try to remove the route again later?
+		// the route checker for road vehicle will redo it, but others won't...
 		}
 	if (this.target_stationID != null)	
 		{
-		INSTANCE.builder.DeleteStation(this.UID, this.target_stationID);
-		cStation.DeleteStation(this.source_stationID);
+		if (this.target != null)	if (this.target.owner.HasItem(this.UID))	this.target.owner.RemoveItem(this.UID);
+		if (!INSTANCE.builder.DeleteStation(this.UID, this.target_stationID)) return;
 		}
-	if (this.UID in database)
+	if (this.groupID != null)	AIGroup.DeleteGroup(this.groupID);
+	local uidsafe = this.UID;
+	if (this.UID in cRoute.database)
 		{
 		DInfo("ROUTE -> Removing route "+this.UID+" from database",1);
-		delete database[this.UID];
-		RouteIndexer.RemoveItem(this.UID);
-		}	
+		cRoute.RouteIndexer.RemoveItem(this.UID);
+		cRoute.RouteDamage.RemoveItem(this.UID);
+		delete cRoute.database[this.UID];
+		}
+	cJobs.DeleteJob(uidsafe);
+	INSTANCE.builder.building_route=-1;
 	}
 
 function cRoute::CreateNewStation(start)

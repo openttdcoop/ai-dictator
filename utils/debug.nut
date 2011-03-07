@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -16,7 +17,7 @@ function PutSign(place,msg)
 {
 if (!INSTANCE.debug) return;
 if (DictatorAI.GetSetting("debug") < 2) return;
-AISign.BuildSign(place,msg);
+if (place != null) AISign.BuildSign(place,msg);
 }
 
 function ClearSignsALL()

@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -18,29 +19,32 @@ function cTileTools::GetTilesAroundTown(town_id)
 {
 local tiles = AITileList();
 local townplace = AITown.GetLocation(town_id);
-local distedge = AIMap.DistanceFromEdge(townplace);
-local offset = null;
-if (distedge < 120) {
-		offset = AIMap.GetTileIndex(distedge - 1, distedge - 1);
-	} else {
-		offset = AIMap.GetTileIndex(120, 120);
-	}
-	tiles.AddRectangle(townplace - offset, townplace + offset);
-	tiles.Valuate(AITile.IsWithinTownInfluence, town_id);
-	tiles.KeepValue(1);
-	return tiles;
+tiles=cTileTools.GetTilesAroundPlace(townplace);
+tiles.Valuate(AITile.IsWithinTownInfluence, town_id);
+tiles.KeepValue(1);
+return tiles;
 }
 
 function cTileTools::FindStationTiles(tile)
 // return a list of tiles where we have the station we found at tile
 {
 local stationid=AIStation.GetStationID(tile);
+if (!AIStation.IsValidStation(stationid))	return AIList();
 local tilelist=cTileTools.GetTilesAroundPlace(tile);
 tilelist.Valuate(AITile.GetDistanceManhattanToTile,tile);
 tilelist.KeepBelowValue(12);
 tilelist.Valuate(AIStation.GetStationID);
 tilelist.KeepValue(stationid);
 return tilelist;
+}
+
+function cTileTools::IsWithinTownInfluence(stationid, townid)
+// A correction to AIStation.IsWithinTownInfluence bug
+{
+local stationtile=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
+local within=false;
+foreach (tile, dummy in stationtile)	{ if (AITile.IsWithinTownInfluence(tile, townid)) within=true; }
+return within;
 }
 
 function cTileTools::DemolishTile(tile)

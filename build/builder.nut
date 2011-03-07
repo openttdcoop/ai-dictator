@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -162,6 +163,8 @@ switch (INSTANCE.route.route_type)
 	case AIVehicle.VT_WATER:
 	break;
 	case AIVehicle.VT_AIR:
+	case RouteType.AIRNET:
+	case RouteType.CHOPPER:
 	success=INSTANCE.builder.BuildAirStation(start);
 	break;
 	}
@@ -207,11 +210,8 @@ switch (INSTANCE.route.route_type)
 	road.ROUTE.dst_entry=dentry;
 	INSTANCE.chemin.RListUpdateItem(idx,road);
 	break;
-	case AIVehicle.VT_WATER:
-	return true;
-	break;
-	case AIVehicle.VT_AIR:
-	return true;
+	default:
+		return true;
 	break;
 	}
 return success;
@@ -225,22 +225,26 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 local compare=cStation.GetStationObject(stationID);
 DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
 // find if station will accept our cargo
+local handling=true;
 if (start)
 	{
 	if (!compare.cargo_produce.HasItem(INSTANCE.route.cargoID))
 		{
-		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't handle "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
-		return false;
+		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't produce "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		handling=false;
 		}
 	}
 else	{
 	if (!compare.cargo_accept.HasItem(INSTANCE.route.cargoID))
 		{
-		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't handle "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't accept "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		handling=false;
+		}
+	}
+if (!handling)	{
+		DInfo("Station "+AIStation.GetName(compare.stationID)+" refuse "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
 		return false;
 		}
-
-	}
 // here station are compatible, but still do that station is within our original station area ?
 DInfo("Checking if station is within area of our industry/town",2);
 local tilecheck = null;
@@ -250,8 +254,16 @@ if (start)	{ startistown=INSTANCE.route.source_istown; goal=INSTANCE.route.sourc
 	else	{ startistown=INSTANCE.route.target_istown; goal=INSTANCE.route.targetID; }
 if (startistown)
 	{ // check if the station is also influencing our town
-	tilecheck=AIStation.IsWithinTownInfluence(compare.stationID,goal);
-	if (!tilecheck)	return false;
+	tilecheck=cTileTools.IsWithinTownInfluence(compare.stationID,goal);
+	// for airports, the IsWithinTownInfluence always fail
+	//if (!tilecheck && INSTANCE.route.station_type == AIStation.STATION_AIRPORT)
+		//if (AIAirport.
+//	if (!tilecheck && AIStation.HasStationType(INSTANCE.route.station_type) == AIStation.STATION_AIRPORT)
+	if (!tilecheck)	
+		{
+		DInfo("Station is outside "+AITown.GetName(goal)+" influence",2);
+		return false;
+		}
 	}
 else	{ // check the station is within our industry
 	if (start)	tilecheck=AITileList_IndustryProducing(goal, compare.radius);
@@ -360,6 +372,7 @@ if (INSTANCE.route.status==2)
 			}
 	if (!success)
 		{ // it's bad we cannot build our source station, that's really bad !
+		DInfo("Criterror set?"+INSTANCE.builder.CriticalError,2);
 		if (INSTANCE.builder.CriticalError)
 			{
 			INSTANCE.builder.CriticalError=false;
@@ -413,7 +426,7 @@ if (INSTANCE.route.status==5)
 		}
 	else	{ success=true; } // other route type for now are ok
 	if (success)	{ INSTANCE.route.status=6; }
-		else	{ INSTANCE.route.RouteIsnotDoable(); return false; }
+			else	{ INSTANCE.route.RouteIsNotDoable(); return false; }
 	}	
 if (INSTANCE.route.status==6)
 	{

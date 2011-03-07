@@ -1,3 +1,5 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
+
 /**
  *    This file is part of DictatorAI
  *

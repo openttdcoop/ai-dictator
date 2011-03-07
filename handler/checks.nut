@@ -1,4 +1,4 @@
-// this file handle events we check 1 time per month
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -52,7 +52,7 @@ local month=AIDate.GetMonth(AIDate.GetCurrentDate());
 if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++;}
 		else	return false;
 DInfo("Montly checks run...",1);
-//INSTANCE.builder.CheckAirportUpgrade();
+INSTANCE.route.VirtualAirNetworkUpdate();
 INSTANCE.builder.RouteNeedRepair();
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
 //if (bank.canBuild && builder.building_route == -1)
@@ -70,7 +70,13 @@ INSTANCE.builddelay=false; // Wait 6 months, now allow us to build again
 INSTANCE.SixMonth=0;
 INSTANCE.TwelveMonth++;
 DInfo("Half year checks run...",1);
-//if (INSTANCE.route.airnet_count > 0) DInfo("Aircraft network have "+INSTANCE.route.airnet_count+" aircrafts running",0);
+if (cCarrier.VirtualAirRoute.len() > 1) 
+	{
+	local maillist=AIVehicleList_Group(this.GetVirtualAirMailGroup());
+	local passlist=AIVehicleList_Group(this.GetVirtualAirPassengerGroup());
+	local totair=maillist.Count()+passlist.Count();
+	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()" airports",0);
+	}
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
 
 }
@@ -101,7 +107,7 @@ foreach (routes, dummy in INSTANCE.route.RouteDamage)
 	if (trys >= 12)	{ deletethatone=routes }
 	}
 INSTANCE.route.RouteDamage.RemoveValue(-1);
-if (deletethatone != -1)	{ INSTANCE.builder.RouteIsInvalid(deletethatone); }
+if (deletethatone != -1)	{ INSTANCE.route.RouteIsNotDoable(deletethatone); }
 }
 
 

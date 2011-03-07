@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -38,10 +39,11 @@ local maxLoan=AICompany.GetMaxLoanAmount();
 local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 local goodcash=INSTANCE.bank.mincash*cBanker.GetInflationRate();
 if (goodcash < INSTANCE.bank.mincash) goodcash=INSTANCE.bank.mincash;
-if (ourLoan==0 && cash>=INSTANCE.bank.mincash)	{ INSTANCE.bank.unleash_road=true; }
+if (ourLoan==0 && cash>=INSTANCE.bank.mincash)
+		{ INSTANCE.bank.unleash_road=true; }
 	else	{ INSTANCE.bank.unleash_road=false; }
 if (cash < goodcash)	{ INSTANCE.bank.canBuild=false; }
-if (maxLoan > 2000000 && ourLoan > 0)	{ DInfo("Trying to repay loan",2); INSTANCE.bank.canBuild=false; } // wait to repay loan
+if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)	{ DInfo("Trying to repay loan",2); INSTANCE.bank.canBuild=false; } // wait to repay loan
 if (ourLoan < maxLoan+(4*AICompany.GetLoanInterval()))	{ INSTANCE.bank.canBuild=true; }
 local veh=AIVehicleList();
 if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
@@ -110,7 +112,11 @@ local toloan = AICompany.GetLoanAmount() + money;
 local curr=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 local success=true;
 if (curr > money) success=true;
-	else	success=AICompany.SetMinimumLoanAmount(toloan);
+		else	success=AICompany.SetMinimumLoanAmount(toloan);
+if (!success)	{ // can't get what we need, raising to what we could do so
+			toloan=AICompany.GetMaxLoanAmount()-toloan;
+			success=AICompany.SetMinimumLoanAmount(toloan);
+			}
 return success;
 }
 
@@ -119,7 +125,7 @@ function cBanker::RaiseFundsBigTime()
 {
 local tomax=5000000;
 local max=tomax;
-if (AICompany.GetMaxLoanAmount() < tomax)	max=(AICompany.GetMaxLoanAmount()*80/100);
+if (AICompany.GetMaxLoanAmount() < tomax)	max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
 INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
 }
 
@@ -145,18 +151,20 @@ function cBanker::RaiseFundsBy(money)
 {
 	local curr = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	if (curr < 0) curr=0;
-	local needed = money + curr;
+	local needed = money + curr + 1000;
 	if (cBanker.RaiseFundsTo(money)) return true; else return false;
 }
 
 function cBanker::PayLoan()
 {
 	local money = 0 - (AICompany.GetBankBalance(AICompany.COMPANY_SELF) - AICompany.GetLoanAmount()) + AICompany.GetLoanInterval();
-	if (money > 0) {
+	if (money > 0)
+		{
 		if (AICompany.SetMinimumLoanAmount(money)) return true; else return false;
-	} else {
+		}
+	else	{
 		if (AICompany.SetMinimumLoanAmount(0)) return true; else return false;
-	}
+		}
 }
 
 function cBanker::CashFlow()

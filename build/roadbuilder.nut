@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -431,8 +432,11 @@ else	{
 
 function cBuilder::BuildRoadFrontTile(tile, targettile)
 {
-if (!AIRoad.IsRoadTile(targettile))	cTileTools.DemolishTile(targettile);
-AIRoad.BuildRoad(tile, targettile);
+if (!AIRoad.IsRoadTile(targettile))
+	{
+	cTileTools.DemolishTile(targettile);
+	AIRoad.BuildRoad(tile, targettile);
+	}
 return AIRoad.AreRoadTilesConnected(tile, targettile);
 }
 

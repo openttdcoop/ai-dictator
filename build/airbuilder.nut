@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -118,6 +119,7 @@ DInfo("Looking for a place to build an airport",2);
 local helipadonly=false;
 // Pickup the airport we can build
 local airporttype=cBuilder.GetAirportType();
+
 local air_x=AIAirport.GetAirportWidth(airporttype);
 local air_y=AIAirport.GetAirportHeight(airporttype);
 local rad=AIAirport.GetAirportCoverageRadius(airporttype);
@@ -181,7 +183,7 @@ if (!helipadonly)
 		}
 	}
 else	{ success=true; }
-DInfo("Success to build airport "+success);
+DInfo("Success to build airport "+success+" allfail="+allfail,2);
 if (success)
 	{
 	if (!helipadonly)
@@ -211,6 +213,8 @@ if (success)
 		else	INSTANCE.route.target_stationID=newStation.stationID;*/
 	}
 else	INSTANCE.builder.CriticalError=allfail;
+success=false; INSTANCE.builder.CriticalError=true;
+DInfo("Airport return criterror ? "+INSTANCE.builder.CriticalError,2);
 ClearSignsALL();
 return success;
 }

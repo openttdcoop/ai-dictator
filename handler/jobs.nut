@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -30,47 +31,47 @@ static	function GetJobObject(UID)
 		return UID in cJobs.database ? cJobs.database[UID] : null;
 		}
 
-	sourceID	= null;	// id of industry/town
+	sourceID		= null;	// id of industry/town
 	source_location	= null;	// location of source
-	targetID	= null;	// id of industry/town
-	target_location = null;	// location of target
+	targetID		= null;	// id of industry/town
+	target_location 	= null;	// location of target
 	cargoID		= null;	// cargo id
-	roadType	= null;	// AIVehicle.RoadType
-	UID		= null;	// a UID for the job
-	parentID	= null;	// a UID that a similar job will share with another (like other tansport or other destination)
-	isUse		= null;// is build & in use
-	cargoValue	= null;	// value for that cargo
-	cargoAmount	= null;	// amount of cargo at source
-	distance	= null;	// distance from source to target
+	roadType		= null;	// AIVehicle.RoadType
+	UID			= null;	// a UID for the job
+	parentID		= null;	// a UID that a similar job will share with another (like other tansport or other destination)
+	isUse			= null;	// is build & in use
+	cargoValue		= null;	// value for that cargo
+	cargoAmount		= null;	// amount of cargo at source
+	distance		= null;	// distance from source to target
 	moneyToBuild	= null;	// money need to build the job
-	moneyGains	= null;	// money we should grab from doing the job
+	moneyGains		= null;	// money we should grab from doing the job
 	source_istown	= null;	// if source is a town
 	target_istown	= null;	// if target is a town
-	isdoable	= null;	// true if we can actually do that job (if isUse -> false)
+	isdoable		= null;	// true if we can actually do that job (if isUse -> false)
 	ranking		= null;	// our ranking system
-	foule		= null;	// number of opponent/stations near it
+	foule			= null;	// number of opponent/stations near it
 
 	constructor()
 		{
-		sourceID	= null;
+		sourceID		= null;
 		source_location	= null;
-		targetID	= null;
-		target_location = null;
+		targetID		= null;
+		target_location	= null;
 		cargoID		= null;
-		roadType	= null;
-		UID		= null;
-		parentID	= 0;
-		isUse		= false;
-		cargoValue	= 0;
-		cargoAmount	= 0;
-		distance	= 0;
+		roadType		= null;
+		UID			= null;
+		parentID		= 0;
+		isUse			= false;
+		cargoValue		= 0;
+		cargoAmount		= 0;
+		distance		= 0;
 		moneyToBuild	= 0;
-		moneyGains	= 0;
+		moneyGains		= 0;
 		source_istown	= false;
 		target_istown	= false;
-		isdoable	= true;
+		isdoable		= true;
 		ranking		= 0;
-		foule		= 0;
+		foule			= 0;
 		}
 }
 
@@ -102,7 +103,7 @@ function cJobs::Save()
 		return ;
 		}
 	dualrouteavoid=null;
-	local jobinfo=AICargo.GetCargoLabel(this.cargoID)+"-"+cRoute.RouteTypeToString(this.roadType);
+	local jobinfo=AICargo.GetCargoLabel(this.cargoID)+"-"+cRoute.RouteTypeToString(this.roadType)+" "+this.distance+"m";
 	if (this.UID in database)	DWarn("JOBS -> Job "+this.UID+" already in database",2);
 		else	{
 			DInfo("JOBS -> Adding job "+this.UID+" ("+parentID+") to job database: "+jobinfo,2);
@@ -175,8 +176,18 @@ function cJobs::RefreshValue(jobID)
 // refresh the datas from object
 	{
 	::AIController.Sleep(1);
+	if (jobID == 0 || jobID == 1)	return; // don't refresh virtual routes
 	local myjob = GetJobObject(jobID);
 	if (myjob == null) return null;
+	local badind=false;
+	if (!myjob.source_istown && !AIIndustry.IsValidIndustry(myjob.sourceID))	badind=true;
+	if (!myjob.target_istown && !AIIndustry.IsValidIndustry(myjob.targetID))	badind=true;
+	if (badind)
+		{
+		DInfo("JOBS -> Removing bad industry from the job pool: "+myjob.UID,0);
+		local deadroute=cRoute.GetRouteObject(myjob.UID);
+		deadroute.RouteIsNotDoable(myjob.UID);
+		}
 	// foule, moneyGains, ranking & cargoAmount
 	if (myjob.source_istown)
 		{
@@ -184,7 +195,7 @@ function cJobs::RefreshValue(jobID)
 		myjob.foule=AITown.GetLastMonthTransported(myjob.sourceID, myjob.cargoID);
 		if (myjob.target_istown)
 			{
-			myjob.cargoAmount+=AITown.GetLastMonthProduction(myjob.targetID, myjob.cargoID);
+			myjob.cargoAmount=(myjob.cargoAmount+AITown.GetLastMonthProduction(myjob.targetID, myjob.cargoID)) / 2 ;
 			myjob.foule+=AITown.GetLastMonthTransported(myjob.targetID, myjob.cargoID);
 			}
 		}
@@ -209,20 +220,20 @@ foreach (item, value in jobIndexer)
 		DInfo(curr+" / "+jobIndexer.Count(),0);
 		INSTANCE.Sleep(1);
 		}
-
 	}
 }
 
 function cJobs::QuickRefresh()
-// refresh datas on first 5 doable objects
+// refresh datas on first 8 doable objects
 	{
 	local smallList=AIList();
 	smallList.AddList(jobDoable);
-	smallList.KeepTop(4);
+	smallList.KeepTop(8);
 	foreach (item, value in smallList)
 		{
 		cJobs.RefreshValue(item);
 		}
+	smallList.Sort(AIList.SORT_BY_VALUE,false);
 	return smallList;
 	}
 
@@ -237,7 +248,8 @@ function cJobs::GetRanking(jobID)
 function cJobs::GetNextJob()
 // Return the next job UID to do, -1 if we have none to do
 	{
-	cJobs.UpdateDoableJobs();
+	INSTANCE.jobs.UpdateDoableJobs();
+	//INSTANCE.NeedDelay(100);
 	local smallList=QuickRefresh();
 	if (smallList.IsEmpty())	{ DInfo("Can't find any good jobs to do",1); return -1; }
 	smallList.Sort(AIList.SORT_BY_VALUE, false);
@@ -252,6 +264,7 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	newjob.source_istown = src_istown;
 	// filters unwanted jobs, don't let aircraft do something other than pass/mail
 	if (road_type == AIVehicle.VT_AIR && (cargo_id != cCargo.GetMailCargo() && cargo_id != cCargo.GetPassengerCargo())) return;
+	//if (cargo_id == cCargo.GetMailCargo())	return;
 	// only pass & mail for aircraft
 	if (cargo_id == cCargo.GetMailCargo() && road_type != AIVehicle.VT_AIR && road_type != AIVehicle.VT_ROAD) return;
 	// only do mail with aircraft & trucks
@@ -321,7 +334,7 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	newjob.moneyToBuild=money;
 	newjob.GetUID();
 	newjob.Save();
-	cJobs.RefreshValue(newjob); // update ranking, cargo amount, foule values, must be call after GetUID
+	INSTANCE.jobs.RefreshValue(newjob.UID); // update ranking, cargo amount, foule values, must be call after GetUID
 	}
 
 function cJobs::GetTransportDistance(transport_type, get_min, limited)
@@ -359,16 +372,20 @@ function cJobs::GetJobTarget(src_id, cargo_id, src_istown)
 	local srcloc=null;
 	local rmax=GetTransportDistance(0,false,false); // just to make sure min&max are init
 	if (src_istown)	srcloc=AITown.GetLocation(src_id);
-		else	srcloc=AIIndustry.GetLocation(src_id);
+			else	srcloc=AIIndustry.GetLocation(src_id);
 	if (cCargo.IsCargoForTown(cargo_id))
 		{
 		retList=AITownList();
+		retList.Valuate(AITown.GetPopulation);
+		retList.Sort(AIList.SORT_BY_VALUE,false);
+		retList.KeepTop(10);
 		retList.Valuate(AITown.GetDistanceManhattanToTile, srcloc);
 		retList.KeepBetweenValue(distanceLimits[0], rmax);
 		retList.Valuate(AITown.GetLocation);
 		}
 	else	{
 		retList=AIIndustryList_CargoAccepting(cargo_id);
+		retList.Valuate(AIIndustry.GetDistanceManhattanToTile, srcloc);
 		retList.KeepBetweenValue(distanceLimits[0], rmax);
 		retList.Valuate(AIIndustry.GetLocation);
 		}
@@ -397,10 +414,6 @@ function cJobs::GetTransportList(distance)
 	local v_boat =1;
 	local v_air  =1;
 	local v_road =1;
-	/*if (!INSTANCE.use_train) v_train=0;
-	if (!INSTANCE.use_boat) v_boat=0;
-	if (!INSTANCE.use_air) v_air=0;
-	if (!INSTANCE.use_road) v_road=0;*/
 	local tweaklist=AIList();
 	local road_maxdistance=GetTransportDistance(AIVehicle.VT_ROAD,false,false);
 	local road_mindistance=GetTransportDistance(AIVehicle.VT_ROAD,true,false);
@@ -413,9 +426,9 @@ function cJobs::GetTransportList(distance)
 	//DInfo("Distances: Truck="+road_mindistance+"/"+road_maxdistance+" Aircraft="+air_mindistance+"/"+air_maxdistance+" Train="+rail_mindistance+"/"+rail_maxdistance+" Boat="+water_mindistance+"/"+water_maxdistance,2);
 	local goal=distance;
 	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(1,2*v_road); }
-	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(0,1*v_train); }
+//	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(0,1*v_train); }
 	if (goal >= air_mindistance && goal <= air_maxdistance)		{ tweaklist.AddItem(3,4*v_air); }
-	if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(2,3*v_boat); }
+//	if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(2,3*v_boat); }
 	tweaklist.RemoveValue(0);
 	return tweaklist;
 	}
@@ -454,6 +467,9 @@ function cJobs::UpdateDoableJobs()
 	//local curr=0;
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
+		if (id == 0 || id == 1)	continue;
+//		INSTANCE.builder.DumpJobs(id);
+//		INSTANCE.NeedDelay(20);
 /*		curr++;
 		if (curr % 5 == 0)
 			{
@@ -463,24 +479,30 @@ function cJobs::UpdateDoableJobs()
 		local doable=1;
 		local myjob=cJobs.GetJobObject(id);
 		doable=myjob.isdoable;
+		// not doable if not doable
 		switch (myjob.roadType)
 			{
 			case	AIVehicle.VT_AIR:
 				if (!INSTANCE.use_air)	doable=false;
+				if (INSTANCE.carrier.ChooseAircraft(myjob.cargoID)==-1)	doable=false;
 			break;
 			case	AIVehicle.VT_ROAD:
 				if (!INSTANCE.use_road)	doable=false;
+				if (INSTANCE.carrier.ChooseRoadVeh(myjob.cargoID)==-1)	doable=false;
 			break;
 			case	AIVehicle.VT_WATER:
 				if (!INSTANCE.use_boat)	doable=false;
 			break;
 			case	AIVehicle.VT_RAIL:
 				if (!INSTANCE.use_train)	doable=false;
+				if (!INSTANCE.carrier.ChooseRailVeh())	doable=false;
 			break;
 			}
-		// not doable if not doable
+		// not doable if disabled
 		if (doable && myjob.isUse)	doable=false;
 		// not doable if already done
+		if (doable && myjob.ranking==0)	doable=false;
+		// not doable if ranking is at 0
 		if (doable)	doable=(cBanker.CanBuyThat(myjob.moneyToBuild));
 		// not doable if not enough money
 		if (doable)
@@ -491,11 +513,11 @@ function cJobs::UpdateDoableJobs()
 			}
 		if (doable)
 		// not doable if any parent is already in use
-			if (parentListID.HasItem(myjob.parentID))	doable=false;
-							else	parentListID.AddItem(myjob.parentID,1);
+		if (parentListID.HasItem(myjob.parentID))	doable=false;
+								else	parentListID.AddItem(myjob.parentID,1);
 		if (doable)	{ myjob.jobIndexer.SetValue(id, myjob.ranking); myjob.jobDoable.AddItem(id, myjob.ranking); }
 			else	myjob.jobIndexer.SetValue(id, 0);
-		if (doable)	DInfo("Doable job "+myjob.UID+" rankng="+myjob.ranking,2);
+		if (doable)	DInfo("Doable job "+myjob.UID+" rank="+myjob.ranking,2);
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
 	DInfo("JOBS -> "+INSTANCE.jobs.jobIndexer.Count()+" jobs found",2);
@@ -509,20 +531,15 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 	local position=0;
 	if (istown)	position=AITown.GetLocation(industryID);
 		else	position=AIIndustry.GetLocation(industryID);
-//	local smaxLimit= INSTANCE.bank.unleash_road; // backup 
-//	INSTANCE.bank.unleash_road=true;
 	local cargoList=GetJobSourceCargoList(industryID, istown);
-	//DInfo("Industry provide "+cargoList.Count()+" cargo",2);
 	foreach (cargoid, cargodummy in cargoList)
 		{
 		local targetList=GetJobTarget(industryID, cargoid, istown);
-		//DInfo("Found "+targetList.Count()+" possible destinations",2);
 		foreach (destination, locations in targetList)
 			{
 			distance=AITile.GetDistanceManhattanToTile(position, locations)
 			// now find possible ways to transport that
 			local transportList=GetTransportList(distance);
-			//DInfo("Found "+transportList.Count()+" possible transport type",2);
 			foreach (transtype, dummy2 in transportList)
 				{
 				this.UID=null;
@@ -530,8 +547,6 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 				}
 			}
 		}
-	//INSTANCE.bank.unleash_road=smaxLimit; // now restore it's real value
-	//smaxLimit = GetTransportDistance(0,false); // now re-set our real max limit
 	}
 
 function cJobs::DeleteJob(uid)
@@ -553,8 +568,8 @@ local indjobs=AIIndustryList();
 local townjobs=AITownList();
 townjobs.Valuate(AITown.GetPopulation);
 townjobs.Sort(AIList.SORT_BY_VALUE,false);
-//townjobs.KeepTop(10);
-//indjobs.KeepTop(3);
+townjobs.KeepTop(40);
+//indjobs.KeepTop(0);
 local curr=0;
 DInfo("Finding all industries & towns jobs, this will take a while !",0);
 foreach (ID, dummy in indjobs)
@@ -577,17 +592,5 @@ foreach (ID, dummy in townjobs)
 		INSTANCE.Sleep(1);
 		}
 	}
-cJobs.RefreshAllValue();
-cJobs.JobRegulator();
+//cJobs.RefreshAllValue();
 }
-
-function cJobs::JobRegulator() // TODO: save goods/steel jobs ?
-// this function remove jobs with a low ranking, so we keep fewer jobs
-	{
-	local sweep=AIList();
-	sweep.AddList(cJobs.jobIndexer);
-	cJobs.jobIndexer.Sort(AIList.SORT_BY_VALUE,false);
-	sweep.Sort(AIList.SORT_BY_VALUE,false);
-	sweep.RemoveTop(80); // TODO: better filter to not remove done jobs
-	foreach (uid, ranking in sweep)	cJobs.DeleteJob(uid);
-	}

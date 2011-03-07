@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -42,6 +43,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();
 			INSTANCE.jobs.AddNewIndustryOrTown(industry, false);
+			INSTANCE.jobs.UpdateDoableJobs();
 		break;
 		case AIEvent.AI_ET_INDUSTRY_CLOSE:
 			event = AIEventIndustryClose.Convert(event);

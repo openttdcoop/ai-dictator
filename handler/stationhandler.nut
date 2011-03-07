@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -20,46 +21,44 @@ static	function GetStationObject(stationID)
 		return stationID in cStation.stationdatabase ? cStation.stationdatabase[stationID] : null;
 		}
 
-	stationID	= null;	// id of industry/town
-	stationType	= null;	// AIStation.StationType
-	specialType	= null;	// for boat = nothing
-				// for trains = AIRail.RailType
-				// for road = AIRoad.RoadType
-				// for airport: AirportType
-	virtualized	= null; // true when part of the airnetwork
-	size		= null;	// size of station: road = number of stations, trains=width, airport=width*height
-	maxsize		= null; // maximum size a station could be
-	locations	= null;	// locations of station tiles
-					// for road, value = front tile location
-					// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper
-	depot		= null;	// depot position and id are the same
-	rating		= null; // item=cargos, value=rating
-	cargo_produce	= null; // cargos ID, amount waiting as value
-	cargo_rating	= null; // cargos ID, rating as value
-	cargo_accept	= null; // cargos ID, amount as value of cargos the station handle
+	stationID		= null;	// id of industry/town
+	stationType		= null;	// AIStation.StationType
+	specialType		= null;	// for boat = nothing
+						// for trains = AIRail.RailType
+						// for road = AIRoad::RoadVehicleType
+						// for airport: AirportType
+	size			= null;	// size of station: road = number of stations, trains=width, airport=width*height
+	maxsize		= null; 	// maximum size a station could be
+	locations		= null;	// locations of station tiles
+						// for road, value = front tile location
+						// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper
+	depot			= null;	// depot position and id are the same
+	rating		= null;	// item=cargos, value=rating
+	cargo_produce	= null;	// cargos ID, amount waiting as value
+	cargo_rating	= null;	// cargos ID, rating as value
+	cargo_accept	= null;	// cargos ID, amount as value of cargos the station handle
 	radius		= null;	// radius of the station
 	vehicle_count	= null;	// vehicle using that station
-	vehicle_max	= null;	// max vehicle that station could handle
-	owner		= null;	// list routes that own that station
+	vehicle_max		= null;	// max vehicle that station could handle
+	owner			= null;	// list routes that own that station
 	
 	constructor()
 		{
-		stationID	= null;
-		stationType	= null;
-		specialType	= null;
-		virtualized	= false;
-		size		= 1;
+		stationID		= null;
+		stationType		= null;
+		specialType		= null;
+		size			= 1;
 		maxsize		= 1;
-		locations	= AIList();
-		depot		= null;
+		locations		= AIList();
+		depot			= null;
 		rating		= AIList();
 		cargo_produce	= AIList();
 		cargo_rating	= AIList();
 		cargo_accept	= AIList();
 		radius		= 0;
 		vehicle_count	= 0;	
-		vehicle_max	= 0;	
-		owner		= AIList();
+		vehicle_max		= 0;	
+		owner			= AIList();
 		}
 }
 
@@ -93,7 +92,7 @@ function cStation::CanUpgradeStation()
 			local newairport = cBuilder.GetAirportType();
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
 			if (newairport > this.specialType)	return true;
-							else	return false;
+								else	return false;
 		break;
 		default: // bus or truck
 			this.vehicle_max=this.size*INSTANCE.carrier.road_max_onroute;
@@ -148,9 +147,13 @@ function cStation::DeleteStation(stationid)
 	{
 	if (stationid in cStation.stationdatabase)
 		{
-		DInfo("STATION -> Removing station #"+stationid+" from station database",1);
-		delete cStation.stationdatabase[stationid];
-		cStation.VirtualAirports.RemoveItem(stationid);
+		local statprop=cStation.GetStationObject(stationid);
+		if (statprop.owner.Count() == 0) // no more own by anyone
+			{
+			DInfo("STATION -> Removing station #"+stationid+" from station database",1);
+			delete cStation.stationdatabase[stationid];
+			cStation.VirtualAirports.RemoveItem(stationid);
+			}
 		}
 	}
 
@@ -182,10 +185,10 @@ function cStation::CheckAirportLimits()
 	if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
 	this.locations.SetValue(this.locations.Begin(), planetype);
 	this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
-	if (this.virtualized && INSTANCE.carrier.VirtualAirRoute.len() < 2)	this.virtualized=false;
+	local virtualized=(cStation.VirtualAirports.Count() > 1 && cStation.VirtualAirports.HasItem(this.stationID));
 	// get out of airnetwork if the network is too poor
 	this.vehicle_max=INSTANCE.carrier.AirportTypeLimit[this.specialType];
-	if (this.virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * INSTANCE.carrier.VirtualAirRoute.len();
+	if (virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * cStation.VirtualAirports.Count();
 	}
 
 function cStation::InitNewStation()

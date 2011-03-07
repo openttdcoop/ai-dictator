@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -377,20 +378,21 @@ function cCarrier::VehicleUpgradeEngineAndWagons(veh)
 // we will try to upgrade engine and wagons for vehicle veh
 {
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
-if (idx < 0)
+if (idx == null)
 	{
 	DError("This vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is not use by any route !!!",1);
 	INSTANCE.carrier.VehicleSell(veh);
 	return false;
 	}
-local road=INSTANCE.route.RListGetItem(idx);
+local road=INSTANCE.route.GetRouteObject(idx);
 local group = AIVehicle.GetGroupID(veh);
 local engine = null;
 local wagon = null;
 local numwagon=AIVehicle.GetNumWagons(veh);
-local railtype = INSTANCE.route.RouteGetRailType(idx);
+local railtype = null;
+if (INSTANCE.route.source_entry)	INSTANCE.route.source.specialType;
 local newveh=null;
-local homedepot=INSTANCE.builder.GetDepotID(idx,true);
+local homedepot=INSTANCE.route.GetRouteDepot();
 DInfo("Upgrading using depot at "+homedepot,2);
 PutSign(homedepot,"D");
 local money=0;
@@ -400,9 +402,9 @@ switch (AIVehicle.GetVehicleType(veh))
 	case AIVehicle.VT_RAIL:
 		AIRail.SetCurrentRailType(railtype);
 		engine = INSTANCE.carrier.ChooseTrainEngine();
-		wagon = INSTANCE.carrier.ChooseWagon(road.ROUTE.cargo_id);
+		wagon = INSTANCE.carrier.ChooseWagon(road.cargoID);
 		newveh=AIVehicle.BuildVehicle(homedepot,engine);
-		AIVehicle.RefitVehicle(newveh, road.ROUTE.cargo_id);
+		AIVehicle.RefitVehicle(newveh, road.cargoID);
 		local first=null;
 		first=AIVehicle.BuildVehicle(homedepot, wagon); 
 		for (local i=1; i < numwagon; i++)
@@ -410,15 +412,15 @@ switch (AIVehicle.GetVehicleType(veh))
 		AIVehicle.MoveWagonChain(first, 0, newveh, AIVehicle.GetNumWagons(veh) - 1);
 	break;
 	case AIVehicle.VT_ROAD:
-		engine = INSTANCE.carrier.ChooseRoadVeh(road.ROUTE.cargo_id);
+		engine = INSTANCE.carrier.ChooseRoadVeh(road.cargoID);
 		newveh=AIVehicle.BuildVehicle(homedepot,engine);
-		AIVehicle.RefitVehicle(newveh, road.ROUTE.cargo_id);
+		AIVehicle.RefitVehicle(newveh, road.cargoID);
 	break;
 	case AIVehicle.VT_AIR:
 		local modele=AircraftType.EFFICIENT;
-		if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
-		if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
-		engine = INSTANCE.carrier.ChooseAircraft(road.ROUTE.cargo_id,modele);
+		if (road.source.virtualized)	modele=AircraftType.BEST;
+		if (road.source.locations.GetValue(road.source.locations.Begin()) == 3)	modele=AircraftType.CHOPPER;
+		engine = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
 		INSTANCE.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
 		newveh = AIVehicle.BuildVehicle(homedepot,engine);
 	break;
@@ -428,7 +430,7 @@ switch (AIVehicle.GetVehicleType(veh))
 	}
 INSTANCE.builder.IsCriticalError();
 INSTANCE.builder.CriticalError=false;
-AIGroup.MoveVehicle(road.ROUTE.group_id,newveh);
+AIGroup.MoveVehicle(road.groupID,newveh);
 local oldenginename=AIEngine.GetName(AIVehicle.GetEngineType(veh));
 local newenginename=AIVehicle.GetName(newveh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(newveh))+")";
 if (AIVehicle.IsValidVehicle(newveh))
@@ -437,7 +439,6 @@ if (AIVehicle.IsValidVehicle(newveh))
 	AIVehicle.StartStopVehicle(newveh); // send it without orders, it should get catch
 	AIVehicle.SellWagonChain(veh,0);
 	INSTANCE.carrier.VehicleSell(veh);
-	INSTANCE.carrier.vehnextprice=0;
 	}
 else	{
 	INSTANCE.carrier.VehicleOrdersReset(veh); // because its orders are now goto depot, next vehicle check will catch it
@@ -482,6 +483,7 @@ switch (AIVehicle.GetVehicleType(veh))
 	case AIVehicle.VT_AIR:
 		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 		road=cRoute.GetRouteObject(idx);
+		if (road == null) return;		
 		local modele=AircraftType.EFFICIENT;
 		//if (road.ROUTE.kind == 1000)	modele=AircraftType.BEST;
 		//if (!road.ROUTE.src_entry)	modele=AircraftType.CHOPPER;
@@ -643,13 +645,14 @@ AIVehicle.SellVehicle(veh);
 local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(uid);
 if (road == null) return;
-road.RouteRemoveVehicle();
+road.RouteUpdateVehicle();
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 // Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
 {
 local road=INSTANCE.route.GetRouteObject(idx);
+if (road ==null)	return;
 local vehlist=null;
 if (road.groupID != null)
 	{

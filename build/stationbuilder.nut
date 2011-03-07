@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
  *
@@ -223,7 +224,8 @@ local sta_front=AIRoad.GetRoadStationFrontTile(sta_pos);
 local dep_pos=depot_id;
 local dep_front=AIRoad.GetRoadDepotFrontTile(depot_id);
 local depotdead=false;
-local statype=work.stationType;
+local statype= AIRoad.ROADVEHTYPE_BUS;
+if (work.specialType == AIStation.STATION_TRUCK_STOP)	statype=AIRoad.ROADVEHTYPE_TRUCK;
 local deptype=AIRoad.ROADVEHTYPE_BUS+100000; // we add 100000
 local new_sta_pos=-1;
 local new_dep_pos=-1;
@@ -297,9 +299,10 @@ if (depotdead)
 if (new_sta_pos > -1)
 	{
 	DInfo("Station "+AIStation.GetName(work.stationID)+" has been upgrade",0);
-	local loc=AIStation.GetLocation(this.stationID);
+	local loc=AIStation.GetLocation(work.stationID);
 	work.locations=cTileTools.FindStationTiles(loc);
-	work.size=locations.Count();
+	foreach(loc, dummy in work.locations)	work.locations.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
+	work.size=work.locations.Count();
 	DInfo("New station size: "+work.size+"/"+work.maxsize,2);
 	}
 else	{ // fail to upgrade station
@@ -335,13 +338,17 @@ if (!AIRoad.IsRoadTile(direction))
 	{
 	if (!cTileTools.DemolishTile(direction))
 		{
-		DWarn("Can't remove that tile at "+tile,2); PutSign(tile,"X");
+		DWarn("Can't remove the tile front structure to build a road at "+direction,2); PutSign(direction,"X");
 		INSTANCE.builder.IsCriticalError();
 		return -1;
 		}
+	}
+
+if (!AIRoad.AreRoadTilesConnected(direction,tile))
+	{
 	if (!AIRoad.BuildRoad(direction,tile))
 		{
-		DWarn("Can't build road entrance for the station/depot structure",2);
+		DWarn("Can't build road entrance for the structure",2);
 		INSTANCE.builder.IsCriticalError();
 		return -1;
 		}
@@ -349,9 +356,8 @@ if (!AIRoad.IsRoadTile(direction))
 INSTANCE.builder.CriticalError=false;
 if (!cTileTools.DemolishTile(tile))
 	{
-	DWarn("Can't remove that tile at "+tile,2); PutSign(tile,"X");
+	DWarn("Can't remove the structure tile position at "+tile,2); PutSign(tile,"X");
 	INSTANCE.builder.IsCriticalError();
-	INSTANCE.builder.CriticalError=false;		
 	return -1;
 	}
 local success=false;
@@ -380,9 +386,10 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 		}
 	}
 else	{
-	INSTANCE.bank.RaiseFundsBigTime();
+	INSTANCE.bank.RaiseFundsBigTime(); ClearSignsALL();
+	DInfo("Road info: "+tile+" direction"+direction+" type="+stationtype+" mod="+newstation);
+	PutSign(tile,"s"); PutSign(direction,"c");
 	success=AIRoad.BuildRoadStation(tile, direction, stationtype, newstation);
-	PutSign(tile,"S");
 	if (!success)
 		{
 		DWarn("Can't built the road station at "+tile,2);
