@@ -379,14 +379,13 @@ function cRoute::RouteIsNotDoable()
 	if (this.source_stationID != null)	
 		{
 		if (this.source != null)	if (this.source.owner.HasItem(this.UID))	this.source.owner.RemoveItem(this.UID);
-		if (!INSTANCE.builder.DeleteStation(this.UID, this.source_stationID)) return;
-		// hmmm, better keep rogues vehicle everywhere or better try to remove the route again later?
-		// the route checker for road vehicle will redo it, but others won't...
+		INSTANCE.builder.DeleteStation(this.UID, this.source_stationID);
+		// Better just try to remove it and if fail don't care, might be re-use (or already re-use) anyway
 		}
 	if (this.target_stationID != null)	
 		{
 		if (this.target != null)	if (this.target.owner.HasItem(this.UID))	this.target.owner.RemoveItem(this.UID);
-		if (!INSTANCE.builder.DeleteStation(this.UID, this.target_stationID)) return;
+		INSTANCE.builder.DeleteStation(this.UID, this.target_stationID);
 		}
 	if (this.groupID != null)	AIGroup.DeleteGroup(this.groupID);
 	local uidsafe = this.UID;

@@ -212,8 +212,8 @@ if (veh == null)
 INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
-	{ DWarn("Cannot buy the vehicle : "+price,1); return false; }
-else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(firstveh),1); }
+	{ DWarn("Cannot buy the road vehicle : "+price,1); return false; }
+else	{ DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(firstveh),1); }
 if (AIEngine.GetCargoType(veh) != cargoid) AIVehicle.RefitVehicle(firstveh, cargoid);
 local firstorderflag = null;
 local secondorderflag = null;
@@ -258,8 +258,8 @@ if (veh == null)
 INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
-	{ DWarn("Cannot buy the vehicle :",1); return false; }
-else	{ DInfo("Just brought a new vehicle: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),1); }
+	{ DWarn("Cannot buy the aircraft : "+price,1); return false; }
+else	{ DInfo("Just brought a new aircraft: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),1); }
 // no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
 // as thir engine is the fastest always
 local firstorderflag = null;

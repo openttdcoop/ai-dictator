@@ -69,39 +69,32 @@ foreach (towns, distances in virtualpath)
 pairlist.Sort(AIList.SORT_BY_VALUE,true);
 impairlist.Sort(AIList.SORT_BY_VALUE,false);
 virtualpath.Clear();
-/*
-foreach (towns, distance in pairlist) virtualpath.AddItem(towns, AIStation.GetLocation(validairports.GetValue(towns)));
-foreach (towns, distance in impairlist) virtualpath.AddItem(towns,AIStation.GetLocation(validairports.GetValue(towns)));
-foreach (town, airport_location in virtualpath)
-	{
-	INSTANCE.carrier.virtual_air.push(airport_locations);
-	}
-*/
 INSTANCE.carrier.VirtualAirRoute.clear(); // don't try reassign a static variable!
 foreach (towns, dummy in pairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
 foreach (towns, dummy in impairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
-foreach (towns, airportid in validairports)
-	{
-	INSTANCE.Sleep(1);
-	if (!cStation.VirtualAirports.HasItem(airportid))
+if (INSTANCE.carrier.VirtualAirRoute.len() > 1)
+	foreach (towns, airportid in validairports)
 		{
-		cStation.VirtualAirports.AddItem(airportid, towns);
-		local stealgroup=AIVehicleList_Station(airportid);
-		stealgroup.Valuate(AIVehicle.GetGroupID);
-		stealgroup.RemoveValue(cRoute.GetVirtualAirPassengerGroup());
-		stealgroup.RemoveValue(cRoute.GetVirtualAirMailGroup());
-		DInfo("Re-assigning "+stealgroup.Count()+" aircrafts to the network",0);
-		local thatnetwork=0;
-		local vehnumber=0;
-		foreach (vehicle, gid in stealgroup)
+		INSTANCE.Sleep(1);
+		if (!cStation.VirtualAirports.HasItem(airportid))
 			{
-			if (vehnumber % 6 == 0)	thatnetwork=cRoute.GetVirtualMailGroup();
-						else	thatnetwork=cRoute.GetVirtualPassengerGroup();
-			AIGroup.MoveVehicle(thatnetwork, vehicle);
-			vehnumber++;
+			cStation.VirtualAirports.AddItem(airportid, towns);
+			local stealgroup=AIVehicleList_Station(airportid);
+			stealgroup.Valuate(AIVehicle.GetGroupID);
+			stealgroup.RemoveValue(cRoute.GetVirtualAirPassengerGroup());
+			stealgroup.RemoveValue(cRoute.GetVirtualAirMailGroup());
+			DInfo("Re-assigning "+stealgroup.Count()+" aircrafts to the network",0);
+			local thatnetwork=0;
+			local vehnumber=0;
+			foreach (vehicle, gid in stealgroup)
+				{
+				if (vehnumber % 6 == 0)	thatnetwork=cRoute.GetVirtualAirMailGroup();
+							else	thatnetwork=cRoute.GetVirtualAirPassengerGroup();
+				AIGroup.MoveVehicle(thatnetwork, vehicle);
+				vehnumber++;
+				}
 			}
 		}
-	}
 
 DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+ cStation.VirtualAirports.Count(),1);
 INSTANCE.route.RouteUpdateAirPath();

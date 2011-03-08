@@ -203,8 +203,8 @@ vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 vehlist.RemoveValue(AIVehicle.VS_CRASHED);
 foreach (veh, dummy in vehlist)
 	{
-	if (veh in cCarrier.ToDepotList)	{ vehlist.SetValue(veh,-1); }
-				else		{ vehlist.SetValue(veh, 1); }
+	if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh,-1); }
+						else		{ vehlist.SetValue(veh, 1); }
 	}
 vehlist.RemoveValue(-1);
 if (vehlist.IsEmpty()) return false;
@@ -295,12 +295,23 @@ foreach (ownID, dummy in station.owner)
 	road=cRoute.GetRouteObject(ownID);
 	if (reroute)
 		{
-		DInfo("Re-routing traffic on route "+road.name,0);
+		DInfo("Re-routing traffic on route "+road.name+" to ignore "+AIStation.GetName(stationID),0);
 		vehlist=AIVehicleList_Group(road.groupID);
+		vehlist.Valuate(AIVehicle.GetState);
+		vehlist.RemoveValue(AIVehicle.VS_STOPPED);
+		vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
+		vehlist.RemoveValue(AIVehicle.VS_CRASHED);
+		foreach (veh, dummy in vehlist)
+			{
+			if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh,-1); }
+								else		{ vehlist.SetValue(veh, 1); }
+			}
+		vehlist.RemoveValue(-1);
+		if (vehlist.IsEmpty()) return false;
 		veh=vehlist.Begin();
 		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
 		if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
-			{ DError("Fail to remove order for vehicle "+veh,2); }
+			{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2); }
 		else	{ INSTANCE.carrier.VehicleBuildOrders(road.groupID); }
 		}
 	}
@@ -311,17 +322,22 @@ function cCarrier::VehicleSetDepotOrder(veh)
 {
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 // One day i should check rogues vehicles running out of control from a route, but this shouldn't happen :p
-local homedepot=INSTANCE.builder.GetDepotID(idx,true);
-if (homedepot==-1)	homedepot=INSTANCE.builder.GetDepotID(idx,false); // TODO: might fail if vehicle don't have any depot to go
+local road=cRoute.GetRouteObject(idx);
+local homedepot=road.source.depot;
 AIOrder.UnshareOrders(veh);
 INSTANCE.carrier.VehicleOrdersReset(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
+if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	{ DError("Vehicle refuse goto depot order",2); }
 // And another one day i will kills all vehicles that refuse to go to a depot !!!
+homedepot=road.target.depot;
+if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	{ DError("Vehicle refuse goto depot order",2); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
 // twice time, even we get caught by vehicle orders check, it will ask to send the vehicle.... to depot
-DInfo("Setting depot order for vehicle "+veh+"-"+AIVehicle.GetName(veh),2);
+DInfo("Setting depot order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2);
 }
 
 function cCarrier::VehicleSendToDepot(veh)

@@ -241,28 +241,34 @@ switch (facing)
 	case DIR_NW:
 		p_left = AIMap.GetTileIndex(1,0);
 		p_right =AIMap.GetTileIndex(-1,0);
-		p_back = AIMap.GetTileIndex(0,1); 
+		p_back = AIMap.GetTileIndex(0,-1);
+//		p_back = AIMap.GetTileIndex(0,1);
 	break;
 	case DIR_NE:
 		p_left = AIMap.GetTileIndex(0,-1);
 		p_right =AIMap.GetTileIndex(0,1);
-		p_back = AIMap.GetTileIndex(1,0); 
+		p_back = AIMap.GetTileIndex(-1,0);
+//		p_back = AIMap.GetTileIndex(1,0); 
 	break;
 	case DIR_SW:
 		p_left = AIMap.GetTileIndex(0,1);
 		p_right =AIMap.GetTileIndex(0,-1); 
-		p_back = AIMap.GetTileIndex(-1,0);
+		p_back = AIMap.GetTileIndex(1,0);
+//		p_back = AIMap.GetTileIndex(-1,0);
 	break;
 	case DIR_SE:
 		p_left = AIMap.GetTileIndex(1,0);
 		p_right =AIMap.GetTileIndex(-1,0);
-		p_back = AIMap.GetTileIndex(0,-1);
+		p_back = AIMap.GetTileIndex(0,1);
+//		p_back = AIMap.GetTileIndex(0,-1);
 	break;
 	}
 PutSign(sta_pos+p_left,"L");
 PutSign(sta_pos+p_right,"R");
 PutSign(sta_pos+p_back,"B");
 // possible entry + location of station
+/*
+// these ones = left, right, back, backleft & backright
 sta_front_list.AddItem(sta_pos+p_back+p_back,		sta_pos+p_back);
 sta_front_list.AddItem(sta_front+p_left,		sta_pos+p_left);
 sta_front_list.AddItem(sta_front+p_right,		sta_pos+p_right);
@@ -272,6 +278,18 @@ sta_front_list.AddItem(sta_pos+p_back+p_back+p_left,	sta_pos+p_back+p_left);
 sta_front_list.AddItem(sta_pos+p_back+p_left+p_left,	sta_pos+p_back+p_left);
 sta_front_list.AddItem(sta_pos+p_back+p_right+p_right,	sta_pos+p_back+p_right);
 sta_front_list.AddItem(sta_pos+p_back+p_back+p_right,	sta_pos+p_back+p_right);
+*/
+// these ones = left, right, front (other side of road), frontleft, frontright
+sta_front_list.AddItem(sta_front,		sta_front+p_back); // revert middle
+sta_front_list.AddItem(sta_front+p_left,		sta_pos+p_left);	// same left
+sta_front_list.AddItem(sta_front+p_right,		sta_pos+p_right); // same right
+sta_front_list.AddItem(sta_pos+p_left+p_left,		sta_pos+p_left); // same left
+sta_front_list.AddItem(sta_pos+p_right+p_right,		sta_pos+p_right); // same right
+sta_front_list.AddItem(sta_front+p_left,	sta_front+p_back+p_left);
+sta_front_list.AddItem(sta_front+p_back+p_left+p_left,	sta_front+p_back+p_left);
+sta_front_list.AddItem(sta_front+p_right,	sta_front+p_back+p_right);
+sta_front_list.AddItem(sta_front+p_back+p_right+p_right,	sta_front+p_back+p_right);
+
 local allfail=true;
 foreach (direction, tile in sta_front_list)
 	{
