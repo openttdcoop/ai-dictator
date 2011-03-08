@@ -226,6 +226,7 @@ local compare=cStation.GetStationObject(stationID);
 if (compare == null)	// might happen, we found a dead station
 	{
 	INSTANCE.builder.DeleteStation(-1, stationID);
+	return false;
 	}
 DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
 // find if station will accept our cargo

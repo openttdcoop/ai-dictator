@@ -15,7 +15,7 @@
 function cBuilder::AirportNeedUpgrade(stationid)
 // this upgrade an existing airport to a newer one
 {
-DInfo("Airport upgrader start for airport #"+stationid+" "+AIStation.GetName(stationid),2);
+DInfo("Trying to upgrade airport #"+stationid+" "+AIStation.GetName(stationid),0);
 // better check criticals stuff before stopping our traffic and find we're going to fail
 local station=cStation.GetStationObject(stationid);
 local townrating=0;

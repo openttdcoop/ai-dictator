@@ -23,9 +23,9 @@ class cCarrier
 {
 static	AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
 static	IDX_HELPER = 512;		// use to create an uniq ID (also use to set handicap value)
-static	AIR_NET_CONNECTOR=3000;		// town is add to air network when it reach that value population
+static	AIR_NET_CONNECTOR=2000;		// town is add to air network when it reach that value population
 static	TopEngineList=AIList();		// the list of engine ID we know if it can be upgrade or not
-static	ToDepotList=AIList();		// list all vehicle going to depot
+static	ToDepotList=AIList();		// list all vehicle going to depot, date as value
 static	vehicle_database={};		// database for vehicles
 static	VirtualAirRoute=[];		// the air network destinations list
 static	function GetVehicleObject(vehicleID)
@@ -205,7 +205,7 @@ local cargoid= road.cargoID;
 local veh = INSTANCE.carrier.ChooseRoadVeh(cargoid);
 local homedepot = road.GetRouteDepot();
 local price = AIEngine.GetPrice(veh);
-local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0);
+local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0 && road.cargoID == cCargo.GetPassengerCargo());
 if (altplace)	homedepot = road.target.depot;
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }

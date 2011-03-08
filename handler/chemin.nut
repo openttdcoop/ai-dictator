@@ -27,10 +27,6 @@ network.target_location=AITown.GetLocation(network.targetID);
 network.target_stationID=twoAirportID;
 network.CheckEntry(); // claims that airport
 INSTANCE.route.VirtualMailCopy();
-DInfo("Pass network infos: src:"+network.source_entry+" dst:"+network.target_entry+" srcID:"+network.source_stationID);
-
-network=cRoute.GetRouteObject(1);
-DInfo("Mail network infos: src:"+network.source_entry+" dst:"+network.target_entry+" srcID:"+network.source_stationID);
 }
 
 function cRoute::VirtualAirNetworkUpdate()
@@ -40,6 +36,8 @@ local towns=AITownList();
 towns.Valuate(AITown.GetPopulation);
 towns.RemoveBelowValue(INSTANCE.carrier.AIR_NET_CONNECTOR);
 local airports=AIStationList(AIStation.STATION_AIRPORT);
+airports.Valuate(AIAirport.GetAirportType);
+airports.RemoveValue(AIAirport.AT_SMALL); // don't network small airports, it's too hard for slow aircrafts
 airports.Valuate(AIStation.GetLocation);
 local virtualpath=AIList();
 local validairports=AIList();
@@ -55,11 +53,6 @@ foreach (airport_id, location in airports)
 virtualpath.Sort(AIList.SORT_BY_VALUE, false);
 // now validairports = only airports where towns population is > AIR_NET_CONNECTOR, value is airportid
 // and virtualpath the town where those airports are, value = population of those towns
-cStation.VirtualAirports.Clear();
-foreach (towns, airportid in validairports)
-	{
-	cStation.VirtualAirports.AddItem(airportid, towns);
-	}
 local bigtown=virtualpath.Begin();
 local bigtown_location=AITown.GetLocation(bigtown);
 virtualpath.Valuate(AITown.GetDistanceManhattanToTile, bigtown_location);
@@ -87,9 +80,31 @@ foreach (town, airport_location in virtualpath)
 INSTANCE.carrier.VirtualAirRoute.clear(); // don't try reassign a static variable!
 foreach (towns, dummy in pairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
 foreach (towns, dummy in impairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
-DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+cStation.VirtualAirports.Count(),2);
+foreach (towns, airportid in validairports)
+	{
+	INSTANCE.Sleep(1);
+	if (!cStation.VirtualAirports.HasItem(airportid))
+		{
+		cStation.VirtualAirports.AddItem(airportid, towns);
+		local stealgroup=AIVehicleList_Station(airportid);
+		stealgroup.Valuate(AIVehicle.GetGroupID);
+		stealgroup.RemoveValue(cRoute.GetVirtualAirPassengerGroup());
+		stealgroup.RemoveValue(cRoute.GetVirtualAirMailGroup());
+		DInfo("Re-assigning "+stealgroup.Count()+" aircrafts to the network",0);
+		local thatnetwork=0;
+		local vehnumber=0;
+		foreach (vehicle, gid in stealgroup)
+			{
+			if (vehnumber % 6 == 0)	thatnetwork=cRoute.GetVirtualMailGroup();
+						else	thatnetwork=cRoute.GetVirtualPassengerGroup();
+			AIGroup.MoveVehicle(thatnetwork, vehicle);
+			vehnumber++;
+			}
+		}
+	}
+
+DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+ cStation.VirtualAirports.Count(),1);
 INSTANCE.route.RouteUpdateAirPath();
-INSTANCE.NeedDelay(10);
 INSTANCE.carrier.AirNetworkOrdersHandler();
 }
 
@@ -145,7 +160,6 @@ else	{
 	local onecapacity=0;
 	foreach (vehicle, capacity in vehlist)
 		{
-		DInfo("vehicle"+vehicle+" capacity="+capacity);
 		totalcapacity+=capacity;
 		if (capacity > 0)	onecapacity=capacity;
 		}
@@ -175,7 +189,7 @@ if (vehneed > 0)
 		if (INSTANCE.bank.CanBuyThat(AIEngine.GetPrice(futurveh)) && INSTANCE.carrier.CanAddNewVehicle(0,true))
 		if (INSTANCE.carrier.BuildAndStartVehicle(thatnetwork))
 			{
-			DInfo("Adding an aircraft to the network",0);
+			DInfo("Adding an aircraft to the network, "+(vehnumber+1)+" aircrafts run it now",0);
 			vehnumber++;
 			}
 		}
@@ -227,6 +241,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
 	local maxveh=0;
 	local cargoid=road.cargoID;
+	if (cargoid == null)	continue;
 	local estimateCapacity=1;
 	switch (road.route_type)
 		{
@@ -275,7 +290,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (firstveh && road.route_type != RouteType.RAIL) { vehneed = 2; }
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
-	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 || AIStation.GetCargoRating(road.target.stationID,cargoid) < 25)	vehneed++;
+	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 || AIStation.GetCargoRating(road.target.stationID,cargoid) < 25 && cargowait==0)	vehneed++;
 	local canaddonemore=INSTANCE.carrier.CanAddNewVehicle(uid, true);
 	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be allow to buy it	
 	DInfo("CanAddNewVehicle for source station says "+canaddonemore,2);

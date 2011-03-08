@@ -225,7 +225,7 @@ local dep_pos=depot_id;
 local dep_front=AIRoad.GetRoadDepotFrontTile(depot_id);
 local depotdead=false;
 local statype= AIRoad.ROADVEHTYPE_BUS;
-if (work.specialType == AIStation.STATION_TRUCK_STOP)	statype=AIRoad.ROADVEHTYPE_TRUCK;
+if (work.stationType == AIStation.STATION_TRUCK_STOP)	statype=AIRoad.ROADVEHTYPE_TRUCK;
 local deptype=AIRoad.ROADVEHTYPE_BUS+100000; // we add 100000
 local new_sta_pos=-1;
 local new_dep_pos=-1;

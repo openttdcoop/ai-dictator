@@ -335,8 +335,8 @@ function cRoute::RouteInitNetwork()
 	AIGroup.SetName(n, "Virtual Network Mail");
 	VirtualAirGroup.push(n);
 	mailRoute.groupID=n;
-	RouteIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
-	RouteIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);
+	GroupIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
+	GroupIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);
 	mailRoute.RouteSave();
 
 	local gid = AIGroup.CreateGroup(AIVehicle.VT_RAIL);

@@ -61,7 +61,15 @@ if (INSTANCE.buildTimer == 6)
 	{
 	INSTANCE.builddelay=false;
 	INSTANCE.buildTimer=0;
-	}	
+	}
+if (!INSTANCE.carrier.ToDepotList.IsEmpty())
+	{
+	foreach (vehicle, dateinlist in INSTANCE.carrier.ToDepotList)
+		{
+		local today=AIDate.GetCurrentDate();
+		if ((today - dateinlist) > 180)	INSTANCE.carrier.ToDepotList.RemoveItem(vehicle);
+		}
+	}
 }
 
 function cBuilder::HalfYearChecks()
@@ -107,7 +115,11 @@ foreach (routes, dummy in INSTANCE.route.RouteDamage)
 	if (trys >= 12)	{ deletethatone=routes }
 	}
 INSTANCE.route.RouteDamage.RemoveValue(-1);
-if (deletethatone != -1)	{ INSTANCE.route.RouteIsNotDoable(deletethatone); }
+if (deletethatone != -1)
+	{
+	local trys=cRoute.GetRouteObject(deletethatone);
+	trys.RouteIsNotDoable();
+	}
 }
 
 
