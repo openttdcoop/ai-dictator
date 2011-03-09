@@ -15,7 +15,7 @@
 function cBuilder::AirportNeedUpgrade(stationid)
 // this upgrade an existing airport to a newer one
 {
-DInfo("Trying to upgrade airport #"+stationid+" "+AIStation.GetName(stationid),0);
+
 // better check criticals stuff before stopping our traffic and find we're going to fail
 local station=cStation.GetStationObject(stationid);
 local townrating=0;
@@ -43,7 +43,7 @@ cost+=1000; // i'm not sure how much i need to destroy old airport
 INSTANCE.bank.RaiseFundsBy(cost);
 if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
 	{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",1); return false; }
-
+DInfo("Trying to upgrade airport #"+stationid+" "+AIStation.GetName(stationid),0);
 // find traffic that use that airport & reroute it
 //INSTANCE.chemin.under_upgrade=true;
 // prior to reroute aircraft, make sure they have a route to go
@@ -142,7 +142,6 @@ DInfo("Looking for a place to build an airport",2);
 local helipadonly=false;
 // Pickup the airport we can build
 local airporttype=cBuilder.GetAirportType();
-
 local air_x=AIAirport.GetAirportWidth(airporttype);
 local air_y=AIAirport.GetAirportHeight(airporttype);
 local rad=AIAirport.GetAirportCoverageRadius(airporttype);
@@ -180,7 +179,7 @@ else	{
 	}
 if (!helipadonly)
 	{
-	DInfo("Building an airport",2);
+	DInfo("Building an airport",0);
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.RemoveValue(0);
 	tilelist.Valuate(AITile.GetCargoAcceptance, road.cargoID, 1, 1, rad);
@@ -218,7 +217,14 @@ if (success)
 		road.CreateNewStation(start);
 		road.CheckEntry();
 		}
-	else	{ road.route_type = RouteType.CHOPPER; }
+	else	{
+		road.source_stationID=AIStation.GetStationID(heliloc);
+		road.route_type = RouteType.CHOPPER;
+		road.CreateNewStation(start);
+		road.CheckEntry();
+		DInfo("Chopper says depot is "+road.source.depot);
+		road.source.depot=null;
+		}
 /*	if (helipadonly)
 		{
 		newStation.stationID = AIStation.GetStationID(AIIndustry.GetLocation(INSTANCE.route.sourceID));

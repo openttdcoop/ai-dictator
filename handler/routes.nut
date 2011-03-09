@@ -107,9 +107,9 @@ function cRoute::CheckEntry()
 	this.source_entry = (this.source_stationID != null);
 	this.target_entry = (this.target_stationID != null);
 	if (this.source_entry)	{ this.source=cStation.GetStationObject(this.source_stationID); this.source.ClaimOwner(this.UID); }
-			else	this.source=null;
+				else	this.source=null;
 	if (this.target_entry)	{ this.target=cStation.GetStationObject(this.target_stationID); this.target.ClaimOwner(this.UID); }
-			else	this.target=null;
+				else	this.target=null;
 	//DInfo("Route "+this.UID+" source="+this.source+" target="+this.target,1);
 	}
 
@@ -124,9 +124,9 @@ function cRoute::RouteUpdateVehicle()
 		return;
 		}
 	if (this.source_entry)	this.source.vehicle_count=AIVehicleList_Station(this.source.stationID).Count();
-			else	this.source.vehicle_count=0;
+				else	this.source.vehicle_count=0;
 	if (this.target_entry)	this.target.vehicle_count=AIVehicleList_Station(this.target.stationID).Count();
-			else	this.target.vehicle_count=0;
+				else	this.target.vehicle_count=0;
 	if (this.target_entry && this.source_entry)
 			{
 			local ecart=0;
@@ -142,7 +142,9 @@ function cRoute::RouteUpdateVehicle()
 function cRoute::RouteBuildGroup()
 // Build a group for that route
 	{
-	local gid = AIGroup.CreateGroup(this.route_type);
+	local rtype=this.route_type;
+	if (this.route_type == RouteType.CHOPPER)	rtype=AIVehicle.VT_AIR;
+	local gid = AIGroup.CreateGroup(rtype);
 	if (!AIGroup.IsValidGroup(gid))	return;
 	local st="I";
 	if (this.source_istown)	st="T";
@@ -152,7 +154,8 @@ function cRoute::RouteBuildGroup()
 	if (groupname.len() > 29) groupname = groupname.slice(0, 28);
 	this.groupID = gid;
 	AIGroup.SetName(this.groupID, groupname);
-	GroupIndexer.AddItem(this.groupID, this.UID);
+	if (this.groupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(this.groupID, this.UID);
+							else	cRoute.GroupIndexer.AddItem(this.groupID, this.UID);
 	}
 
 function cRoute::RouteDone()
@@ -201,6 +204,8 @@ function cRoute::RouteTypeToString(that_type)
 			return "Boats";
 		case	RouteType.AIRNET:
 			return "Aircrafts";
+		case	RouteType.CHOPPER:
+			return "Choppers";
 		}
 	}
 

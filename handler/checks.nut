@@ -199,6 +199,24 @@ function cBuilder::RoadStationsBalancing()
 // station source check (crowd)
 // station target check (only to see if current cargo is accept)
 // vehicle check only 1st of group for many op
+local busstation = AIStationList(AIStation.STATION_BUS_STOP);
+foreach (stations, dummy in busstation)
+	{
+	local vehlist=cCarrier.VehicleNearStation(stations);
+	vehlist=cCarrier.VehicleList_KeepStuckVehicle(vehlist);
+	if (!vehlist.IsEmpty())
+		{
+		local produce=AIStation.GetCargoWaiting(stations, cCargo.GetPassengerCargo());
+		if (produce == 0) // bus are waiting and station have 0 passengers
+			{
+			local vehicle=vehlist.Begin();
+			DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
+			INSTANCE.carrier.VehicleSendToDepot(vehicle);
+			AIVehicle.ReverseVehicle(vehicle);
+			}
+		}
+	}
+
 local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
 if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
@@ -206,8 +224,12 @@ foreach (stations, dummy in truckstation)
 	DInfo("Station check #"+stations+" "+AIStation.GetName(stations),1);
 	local truck_atstation=cCarrier.VehicleNearStation(stations);
 	if (truck_atstation.Count() < 2)	continue;
-	local truck_loading=cCarrier.VehicleList_KeepLoadingVehicle(truck_atstation);
-	local truck_waiting=cCarrier.VehicleList_KeepStuckVehicle(truck_atstation);
+	local truck_loading=AIList();
+	local truck_waiting=AIList();
+	truck_loading.AddList(truck_atstation);
+	truck_waiting.AddList(truck_atstation);
+	truck_loading=cCarrier.VehicleList_KeepLoadingVehicle(truck_loading);
+	truck_waiting=cCarrier.VehicleList_KeepStuckVehicle(truck_waiting);
 	local truck_getter_loading=AIList();
 	local truck_getter_waiting=AIList();
 	local truck_dropper_loading=AIList();
@@ -235,10 +257,8 @@ foreach (stations, dummy in truckstation)
 	// pfff, now we know what cargo that station can use (accept or produce)
 	station_produce_cargo.Valuate(AICargo.GetTownEffect);
 	station_produce_cargo.RemoveValue(AICargo.TE_PASSENGERS);
-	station_produce_cargo.RemoveValue(AICargo.TE_MAIL);
 	station_accept_cargo.Valuate(AICargo.GetTownEffect);
 	station_accept_cargo.RemoveValue(AICargo.TE_PASSENGERS);
-	station_accept_cargo.RemoveValue(AICargo.TE_MAIL);
 	// now we can found what vehicle is trying to do
 	
 	foreach (cargotype, dummy in station_produce_cargo)

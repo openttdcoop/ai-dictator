@@ -135,30 +135,30 @@ switch (chem.route_type)
 		if (!INSTANCE.use_boat)	return false;
 		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
 	break;
-// TODO: upgrade airport before adding new aircraft if upgrade is avaiable
 	case RouteType.AIRNET:
-		if (thatstation.CanUpgradeStation())	INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID);
-		chem=cRoute.GetRouteObject(roadidx); // reload, airport update can change airportID, station...
-		if (start)	{ thatstation=chem.source; }
-			else	{ thatstation=chem.target; }
-		DInfo("Limit for air network: "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cStation.VirtualAirports.Count(),2);
-		if (chem.vehicle_count+1 > INSTANCE.carrier.airnet_max*cStation.VirtualAirports.Count()) return false;
+		if (thatstation.CanUpgradeStation())
+			{
+			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID))	return false;
+			// get out after an upgrade, station could have change place...
+			}
+		DInfo("Limit for air network: "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),2);
+		if (chem.vehicle_count+1 > INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) return false;
 		return true;
 	case RouteType.CHOPPER:
 		if (chem.vehicle_count+1 > 4)	return false;
 		return true;
 	break;
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
-		if (thatstation.CanUpgradeStation())	INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID);
-		chem=cRoute.GetRouteObject(roadidx);
-		if (start)	{ thatstation=chem.source; }
-			else	{ thatstation=chem.target; }
+		if (thatstation.CanUpgradeStation())
+			{
+			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID)) return false;
+			}
 		local result=true;
 		if (!INSTANCE.use_air)	result=false;
 		thatstation.CheckAirportLimits(); // force recheck limits
 		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	result=false;
 		// limit by airport capacity
-		if (!cStation.VirtualAirports.HasItem(thatstation.stationID) && chem.vehicle_count+1 > INSTANCE.carrier.air_max)	result=false;
+		if (!cStation.VirtualAirports.HasItem(thatstation.stationID) && chem.vehicle_count+1 > INSTANCE.carrier.air_max) result=false;
 		// limit by route aircraft capacity when not networked
 		if (cStation.VirtualAirports.HasItem(thatstation.stationID))
 				DInfo("Limit for that airport (network): "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,2);
@@ -213,7 +213,7 @@ INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
 	{ DWarn("Cannot buy the road vehicle : "+price,1); return false; }
-else	{ DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(firstveh),1); }
+else	{ DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(firstveh),0); }
 if (AIEngine.GetCargoType(veh) != cargoid) AIVehicle.RefitVehicle(firstveh, cargoid);
 local firstorderflag = null;
 local secondorderflag = null;
@@ -259,7 +259,7 @@ INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
 	{ DWarn("Cannot buy the aircraft : "+price,1); return false; }
-else	{ DInfo("Just brought a new aircraft: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),1); }
+else	{ DInfo("Just brought a new aircraft: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),0); }
 // no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
 // as thir engine is the fastest always
 local firstorderflag = null;
@@ -308,7 +308,7 @@ if (INSTANCE.route.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER;
 local veh = ChooseAircraft(INSTANCE.route.cargoID,modele);
 if (veh == null)	{
 			if (INSTANCE.route.route_type == RouteType.CHOPPER)	DWarn("No suitable chopper to buy !",1);
-									else	DWarn("No suitable aircraft to buy !");
+											else	DWarn("No suitable aircraft to buy !");
 			}
 DInfo("Choosen aircraft: "+AIEngine.GetName(veh),2);
 return veh;

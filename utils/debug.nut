@@ -38,23 +38,26 @@ foreach (i, dummy in item)
 	}
 }
 
-function cBuilder::DumpRoute()
+function cBuilder::DumpRoute(idx=null)
 {
-DInfo("Route #"+INSTANCE.route.UID+" "+INSTANCE.route.name,2);
+local road=null;
+if (idx == null)	road=INSTANCE.route;
+		else	road=cRoute.GetRouteObject(idx);
+DInfo("Route #"+road.UID+" "+road.name,2);
 local srcname="";
 local tgtname="";
-if (INSTANCE.route.source_istown)	srcname=AITown.GetName(INSTANCE.route.sourceID);
-				else	srcname=AIIndustry.GetName(INSTANCE.route.sourceID);
-if (INSTANCE.route.target_istown)	tgtname=AITown.GetName(INSTANCE.route.targetID);
-				else	tgtname=AIIndustry.GetName(INSTANCE.route.targetID);
-srcname=INSTANCE.route.sourceID+":"+srcname;
-tgtname=INSTANCE.route.targetID+":"+tgtname;
-DInfo("Source: "+srcname+" Target: "+tgtname+" route_type: "+cRoute.RouteTypeToString(INSTANCE.route.route_type)+" status: "+INSTANCE.route.status+" Cargo:"+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
-if (!INSTANCE.route.source_entry) return;
-DInfo("Source station "+INSTANCE.route.source_stationID+"("+AIStation.GetName(INSTANCE.route.source_stationID)+")",2);
-DInfo("# "+INSTANCE.route.source.stationID+" Station type: "+INSTANCE.route.source.stationType+" specialType: "+INSTANCE.route.source.specialType+" produce "+INSTANCE.route.source.cargo_produce.Count()+" cargos, accept "+INSTANCE.route.source.cargo_accept.Count()+" cargos",2);
-if (!INSTANCE.route.target_entry) return;
-DInfo("# "+INSTANCE.route.target.stationID+" Station type: "+INSTANCE.route.target.stationType+" specialType: "+INSTANCE.route.target.specialType+" produce "+INSTANCE.route.target.cargo_produce.Count()+" cargos, accept "+INSTANCE.route.target.cargo_accept.Count()+" cargos",2);
+if (road.source_istown)	srcname=AITown.GetName(road.sourceID);
+			else	srcname=AIIndustry.GetName(road.sourceID);
+if (road.target_istown)	tgtname=AITown.GetName(road.targetID);
+			else	tgtname=AIIndustry.GetName(road.targetID);
+srcname=road.sourceID+":"+srcname;
+tgtname=road.targetID+":"+tgtname;
+DInfo("Source: "+srcname+" Target: "+tgtname+" route_type: "+cRoute.RouteTypeToString(road.route_type)+" status: "+road.status+" Cargo:"+AICargo.GetCargoLabel(road.cargoID),2);
+if (!road.source_entry) return;
+DInfo("Source station "+road.source_stationID+"("+AIStation.GetName(road.source_stationID)+")",2);
+DInfo("# "+road.source.stationID+" Station type: "+road.source.stationType+" specialType: "+road.source.specialType+" produce "+road.source.cargo_produce.Count()+" cargos, accept "+road.source.cargo_accept.Count()+" cargos",2);
+if (!road.target_entry) return;
+DInfo("# "+road.target.stationID+" Station type: "+road.target.stationType+" specialType: "+road.target.specialType+" produce "+road.target.cargo_produce.Count()+" cargos, accept "+road.target.cargo_accept.Count()+" cargos",2);
 }
 
 function cBuilder::DumpJobs(uid)
@@ -66,7 +69,7 @@ if (tjob.source_istown)	src=AITown.GetName(tjob.sourceID)+src;
 		else	src=AIIndustry.GetName(tjob.sourceID)+src;
 if (tjob.target_istown)	dst=AITown.GetName(tjob.targetID)+dst;
 		else	dst=AIIndustry.GetName(tjob.targetID)+dst;
-DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" Amount="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,0);
+DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" Amount="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,2);
 }
 
 function cBuilder::DumpTopJobs()

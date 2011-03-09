@@ -93,6 +93,7 @@ function cStation::CanUpgradeStation()
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
 			if (newairport > this.specialType)
 				{ DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2); }
+			if (this.locations.Count()==1)	return false; // plaforms have 1 size only
 			if (newairport > this.specialType)	return true;
 								else	return false;
 		break;
@@ -179,17 +180,20 @@ function cStation::ClaimOwner(uid)
 function cStation::CheckAirportLimits()
 // Set limits for airports
 	{
+	if (!AIStation.IsValidStation(this.stationID))	return; // it happen if the airport is moved and now invalid
 	locations=cTileTools.FindStationTiles(AIStation.GetLocation(this.stationID));
 	this.specialType=AIAirport.GetAirportType(this.locations.Begin());
+	if (this.specialType == 255)	return;
 	this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
 	local planetype=0;	// big planes
 	if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
 	this.locations.SetValue(this.locations.Begin(), planetype);
 	this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
-	local virtualized=(cStation.VirtualAirports.Count() > 1 && cStation.VirtualAirports.HasItem(this.stationID));
+	local virtualized=(cCarrier.VirtualAirRoute.len() > 1 && cStation.VirtualAirports.HasItem(this.stationID));
 	// get out of airnetwork if the network is too poor
+
 	this.vehicle_max=INSTANCE.carrier.AirportTypeLimit[this.specialType];
-	if (virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * cStation.VirtualAirports.Count();
+	if (virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * cCarrier.VirtualAirRoute.len();
 	}
 
 function cStation::InitNewStation()
@@ -231,6 +235,7 @@ function cStation::InitNewStation()
 			if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
 			this.locations.SetValue(this.locations.Begin(), planetype);
 			this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
+			DInfo("Airport size: "+this.locations.Count(),2);
 		break;
 		}
 	// for everyone, the cargos

@@ -173,7 +173,7 @@ if (stationtype != (AIRoad.ROADVEHTYPE_BUS+100000)) // not a depot = truck or bu
 		}
 	}
 // now build the structure, function is in stationbuilder.nut
-return INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, stationtype, true);
+return INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, stationtype, -1);
 }
 
 function cBuilder::BuildRoadDepotAtTile(tile)

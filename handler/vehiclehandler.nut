@@ -170,7 +170,7 @@ if (numorders != cCarrier.VirtualAirRoute.len())
 	for (local i=0; i < INSTANCE.carrier.VirtualAirRoute.len(); i++)
 		{
 		local destination=INSTANCE.carrier.VirtualAirRoute[i];
-		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_FULL_LOAD_ANY))
+		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_NONE))
 			{ DError("Aircraft network order refuse",2); }
 		}
 	if (numorders > 0)
@@ -312,8 +312,8 @@ foreach (ownID, dummy in station.owner)
 		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
 		if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
 			{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2); }
-		else	{ INSTANCE.carrier.VehicleBuildOrders(road.groupID); }
 		}
+	else	{ INSTANCE.carrier.VehicleBuildOrders(road.groupID); }
 	}
 }
 
@@ -323,7 +323,8 @@ function cCarrier::VehicleSetDepotOrder(veh)
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 // One day i should check rogues vehicles running out of control from a route, but this shouldn't happen :p
 local road=cRoute.GetRouteObject(idx);
-local homedepot=road.source.depot;
+if (road == null)	return;
+local homedepot=road.GetRouteDepot();
 AIOrder.UnshareOrders(veh);
 INSTANCE.carrier.VehicleOrdersReset(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))

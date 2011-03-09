@@ -294,7 +294,7 @@ local allfail=true;
 foreach (direction, tile in sta_front_list)
 	{
 	if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
-	new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, false);
+	new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.stationID);
 	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
 	INSTANCE.builder.CriticalError=false; // discard it
 	if (new_sta_pos != -1)	break;
@@ -345,7 +345,7 @@ function cBuilder::BuildRoadStationOrDepotAtTile(tile, direction, stationtype, s
 * @param tile the tile where to put the structure
 * @param direction the tile where the structure will be connected
 * @param stationtype if AIRoad.ROADVEHTYPE_BUS+100000 build a depot, else build a station of stationtype type
-* @param stationnew true to build a new station, false to joint the station
+* @param stationnew invalid station id to build a new station, else joint the station with stationid
 * @return tile position on success. -1 on error, set CriticalError
 */
 {
@@ -379,8 +379,9 @@ if (!cTileTools.DemolishTile(tile))
 	return -1;
 	}
 local success=false;
-local newstation=AIStation.STATION_JOIN_ADJACENT;
-if (stationnew)	newstation=AIStation.STATION_NEW;
+local newstation=0;
+if (AIStation.IsValidStation(stationnew))	newstation=stationnew;
+						else	newstation=AIStation.STATION_NEW;
 if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 	{
 	INSTANCE.bank.RaiseFundsBigTime();
