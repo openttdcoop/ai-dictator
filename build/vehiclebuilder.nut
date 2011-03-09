@@ -85,6 +85,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start)
 // check if we can add another vehicle at the start/end station of that route
 {
 local chem=cRoute.GetRouteObject(roadidx);
+if (chem == null) return false;
 chem.RouteUpdateVehicle();
 local thatstation=null;
 local thatentry=null;
@@ -173,7 +174,7 @@ function cCarrier::BuildAndStartVehicle(routeid)
 // Create a new vehicle on route
 {
 local road=cRoute.GetRouteObject(routeid);
-if (road == null)	{ DWarn("Building a vehicle cannot be done on unknown route !",1); }
+if (road == null)	return false;
 local res=false;
 switch (road.route_type)
 	{
