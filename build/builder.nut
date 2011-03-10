@@ -341,10 +341,26 @@ local success=false;
 DInfo("Route #"+INSTANCE.builder.building_route+" Status:"+INSTANCE.route.status,1);
 if (INSTANCE.route.status==0) // not using switch/case so we can advance steps in one pass
 	{
-	success=INSTANCE.carrier.GetVehicle();
-	if (success < 0)
+	switch (INSTANCE.route.route_type)
 		{
-		DWarn("There's no vehicle for that transport type we could use to carry that cargo:"+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		case	RouteType.RAIL:
+			success=null;
+		break;
+		case	RouteType.ROAD:
+			success=INSTANCE.carrier.ChooseRoadVeh(INSTANCE.route.cargoID);
+		break;
+		case	RouteType.WATER:
+			success=null;
+		break;
+		case	RouteType.AIR:
+			local modele=AircraftType.EFFICIENT;
+			if (!INSTANCE.route.source_istown)	modele=AircraftType.CHOPPER;
+			INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, modele);
+		break;
+		}
+	if (success == null)
+		{
+		DWarn("There's no vehicle for that transport type we could use to carry that cargo: "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
 		INSTANCE.route.RouteIsNotDoable();
 		return false;
 		}

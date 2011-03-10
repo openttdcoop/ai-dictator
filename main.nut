@@ -19,6 +19,17 @@ enum RouteType {
 	AIR,	// AIVehicle.VT_AIR
 	AIRNET,
 	CHOPPER }
+enum AircraftType {
+	EFFICIENT,
+	BEST,
+	CHOPPER
+}
+enum DepotAction {
+	SELL,
+	UPGRADE,
+	REPLACE
+}
+
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
@@ -149,7 +160,6 @@ function DictatorAI::Start()
 		builder.TrainStationTesting();
 		bank.CashFlow();
 		eventManager.HandleEvents();
-		route.DutyOnRoute();
 		builder.QuickTasks();
 		AIController.Sleep(10);
 		builder.MonthlyChecks();

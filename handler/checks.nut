@@ -71,6 +71,7 @@ if (!INSTANCE.carrier.ToDepotList.IsEmpty())
 		}
 	}
 INSTANCE.carrier.VehicleMaintenance();
+INSTANCE.route.DutyOnRoute();
 }
 
 function cBuilder::HalfYearChecks()
@@ -139,6 +140,7 @@ function cBuilder::AirportStationsBalancing()
 local airID=AIStationList(AIStation.STATION_AIRPORT);
 foreach (i, dummy in airID)
 	{
+	if (cStation.VirtualAirports.HasItem(i))	continue; // don't balance airport from the network
 	local vehlist=INSTANCE.carrier.VehicleListBusyAtAirport(i);
 	local count=vehlist.Count();
 	//DInfo("Airport "+AIStation.GetName(i)+" is busy with "+vehlist.Count(),2);
@@ -265,6 +267,7 @@ foreach (stations, dummy in truckstation)
 	
 	foreach (cargotype, dummy in station_produce_cargo)
 		{
+		INSTANCE.Sleep(1);
 		truck_loading.Valuate(AIVehicle.GetCapacity,cargotype);
 		foreach (vehicle, capacity in truck_loading)
 			{
@@ -281,6 +284,7 @@ foreach (stations, dummy in truckstation)
 	// redo with acceptance
 	foreach (cargotype, dummy in station_accept_cargo)
 		{
+		INSTANCE.Sleep(1);
 		truck_loading.Valuate(AIVehicle.GetCapacity,cargotype);
 		foreach (vehicle, capacity in truck_loading)
 			{

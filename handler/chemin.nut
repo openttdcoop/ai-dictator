@@ -213,15 +213,12 @@ return totalvalue / vehnumber;
 function cRoute::DutyOnRoute()
 // this is where we add vehicle and tiny other things to max our money
 {
-/*
-if (INSTANCE.chemin.under_upgrade)
+if (INSTANCE.carrier.vehnextprice > 0)
 	{
 	INSTANCE.bank.busyRoute=true;
 	DInfo("We're upgrading something, buys are blocked...",1);
 	return;
 	}
-*/
-//INSTANCE.carrier.VehicleMaintenance();
 local firstveh=false;
 INSTANCE.bank.busyRoute=false; // setup the flag
 local profit=false;
@@ -317,14 +314,6 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	// adding vehicle
 	if (vehneed > 0)
 		{
-		if (INSTANCE.carrier.vehnextprice > 0)
-			{
-			DInfo("We're upgrading a vehicle, not adding new vehicle until its done to keep the money... "+INSTANCE.carrier.vehnextprice,1);
-			INSTANCE.bank.busyRoute=true;
-			vehneed = 0; // no add... while we have an vehicle upgrade on its way
-			}
-		/*if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true;
-							else	oldveh=false;*/
 		if (firstveh) // special cases where we must build the vehicle
 			{ profit=true; oldveh=true; }
 

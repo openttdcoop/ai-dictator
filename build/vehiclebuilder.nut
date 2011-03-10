@@ -13,18 +13,6 @@
 **/
 
 
-enum AircraftType {
-	EFFICIENT,
-	BEST,
-	CHOPPER
-}
-
-enum DepotAction {
-	SELL,
-	UPGRADE,
-	REPLACE
-}
-
 class cCarrier
 {
 static	AirportTypeLimit=[6, 15, 2, 30, 60, 5, 6, 140, 8]; // limit per airport type
@@ -293,47 +281,6 @@ if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",
 return true;
 }
 
-function cCarrier::GetRailVehicle(idx)
-// get a rail vehicle
-{
-local road= INSTANCE.chemin.RListGetItem(idx);
-local veh = INSTANCE.carrier.ChooseRailVeh(idx);
-if (veh == null)	{
-			DError("No suitable train to buy !",1);
-			road=INSTANCE.chemin.RouteMalusHigher(road);
-			INSTANCE.chemin.RListUpdateItem(INSTANCE.chemin.nowJob,road);
-			return -1;
-			}
-DInfo("Choosen train: "+AIEngine.GetName(veh),2);
-return veh;
-}
-
-function cCarrier::GetRoadVehicle()
-// get a road vehicle
-{
-local veh = INSTANCE.carrier.ChooseRoadVeh(cCargo.GetPassengerCargo());
-if (veh == null)	{
-			DError("No suitable road vehicle to buy !",1);
-			}
-DInfo("Choosen road vehicle: "+AIEngine.GetName(veh),2);
-return veh;
-}
-
-function cCarrier::GetAirVehicle()
-// get an aircraft
-{
-local modele=AircraftType.EFFICIENT;
-if (INSTANCE.route.route_type == RouteType.AIRNET)	modele=AircraftType.BEST;
-if (INSTANCE.route.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER;
-local veh = ChooseAircraft(INSTANCE.route.cargoID,modele);
-if (veh == null)	{
-			if (INSTANCE.route.route_type == RouteType.CHOPPER)	DWarn("No suitable chopper to buy !",1);
-											else	DWarn("No suitable aircraft to buy !");
-			}
-DInfo("Choosen aircraft: "+AIEngine.GetName(veh),2);
-return veh;
-}
-
 function cCarrier::AircraftIsChopper(vehicle)
 // return true if we are a chopper
 {
@@ -386,7 +333,7 @@ switch (airtype)
 		vehlist.Sort(AIList.SORT_BY_VALUE,true);
 	break;
 	}
-return vehlist.Begin();
+return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }
 
 function cCarrier::GetEngineEfficiency(engine)
@@ -417,9 +364,7 @@ vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 vehlist.KeepValue(1);
 vehlist.Valuate(cCarrier.GetEngineEfficiency);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
-local veh = null;
-if (vehlist.Count() > 0) { veh=vehlist.Begin();	}
-return veh;
+return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }
 
 function cCarrier::ChooseWagon(cargo)
@@ -448,31 +393,6 @@ vehlist.Valuate(AIEngine.GetMaxSpeed);
 local veh = null;
 if (vehlist.Count() > 0)	veh=vehlist.Begin();
 return veh;
-}
-
-function cCarrier::GetVehicle()
-// Get current choosen vehicle, reroute depending on road type
-{
-local success=-1;
-switch (INSTANCE.route.route_type)
-	{
-	case RouteType.ROAD:
-	success=INSTANCE.carrier.GetRoadVehicle();
-	break;
-	case RouteType.RAIL:
-	//success=INSTANCE.carrier.GetRailVehicle(idx);
-	success=false;
-	break;
-	case RouteType.WATER:
-	success=false;
-	break;
-	case RouteType.AIR:
-	case RouteType.AIRNET:
-	case RouteType.CHOPPER:
-	success=INSTANCE.carrier.GetAirVehicle();
-	break;
-	}
-return success;
 }
 
 function cCarrier::CreateRailVehicle(roadidx)

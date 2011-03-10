@@ -603,8 +603,8 @@ foreach (vehicle, dummy in tlist)
 	age=AIVehicle.GetAge(vehicle);
 	if (age > 240 && price < 0 && INSTANCE.OneMonth > 6) // (6 months after new year)
 		{
-		DInfo("-> Vehicle "+name+" is not making profit, sending it to depot "+price,0);
-		INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.SELL);
+		//DInfo("-> Vehicle "+name+" is not making profit, sending it to depot "+price,0);
+		//INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.SELL);
 		age=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 		INSTANCE.builder.RouteIsDamage(age);
 		}
@@ -620,7 +620,7 @@ foreach (vehicle, dummy in tlist)
 		}
 	if (topengine != -1)
 		{
-		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
+		//if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		// reserving money for the upgrade
 		if (!cBanker.CanBuyThat(price))	continue; // no way, we lack funds for it
 		if (INSTANCE.carrier.vehnextprice==0)	INSTANCE.carrier.vehnextprice+=price;

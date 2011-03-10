@@ -291,7 +291,7 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
 			engine=INSTANCE.carrier.ChooseRoadVeh(cargo_id);
 			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
-					else	engineprice=500000000;
+						else	engineprice=500000000;
 			money+=engineprice*2;
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT));
@@ -304,7 +304,7 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 3 tracks entries and length*rail
 			engine=INSTANCE.carrier.ChooseRailVeh();
 			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
-					else	engineprice=500000000;
+						else	engineprice=500000000;
 			money+=engineprice*2; // this should cover some wagons costs
 			money+=(2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)); // station train 5 length
 			money+=2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT));
@@ -317,7 +317,7 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 //			engine=INSTANCE.carrier.ChooseRoadVeh(cargo_id);
 			engine=null;
 			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
-					else	engineprice=500000000;
+						else	engineprice=500000000;
 			money+=engineprice*2;
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK));
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT));
@@ -327,8 +327,7 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 			// 2 vehicle + 2 airports
 			engine=INSTANCE.carrier.ChooseAircraft(cargo_id,AircraftType.EFFICIENT);
 			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
-					else	engineprice=500000000;
-			engineprice=AIEngine.GetPrice(engine);
+						else	engineprice=500000000;
 			money+=engineprice*2;
 			money+=2*(AIAirport.GetPrice(INSTANCE.builder.GetAirportType()));
 			daystransit=6;
@@ -484,15 +483,19 @@ function cJobs::UpdateDoableJobs()
 		local myjob=cJobs.GetJobObject(id);
 		doable=myjob.isdoable;
 		// not doable if not doable
+		local vehtest=null;
 		switch (myjob.roadType)
 			{
 			case	AIVehicle.VT_AIR:
 				if (!INSTANCE.use_air)	doable=false;
-				if (INSTANCE.carrier.ChooseAircraft(myjob.cargoID)==-1)	doable=false;
+				if (myjob.source_istown)	vehtest=INSTANCE.carrier.ChooseAircraft(myjob.cargoID, AircraftType.EFFICIENT);
+								else	vehtest=INSTANCE.carrier.ChooseAircraft(myjob.cargoID, AircraftType.CHOPPER);
+				if (vehtest==null)	doable=false;
 			break;
 			case	AIVehicle.VT_ROAD:
 				if (!INSTANCE.use_road)	doable=false;
-				if (INSTANCE.carrier.ChooseRoadVeh(myjob.cargoID)==-1)	doable=false;
+				vehtest=INSTANCE.carrier.ChooseRoadVeh(myjob.cargoID);
+				if (vehtest==null)	doable=false;
 			break;
 			case	AIVehicle.VT_WATER:
 				if (!INSTANCE.use_boat)	doable=false;
