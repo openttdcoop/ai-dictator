@@ -166,7 +166,7 @@ if (stationtype != (AIRoad.ROADVEHTYPE_BUS+100000)) // not a depot = truck or bu
 		if (!tooclose)	tooclose=AITile.IsStationTile(tile+voisin+voisin);
 		if (tooclose)
 			{
-			DError("Road station would be too close from another station",2);
+			DWarn("Road station would be too close from another station",2);
 			INSTANCE.builder.CriticalError=true; // force a critical error
 			return -1;
 			}
@@ -182,7 +182,7 @@ function cBuilder::BuildRoadDepotAtTile(tile)
 local reusedepot=cTileTools.GetTilesAroundPlace(tile);
 reusedepot.Valuate(AITile.GetDistanceManhattanToTile,tile);
 reusedepot.Sort(AIList.SORT_BY_VALUE, true);
-reusedepot.RemoveAboveValue(10);
+reusedepot.RemoveAboveValue(8);
 reusedepot.Valuate(AITile.IsWaterTile);
 reusedepot.KeepValue(0);
 reusedepot.Valuate(AITile.IsStationTile);
@@ -325,6 +325,11 @@ if (isneartown)
 		statile=INSTANCE.builder.BuildAndStickToRoad(tile, stationtype);
 		if (statile >= 0)
 			{ stationbuild = true; break; }
+		}
+	if (stationbuild)
+		{ // try build depot closer to our station
+		tilelist.Valuate(AITile.GetDistanceManhattanToTile,statile);
+		tilelist.Sort(AIList.SORT_BY_VALUE, true);
 		}
 	foreach (tile, dummy in tilelist)
 		{

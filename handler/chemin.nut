@@ -95,6 +95,7 @@ if (INSTANCE.carrier.VirtualAirRoute.len() > 1)
 				if (vehnumber % 6 == 0)	thatnetwork=cRoute.GetVirtualAirMailGroup();
 							else	thatnetwork=cRoute.GetVirtualAirPassengerGroup();
 				AIGroup.MoveVehicle(thatnetwork, vehicle);
+				INSTANCE.carrier.VehicleOrdersReset(vehicle); // reset order, force order change
 				vehnumber++;
 				}
 			}
@@ -220,7 +221,7 @@ if (INSTANCE.chemin.under_upgrade)
 	return;
 	}
 */
-INSTANCE.carrier.VehicleMaintenance();
+//INSTANCE.carrier.VehicleMaintenance();
 local firstveh=false;
 INSTANCE.bank.busyRoute=false; // setup the flag
 local profit=false;
@@ -398,6 +399,7 @@ foreach (groupid, ratio in priority)
 			if (INSTANCE.carrier.BuildAndStartVehicle(uid))
 				{
 				DInfo("Adding a vehicle to route #"+uid,0);
+				INSTANCE.Sleep(30);
 				}
 		}
 	}

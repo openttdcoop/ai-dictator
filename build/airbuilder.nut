@@ -54,7 +54,7 @@ foreach (ownID, dummy in station.owner)
 	}
 INSTANCE.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 
-INSTANCE.carrier.VehicleHandleTrafficAtStation(stationid,true);
+
 local oldtype=station.specialType;
 local oldplace=AIStation.GetLocation(stationid);
 local counter=0;
@@ -63,6 +63,7 @@ local result=false;
 // time to pray a bit for success, we could invalidate a working route here
 do	{
 	result=AIAirport.RemoveAirport(station.locations.Begin());
+	INSTANCE.carrier.VehicleHandleTrafficAtStation(stationid,true);
 	counter++;
 	if (!result) 
 		{
@@ -106,6 +107,7 @@ foreach (uid, dummy in saved_owners)
 	}
 INSTANCE.carrier.VehicleHandleTrafficAtStation(gotnewID,false);
 if (gotnewID != stationid)	{ cStation.DeleteStation(stationid); }
+INSTANCE.carrier.vehnextprice=0; // we might have put a little havock while upgrading
 }
 
 function cBuilder::GetAirportType()
@@ -127,7 +129,7 @@ local essai=false;
 INSTANCE.bank.RaiseFundsBigTime();
 INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
-DInfo("Building an airport at "+tile+" type: "+airporttype+" success: "+essai,2);
+if (essai)	DInfo("Building an airport at "+tile,0);
 return essai;	
 }
 
@@ -179,7 +181,6 @@ else	{
 	}
 if (!helipadonly)
 	{
-	DInfo("Building an airport",0);
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.RemoveValue(0);
 	tilelist.Valuate(AITile.GetCargoAcceptance, road.cargoID, 1, 1, rad);

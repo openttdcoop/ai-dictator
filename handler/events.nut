@@ -43,7 +43,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();
 			INSTANCE.jobs.AddNewIndustryOrTown(industry, false);
-			INSTANCE.jobs.UpdateDoableJobs();
+			INSTANCE.jobs.RefreshAllValue();
 		break;
 		case AIEvent.AI_ET_INDUSTRY_CLOSE:
 			event = AIEventIndustryClose.Convert(event);
@@ -85,14 +85,14 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
 			DInfo(AIVehicle.GetName(vehicle) + " is lost, I don't know what to do with that ! Sending it to depot");
-			INSTANCE.carrier.VehicleSendToDepot(vehicle);
+			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;
 		case AIEvent.AI_ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
 			DInfo(AIVehicle.GetName(vehicle) + " is not profitable, sending it to depot");
 			INSTANCE.builder.RouteIsDamage(INSTANCE.carrier.VehicleFindRouteIndex(vehicle));
-			INSTANCE.carrier.VehicleSendToDepot(vehicle);
+			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;
 		case AIEvent.AI_ET_COMPANY_IN_TROUBLE:
 			event = AIEventCompanyInTrouble.Convert(event);
@@ -131,12 +131,12 @@ while (AIEventController.IsEventWaiting())
 				vehlist.Sort(AIList.SORT_BY_VALUE,false);
 				foreach (vehicle, profit in vehsell)
 					{ // sell all non profitable vehicles
-					INSTANCE.carrier.VehicleSendToDepot(vehicle);
+					INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 					}
 				foreach (vehicle, value in vehlist)
 					{
 					do	{
-						INSTANCE.carrier.VehicleSendToDepot(vehicle);
+						INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 						AIController.Sleep(150);
 						INSTANCE.carrier.VehicleIsWaitingInDepot();
 						} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);

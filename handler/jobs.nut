@@ -215,7 +215,7 @@ foreach (item, value in cJobs.jobIndexer)
 	{
 	cJobs.RefreshValue(item);
 	curr++;
-	if (curr % 5 == 0)
+	if (curr % 15 == 0)
 		{
 		DInfo(curr+" / "+cJobs.jobIndexer.Count(),0);
 		INSTANCE.Sleep(1);
@@ -224,16 +224,23 @@ foreach (item, value in cJobs.jobIndexer)
 }
 
 function cJobs::QuickRefresh()
-// refresh datas on first 8 doable objects
+// refresh datas on first 5 doable top jobs
 	{
 	local smallList=AIList();
-	smallList.AddList(cJobs.jobDoable);
-	smallList.KeepTop(8);
-	foreach (item, value in smallList)
-		{
+	if (cRoute.RouteIndexer.Count() > 2)	cJobs.jobDoable.KeepTop(5);
+	// don't limit to 5 top jobs if we don't even have 1 working route
+	foreach (item, value in cJobs.jobDoable)
+		{ // refresh the value & then sort by highest ranking
+		INSTANCE.Sleep(1);
 		cJobs.RefreshValue(item);
 		}
-	smallList.Sort(AIList.SORT_BY_VALUE,false);
+	INSTANCE.jobs.UpdateDoableJobs();
+	smallList.AddList(cJobs.jobDoable);
+	foreach (item, value in smallList)
+		{ // now remove jobs that we cannot build because of money need for that
+		local j=cJobs.GetJobObject(item);
+		if (!cBanker.CanBuyThat(j.moneyToBuild))	smallList.RemoveItem(item);
+		}
 	return smallList;
 	}
 
@@ -248,11 +255,8 @@ function cJobs::GetRanking(jobID)
 function cJobs::GetNextJob()
 // Return the next job UID to do, -1 if we have none to do
 	{
-	INSTANCE.jobs.UpdateDoableJobs();
-	//INSTANCE.NeedDelay(100);
 	local smallList=QuickRefresh();
 	if (smallList.IsEmpty())	{ DInfo("Can't find any good jobs to do",1); return -1; }
-	smallList.Sort(AIList.SORT_BY_VALUE, false);
 	return smallList.Begin();
 	}
 
@@ -461,7 +465,7 @@ function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
 	INSTANCE.jobs.CheckLimitedStatus();
-	DInfo("Analysing the job pool",0);
+	//DInfo("Analysing the job pool",0);
 	local parentListID=AIList();
 	INSTANCE.jobs.jobDoable.Clear();
 	//local curr=0;
@@ -503,8 +507,6 @@ function cJobs::UpdateDoableJobs()
 		// not doable if already done
 		if (doable && myjob.ranking==0)	doable=false;
 		// not doable if ranking is at 0
-		if (doable)	doable=(cBanker.CanBuyThat(myjob.moneyToBuild));
-		// not doable if not enough money
 		if (doable)
 		// not doable if max distance is limited and lower the job distance
 			{
@@ -576,7 +578,7 @@ foreach (ID, dummy in indjobs)
 	{
 	AddNewIndustryOrTown(ID, false);
 	curr++;
-	if (curr % 4 == 0)
+	if (curr % 12 == 0)
 		{
 		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()));
 		INSTANCE.Sleep(1);

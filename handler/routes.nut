@@ -18,7 +18,6 @@ static	database = {};
 static	RouteIndexer = AIList();	// list all UID of routes we are handling
 static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
 static	RouteDamage = AIList(); 	// list of routes that need repairs
-static	GroupSolder = [0, 0, 0, 0];	// the four group to sold vehicle, rail, road, water, air
 static	VirtualAirGroup = [];		// 0=passenger & 1=mail groups for network
 
 static	function GetRouteObject(UID)
@@ -58,7 +57,7 @@ static	function GetRouteObject(UID)
 	target_entry	= null;	// true if we have a working station
 	target_stationID	= null;	// target station id
 	cargoID		= null;	// the cargo id
-	date_VehicleDel	= null;	// date of last time we remove a vehicle
+	date_VehicleDelete= null;	// date of last time we remove a vehicle
 	date_lastCheck	= null;	// date of last time we check route health
 
 	constructor()
@@ -84,7 +83,7 @@ static	function GetRouteObject(UID)
 		target_entry	= false;
 		target_stationID	= null;
 		cargoID		= null;
-		date_VehicleDel	= null;
+		date_VehicleDelete= 0;
 		date_lastCheck	= null;
 		}
 	}
@@ -127,15 +126,8 @@ function cRoute::RouteUpdateVehicle()
 				else	this.source.vehicle_count=0;
 	if (this.target_entry)	this.target.vehicle_count=AIVehicleList_Station(this.target.stationID).Count();
 				else	this.target.vehicle_count=0;
-	if (this.target_entry && this.source_entry)
-			{
-			local ecart=0;
-			if (this.source.vehicle_count > this.target.vehicle_count)
-					ecart=this.source.vehicle_count - (this.source.vehicle_count-this.target.vehicle_count);
-				else	ecart=this.target.vehicle_count - (this.target.vehicle_count-this.source.vehicle_count);
-			this.vehicle_count=ecart;
-			}
-	else	this.vehicle_count=0;
+	local vehingroup=AIVehicleList_Group(this.groupID);
+	this.vehicle_count=vehingroup.Count();
 	//DInfo("ROUTE -> "+this.vehicle_count+" vehicle on "+this.name,2);
 	}
 
@@ -343,27 +335,6 @@ function cRoute::RouteInitNetwork()
 	GroupIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
 	GroupIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);
 	mailRoute.RouteSave();
-
-	local gid = AIGroup.CreateGroup(AIVehicle.VT_RAIL);
-	// i won't test if group is valid, it must and it's early made, so it shouldn't fail
-	cRoute.GroupSolder[0]=gid;
-	AIGroup.SetName(gid, "Train Solder");
-	gid = AIGroup.CreateGroup(AIVehicle.VT_ROAD);
-	cRoute.GroupSolder[1]=gid;
-	AIGroup.SetName(gid, "Road Solder");
-	gid = AIGroup.CreateGroup(AIVehicle.VT_WATER);
-	cRoute.GroupSolder[2]=gid;
-	AIGroup.SetName(gid, "Water Solder");
-	gid = AIGroup.CreateGroup(AIVehicle.VT_AIR);
-	cRoute.GroupSolder[3]=gid;
-	AIGroup.SetName(gid, "Air Solder");
-	}
-
-function cRoute::GetGroupSolder(route_type)
-// return the groupid of the group we should use to sell a vehicle
-	{
-	if (route_type == RouteType.CHOPPER || route_type == RouteType.AIRNET)	route_type = AIVehicle.VT_AIR;
-	return cRoute.GroupSolder[route_type];
 	}
 
 function cRoute::RouteRebuildIndex()

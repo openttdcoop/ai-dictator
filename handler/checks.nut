@@ -57,7 +57,7 @@ INSTANCE.builder.RouteNeedRepair();
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
 //if (bank.canBuild && builder.building_route == -1)
 if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
-if (INSTANCE.buildTimer == 6)
+if (INSTANCE.buildTimer == 4)
 	{
 	INSTANCE.builddelay=false;
 	INSTANCE.buildTimer=0;
@@ -70,6 +70,7 @@ if (!INSTANCE.carrier.ToDepotList.IsEmpty())
 		if ((today - dateinlist) > 180)	INSTANCE.carrier.ToDepotList.RemoveItem(vehicle);
 		}
 	}
+INSTANCE.carrier.VehicleMaintenance();
 }
 
 function cBuilder::HalfYearChecks()
@@ -202,6 +203,7 @@ function cBuilder::RoadStationsBalancing()
 local busstation = AIStationList(AIStation.STATION_BUS_STOP);
 foreach (stations, dummy in busstation)
 	{
+	DInfo("BUS - Station check #"+stations+" "+AIStation.GetName(stations),1);
 	local vehlist=cCarrier.VehicleNearStation(stations);
 	vehlist=cCarrier.VehicleList_KeepStuckVehicle(vehlist);
 	if (!vehlist.IsEmpty())
@@ -211,7 +213,7 @@ foreach (stations, dummy in busstation)
 			{
 			local vehicle=vehlist.Begin();
 			DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
-			INSTANCE.carrier.VehicleSendToDepot(vehicle);
+			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 			AIVehicle.ReverseVehicle(vehicle);
 			}
 		}
@@ -221,7 +223,7 @@ local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
 if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
 	{
-	DInfo("Station check #"+stations+" "+AIStation.GetName(stations),1);
+	DInfo("TRUCK - Station check #"+stations+" "+AIStation.GetName(stations),1);
 	local truck_atstation=cCarrier.VehicleNearStation(stations);
 	if (truck_atstation.Count() < 2)	continue;
 	local truck_loading=AIList();
@@ -235,7 +237,7 @@ foreach (stations, dummy in truckstation)
 	local truck_dropper_loading=AIList();
 	local truck_dropper_waiting=AIList();
 	local station_tile=cTileTools.FindStationTiles(AIStation.GetLocation(stations));
-	DInfo("Station tiles found: "+station_tile.Count(),1);
+	DInfo("         Size: "+station_tile.Count(),1);
 	local station_accept_cargo=AIList();
 	local station_produce_cargo=AIList();
 	local cargo_produce=null;
@@ -253,7 +255,7 @@ foreach (stations, dummy in truckstation)
 			if (!station_accept_cargo.HasItem(cargotype))	station_accept_cargo.AddItem(cargotype,0);
 			}
 		}
-	DInfo("Station infos: produce="+station_produce_cargo.Count()+" accept="+station_accept_cargo.Count(),1);
+	DInfo("         infos: produce="+station_produce_cargo.Count()+" accept="+station_accept_cargo.Count(),1);
 	// pfff, now we know what cargo that station can use (accept or produce)
 	station_produce_cargo.Valuate(AICargo.GetTownEffect);
 	station_produce_cargo.RemoveValue(AICargo.TE_PASSENGERS);
@@ -306,7 +308,7 @@ foreach (stations, dummy in truckstation)
 	local numload=truck_getter_loading.Count();
 	local numunload=truck_dropper_loading.Count();
 	local numdrop=truck_dropper_loading.Count();
-	DInfo("Station "+AIStation.GetName(stations)+" have "+numload+" vehicle loading, "+numunload+" vehicle unloading, "+truck_getter_waiting.Count()+" vehicle waiting to load, "+truck_dropper_waiting.Count()+" waiting to unload",1);
+	DInfo("         Station "+AIStation.GetName(stations)+" have "+numload+" vehicle loading, "+numunload+" vehicle unloading, "+truck_getter_waiting.Count()+" vehicle waiting to load, "+truck_dropper_waiting.Count()+" waiting to unload",1);
 	if (truck_getter_loading.Count() > 0)
 		{
 		if (truck_dropper_waiting.Count() > 0)
@@ -322,11 +324,11 @@ foreach (stations, dummy in truckstation)
 				}
 			}
 		else	{ // only getter are waiting, too many vehicle so
-			if (truck_getter_waiting.Count() >0)
+			local vehicle=truck_getter_waiting.Begin();
+			if (truck_getter_waiting.Count() >0 && AIStation.GetCargoWaiting(stations,truck_getter_waiting.GetValue(vehicle)) ==0)
 				{
-				local vehicle=truck_getter_waiting.Begin();
 				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
-				INSTANCE.carrier.VehicleSendToDepot(vehicle);
+				INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 				AIVehicle.ReverseVehicle(vehicle);
 				}
 			}

@@ -19,15 +19,22 @@ enum AircraftType {
 	CHOPPER
 }
 
+enum DepotAction {
+	SELL,
+	UPGRADE,
+	REPLACE
+}
+
 class cCarrier
 {
-static	AirportTypeLimit=[6, 15, 0, 30, 60, 0, 0, 140, 0]; // limit per airport type
-static	IDX_HELPER = 512;		// use to create an uniq ID (also use to set handicap value)
+static	AirportTypeLimit=[6, 15, 2, 30, 60, 5, 6, 140, 8]; // limit per airport type
+static	IDX_HELPER = 512;			// use to create an uniq ID (also use to set handicap value)
 static	AIR_NET_CONNECTOR=2000;		// town is add to air network when it reach that value population
 static	TopEngineList=AIList();		// the list of engine ID we know if it can be upgrade or not
 static	ToDepotList=AIList();		// list all vehicle going to depot, date as value
 static	vehicle_database={};		// database for vehicles
 static	VirtualAirRoute=[];		// the air network destinations list
+static 	OldVehicle=1095;			// age left we consider a vehicle is old
 static	function GetVehicleObject(vehicleID)
 		{
 		return vehicleID in cCarrier.vehicle_database ? cCarrier.vehicle_database[vehicleID] : null;
@@ -92,6 +99,12 @@ local thatentry=null;
 if (start)	{ thatstation=chem.source; }
 	else	{ thatstation=chem.target; }
 local divisor=0;
+local sellvalid=( (AIDate.GetCurrentDate() - chem.date_VehicleDelete) > 60);
+local virtualized=(cCarrier.VirtualAirRoute.len() > 1 && cStation.VirtualAirports.HasItem(thatstation.stationID));
+local airportmode="(classic)";
+if (virtualized)	airportmode="(network)";
+local airname=AIStation.GetName(thatstation.stationID)+"-> ";
+// prevent buy a new vehicle if we sell one less than 60 days before (this isn't affect by replacing/upgrading vehicle)
 switch (chem.route_type)
 	{
 	case AIVehicle.VT_ROAD:
@@ -142,10 +155,15 @@ switch (chem.route_type)
 			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID))	return false;
 			// get out after an upgrade, station could have change place...
 			}
-		DInfo("Limit for air network: "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),2);
+		DInfo(airname+"Limit for that route (network): "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),1);
+		DInfo(airname+"Limit for that airport (network): "+chem.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (chem.vehicle_count+1 > INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) return false;
+		if (chem.vehicle_count+1 > thatstation.vehicle_max) return false;
 		return true;
 	case RouteType.CHOPPER:
+
+		DInfo(airname+"Limit for that route (choppers): "+chem.vehicle_count+"/4",1);
+		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_max,1);
 		if (chem.vehicle_count+1 > 4)	return false;
 		return true;
 	break;
@@ -155,19 +173,20 @@ switch (chem.route_type)
 			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID)) return false;
 			}
 		local result=true;
+		local limitmax=INSTANCE.carrier.air_max;
+		if (virtualized)	limitmax=2; // only 2 aircrafts when the airport is also in network
+		DInfo(airname+"Limit for that route (classic): "+chem.vehicle_count+"/"+limitmax,1);
+		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (!INSTANCE.use_air)	result=false;
 		thatstation.CheckAirportLimits(); // force recheck limits
+		if (chem.vehicle_count+1 > limitmax)	result=false;
+		// limit by route limit
 		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	result=false;
 		// limit by airport capacity
-		if (!cStation.VirtualAirports.HasItem(thatstation.stationID) && chem.vehicle_count+1 > INSTANCE.carrier.air_max) result=false;
-		// limit by route aircraft capacity when not networked
-		if (cStation.VirtualAirports.HasItem(thatstation.stationID))
-				DInfo("Limit for that airport (network): "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,2);
-			else	DInfo("Limit for that airport (classic): "+thatstation.vehicle_count+"/"+INSTANCE.carrier.air_max,2);
 		return result;
 	break;
 	}
-return true;
+return sellvalid;
 }
 
 function cCarrier::BuildAndStartVehicle(routeid)
@@ -328,31 +347,44 @@ return vehlist.HasItem(vehengine);
 function cCarrier::ChooseAircraft(cargo,airtype=0)
 // build an aircraft base on cargo
 // airtype = 0=efficiency, 1=best, 2=chopper
+// We can endup with 5 different type of aircrafts running
 {
 local vehlist = AIEngineList(AIVehicle.VT_AIR);
 //AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL
 vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
 vehlist.KeepValue(1);
-if (airtype < AircraftType.CHOPPER)
+switch (airtype)
 	{
-	if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
-		// for mail i use fastest engine + best efficiency ratio cargonum/price&running_cost
-		{ vehlist.Valuate(AIEngine.GetMaxSpeed); }
-	else	{ vehlist.Valuate(AIEngine.GetCapacity); } // bigest for passengers
-		vehlist.Sort(AIList.SORT_BY_VALUE,false);
-		local first=vehlist.GetValue(vehlist.Begin()); // get top value (speed or capacity)
-		vehlist.KeepValue(first);
-		if (airtype == AircraftType.EFFICIENT)
+	case	AircraftType.EFFICIENT: // top efficient aircraft for passenger and top speed (not efficient) for mail
+	// top efficient aircraft is generally the same as top capacity/efficient one
+		vehlist.Valuate(cCarrier.GetEngineEfficiency);
+		vehlist.Sort(AIList.SORT_BY_VALUE,true);
+		if (AICargo.GetTownEffect(cargo) == cCargo.GetMailCargo())
 			{
-			vehlist.Valuate(cCarrier.GetEngineEfficiency);
-			vehlist.Sort(AIList.SORT_BY_VALUE,true);
+			vehlist.Valuate(AIEngine.GetMaxSpeed);
+			vehlist.Sort(AIList.SORT_BY_VALUE,false);
 			}
-	} 
-else	{
-	vehlist.Valuate(AIEngine.GetPlaneType);
-	vehlist.KeepValue(AIAirport.PT_HELICOPTER);
-	vehlist.Valuate(AIEngine.GetMaxSpeed);	
-	vehlist.Sort(AIList.SORT_BY_VALUE,false);
+	break;
+	case	AircraftType.BEST:
+		if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
+			// here: top efficient capacity for passenger and top efficient speed for mail
+			{ vehlist.Valuate(AIEngine.GetMaxSpeed); }
+		else	{ vehlist.Valuate(AIEngine.GetCapacity); }
+			vehlist.Sort(AIList.SORT_BY_VALUE,false);
+			local first=vehlist.GetValue(vehlist.Begin()); // get top value (speed or capacity)
+			vehlist.KeepValue(first);
+			if (airtype == AircraftType.EFFICIENT)
+				{
+				vehlist.Valuate(cCarrier.GetEngineEfficiency);
+				vehlist.Sort(AIList.SORT_BY_VALUE,true);
+				}
+	break;
+	case	AircraftType.CHOPPER: // top efficient chopper
+		vehlist.Valuate(AIEngine.GetPlaneType);
+		vehlist.KeepValue(AIAirport.PT_HELICOPTER);
+		vehlist.Valuate(cCarrier.GetEngineEfficiency);
+		vehlist.Sort(AIList.SORT_BY_VALUE,true);
+	break;
 	}
 return vehlist.Begin();
 }
@@ -360,13 +392,14 @@ return vehlist.Begin();
 function cCarrier::GetEngineEfficiency(engine)
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
-// simple formula it's (price+(age*runningcost)) / cargoamount
+// simple formula it's (price+(age*runningcost)) / (cargoamount*speed)
 {
 local price=AIEngine.GetPrice(engine);
 local capacity=AIEngine.GetCapacity(engine);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
-return (price+(lifetime*runningcost))/capacity;
+local speed=AIEngine.GetMaxSpeed(engine);
+return (price+(lifetime*runningcost))/(capacity*speed);
 }
 
 function cCarrier::ChooseRoadVeh(cargoid)
@@ -382,20 +415,9 @@ vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 vehlist.KeepValue(1);
-local top=null;
-vehlist.Valuate(AIEngine.GetCapacity);
-vehlist.Sort(AIList.SORT_BY_VALUE,false);
-top=vehlist.GetValue(vehlist.Begin());
-vehlist.KeepValue(top);
-vehlist.Valuate(AIEngine.GetMaxSpeed);
-vehlist.Sort(AIList.SORT_BY_VALUE,false);
-top=vehlist.GetValue(vehlist.Begin());
-vehlist.KeepValue(top);
-vehlist.Valuate(AIEngine.GetReliability);
-vehlist.Sort(AIList.SORT_BY_VALUE,false);
-top=vehlist.GetValue(vehlist.Begin());
-vehlist.KeepValue(top);
-local veh = -1;
+vehlist.Valuate(cCarrier.GetEngineEfficiency);
+vehlist.Sort(AIList.SORT_BY_VALUE,true);
+local veh = null;
 if (vehlist.Count() > 0) { veh=vehlist.Begin();	}
 return veh;
 }

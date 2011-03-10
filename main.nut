@@ -140,11 +140,11 @@ function DictatorAI::Start()
 					bank.RaiseFundsTo(jobs.moneyToBuild);
 //DInfo("dump: "+jobs_obj.sourceID+" "+jobs_obj.targetID);
 					builder.TryBuildThatRoute();
-					DInfo(" ");
+					//DInfo(" ");
 					// now jump to build stage
 					}
 				}
-			else { DInfo(" "); }
+			//else { DInfo(" "); }
 		
 		builder.TrainStationTesting();
 		bank.CashFlow();
