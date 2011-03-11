@@ -70,6 +70,7 @@ class DictatorAI extends AIController
 	debug = null;
 	builddelay=null;
 	OneMonth=null;
+	OneWeek=null;
 	SixMonth=null;
 	TwelveMonth=null;
 	cargo_favorite=null;
@@ -95,6 +96,7 @@ class DictatorAI extends AIController
 	debug = false;
 	builddelay=false;
 	OneMonth=0;
+	OneWeek=0;
 	SixMonth=0;
 	TwelveMonth=0;
 	cargo_favorite=0;
@@ -161,7 +163,8 @@ function DictatorAI::Start()
 		bank.CashFlow();
 		eventManager.HandleEvents();
 		builder.QuickTasks();
-		AIController.Sleep(10);
+		AIController.Sleep(60);
+		builder.WeeklyChecks();
 		builder.MonthlyChecks();
 		}
 }

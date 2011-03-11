@@ -266,6 +266,13 @@ switch (facing)
 PutSign(sta_pos+p_left,"L");
 PutSign(sta_pos+p_right,"R");
 PutSign(sta_pos+p_back,"B");
+if (work.size == 1)
+	{
+	if (!AIRoad.IsRoadTile(sta_front+p_left))
+		{ cTileTools.DemolishTile(sta_front+p_left); AIRoad.BuildRoad(sta_front, sta_front+p_left); }
+	if (!AIRoad.IsRoadTile(sta_front+p_right))
+		{ cTileTools.DemolishTile(sta_front+p_right); AIRoad.BuildRoad(sta_front, sta_front+p_right); }
+	}
 // possible entry + location of station
 // these ones = left, right, front (other side of road), frontleft, frontright
 /*

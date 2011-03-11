@@ -46,18 +46,26 @@ for (local i=0; i < INSTANCE.route.RListGetSize(); i++)
 	}
 }
 
+function cBuilder::WeeklyChecks()
+{
+local week=AIDate.GetCurrentDate();
+if (week - INSTANCE.OneWeek > 7)	return false;
+INSTANCE.OneWeek=AIDate.GetCurrentDate();
+DInfo("Weekly checks run...",1);
+INSTANCE.builder.RoadStationsBalancing();
+}
+
 function cBuilder::MonthlyChecks()
 {
 local month=AIDate.GetMonth(AIDate.GetCurrentDate());
-if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++;}
-		else	return false;
+if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++; }
+				else	return false;
 DInfo("Montly checks run...",1);
 INSTANCE.route.VirtualAirNetworkUpdate();
 INSTANCE.builder.RouteNeedRepair();
-if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
 //if (bank.canBuild && builder.building_route == -1)
 if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
-if (INSTANCE.buildTimer == 4)
+if (INSTANCE.buildTimer == 3)
 	{
 	INSTANCE.builddelay=false;
 	INSTANCE.buildTimer=0;
@@ -72,6 +80,7 @@ if (!INSTANCE.carrier.ToDepotList.IsEmpty())
 	}
 INSTANCE.carrier.VehicleMaintenance();
 INSTANCE.route.DutyOnRoute();
+if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
 }
 
 function cBuilder::HalfYearChecks()
@@ -140,6 +149,7 @@ function cBuilder::AirportStationsBalancing()
 local airID=AIStationList(AIStation.STATION_AIRPORT);
 foreach (i, dummy in airID)
 	{
+	INSTANCE.Sleep(1);
 	if (cStation.VirtualAirports.HasItem(i))	continue; // don't balance airport from the network
 	local vehlist=INSTANCE.carrier.VehicleListBusyAtAirport(i);
 	local count=vehlist.Count();
@@ -205,6 +215,7 @@ function cBuilder::RoadStationsBalancing()
 local busstation = AIStationList(AIStation.STATION_BUS_STOP);
 foreach (stations, dummy in busstation)
 	{
+	INSTANCE.Sleep(1);
 	DInfo("BUS - Station check #"+stations+" "+AIStation.GetName(stations),1);
 	local vehlist=cCarrier.VehicleNearStation(stations);
 	vehlist=cCarrier.VehicleList_KeepStuckVehicle(vehlist);
@@ -225,6 +236,7 @@ local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
 if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
 	{
+	INSTANCE.Sleep(1);
 	DInfo("TRUCK - Station check #"+stations+" "+AIStation.GetName(stations),1);
 	local truck_atstation=cCarrier.VehicleNearStation(stations);
 	if (truck_atstation.Count() < 2)	continue;
@@ -246,6 +258,7 @@ foreach (stations, dummy in truckstation)
 	local cargo_accept=null;
 	foreach (tiles, dummy in station_tile)
 		{
+		INSTANCE.Sleep(1);
 		cargo_produce=cBuilder.GetCargoListProduceAtTile(tiles);
 		cargo_accept=cBuilder.GetCargoListAcceptAtTile(tiles);
 		foreach (cargotype, dummy in cargo_produce)
@@ -344,7 +357,7 @@ function cBuilder::QuickTasks()
 // functions list here should be only function with a vital thing to do
 {
 INSTANCE.builder.AirportStationsBalancing();
-INSTANCE.builder.RoadStationsBalancing();
+
 }
 
 function cBuilder::BoostedBuys()
@@ -354,26 +367,36 @@ local airportList=AIStationList(AIStation.STATION_AIRPORT);
 local waitingtimer=0;
 if (airportList.Count() < 2)
 	{ // try to boost a first air route creation
-	DInfo("Waiting to get an aircraft job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+cJobs.CostTopJobs[AIVehicle.VT_AIR],2);
-	if (INSTANCE.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR])
+	local goalairport=cJobs.CostTopJobs[AIVehicle.VT_AIR];
+	DWarn("Waiting to get an aircraft job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goalairport,1);
+	if (INSTANCE.carrier.warTreasure > goalairport && goalairport > 0)
 		{
+		local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+		local money_goal=money+goalairport
 		DInfo("Trying to get an aircraft job done",1);
-		INSTANCE.carrier.CrazySolder(cJobs.CostTopJobs[AIVehicle.VT_AIR]);
+		INSTANCE.carrier.CrazySolder(goalairport);
+		cJobs.RefreshAllValue();		
 		do	{
 			INSTANCE.Sleep(74);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
 			waitingtimer++;
+			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+			DInfo("Still "+(money_goal - money)+" to raise",1);
 			}
-		while (waitingtimer < 30 && !cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]));
+		while (waitingtimer < 90 && !cBanker.CanBuyThat(goalairport));
+		if (waitingtimer < 90)	DInfo("Operation should success...",1);
+		INSTANCE.carrier.VehicleIsWaitingInDepot();
+		INSTANCE.bank.canBuild=true; INSTANCE.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
 		}
 	}
+waitingtimer=0;
 local aircraftnumber=AIVehicleList();
 aircraftnumber.Valuate(AIVehicle.GetVehicleType);
 aircraftnumber.KeepValue(AIVehicle.VT_AIR);
 if (aircraftnumber.Count() < 6 && airportList.Count() > 1)
 	{ // try boost aircrafts buys until we have 6
-	DInfo("Waiting to buy of new aircraft. Current ="+INSTANCE.carrier.warTreasure+" Goal="+INSTANCE.carrier.highcostAircraft,1);
-	if (INSTANCE.carrier.warTreasure > INSTANCE.carrier.highcostAircraft)
+	DWarn("Waiting to buy of new aircraft. Current ="+INSTANCE.carrier.warTreasure+" Goal="+INSTANCE.carrier.highcostAircraft,1);
+	if (INSTANCE.carrier.warTreasure > INSTANCE.carrier.highcostAircraft && INSTANCE.carrier.highcostAircraft > 0)
 		{
 		DInfo("Trying to buy a new aircraft",1);
 		INSTANCE.carrier.CrazySolder(INSTANCE.carrier.highcostAircraft);
@@ -383,7 +406,8 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1)
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
 			waitingtimer++;
 			}
-		while (waitingtimer < 30 && !cBanker.CanBuyThat(INSTANCE.carrier.highcostAircraft));
+		while (waitingtimer < 90 && !cBanker.CanBuyThat(INSTANCE.carrier.highcostAircraft));
+		INSTANCE.carrier.vehnextprice=INSTANCE.carrier.highcostAircraft; // reserve the money to buy the aircraft
 		}
 
 	}

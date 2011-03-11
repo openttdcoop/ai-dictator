@@ -329,7 +329,6 @@ if (!sList.IsEmpty())
 			}
 		}
 	}
-INSTANCE.NeedDelay(100);
 if (!source_success)	DInfo("Failure, creating a new station for our source station.",1);
 if (!target_success)	DInfo("Failure, creating a new station for our destination station.",1);
 }

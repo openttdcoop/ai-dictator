@@ -36,10 +36,16 @@ local towns=AITownList();
 towns.Valuate(AITown.GetPopulation);
 towns.RemoveBelowValue(INSTANCE.carrier.AIR_NET_CONNECTOR);
 local airports=AIStationList(AIStation.STATION_AIRPORT);
-airports.Valuate(AIAirport.GetAirportType);
-airports.RemoveValue(AIAirport.AT_SMALL); // don't network small airports, it's too hard for slow aircrafts
-airports.Valuate(AIAirport.GetNumHangars); // platform don't have depot
-airports.RemoveValue(0);
+foreach (airID, dummy in airports)
+	{
+	INSTANCE.Sleep(1);
+	airports.SetValue(airID,1);
+	if (AIAirport.GetAirportType(AIStation.GetLocation(airID)) == AIAirport.AT_SMALL)	airports.SetValue(airID, 0);
+	if (AIAirport.GetNumHangars(AIStation.GetLocation(airID)) == 0)	airports.SetValue(airID, 0);
+	}
+airports.RemoveValue(0); // don't network small airports & platform, it's too hard for slow aircrafts
+if (airports.IsEmpty())	return;
+			else	DInfo("NETWORK -> Found "+airports.Count()+" valid airports for network",1);
 airports.Valuate(AIStation.GetLocation);
 local virtualpath=AIList();
 local validairports=AIList();
@@ -213,7 +219,7 @@ return totalvalue / vehnumber;
 function cRoute::DutyOnRoute()
 // this is where we add vehicle and tiny other things to max our money
 {
-if (INSTANCE.carrier.vehnextprice > 0)
+if (INSTANCE.carrier.vehnextprice > 0 && INSTANCE.carrier.vehnextprice < INSTANCE.carrier.highcostAircraft)
 	{
 	INSTANCE.bank.busyRoute=true;
 	DInfo("We're upgrading something, buys are blocked...",1);
@@ -356,10 +362,12 @@ foreach (groupid, ratio in priority)
 			if (INSTANCE.carrier.highcostAircraft < vehvalue)	INSTANCE.carrier.highcostAircraft=vehvalue;
 			}
 		if (INSTANCE.bank.CanBuyThat(vehvalue))
+			if ( (INSTANCE.carrier.highcostAircraft >= INSTANCE.carrier.vehnextprice) || (INSTANCE.carrier.vehnextprice == 0) )
 			if (INSTANCE.carrier.BuildAndStartVehicle(uid))
 				{
 				local rinfo=cRoute.GetRouteObject(uid);
 				DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0);
+				INSTANCE.carrier.vehnextprice=0; INSTANCE.carrier.highcostAircraft=0;
 				INSTANCE.Sleep(30);
 				}
 		}
