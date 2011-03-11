@@ -88,7 +88,7 @@ if (cCarrier.VirtualAirRoute.len() > 1)
 	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 	}
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
-
+INSTANCE.builder.BoostedBuys();
 }
 
 function cBuilder::RouteIsDamage(idx)
@@ -346,3 +346,46 @@ function cBuilder::QuickTasks()
 INSTANCE.builder.AirportStationsBalancing();
 INSTANCE.builder.RoadStationsBalancing();
 }
+
+function cBuilder::BoostedBuys()
+// this function check if we can boost a buy by selling our road vehicle
+{
+local airportList=AIStationList(AIStation.STATION_AIRPORT);
+local waitingtimer=0;
+if (airportList.Count() < 2)
+	{ // try to boost a first air route creation
+	DInfo("Waiting to get an aircraft job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+cJobs.CostTopJobs[AIVehicle.VT_AIR],2);
+	if (INSTANCE.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR])
+		{
+		DInfo("Trying to get an aircraft job done",1);
+		INSTANCE.carrier.CrazySolder(cJobs.CostTopJobs[AIVehicle.VT_AIR]);
+		do	{
+			INSTANCE.Sleep(74);
+			INSTANCE.carrier.VehicleIsWaitingInDepot();
+			waitingtimer++;
+			}
+		while (waitingtimer < 30 && !cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]));
+		}
+	}
+local aircraftnumber=AIVehicleList();
+aircraftnumber.Valuate(AIVehicle.GetVehicleType);
+aircraftnumber.KeepValue(AIVehicle.VT_AIR);
+if (aircraftnumber.Count() < 6 && airportList.Count() > 1)
+	{ // try boost aircrafts buys until we have 6
+	DInfo("Waiting to buy of new aircraft. Current ="+INSTANCE.carrier.warTreasure+" Goal="+INSTANCE.carrier.highcostAircraft,1);
+	if (INSTANCE.carrier.warTreasure > INSTANCE.carrier.highcostAircraft)
+		{
+		DInfo("Trying to buy a new aircraft",1);
+		INSTANCE.carrier.CrazySolder(INSTANCE.carrier.highcostAircraft);
+		do	{
+			INSTANCE.carrier.CrazySolder(INSTANCE.carrier.highcostAircraft);
+			INSTANCE.Sleep(74);
+			INSTANCE.carrier.VehicleIsWaitingInDepot();
+			waitingtimer++;
+			}
+		while (waitingtimer < 30 && !cBanker.CanBuyThat(INSTANCE.carrier.highcostAircraft));
+		}
+
+	}
+}
+

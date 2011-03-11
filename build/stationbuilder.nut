@@ -267,19 +267,8 @@ PutSign(sta_pos+p_left,"L");
 PutSign(sta_pos+p_right,"R");
 PutSign(sta_pos+p_back,"B");
 // possible entry + location of station
-/*
-// these ones = left, right, back, backleft & backright
-sta_front_list.AddItem(sta_pos+p_back+p_back,		sta_pos+p_back);
-sta_front_list.AddItem(sta_front+p_left,		sta_pos+p_left);
-sta_front_list.AddItem(sta_front+p_right,		sta_pos+p_right);
-sta_front_list.AddItem(sta_pos+p_left+p_left,		sta_pos+p_left);
-sta_front_list.AddItem(sta_pos+p_right+p_right,		sta_pos+p_right);
-sta_front_list.AddItem(sta_pos+p_back+p_back+p_left,	sta_pos+p_back+p_left);
-sta_front_list.AddItem(sta_pos+p_back+p_left+p_left,	sta_pos+p_back+p_left);
-sta_front_list.AddItem(sta_pos+p_back+p_right+p_right,	sta_pos+p_back+p_right);
-sta_front_list.AddItem(sta_pos+p_back+p_back+p_right,	sta_pos+p_back+p_right);
-*/
 // these ones = left, right, front (other side of road), frontleft, frontright
+/*
 sta_front_list.AddItem(sta_front,		sta_front+p_back); // revert middle
 sta_front_list.AddItem(sta_front+p_left,		sta_pos+p_left);	// same left
 sta_front_list.AddItem(sta_front+p_right,		sta_pos+p_right); // same right
@@ -289,8 +278,16 @@ sta_front_list.AddItem(sta_front+p_left,	sta_front+p_back+p_left);
 sta_front_list.AddItem(sta_front+p_back+p_left+p_left,	sta_front+p_back+p_left);
 sta_front_list.AddItem(sta_front+p_right,	sta_front+p_back+p_right);
 sta_front_list.AddItem(sta_front+p_back+p_right+p_right,	sta_front+p_back+p_right);
+*/
+sta_front_list.AddItem(sta_pos+p_left,1);
+sta_front_list.AddItem(sta_pos+p_right,2);
+sta_front_list.AddItem(sta_front+p_back,4);
+sta_front_list.AddItem(sta_front+p_back+p_left,5);
+sta_front_list.AddItem(sta_front+p_back+p_right,6);
+sta_front_list.Sort(AIList.SORT_BY_VALUE,true);
 
 local allfail=true;
+/*
 foreach (direction, tile in sta_front_list)
 	{
 	if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
@@ -300,6 +297,18 @@ foreach (direction, tile in sta_front_list)
 	if (new_sta_pos != -1)	break;
 	AIController.Sleep(1);
 	}
+*/
+foreach (tile, direction in sta_front_list)
+	{
+	if (AIRoad.IsRoadStationTile(tile)) continue; // don't build on a station
+	PutSign(tile,"T");
+	new_sta_pos=INSTANCE.builder.BuildAndStickToRoad(tile, statype, work.stationID);
+	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
+	INSTANCE.builder.CriticalError=false; // discard it
+	if (new_sta_pos != -1)	break;
+	AIController.Sleep(1);
+	}
+
 if (new_sta_pos == dep_pos)	{ depotdead = true; }
 if (new_sta_pos == dep_front)
 	{

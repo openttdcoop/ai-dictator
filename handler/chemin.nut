@@ -221,9 +221,7 @@ if (INSTANCE.carrier.vehnextprice > 0)
 	}
 local firstveh=false;
 INSTANCE.bank.busyRoute=false; // setup the flag
-local profit=false;
-local prevprofit=0;
-local vehprofit=0;
+//local vehprofit=0;
 local oldveh=false;
 local priority=AIList();
 local road=null;
@@ -266,13 +264,12 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			continue; // no train upgrade for now will do later
 		break;
 		}
-	DInfo("Group is null= "+road.groupID,2);
 	local vehList=AIVehicleList_Group(road.groupID);
 	vehList.Valuate(AIVehicle.GetProfitThisYear);
 	vehList.Sort(AIList.SORT_BY_VALUE,true); // poor numbers first
 	local vehsample=vehList.Begin();  // one sample in the group
-	local vehprofit=vehList.GetValue(vehsample);
-	local prevprofit=AIVehicle.GetProfitLastYear(vehsample);
+//	local vehprofit=vehList.GetValue(vehsample);
+//	local prevprofit=AIVehicle.GetProfitLastYear(vehsample);
 	local capacity=INSTANCE.carrier.VehicleGetFullCapacity(vehsample);
 	DInfo("vehicle="+vehsample+" capacity="+capacity+" engine="+AIEngine.GetName(AIVehicle.GetEngineType(vehsample)),2);
 	local vehonroute=road.vehicle_count;
@@ -304,90 +301,65 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	DInfo("CanAddNewVehicle for destination station says "+canaddonemore,2);
 	if (!canaddonemore)	vehneed=0;
 	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
-//	if (vehprofit <=0)	profit=true; // hmmm on new years none is making profit and this fail
-//		else		profit=true;
-	profit=true; // TODO: fix me, remove or put a real profit check
+
 	vehList.Valuate(AIVehicle.GetAge);
 	vehList.Sort(AIList.SORT_BY_VALUE,true);
-	if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true; // ~ 8 months
-						else	oldveh=false;
+	if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true; // 1.5 month
+								else	oldveh=false;
+	oldveh=true; // TODO: look to remove the date check as maintenance remain monthchecked
+	if (firstveh)	oldveh=true;
 	// adding vehicle
-	if (vehneed > 0)
+	if (vehneed > 0 && oldveh)
 		{
-		if (firstveh) // special cases where we must build the vehicle
-			{ profit=true; oldveh=true; }
+		INSTANCE.bank.busyRoute=true;
+		priority.AddItem(road.groupID,vehneed); // we record all groups needs for vehicle
+		}
+	}
 
-		if (profit)
-			{
-			INSTANCE.bank.busyRoute=true;
-			if (firstveh && vehneed > 0 && oldveh)
-				{
-				if (INSTANCE.carrier.BuildAndStartVehicle(uid))
-					{
-					DInfo("Adding a vehicle to route "+road.name,0);
-					firstveh=false; vehneed--;
-					}
-				}
-			if (!firstveh && vehneed > 0)
-					{
-					priority.AddItem(road.groupID,vehneed);
-					continue; // skip to next route, we won't check removing for that turn
-					}
-			}
-		}
-	}
-// Removing vehicle when station is too crowd & vehicle get stuck
-/*
-	if (cargowait == 0 && oldveh) // this happen if we load everything at the station
-		{
-		local busyList=AIVehicleList_Group(road.groupID);
-		local runningList=AIList();
-		if (busyList.IsEmpty()) continue;
-		busyList.Valuate(AIVehicle.GetState);
-		runningList.AddList(busyList);
-		busyList.KeepValue(AIVehicle.VS_AT_STATION); // the loading vehicle
-		runningList.KeepValue(AIVehicle.VS_RUNNING); // healthy vehicle
-		if (busyList.IsEmpty())	continue; // no need to continue if noone is at station
-		runningList.Valuate(AIVehicle.GetLocation);
-		runningList.Valuate(AITile.GetDistanceManhattanToTile,AIStation.GetLocation(stationid));
-		runningList.KeepBelowValue(10); // only keep vehicle position < 10 the station
-		runningList.Valuate(AIVehicle.GetCurrentSpeed);
-		runningList.KeepValue(0); // running but at 0 speed
-		if (runningList.IsEmpty())	continue; // all vehicles are moving
-		runningList.Valuate(AIVehicle.GetAge); // better sold the oldest one
-		runningList.Sort(AIList.SORT_BY_VALUE,true);
-		if (runningList.Count() < 2)	continue; // we will not remove last vehicles, upto "profitlost" to remove them
-		// now send that one to depot & sell it
-		local veh=runningList.Begin();
-		DInfo("Vehicle "+veh+"-"+AIVehicle.GetName(veh)+" is not moving and station is busy, selling it for balancing",1);
-		INSTANCE.carrier.VehicleSendToDepot(veh);
-		AIVehicle.ReverseVehicle(veh); // try to make it move away from the queue
-		}
-	}
-*/
 // now we can try add others needed vehicles here but base on priority
-
+// and priority = aircraft before anyone, then others, in both case, we range from top group profit to lowest
+DInfo("Priority list size : "+priority.Count(),2);
 if (priority.IsEmpty())	return;
 local priosave=AIList();
-priosave.AddList(priority); // save it because value is = number of vehicle we need
-priority.Valuate(INSTANCE.route.VehicleGroupProfitRatio);
-priority.Sort(AIList.SORT_BY_VALUE,false);
+priosave.AddList(priority);
+local airgp=AIList();
+local othergp=AIList();
+airgp.AddList(priority);
+airgp.Valuate(AIGroup.GetVehicleType);
+othergp.AddList(airgp);
+airgp.KeepValue(AIVehicle.VT_AIR);
+othergp.RemoveValue(AIVehicle.VT_AIR);
+airgp.Valuate(INSTANCE.route.VehicleGroupProfitRatio);
+airgp.Sort(AIList.SORT_BY_VALUE,false);
+othergp.Valuate(INSTANCE.route.VehicleGroupProfitRatio);
+othergp.Sort(AIList.SORT_BY_VALUE,false);
+priority.Clear();
+priority.AddList(airgp);
+priority.AddList(othergp);
 local vehneed=0;
 local vehvalue=0;
+local topvalue=0;
+INSTANCE.carrier.highcostAircraft=0;
 foreach (groupid, ratio in priority)
 	{
 	if (priosave.HasItem(groupid))	vehneed=priosave.GetValue(groupid);
 						else	vehneed=0;
 	if (vehneed == 0) continue;
-	local vehvaluegroup=AIVehicleList_Group(groupid);	
-	vehvalue=AIEngine.GetPrice(AIVehicle.GetEngineType(vehvaluegroup.Begin()));
-	local uid=INSTANCE.route.GroupIndexer.GetValue(groupid);
+	local uid=cRoute.GroupIndexer.GetValue(groupid);
+	local rtype=AIGroup.GetVehicleType(groupid);
+	local vehmodele=INSTANCE.carrier.GetVehicle(uid);
+	local vehvalue=AIEngine.GetPrice(vehmodele);
 	for (local z=0; z < vehneed; z++)
 		{
+		if (rtype == AIVehicle.VT_AIR && !INSTANCE.bank.CanBuyThat(vehvalue))
+			{
+			if (INSTANCE.carrier.highcostAircraft < vehvalue)	INSTANCE.carrier.highcostAircraft=vehvalue;
+			}
 		if (INSTANCE.bank.CanBuyThat(vehvalue))
 			if (INSTANCE.carrier.BuildAndStartVehicle(uid))
 				{
-				DInfo("Adding a vehicle to route #"+uid,0);
+				local rinfo=cRoute.GetRouteObject(uid);
+				DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0);
 				INSTANCE.Sleep(30);
 				}
 		}

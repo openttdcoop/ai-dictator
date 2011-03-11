@@ -22,8 +22,9 @@ class cJobs
 static	database = {};
 static	jobIndexer = AIList();	// this list have all UID in the database, value = ranking
 static	jobDoable = AIList();	// same as upper, but only doable ones, value = ranking
-static	distanceLimits = [0, 0];	// store [min, max] distances we can do, share to every instance so we can discover if this change
+static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
 static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,150,200];
+static	CostTopJobs = [0, 0, 0, 0]; // price of best job for rail, road, water & air
 
 
 static	function GetJobObject(UID)
@@ -203,6 +204,7 @@ function cJobs::RefreshValue(jobID)
 		myjob.cargoAmount=AIIndustry.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
 		myjob.foule=cRoute.GetAmountOfCompetitorStationAround(myjob.sourceID);
 		}
+	myjob.EstimateCost();
 	myjob.RankThisJob();
 	}
 
@@ -260,36 +262,19 @@ function cJobs::GetNextJob()
 	return smallList.Begin();
 	}
 
-function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
+function cJobs::EstimateCost()
+// Estimate the cost to build a job
 	{
-	local newjob=cJobs();
-	newjob.sourceID = srcID;
-	newjob.targetID = tgtID;
-	newjob.source_istown = src_istown;
-	// filters unwanted jobs, don't let aircraft do something other than pass/mail
-	if (road_type == AIVehicle.VT_AIR && (cargo_id != cCargo.GetMailCargo() && cargo_id != cCargo.GetPassengerCargo())) return;
-	//if (cargo_id == cCargo.GetMailCargo())	return;
-	// only pass & mail for aircraft
-	if (cargo_id == cCargo.GetMailCargo() && road_type != AIVehicle.VT_AIR && road_type != AIVehicle.VT_ROAD) return;
-	// only do mail with aircraft & trucks
-	newjob.target_istown = cCargo.IsCargoForTown(cargo_id);
-	if (newjob.source_istown)	newjob.source_location=AITown.GetLocation(srcID);
-			else		newjob.source_location=AIIndustry.GetLocation(srcID);
-	if (newjob.target_istown)	newjob.target_location=AITown.GetLocation(tgtID);
-			else		newjob.target_location=AIIndustry.GetLocation(tgtID);
-	newjob.distance=AITile.GetDistanceManhattanToTile(newjob.source_location, newjob.target_location);
-	newjob.roadType=road_type;
-	newjob.cargoID=cargo_id;
 	local money = 0;
 	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_HOUSE);
 	local engine=0;
 	local engineprice=0;
 	local daystransit=0;
-	switch (newjob.roadType)
+	switch (this.roadType)
 		{
 		case	AIVehicle.VT_ROAD:
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
-			engine=INSTANCE.carrier.ChooseRoadVeh(cargo_id);
+			engine=INSTANCE.carrier.ChooseRoadVeh(this.cargoID);
 			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
@@ -314,7 +299,6 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 		break;
 		case	AIVehicle.VT_WATER: //TODO: finish it
 			// 2 vehicle + 2 stations + 2 depot
-//			engine=INSTANCE.carrier.ChooseRoadVeh(cargo_id);
 			engine=null;
 			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
 						else	engineprice=500000000;
@@ -325,7 +309,7 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 		break;
 		case	AIVehicle.VT_AIR:
 			// 2 vehicle + 2 airports
-			engine=INSTANCE.carrier.ChooseAircraft(cargo_id,AircraftType.EFFICIENT);
+			engine=INSTANCE.carrier.ChooseAircraft(this.cargoID,AircraftType.EFFICIENT);
 			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
@@ -333,8 +317,31 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 			daystransit=6;
 		break;
 		}
-	newjob.cargoValue=AICargo.GetCargoIncome(newjob.cargoID, newjob.distance, daystransit);
-	newjob.moneyToBuild=money;
+	this.moneyToBuild=money;
+	this.cargoValue=AICargo.GetCargoIncome(this.cargoID, this.distance, daystransit);
+	}
+
+function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
+// Create a new Job
+	{
+	local newjob=cJobs();
+	newjob.sourceID = srcID;
+	newjob.targetID = tgtID;
+	newjob.source_istown = src_istown;
+	// filters unwanted jobs, don't let aircraft do something other than pass/mail
+	if (road_type == AIVehicle.VT_AIR && (cargo_id != cCargo.GetMailCargo() && cargo_id != cCargo.GetPassengerCargo())) return;
+	// only pass & mail for aircraft
+	if (cargo_id == cCargo.GetMailCargo() && road_type != AIVehicle.VT_AIR && road_type != AIVehicle.VT_ROAD) return;
+	// only do mail with aircraft & trucks
+	newjob.target_istown = cCargo.IsCargoForTown(cargo_id);
+	if (newjob.source_istown)	newjob.source_location=AITown.GetLocation(srcID);
+			else		newjob.source_location=AIIndustry.GetLocation(srcID);
+	if (newjob.target_istown)	newjob.target_location=AITown.GetLocation(tgtID);
+			else		newjob.target_location=AIIndustry.GetLocation(tgtID);
+	newjob.distance=AITile.GetDistanceManhattanToTile(newjob.source_location, newjob.target_location);
+	newjob.roadType=road_type;
+	newjob.cargoID=cargo_id;
+	newjob.EstimateCost();
 	newjob.GetUID();
 	newjob.Save();
 	INSTANCE.jobs.RefreshValue(newjob.UID); // update ranking, cargo amount, foule values, must be call after GetUID
@@ -467,7 +474,10 @@ function cJobs::UpdateDoableJobs()
 	//DInfo("Analysing the job pool",0);
 	local parentListID=AIList();
 	INSTANCE.jobs.jobDoable.Clear();
-	//local curr=0;
+	local topair=0;
+	local toproad=0;
+	local toprail=0;
+	local topwater=0;
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
 		if (id == 0 || id == 1)	continue;
@@ -520,9 +530,43 @@ function cJobs::UpdateDoableJobs()
 		// not doable if any parent is already in use
 		if (parentListID.HasItem(myjob.parentID))	doable=false;
 								else	parentListID.AddItem(myjob.parentID,1);
-		if (doable)	{ myjob.jobIndexer.SetValue(id, myjob.ranking); myjob.jobDoable.AddItem(id, myjob.ranking); }
+		if (doable)	{
+				myjob.jobIndexer.SetValue(id, myjob.ranking);
+				myjob.jobDoable.AddItem(id, myjob.ranking);
+				switch (myjob.roadType)
+					{
+					case	AIVehicle.VT_AIR:
+						if (topair < myjob.ranking && myjob.cargoID == cCargo.GetPassengerCargo())
+							{
+							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
+							topair=myjob.ranking;
+							}
+					break;
+					case	AIVehicle.VT_ROAD:
+						if (toproad < myjob.ranking)
+							{
+							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
+							toproad=myjob.ranking;
+							}
+					break;
+					case	AIVehicle.VT_WATER:
+						if (topwater < myjob.ranking)
+							{
+							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
+							topwater=myjob.ranking;
+							}
+					break;
+						case	AIVehicle.VT_RAIL:
+						if (toprail < myjob.ranking)
+							{
+							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
+							toprail=myjob.ranking;
+							}
+					break;
+					}
+				}
 			else	myjob.jobIndexer.SetValue(id, 0);
-		//if (doable)	DInfo("Doable job "+myjob.UID+" rank="+myjob.ranking,2);
+
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
 	DInfo("JOBS -> "+INSTANCE.jobs.jobIndexer.Count()+" jobs found",2);

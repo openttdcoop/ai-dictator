@@ -27,7 +27,8 @@ enum AircraftType {
 enum DepotAction {
 	SELL,
 	UPGRADE,
-	REPLACE
+	REPLACE,
+	CRAZY
 }
 
 
@@ -138,7 +139,7 @@ function DictatorAI::Start()
 		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
 		bank.CashFlow();
 		this.ClearSignsALL();
-		//builder.ShowStationCapacity();
+		builder.ShowStationCapacity();
 		if (bank.canBuild)
 				{
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
@@ -156,8 +157,7 @@ function DictatorAI::Start()
 					}
 				}
 			//else { DInfo(" "); }
-		
-		builder.TrainStationTesting();
+//		builder.TrainStationTesting();
 		bank.CashFlow();
 		eventManager.HandleEvents();
 		builder.QuickTasks();

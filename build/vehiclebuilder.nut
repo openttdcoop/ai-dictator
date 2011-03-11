@@ -37,6 +37,8 @@ static	function GetVehicleObject(vehicleID)
 	road_max_onroute	=null;	// maximum road vehicle on a route
 	vehnextprice	=null;	// we just use that to upgrade vehicle
 	do_profit		=null;	// Record each vehicle profits
+	warTreasure		=null;	// total current value of nearly all our road vehicle
+	highcostAircraft	=null;	// the highest cost for an aircraft we need
 
 	constructor()
 		{
@@ -49,6 +51,8 @@ static	function GetVehicleObject(vehicleID)
 		road_max_onroute	=0;
 		vehnextprice	=0;
 		do_profit		=AIList();
+		warTreasure		=0;
+		highcostAircraft	=0;
 		}
 }
 
@@ -98,11 +102,11 @@ switch (chem.route_type)
 	case AIVehicle.VT_ROAD:
 		if (thatstation.CanUpgradeStation())
 			{ // can still upgrade
-//			if (thatstation.vehicle_count+1 > thatstation.size)
 			if (chem.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
 			// limit by number of vehicle per route
 			if (!INSTANCE.use_road)	return false;
 			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
+//			if (thatstation.vehicle_count+1 > thatstation.size)
 			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)
 				{ // we must upgrade
 				INSTANCE.builder.RoadStationNeedUpgrade(roadidx, start);
@@ -203,6 +207,15 @@ if (res)	road.RouteUpdateVehicle();
 return res;
 }
 
+function cCarrier::GetRoadVehicle(routeidx)
+// return the vehicle we will pickup if we to build a vehicle on that route
+{
+local road=cRoute.GetRouteObject(routeidx);
+if (road == null)	return null;
+local veh = INSTANCE.carrier.ChooseRoadVeh(road.cargoID);
+return veh;
+}
+
 function cCarrier::CreateRoadVehicle(roadidx)
 // Build a road vehicle for route roadidx
 {
@@ -242,6 +255,40 @@ if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",
 return true;
 }
 
+function cCarrier::GetAirVehicle(routeidx)
+// return the vehicle we will pickup if we to build a vehicle on that route
+{
+local road=cRoute.GetRouteObject(routeidx);
+if (road == null)	return null;
+local modele=AircraftType.EFFICIENT;
+if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST; // top speed/capacity for network
+if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER; // need a chopper
+local veh = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
+return veh;
+}
+
+function cCarrier::GetVehicle(routeidx)
+// return the vehicle we will pickup if we build a vehicle for that route
+{
+local road=cRoute.GetRouteObject(routeidx);
+if (road == null)	return null;
+switch (road.route_type)
+	{
+	case	RouteType.RAIL:
+		return null;
+	break;
+	case	RouteType.WATER:
+		return null;
+	break;
+	case	RouteType.ROAD:
+		return INSTANCE.carrier.GetRoadVehicle(routeidx);
+	break;
+	default:
+		return INSTANCE.carrier.GetAirVehicle(routeidx);
+	break;
+	}
+}
+
 function cCarrier::CreateAirVehicle(routeidx)
 // Build first vehicule of an air route
 {
@@ -256,10 +303,7 @@ local cargoid = road.cargoID;
 DInfo("srcplace="+srcplace+" dstplace="+dstplace,2);
 PutSign(srcplace,"Route "+routeidx+" Source Airport ");
 PutSign(dstplace,"Route "+routeidx+" Destination Airport");
-local modele=AircraftType.EFFICIENT;
-if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST; // top speed/capacity for network
-if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER; // need a chopper
-local veh = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
+local veh = INSTANCE.carrier.GetAirVehicle(routeidx);
 local price = AIEngine.GetPrice(veh);
 if (veh == null)
 	{ DError("Cannot pickup an aircraft",1); return false; }

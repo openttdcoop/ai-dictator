@@ -137,7 +137,7 @@ test = null;
 return true;
 }
 
-function cBuilder::BuildAndStickToRoad(tile, stationtype)
+function cBuilder::BuildAndStickToRoad(tile, stationtype, stalink=-1)
 /**
 * Find a road near tile and build a road depot or station connected to that road
 *
@@ -158,7 +158,7 @@ foreach (voisin in directions)
 	}
 if (direction == -1)	{ DWarn("Can't find a road to stick our structure ???",2); return -1; }
 
-if (stationtype != (AIRoad.ROADVEHTYPE_BUS+100000)) // not a depot = truck or bus station need
+if (stationtype != (AIRoad.ROADVEHTYPE_BUS+100000) && stalink == -1) // not a depot = truck or bus station need
 	{
 	foreach (voisin in directions) // find if the place isn't too close from another station
 		{
@@ -173,7 +173,7 @@ if (stationtype != (AIRoad.ROADVEHTYPE_BUS+100000)) // not a depot = truck or bu
 		}
 	}
 // now build the structure, function is in stationbuilder.nut
-return INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, stationtype, -1);
+return INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, stationtype, stalink);
 }
 
 function cBuilder::BuildRoadDepotAtTile(tile)

@@ -362,6 +362,9 @@ switch (reason)
 	case	DepotAction.REPLACE:
 		rr="to be replace.";
 	break;
+	case	DepotAction.CRAZY:
+		rr="for a crazy action.";
+	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0);
 INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
@@ -577,9 +580,13 @@ DInfo("Checking "+tlist.Count()+" vehicles",0);
 local age=0;
 local name="";
 local price=0;
+INSTANCE.carrier.warTreasure=0;
+local ignore_some=0;
 foreach (vehicle, dummy in tlist)
 	{
 	INSTANCE.Sleep(1);
+	if (ignore_some >4 && AIVehicle.GetVehicleType(vehicle) == AIVehicle.VT_ROAD)	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
+	ignore_some++;
 	age=AIVehicle.GetAgeLeft(vehicle);
 	local topengine=INSTANCE.carrier.VehicleIsTop(vehicle);
 	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
@@ -623,8 +630,10 @@ foreach (vehicle, dummy in tlist)
 		//if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		// reserving money for the upgrade
 		if (!cBanker.CanBuyThat(price))	continue; // no way, we lack funds for it
-		if (INSTANCE.carrier.vehnextprice==0)	INSTANCE.carrier.vehnextprice+=price;
+/*		if (INSTANCE.carrier.vehnextprice==0)	INSTANCE.carrier.vehnextprice+=price;
 								else	continue; // 1 per 1 upgrade, slower but safer
+*/		
+		INSTANCE.carrier.vehnextprice+=price; // TODO: reenable mass upgrade, look if it's ok
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
 		INSTANCE.bank.busyRoute=true;
@@ -656,6 +665,25 @@ local dlist=AIVehicleList();
 dlist.Valuate(AIVehicle.IsStoppedInDepot);
 dlist.KeepValue(1);
 if (!dlist.IsEmpty())	INSTANCE.carrier.VehicleIsWaitingInDepot();
+}
+
+function cCarrier::CrazySolder(moneytoget)
+// this function send & sold nearly all road vehicle to get big money back
+{
+local allvehicle=AIVehicleList();
+allvehicle.Valuate(AIVehicle.GetVehicleType);
+allvehicle.KeepValue(AIVehicle.VT_ROAD);
+allvehicle.Valuate(AIVehicle.GetProfitThisYear);
+allvehicle.Sort(AIList.SORT_BY_VALUE, false);
+allvehicle.RemoveTop(2);
+allvehicle.Sort(AIList.SORT_BY_VALUE, true);
+foreach (vehicle, dummy in allvehicle)
+	{
+	INSTANCE.Sleep(1);
+	INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.CRAZY);
+	if (moneytoget < 0)	break;
+	moneytoget-=AIVehicle.GetCurrentValue(vehicle);
+	}
 }
 
 function cCarrier::VehicleSell(veh, recordit)
@@ -725,6 +753,9 @@ foreach (i, dummy in tlist)
 			INSTANCE.carrier.VehicleUpgradeEngineAndWagons(i);
 		break;
 		case	DepotAction.REPLACE:
+			INSTANCE.carrier.VehicleSell(i,false);
+		break;
+		case	DepotAction.CRAZY:
 			INSTANCE.carrier.VehicleSell(i,false);
 		break;
 		}

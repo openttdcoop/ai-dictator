@@ -51,7 +51,7 @@ if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;
 if (INSTANCE.carrier.vehnextprice >0)	INSTANCE.bank.canBuild=false;
 if (INSTANCE.route.GroupIndexer.Count() == 0)	INSTANCE.bank.canBuild=true; // we have 0 route force a build
 if (INSTANCE.bank.canBuild) DInfo("Construction is now allowed",1);
-DInfo("canBuild="+INSTANCE.bank.canBuild+" busyRoute="+INSTANCE.bank.busyRoute+" goodcash="+goodcash+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route,2);
+DInfo("canBuild="+INSTANCE.bank.canBuild+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route+" warTreasure="+INSTANCE.carrier.warTreasure,1);
 }
 
 function cBanker::GetConstructionsCosts(idx)
