@@ -240,7 +240,6 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (road.route_type == RouteType.AIRNET)	continue;
 	if (road.source == null)	continue;
 	if (road.target == null)	continue;
-	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
 	local maxveh=0;
 	local cargoid=road.cargoID;
 	if (cargoid == null)	continue;
@@ -278,13 +277,15 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 //	local prevprofit=AIVehicle.GetProfitLastYear(vehsample);
 	local capacity=INSTANCE.carrier.VehicleGetFullCapacity(vehsample);
 	DInfo("vehicle="+vehsample+" capacity="+capacity+" engine="+AIEngine.GetName(AIVehicle.GetEngineType(vehsample)),2);
+	local vehneed=0;
+	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
 	local vehonroute=road.vehicle_count;
 	local dstcargowait=AIStation.GetCargoWaiting(road.target.stationID,cargoid);
 	local srccargowait=AIStation.GetCargoWaiting(road.source.stationID,cargoid);
 	local cargowait=srccargowait;
 	if (road.source_istown && dstcargowait < srccargowait) cargowait=dstcargowait;
 
-	local vehneed=0;
+
 	if (capacity > 0)	{ vehneed=cargowait / capacity; }
 			else	{// This happen when we don't have a vehicle sample -> 0 vehicle = new route certainly
 				vehneed=1;
@@ -293,7 +294,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 							else	{ producing=AIIndustry.GetLastMonthProduction(road.sourceID,cargoid); }
 				if (road.route_type == AIVehicle.VT_ROAD)	{ vehneed= producing / estimateCapacity; }
 				}
-	if (firstveh) vehneed=2;
+	if (firstveh && vehneed < 2) vehneed=2;
 	if (firstveh && road.route_type == RouteType.RAIL) { vehneed = 1; }
 	if (firstveh && chopper)	{ vehneed = 1; }
 

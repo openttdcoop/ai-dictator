@@ -44,7 +44,7 @@ if (ourLoan==0 && cash>=INSTANCE.bank.mincash)
 	else	{ INSTANCE.bank.unleash_road=false; }
 if (cash < goodcash)	{ INSTANCE.bank.canBuild=false; }
 if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)	{ DInfo("Trying to repay loan",2); INSTANCE.bank.canBuild=false; } // wait to repay loan
-if (ourLoan < maxLoan+(4*AICompany.GetLoanInterval()))	{ INSTANCE.bank.canBuild=true; }
+if (ourLoan < maxLoan+(2*AICompany.GetLoanInterval()))	{ INSTANCE.bank.canBuild=true; }
 local veh=AIVehicleList();
 if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
 if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;

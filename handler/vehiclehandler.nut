@@ -170,7 +170,7 @@ if (numorders != cCarrier.VirtualAirRoute.len())
 	for (local i=0; i < INSTANCE.carrier.VirtualAirRoute.len(); i++)
 		{
 		local destination=INSTANCE.carrier.VirtualAirRoute[i];
-		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_NONE))
+		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_FULL_LOAD_ANY))
 			{ DError("Aircraft network order refuse",2); }
 		}
 	if (numorders > 0)
@@ -464,10 +464,10 @@ if (AIVehicle.IsValidVehicle(newveh))
 	DInfo("-> Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" replace with "+INSTANCE.carrier.VehicleGetFormatString(newveh),0);
 	AIVehicle.StartStopVehicle(newveh); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
 	INSTANCE.carrier.VehicleBuildOrders(group); // need to build it orders
+	INSTANCE.carrier.vehnextprice-=AIEngine.GetPrice(engine);
 	}
 // if it fail, still we sell the vehicle and don't care
 INSTANCE.carrier.VehicleSell(veh,false);
-INSTANCE.carrier.vehnextprice=0;
 }
 
 function cCarrier::VehicleIsTop_GetUniqID(engine, cargo)
@@ -629,7 +629,7 @@ foreach (vehicle, dummy in tlist)
 		{
 		//if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		// reserving money for the upgrade
-		if (!cBanker.CanBuyThat(price))	continue; // no way, we lack funds for it
+		if (!cBanker.CanBuyThat(INSTANCE.carrier.vehnextprice+price))	continue; // no way, we lack funds for it
 /*		if (INSTANCE.carrier.vehnextprice==0)	INSTANCE.carrier.vehnextprice+=price;
 								else	continue; // 1 per 1 upgrade, slower but safer
 */		
@@ -742,7 +742,7 @@ foreach (i, dummy in tlist)
 	if (INSTANCE.carrier.ToDepotList.HasItem(i))
 		{
 		reason=INSTANCE.carrier.ToDepotList.GetValue(i);
-		INSTANCE.carrier.ToDepotList.RemoveValue(i);
+		INSTANCE.carrier.ToDepotList.RemoveItem(i);
 		}
 	switch (reason)
 		{
@@ -759,6 +759,7 @@ foreach (i, dummy in tlist)
 			INSTANCE.carrier.VehicleSell(i,false);
 		break;
 		}
+	if (INSTANCE.carrier.ToDepotList.IsEmpty())	INSTANCE.carrier.vehnextprice=0;
 	}
 }
 

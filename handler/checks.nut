@@ -150,7 +150,7 @@ local airID=AIStationList(AIStation.STATION_AIRPORT);
 foreach (i, dummy in airID)
 	{
 	INSTANCE.Sleep(1);
-	if (cStation.VirtualAirports.HasItem(i))	continue; // don't balance airport from the network
+//	if (cStation.VirtualAirports.HasItem(i))	continue; // don't balance airport from the network
 	local vehlist=INSTANCE.carrier.VehicleListBusyAtAirport(i);
 	local count=vehlist.Count();
 	//DInfo("Airport "+AIStation.GetName(i)+" is busy with "+vehlist.Count(),2);
