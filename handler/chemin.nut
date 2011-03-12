@@ -362,14 +362,14 @@ foreach (groupid, ratio in priority)
 			if (INSTANCE.carrier.highcostAircraft < vehvalue)	INSTANCE.carrier.highcostAircraft=vehvalue;
 			}
 		if (INSTANCE.bank.CanBuyThat(vehvalue))
-			if ( (INSTANCE.carrier.highcostAircraft >= INSTANCE.carrier.vehnextprice) || (INSTANCE.carrier.vehnextprice == 0) )
-			if (INSTANCE.carrier.BuildAndStartVehicle(uid))
-				{
-				local rinfo=cRoute.GetRouteObject(uid);
-				DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0);
-				INSTANCE.carrier.vehnextprice=0; INSTANCE.carrier.highcostAircraft=0;
-				INSTANCE.Sleep(30);
-				}
+			if ((INSTANCE.carrier.highcostAircraft >= INSTANCE.carrier.vehnextprice) || (INSTANCE.carrier.vehnextprice == 0))
+				if (INSTANCE.carrier.BuildAndStartVehicle(uid))
+					{
+					local rinfo=cRoute.GetRouteObject(uid);
+					DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0);
+					INSTANCE.carrier.vehnextprice=0; INSTANCE.carrier.highcostAircraft=0;
+					INSTANCE.Sleep(30);
+					}
 		}
 	}
 }
