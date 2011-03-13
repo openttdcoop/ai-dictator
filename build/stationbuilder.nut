@@ -206,15 +206,16 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 * @return true or false
 */
 {
-local new_location=[AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,-1), AIMap.GetTileIndex(-1,1), AIMap.GetTileIndex(1,-1), AIMap.GetTileIndex(1,1)];
+//local new_location=[AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,-1), AIMap.GetTileIndex(-1,1), AIMap.GetTileIndex(1,-1), AIMap.GetTileIndex(1,1)];
 // left, right, behind middle, front middle, behind left, behind right, front left, front right
-local new_facing=[AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1)];
+//local new_facing=[AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1)];
 // 0 will be same as original station, north, south, east, west
 local road=cRoute.GetRouteObject(roadidx);
 if (road == null)	return false;
 local work=null;
 if (start)	work=road.source;
 	else	work=road.target;
+if (work == null)	return;
 DInfo("Upgrading road station "+AIStation.GetName(work.stationID),0);
 local depot_id=work.depot;
 DInfo("Road depot is at "+depot_id,2);
@@ -230,8 +231,7 @@ local deptype=AIRoad.ROADVEHTYPE_BUS+100000; // we add 100000
 local new_sta_pos=-1;
 local new_dep_pos=-1;
 local success=false;
-local sta_pos_list=AIList();
-local sta_front_list=AIList();
+local upgradepos=[];
 local facing=INSTANCE.builder.GetDirection(sta_pos, sta_front);
 local p_left=0;
 local p_right=0;
@@ -242,25 +242,25 @@ switch (facing)
 		p_left = AIMap.GetTileIndex(1,0);
 		p_right =AIMap.GetTileIndex(-1,0);
 		p_back = AIMap.GetTileIndex(0,-1);
-//		p_back = AIMap.GetTileIndex(0,1);
+		PutSign(sta_pos,"NW");
 	break;
 	case DIR_NE:
 		p_left = AIMap.GetTileIndex(0,-1);
 		p_right =AIMap.GetTileIndex(0,1);
 		p_back = AIMap.GetTileIndex(-1,0);
-//		p_back = AIMap.GetTileIndex(1,0); 
+		PutSign(sta_pos,"NE");
 	break;
-	case DIR_SW:
+	case DIR_SW: // facing left ok
 		p_left = AIMap.GetTileIndex(0,1);
 		p_right =AIMap.GetTileIndex(0,-1); 
 		p_back = AIMap.GetTileIndex(1,0);
-//		p_back = AIMap.GetTileIndex(-1,0);
+		PutSign(sta_pos,"SW");
 	break;
-	case DIR_SE:
-		p_left = AIMap.GetTileIndex(1,0);
-		p_right =AIMap.GetTileIndex(-1,0);
+	case DIR_SE: // facing sud
+		p_left =AIMap.GetTileIndex(-1,0);
+		p_right = AIMap.GetTileIndex(1,0);
 		p_back = AIMap.GetTileIndex(0,1);
-//		p_back = AIMap.GetTileIndex(0,-1);
+		PutSign(sta_pos,"SE");
 	break;
 	}
 PutSign(sta_pos+p_left,"L");
@@ -275,45 +275,53 @@ if (work.size == 1)
 	}
 // possible entry + location of station
 // these ones = left, right, front (other side of road), frontleft, frontright
-/*
-sta_front_list.AddItem(sta_front,		sta_front+p_back); // revert middle
-sta_front_list.AddItem(sta_front+p_left,		sta_pos+p_left);	// same left
-sta_front_list.AddItem(sta_front+p_right,		sta_pos+p_right); // same right
-sta_front_list.AddItem(sta_pos+p_left+p_left,		sta_pos+p_left); // same left
-sta_front_list.AddItem(sta_pos+p_right+p_right,		sta_pos+p_right); // same right
-sta_front_list.AddItem(sta_front+p_left,	sta_front+p_back+p_left);
-sta_front_list.AddItem(sta_front+p_back+p_left+p_left,	sta_front+p_back+p_left);
-sta_front_list.AddItem(sta_front+p_right,	sta_front+p_back+p_right);
-sta_front_list.AddItem(sta_front+p_back+p_right+p_right,	sta_front+p_back+p_right);
-*/
-sta_front_list.AddItem(sta_pos+p_left,1);
-sta_front_list.AddItem(sta_pos+p_right,2);
-sta_front_list.AddItem(sta_front+p_back,4);
-sta_front_list.AddItem(sta_front+p_back+p_left,5);
-sta_front_list.AddItem(sta_front+p_back+p_right,6);
-sta_front_list.Sort(AIList.SORT_BY_VALUE,true);
-
+upgradepos.push(sta_front+p_left);
+upgradepos.push(sta_pos+p_left);	// same left
+upgradepos.push(sta_front+p_right);
+upgradepos.push(sta_pos+p_right); // same right
+upgradepos.push(sta_front+p_left);
+upgradepos.push(sta_front+p_back+p_left);
+upgradepos.push(sta_front+p_right);
+upgradepos.push(sta_front+p_back+p_right);
+upgradepos.push(sta_front);
+upgradepos.push(sta_front+p_back); // revert middle
+upgradepos.push(sta_pos+p_left+p_left);
+upgradepos.push(sta_pos+p_left); // same left
+upgradepos.push(sta_pos+p_right+p_right);
+upgradepos.push(sta_pos+p_right); // same right
+upgradepos.push(sta_front+p_back+p_left+p_left);
+upgradepos.push(sta_front+p_back+p_left);
+upgradepos.push(sta_front+p_back+p_right+p_right);
+upgradepos.push(sta_front+p_back+p_right);
 local allfail=true;
-/*
-foreach (direction, tile in sta_front_list)
+for (local i=0; i < upgradepos.len()-1; i++)
 	{
+	local tile=upgradepos[i+1];
+	local direction=upgradepos[i];
 	if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
+	if (AIRoad.IsRoadTile(tile))	continue; // don't build on a road if we could
 	new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.stationID);
 	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
 	INSTANCE.builder.CriticalError=false; // discard it
 	if (new_sta_pos != -1)	break;
 	AIController.Sleep(1);
+	i++; if (i>=upgradepos.len())	break;
 	}
-*/
-foreach (tile, direction in sta_front_list)
+// same as upper but no more check if road is destroy
+if (new_sta_pos==-1)
 	{
-	if (AIRoad.IsRoadStationTile(tile)) continue; // don't build on a station
-	PutSign(tile,"T");
-	new_sta_pos=INSTANCE.builder.BuildAndStickToRoad(tile, statype, work.stationID);
-	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
-	INSTANCE.builder.CriticalError=false; // discard it
-	if (new_sta_pos != -1)	break;
-	AIController.Sleep(1);
+	for (local i=0; i < upgradepos.len()-1; i++)
+		{
+		local tile=upgradepos[i+1];
+		local direction=upgradepos[i];
+		if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
+		new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.stationID);
+		if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
+		INSTANCE.builder.CriticalError=false; // discard it
+		if (new_sta_pos != -1)	break;
+		AIController.Sleep(1);
+		i++; if (i>=upgradepos.len())	break;
+		}
 	}
 
 if (new_sta_pos == dep_pos)	{ depotdead = true; }
@@ -338,6 +346,7 @@ if (new_sta_pos > -1)
 	foreach(loc, dummy in work.locations)	work.locations.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
 	work.size=work.locations.Count();
 	DInfo("New station size: "+work.size+"/"+work.maxsize,2);
+	INSTANCE.builder.BuildRoadROAD(AIRoad.GetRoadStationFrontTile(new_sta_pos), AIRoad.GetRoadDepotFrontTile(work.depot));
 	}
 else	{ // fail to upgrade station
 	DInfo("Failure to upgrade "+AIStation.GetName(work.stationID),1);

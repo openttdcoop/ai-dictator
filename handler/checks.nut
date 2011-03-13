@@ -49,7 +49,7 @@ for (local i=0; i < INSTANCE.route.RListGetSize(); i++)
 function cBuilder::WeeklyChecks()
 {
 local week=AIDate.GetCurrentDate();
-if (week - INSTANCE.OneWeek > 7)	return false;
+if (week - INSTANCE.OneWeek < 7)	return false;
 INSTANCE.OneWeek=AIDate.GetCurrentDate();
 DInfo("Weekly checks run...",1);
 INSTANCE.builder.RoadStationsBalancing();

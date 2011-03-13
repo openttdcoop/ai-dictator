@@ -262,6 +262,7 @@ local road=cRoute.GetRouteObject(routeidx);
 if (road == null)	return null;
 local modele=AircraftType.EFFICIENT;
 if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST; // top speed/capacity for network
+if (road.source.specialType == AIAirport.AT_SMALL || road.target.specialType == AIAirport.AT_SMALL)	modele+=20;
 if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER; // need a chopper
 local veh = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
 return veh;
@@ -338,16 +339,26 @@ return vehlist.HasItem(vehengine);
 function cCarrier::ChooseAircraft(cargo,airtype=0)
 // build an aircraft base on cargo
 // airtype = 0=efficiency, 1=best, 2=chopper
-// We can endup with 5 different type of aircrafts running
+// We can endup with 5+ different type of aircrafts running
 {
 local vehlist = AIEngineList(AIVehicle.VT_AIR);
-//AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL
 vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
 vehlist.KeepValue(1);
+local limitsmall=false;
+if (airtype >= 20)
+	{
+	airtype-=20; // this will get us back to original aircraft type
+	limitsmall=true;
+	}
 switch (airtype)
 	{
 	case	AircraftType.EFFICIENT: // top efficient aircraft for passenger and top speed (not efficient) for mail
 	// top efficient aircraft is generally the same as top capacity/efficient one
+		if (limitsmall)
+			{
+			vehlist.Valuate(AIEngine.GetPlaneType);
+			vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
+			}
 		vehlist.Valuate(cCarrier.GetEngineEfficiency);
 		vehlist.Sort(AIList.SORT_BY_VALUE,true);
 		if (AICargo.GetTownEffect(cargo) == cCargo.GetMailCargo())
@@ -357,6 +368,11 @@ switch (airtype)
 			}
 	break;
 	case	AircraftType.BEST:
+		if (limitsmall)
+			{
+			vehlist.Valuate(AIEngine.GetPlaneType);
+			vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
+			}
 		if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
 			// here: top efficient capacity for passenger and top efficient speed for mail
 			{ vehlist.Valuate(AIEngine.GetMaxSpeed); }

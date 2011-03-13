@@ -294,6 +294,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 							else	{ producing=AIIndustry.GetLastMonthProduction(road.sourceID,cargoid); }
 				if (road.route_type == AIVehicle.VT_ROAD)	{ vehneed= producing / estimateCapacity; }
 				}
+	DInfo("vehneed by capacity: "+vehneed,2);
 	if (firstveh && vehneed < 2) vehneed=2;
 	if (firstveh && road.route_type == RouteType.RAIL) { vehneed = 1; }
 	if (firstveh && chopper)	{ vehneed = 1; }
