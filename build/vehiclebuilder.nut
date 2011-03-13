@@ -252,6 +252,7 @@ AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(firstveh);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
+if (!altplace)	INSTANCE.Sleep(74);
 return true;
 }
 

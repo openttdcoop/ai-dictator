@@ -208,17 +208,41 @@ function cBuilder::RoadStationsBalancing()
 // Look at road stations for busy loading and balance it by sending vehicle to servicing
 // Because vehicle could block the station waiting to load something, while others carrying products can't enter it
 {
-// speed up
-// station source check (crowd)
-// station target check (only to see if current cargo is accept)
-// vehicle check only 1st of group for many op
 local busstation = AIStationList(AIStation.STATION_BUS_STOP);
+local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
+local allstations=AIList(); // check if the station still use that cargo
+allstations.AddList(busstation);
+allstations.AddList(truckstation);
+foreach (stationID, dummy in allstations)
+	{
+	INSTANCE.Sleep(1);
+	local stobj=cStation.GetStationObject(stationID);
+	if (stobj == null) continue;
+	stobj.CargosUpdate();
+	foreach (uid, dummy in stobj.owner)
+		{
+		INSTANCE.Sleep(1);
+		local road=cRoute.GetRouteObject(uid);
+		if (road.source_stationID == stobj.stationID)	continue;
+		if (road.target_stationID == stobj.stationID)
+			{
+			if (!stobj.cargo_accept.HasItem(road.cargoID))
+				{
+				DWarn("Station "+AIStation.GetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0);
+				road.RouteReleaseStation(stationID)
+				}
+			}
+		}
+	}
+
 foreach (stations, dummy in busstation)
 	{
 	INSTANCE.Sleep(1);
 	DInfo("BUS - Station check #"+stations+" "+AIStation.GetName(stations),1);
 	local vehlist=cCarrier.VehicleNearStation(stations);
 	vehlist=cCarrier.VehicleList_KeepStuckVehicle(vehlist);
+	vehlist.Valuate(AIVehicle.GetAge);
+	vehlist.KeepAboveValue(30);
 	if (!vehlist.IsEmpty())
 		{
 		local produce=AIStation.GetCargoWaiting(stations, cCargo.GetPassengerCargo());
@@ -232,7 +256,6 @@ foreach (stations, dummy in busstation)
 		}
 	}
 
-local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
 if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
 	{
@@ -337,19 +360,38 @@ foreach (stations, dummy in truckstation)
 					DInfo("Pushing vehicle "+vehicle+"-"+AIVehicle.GetName(vehicle)+" out of the station to free space for unloaders",1);
 					AIVehicle.ReverseVehicle(vehicle);
 					AIVehicle.SendVehicleToDepotForServicing(vehicle);
+					return; // stop checks as droppers are waiting because station is busy with getters
 					}
 				}
 			}
-		else	{ // only getter are waiting, too many vehicle so
-			local vehicle=truck_getter_waiting.Begin();
-			if (truck_getter_waiting.Count() >0 && AIStation.GetCargoWaiting(stations,truck_getter_waiting.GetValue(vehicle)) ==0)
+		}
+	if (truck_getter_waiting.Count() > 0)
+		foreach (stacargo, dummy in station_produce_cargo)
+			{
+			local amount_wait=AIStation.GetCargoWaiting(stations, stacargo);
+			DInfo("Station "+AIStation.GetName(stations)+" produce "+AICargo.GetCargoLabel(stacargo)+" with "+amount_wait+" units waiting",1);
+			foreach (vehicle, vehcargo in truck_getter_waiting)
 				{
-				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
-				INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
-				AIVehicle.ReverseVehicle(vehicle);
+				if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
+				if (vehcargo == stacargo)
+					{
+					local allsame=true;
+					foreach (vehload, vehloadcargo in truck_getter_loading)
+						{
+						if (vehloadcargo != stacargo)	allsame=false;
+						}
+					if (allsame)
+						{
+						if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
+						DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
+						INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+						AIVehicle.ReverseVehicle(vehicle);
+						continue; // 1 per 1 removing
+						}
+					}
 				}
 			}
-		}
+		
 	}
 }
 
@@ -363,6 +405,7 @@ INSTANCE.builder.AirportStationsBalancing();
 function cBuilder::BoostedBuys()
 // this function check if we can boost a buy by selling our road vehicle
 {
+if (!INSTANCE.use_air)	return;
 local airportList=AIStationList(AIStation.STATION_AIRPORT);
 local waitingtimer=0;
 if (airportList.Count() < 2)

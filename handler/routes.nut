@@ -388,3 +388,29 @@ function cRoute::CreateNewStation(start)
 	station.InitNewStation();
 	this.RouteUpdate();
 	}
+
+function cRoute::RouteReleaseStation(stationid)
+// Release a station for our route and remove us from its owner list
+	{
+	if (stationid == null)	return ;
+	if (this.source_stationID == stationid)
+		{
+		local ssta=cStation.GetStationObject(this.source_stationID);
+		ssta.OwnerReleaseStation(this.UID);
+		this.source_stationID = null;
+		this.status=1;
+		this.isWorking=false;
+		INSTANCE.builder.building_route=this.UID;
+		}
+	if (this.target_stationID == stationid)
+		{
+		local ssta=cStation.GetStationObject(this.target_stationID);
+		ssta.OwnerReleaseStation(this.UID);
+		this.target_stationID = null;
+		this.status=1;
+		this.isWorking=false;
+		INSTANCE.builder.building_route=this.UID;
+		}
+	this.CheckEntry();
+	}
+

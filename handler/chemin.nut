@@ -370,7 +370,6 @@ foreach (groupid, ratio in priority)
 					local rinfo=cRoute.GetRouteObject(uid);
 					DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0);
 					INSTANCE.carrier.vehnextprice=0; INSTANCE.carrier.highcostAircraft=0;
-					INSTANCE.Sleep(30);
 					}
 		}
 	}

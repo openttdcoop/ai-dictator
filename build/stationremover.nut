@@ -23,7 +23,7 @@ if (exist)
 	{
 	if (temp.owner.Count() != 0)
 		{
-		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",0);
+		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",1);
 		return false;
 		}
 	// didn't find someone else use it
@@ -32,13 +32,12 @@ if (exist)
 	local vehcheck=AIVehicleList_Station(stationid);
 	if (!vehcheck.IsEmpty())
 		{
-		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+vehcheck.Count()+" vehicles",0);
-		return false;
+		DWarn("Still have "+vehcheck.Count()+" vehicle using station "+AIStation.GetName(stationid),1);
 		}
 	}
 local wasnamed=AIStation.GetName(stationid);
 if (!AITile.DemolishTile(AIStation.GetLocation(stationid))) return false;
-DInfo("Removing station "+wasnamed+" unused by anyone",0);
+DInfo("Removing station "+wasnamed,0);
 if (exist)
 	{
 	if (!INSTANCE.builder.DeleteDepot(temp.depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }

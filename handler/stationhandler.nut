@@ -131,18 +131,19 @@ function cStation::CargosUpdate()
 	this.cargo_accept.Clear();
 	this.cargo_rating.Clear();
 	local cargolist=AICargoList();
-	foreach (cargo_id, dummy in cargolist)
-		{
-		local accept=AITile.GetCargoAcceptance(this.locations.Begin(), cargo_id, 1, 1, this.radius);
-		local produce=AITile.GetCargoProduction(this.locations.Begin(), cargo_id, 1, 1, this.radius);
-		if (accept > 7)	this.cargo_accept.AddItem(cargo_id, accept);
-		if (produce > 0)	
+	foreach (tiles, dummy in this.locations)
+		foreach (cargo_id, dummy in cargolist)
 			{
-			this.cargo_produce.AddItem(cargo_id, AIStation.GetCargoWaiting(this.stationID, cargo_id));
-			this.cargo_rating.AddItem(cargo_id, AIStation.GetCargoRating(this.stationID, cargo_id));
+			INSTANCE.Sleep(1);
+			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, this.radius);
+			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, this.radius);
+			if (accept > 7)	this.cargo_accept.AddItem(cargo_id, accept);
+			if (produce > 0)	
+				{
+				this.cargo_produce.AddItem(cargo_id, AIStation.GetCargoWaiting(this.stationID, cargo_id));
+				this.cargo_rating.AddItem(cargo_id, AIStation.GetCargoRating(this.stationID, cargo_id));
+				}
 			}
-		}
-	
 	}
 
 function cStation::DeleteStation(stationid)
@@ -168,12 +169,26 @@ function cStation::GetRoadStationEntry(entrynum=-1)
 	}
 
 function cStation::ClaimOwner(uid)
-// Route claims orwnership of that station
+// Route claims ownership for that station
 	{
 	if (!this.owner.HasItem(uid))
 		{
 		this.owner.AddItem(uid,1);
 		DInfo("STATIONS -> Route #"+uid+" claims station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
+		}
+	}
+
+function cStation::OwnerReleaseStation(uid)
+// Route unclaims the ownership for that station, ask to destroy the station if no more owner own it
+	{
+	if (this.owner.HasItem(uid))
+		{
+		this.owner.RemoveItem(uid);
+		DInfo("STATIONS -> Route #"+uid+" release station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
+		if (this.owner.IsEmpty())
+			{
+			INSTANCE.builder.DeleteStation(uid, this.stationID);
+			}
 		}
 	}
 
