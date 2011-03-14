@@ -227,8 +227,6 @@ if (INSTANCE.carrier.vehnextprice > 0 && INSTANCE.carrier.vehnextprice < INSTANC
 	}
 local firstveh=false;
 INSTANCE.bank.busyRoute=false; // setup the flag
-//local vehprofit=0;
-local oldveh=false;
 local priority=AIList();
 local road=null;
 local chopper=false;
@@ -243,12 +241,13 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	local maxveh=0;
 	local cargoid=road.cargoID;
 	if (cargoid == null)	continue;
-	local estimateCapacity=1;
+	local futur_engine=INSTANCE.carrier.GetVehicle(uid);
+	local futur_engine_capacity=1;
+	if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);
 	switch (road.route_type)
 		{
 		case AIVehicle.VT_ROAD:
 			maxveh=INSTANCE.carrier.road_max_onroute;
-			estimateCapacity=15;
 		break;
 		case RouteType.CHOPPER:
 			chopper=true;
@@ -269,14 +268,8 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			continue; // no train upgrade for now will do later
 		break;
 		}
-	local vehList=AIVehicleList_Group(road.groupID);
-	vehList.Valuate(AIVehicle.GetProfitThisYear);
-	vehList.Sort(AIList.SORT_BY_VALUE,true); // poor numbers first
-	local vehsample=vehList.Begin();  // one sample in the group
-//	local vehprofit=vehList.GetValue(vehsample);
-//	local prevprofit=AIVehicle.GetProfitLastYear(vehsample);
-	local capacity=INSTANCE.carrier.VehicleGetFullCapacity(vehsample);
-	DInfo("vehicle="+vehsample+" capacity="+capacity+" engine="+AIEngine.GetName(AIVehicle.GetEngineType(vehsample)),2);
+	local capacity=INSTANCE.carrier.GetGroupLoadCapacity(road.groupID);
+	DInfo("Total capacity="+capacity+" enginecapacity="+futur_engine_capacity,2);
 	local vehneed=0;
 	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
 	local vehonroute=road.vehicle_count;
@@ -286,13 +279,17 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (road.source_istown && dstcargowait < srccargowait) cargowait=dstcargowait;
 
 
-	if (capacity > 0)	{ vehneed=cargowait / capacity; }
-			else	{// This happen when we don't have a vehicle sample -> 0 vehicle = new route certainly
+	if (capacity > 0)	{
+				local remain=cargowait - capacity;
+				if (remain <= 0)	vehneed=0;
+						else	vehneed=(cargowait / capacity)+1;
+ }
+			else	{// This happen when we don't have a vehicle -> 0 vehicle = new route certainly
 				vehneed=1;
 				local producing=0;
 				if (road.source_istown)	{ producing=AITown.GetLastMonthProduction(road.sourceID,cargoid); }
 							else	{ producing=AIIndustry.GetLastMonthProduction(road.sourceID,cargoid); }
-				if (road.route_type == AIVehicle.VT_ROAD)	{ vehneed= producing / estimateCapacity; }
+				if (road.route_type == AIVehicle.VT_ROAD)	{ vehneed= producing / futur_engine_capacity; }
 				if (vehneed > INSTANCE.carrier.road_upgrade)	{ vehneed = INSTANCE.carrier.road_upgrade; }
 				// limit first estimation to not upgrade a station
 				}
@@ -311,15 +308,8 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	DInfo("CanAddNewVehicle for destination station says "+canaddonemore,2);
 	if (!canaddonemore)	vehneed=0;
 	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
-
-	vehList.Valuate(AIVehicle.GetAge);
-	vehList.Sort(AIList.SORT_BY_VALUE,true);
-	if (vehList.GetValue(vehList.Begin()) > 90)	oldveh=true; // 1.5 month
-								else	oldveh=false;
-	oldveh=true; // TODO: look to remove the date check as maintenance remain monthchecked
-	if (firstveh)	oldveh=true;
 	// adding vehicle
-	if (vehneed > 0 && oldveh)
+	if (vehneed > 0)
 		{
 		INSTANCE.bank.busyRoute=true;
 		priority.AddItem(road.groupID,vehneed); // we record all groups needs for vehicle

@@ -15,6 +15,24 @@
 
 // main class is in vehiculebuilder
 
+function cCarrier::GetGroupLoadCapacity(groupID)
+// return the total capacity a group of vehicle can handle
+{
+if (!AIGroup.IsValidGroup(groupID))	return 0;
+local veh_in_group=AIVehicleList_Group(groupID);
+local cargoList=AICargoList();
+local total=0;
+local biggest=0;
+foreach (cargoID, dummy in cargoList)
+	{
+	veh_in_group.Valuate(AIVehicle.GetCapacity, cargoID);
+	total=0;
+	foreach (vehicle, capacity in veh_in_group)	total+=capacity;
+	if (total > biggest)	biggest=total;
+	}
+return biggest;
+}
+
 function cCarrier::VehicleGetBiggestCapacityUsingStation(stationID)
 // return the top capacity vehicles that use that station
 {

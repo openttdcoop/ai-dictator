@@ -346,6 +346,8 @@ function cCarrier::ChooseAircraft(cargo,airtype=0)
 local vehlist = AIEngineList(AIVehicle.VT_AIR);
 vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
 vehlist.KeepValue(1);
+vehlist.Valuate(AIEngine.GetMaxSpeed);
+vehlist.KeepAboveValue(45); // some newgrf use weird unplayable aircrafts (for our distance usage)
 local limitsmall=false;
 if (airtype >= 20)
 	{
@@ -408,7 +410,7 @@ local capacity=AIEngine.GetCapacity(engine);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
-return (price+(lifetime*runningcost))/(capacity*speed);
+return (price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
 }
 
 function cCarrier::ChooseRoadVeh(cargoid)

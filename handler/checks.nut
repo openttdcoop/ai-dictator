@@ -374,22 +374,10 @@ foreach (stations, dummy in truckstation)
 			foreach (vehicle, vehcargo in truck_getter_waiting)
 				{
 				if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
-				if (vehcargo == stacargo)
-					{
-					local allsame=true;
-					foreach (vehload, vehloadcargo in truck_getter_loading)
-						{
-						if (vehloadcargo != stacargo)	allsame=false;
-						}
-					if (allsame)
-						{
-						if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
-						DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
-						INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
-						AIVehicle.ReverseVehicle(vehicle);
-						//continue; // 1 per 1 removing
-						}
-					}
+				if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
+				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
+				INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+				AIVehicle.ReverseVehicle(vehicle);
 				}
 			}
 		
