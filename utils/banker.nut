@@ -47,7 +47,7 @@ if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)	{ DInfo
 if (ourLoan < maxLoan+(2*AICompany.GetLoanInterval()))	{ INSTANCE.bank.canBuild=true; }
 local veh=AIVehicleList();
 if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
-if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;
+//if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;
 if (INSTANCE.carrier.vehnextprice >0)	INSTANCE.bank.canBuild=false;
 if (INSTANCE.route.GroupIndexer.Count() == 0)	INSTANCE.bank.canBuild=true; // we have 0 route force a build
 if (INSTANCE.bank.canBuild) DInfo("Construction is now allowed",1);

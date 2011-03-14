@@ -271,6 +271,7 @@ function cRoute::GetRouteDepot()
 	{
 	if (this.source_entry && this.source.depot != null)	return	this.source.depot;
 	if (this.target_entry && this.target.depot != null)	return	this.target.depot;
+	return null;
 	}
 
 function cRoute::VirtualMailCopy()
@@ -412,5 +413,7 @@ function cRoute::RouteReleaseStation(stationid)
 		INSTANCE.builder.building_route=this.UID;
 		}
 	this.CheckEntry();
+	if (INSTANCE.route.RouteDamage.HasItem(this.UID))	INSTANCE.route.RouteDamage.RemoveItem(this.UID);
+	INSTANCE.builddelay=false; INSTANCE.bank.canBuild=true;
 	}
 

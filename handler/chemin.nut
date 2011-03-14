@@ -293,6 +293,8 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 				if (road.source_istown)	{ producing=AITown.GetLastMonthProduction(road.sourceID,cargoid); }
 							else	{ producing=AIIndustry.GetLastMonthProduction(road.sourceID,cargoid); }
 				if (road.route_type == AIVehicle.VT_ROAD)	{ vehneed= producing / estimateCapacity; }
+				if (vehneed > INSTANCE.carrier.road_upgrade)	{ vehneed = INSTANCE.carrier.road_upgrade; }
+				// limit first estimation to not upgrade a station
 				}
 	DInfo("vehneed by capacity: "+vehneed,2);
 	if (firstveh && vehneed < 2) vehneed=2;

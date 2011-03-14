@@ -15,7 +15,7 @@
 
 class cCarrier
 {
-static	AirportTypeLimit=[6, 15, 2, 30, 60, 5, 6, 140, 8]; // limit per airport type
+static	AirportTypeLimit=[6, 10, 2, 16, 30, 5, 6, 60, 8]; // limit per airport type
 static	IDX_HELPER = 512;			// use to create an uniq ID (also use to set handicap value)
 static	AIR_NET_CONNECTOR=2000;		// town is add to air network when it reach that value population
 static	TopEngineList=AIList();		// the list of engine ID we know if it can be upgrade or not
@@ -30,6 +30,7 @@ static	function GetVehicleObject(vehicleID)
 
 	rail_max		=null;	// maximum trains vehicle a station can handle
 	road_max		=null;	// maximum a road station can upgarde (max: 6)
+	road_upgrade	=null;	// maximum vehicle a road station can support before upgarde itself
 	air_max		=null;	// maximum aircraft a station can handle
 	airnet_max		=null;	// maximum aircraft on a network
 	airnet_count	=null;	// current number of aircrafts running the network
@@ -44,6 +45,7 @@ static	function GetVehicleObject(vehicleID)
 		{
 		rail_max		=0;
 		road_max		=0;
+		road_upgrade	=0;
 		air_max		=0;
 		airnet_max		=0;
 		airnet_count	=0;
@@ -92,6 +94,7 @@ if (start)	{ thatstation=chem.source; }
 	else	{ thatstation=chem.target; }
 local divisor=0;
 local sellvalid=( (AIDate.GetCurrentDate() - chem.date_VehicleDelete) > 60);
+if (!sellvalid)	DInfo("Route sold a vehicle not a long time ago",1);
 local virtualized=(cCarrier.VirtualAirRoute.len() > 1 && cStation.VirtualAirports.HasItem(thatstation.stationID));
 local airportmode="(classic)";
 if (virtualized)	airportmode="(network)";
@@ -100,6 +103,7 @@ local airname=AIStation.GetName(thatstation.stationID)+"-> ";
 switch (chem.route_type)
 	{
 	case AIVehicle.VT_ROAD:
+		DInfo("Road station "+AIStation.GetName(thatstation.stationID)+" limit "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (thatstation.CanUpgradeStation())
 			{ // can still upgrade
 			if (chem.vehicle_count+1 > INSTANCE.carrier.road_max_onroute)	return false;
@@ -107,7 +111,7 @@ switch (chem.route_type)
 			if (!INSTANCE.use_road)	return false;
 			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 //			if (thatstation.vehicle_count+1 > thatstation.size)
-			if (thatstation.vehicle_count+1 > thatstation.vehicle_max)
+			if ( (thatstation.vehicle_count+1) > thatstation.vehicle_max)
 				{ // we must upgrade
 				INSTANCE.builder.RoadStationNeedUpgrade(roadidx, start);
 				local fake=thatstation.CanUpgradeStation(); // to see if upgrade success
@@ -151,31 +155,28 @@ switch (chem.route_type)
 		DInfo(airname+"Limit for that airport (network): "+chem.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (chem.vehicle_count+1 > INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) return false;
 		if (chem.vehicle_count+1 > thatstation.vehicle_max) return false;
-		return true;
+	break;
 	case RouteType.CHOPPER:
 
 		DInfo(airname+"Limit for that route (choppers): "+chem.vehicle_count+"/4",1);
 		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_max,1);
 		if (chem.vehicle_count+1 > 4)	return false;
-		return true;
 	break;
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
 		if (thatstation.CanUpgradeStation())
 			{
 			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID)) return false;
 			}
-		local result=true;
 		local limitmax=INSTANCE.carrier.air_max;
 		if (virtualized)	limitmax=2; // only 2 aircrafts when the airport is also in network
 		DInfo(airname+"Limit for that route (classic): "+chem.vehicle_count+"/"+limitmax,1);
 		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
-		if (!INSTANCE.use_air)	result=false;
+		if (!INSTANCE.use_air)	return false;
 		thatstation.CheckAirportLimits(); // force recheck limits
-		if (chem.vehicle_count+1 > limitmax)	result=false;
+		if (chem.vehicle_count+1 > limitmax)	return false;
 		// limit by route limit
-		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	result=false;
+		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
 		// limit by airport capacity
-		return result;
 	break;
 	}
 return sellvalid;

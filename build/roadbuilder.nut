@@ -300,8 +300,11 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 			}
 		else	{ // town or (industry at start)
 			if (!istown)
-	 			tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.route.cargoID, 1, 1, rad);
-				else tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
+	 				tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.route.cargoID, 1, 1, rad);
+				else	{
+					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
+					tilelist.KeepAboveValue(7);
+					}
 			tilelist.Sort(AIList.SORT_BY_VALUE, false);
 			}
 		}

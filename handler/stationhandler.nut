@@ -98,9 +98,9 @@ function cStation::CanUpgradeStation()
 								else	return false;
 		break;
 		default: // bus or truck
-			this.vehicle_max=this.size*INSTANCE.carrier.road_max_onroute;
+			this.vehicle_max=this.size*INSTANCE.carrier.road_upgrade;
 			if (this.size >= this.maxsize)	return false;
-						else	return true;
+								else	return true;
 		break;		
 		}
 	}

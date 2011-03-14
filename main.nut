@@ -276,28 +276,31 @@ if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.max_aircrafts")) 
 switch (fairlevel)
 	{
 	case 0: // easiest
-		carrier.road_max_onroute=4;
+		carrier.road_max_onroute=8;
 		carrier.road_max=2;
+		carrier.road_upgrade=10;
 		carrier.rail_max=1;
 		carrier.water_max=2;
 		carrier.air_max=4;
-		carrier.airnet_max=4;
+		carrier.airnet_max=2;
 	break;
 	case 1: 
-		carrier.road_max_onroute=6;
+		carrier.road_max_onroute=12;
 		carrier.road_max=3;
+		carrier.road_upgrade=10;
 		carrier.rail_max=4;
 		carrier.water_max=20;
 		carrier.air_max=6;
-		carrier.airnet_max=6;
+		carrier.airnet_max=3;
 	break;
 	case 2: 
-		carrier.road_max_onroute=12;	// upto 12 bus/truck per route
-		carrier.road_max=6;	// upto a 6 size road station
-		carrier.rail_max=12; // it's our highest train limit, can't build more than 12 trains per station
-		carrier.water_max=60; // there's no real limit for boats
-		carrier.air_max=8; // 8 aircrafts / route
-		carrier.airnet_max=12; // 12 aircrafts / airport in the air network, ie: 10 airports = 120 aircrafts
+		carrier.road_max_onroute=20;	// upto 12 bus/truck per route
+		carrier.road_max=6;		// upto a 6 size road station
+		carrier.road_upgrade=10;	// upgarde road station every X vehicles. station can handle so a max that*road_max vehicle
+		carrier.rail_max=12; 		// it's our highest train limit, can't build more than 12 trains per station
+		carrier.water_max=60; 		// there's no real limit for boats
+		carrier.air_max=8; 		// 8 aircrafts / route
+		carrier.airnet_max=4;		// 4 aircrafts / airport in the air network, ie: 10 airports = 120 aircrafts
 	break;
 	}
 

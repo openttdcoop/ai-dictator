@@ -266,6 +266,8 @@ switch (facing)
 PutSign(sta_pos+p_left,"L");
 PutSign(sta_pos+p_right,"R");
 PutSign(sta_pos+p_back,"B");
+DInfo("Size :"+work.size,2);
+INSTANCE.NeedDelay(30);
 if (work.size == 1)
 	{
 	if (!AIRoad.IsRoadTile(sta_front+p_left))
@@ -299,15 +301,18 @@ for (local i=0; i < upgradepos.len()-1; i++)
 	local tile=upgradepos[i+1];
 	local direction=upgradepos[i];
 	if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
+	if (AIRoad.IsRoadStationTile(direction))	continue;
 	if (AIRoad.IsRoadTile(tile))	continue; // don't build on a road if we could
 	new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.stationID);
 	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
 	INSTANCE.builder.CriticalError=false; // discard it
 	if (new_sta_pos != -1)	break;
 	AIController.Sleep(1);
+	INSTANCE.NeedDelay(30);
 	i++; if (i>=upgradepos.len())	break;
 	}
-// same as upper but no more check if road is destroy
+DInfo("2nd try don't care roads");
+// same as upper but destructive
 if (new_sta_pos==-1)
 	{
 	for (local i=0; i < upgradepos.len()-1; i++)
@@ -315,11 +320,14 @@ if (new_sta_pos==-1)
 		local tile=upgradepos[i+1];
 		local direction=upgradepos[i];
 		if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
+		if (AIRoad.IsRoadStationTile(direction))	continue;
+		if (!cTileTools.DemolishTile(tile))	{ DInfo("Cannot clean the place for the new station at "+tile,1); }
 		new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.stationID);
 		if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
 		INSTANCE.builder.CriticalError=false; // discard it
 		if (new_sta_pos != -1)	break;
 		AIController.Sleep(1);
+		INSTANCE.NeedDelay(30);
 		i++; if (i>=upgradepos.len())	break;
 		}
 	}

@@ -140,7 +140,6 @@ INSTANCE.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
 INSTANCE.carrier.do_profit.Clear();
 INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
-cJobs.RefreshAllValue();
 }
 
 function cBuilder::AirportStationsBalancing()
@@ -223,6 +222,7 @@ foreach (stationID, dummy in allstations)
 		{
 		INSTANCE.Sleep(1);
 		local road=cRoute.GetRouteObject(uid);
+		if (road == null)	continue; // might happen if the route isn't saved because not finished yet
 		if (road.source_stationID == stobj.stationID)	continue;
 		if (road.target_stationID == stobj.stationID)
 			{
@@ -234,7 +234,7 @@ foreach (stationID, dummy in allstations)
 			}
 		}
 	}
-
+/*
 foreach (stations, dummy in busstation)
 	{
 	INSTANCE.Sleep(1);
@@ -255,7 +255,8 @@ foreach (stations, dummy in busstation)
 			}
 		}
 	}
-
+*/
+truckstation.AddList(busstation);
 if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
 	{
@@ -386,7 +387,7 @@ foreach (stations, dummy in truckstation)
 						DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
 						INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 						AIVehicle.ReverseVehicle(vehicle);
-						continue; // 1 per 1 removing
+						//continue; // 1 per 1 removing
 						}
 					}
 				}
@@ -418,7 +419,6 @@ if (airportList.Count() < 2)
 		local money_goal=money+goalairport
 		DInfo("Trying to get an aircraft job done",1);
 		INSTANCE.carrier.CrazySolder(goalairport);
-		cJobs.RefreshAllValue();		
 		do	{
 			INSTANCE.Sleep(74);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
@@ -426,8 +426,8 @@ if (airportList.Count() < 2)
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 			DInfo("Still "+(money_goal - money)+" to raise",1);
 			}
-		while (waitingtimer < 90 && !cBanker.CanBuyThat(goalairport));
-		if (waitingtimer < 90)	DInfo("Operation should success...",1);
+		while (waitingtimer < 120 && !cBanker.CanBuyThat(goalairport));
+		if (waitingtimer < 120)	DInfo("Operation should success...",1);
 		INSTANCE.carrier.VehicleIsWaitingInDepot();
 		INSTANCE.bank.canBuild=true; INSTANCE.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
 		}
@@ -438,18 +438,22 @@ aircraftnumber.Valuate(AIVehicle.GetVehicleType);
 aircraftnumber.KeepValue(AIVehicle.VT_AIR);
 if (aircraftnumber.Count() < 6 && airportList.Count() > 1)
 	{ // try boost aircrafts buys until we have 6
-	DWarn("Waiting to buy of new aircraft. Current ="+INSTANCE.carrier.warTreasure+" Goal="+INSTANCE.carrier.highcostAircraft,1);
-	if (INSTANCE.carrier.warTreasure > INSTANCE.carrier.highcostAircraft && INSTANCE.carrier.highcostAircraft > 0)
+	local goal=INSTANCE.carrier.highcostAircraft+(INSTANCE.carrier.highcostAircraft * 0.1);
+	local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	local money_goal=money+goal;
+	DWarn("Waiting to buy of new aircraft. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goal,1);
+	if (INSTANCE.carrier.warTreasure > goal && goal > 0)
 		{
 		DInfo("Trying to buy a new aircraft",1);
-		INSTANCE.carrier.CrazySolder(INSTANCE.carrier.highcostAircraft);
+		INSTANCE.carrier.CrazySolder(goal);
 		do	{
-			INSTANCE.carrier.CrazySolder(INSTANCE.carrier.highcostAircraft);
 			INSTANCE.Sleep(74);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
+			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+			DInfo("Still "+(money_goal - money)+" to raise",1);
 			waitingtimer++;
 			}
-		while (waitingtimer < 90 && !cBanker.CanBuyThat(INSTANCE.carrier.highcostAircraft));
+		while (waitingtimer < 120 && !cBanker.CanBuyThat(goal));
 		INSTANCE.carrier.vehnextprice=INSTANCE.carrier.highcostAircraft; // reserve the money to buy the aircraft
 		}
 

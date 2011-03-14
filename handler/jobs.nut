@@ -25,6 +25,7 @@ static	jobDoable = AIList();	// same as upper, but only doable ones, value = ran
 static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
 static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,150,200];
 static	CostTopJobs = [0, 0, 0, 0]; // price of best job for rail, road, water & air
+static	lastRefresh = [0];	// last date we refresh all jobs
 
 
 static	function GetJobObject(UID)
@@ -128,8 +129,8 @@ function cJobs::GetUID()
 			if (this.target_istown)	v3+=1000;
 			local v4=(this.sourceID+10000);
 			if (this.source_istown) v4+=4000;
+			parentID= v4+(this.cargoID+1);
 			if (this.roadType == AIVehicle.VT_AIR)	parentID = v4+(this.cargoID+100);
-							else	parentID = v4+(this.cargoID+1);
 			if (this.roadType == AIVehicle.VT_ROAD && this.cargoID == cCargo.GetPassengerCargo())
 				{ parentID = v4+(this.cargoID+300); }
 			// parentID: prevent a route done by a transport to be done by another transport
@@ -210,31 +211,38 @@ function cJobs::RefreshValue(jobID)
 
 function cJobs::RefreshAllValue()
 // refesh datas of all objects
-{
-DInfo("Collecting jobs infos, will take time...",0);
-local curr=0;
-foreach (item, value in cJobs.jobIndexer)
 	{
-	cJobs.RefreshValue(item);
-	curr++;
-	if (curr % 15 == 0)
+	local now=AIDate.GetCurrentDate();
+	local last=cJobs.lastRefresh[0];
+	if ( (now - last) < 240)	return false;
+	cJobs.lastRefresh[0]=now;
+	DInfo("Collecting jobs infos, will take time...",0);
+	local curr=0;
+	foreach (item, value in cJobs.jobIndexer)
 		{
-		DInfo(curr+" / "+cJobs.jobIndexer.Count(),0);
-		INSTANCE.Sleep(1);
+		cJobs.RefreshValue(item);
+		curr++;
+		if (curr % 15 == 0)
+			{
+			DInfo(curr+" / "+cJobs.jobIndexer.Count(),0);
+			INSTANCE.Sleep(1);
+			}
 		}
+	return true;
 	}
-}
 
 function cJobs::QuickRefresh()
 // refresh datas on first 5 doable top jobs
 	{
 	local smallList=AIList();
-	if (cRoute.RouteIndexer.Count() > 2)	cJobs.jobDoable.KeepTop(5);
-	// don't limit to 5 top jobs if we don't even have 1 working route
-	foreach (item, value in cJobs.jobDoable)
-		{ // refresh the value & then sort by highest ranking
-		INSTANCE.Sleep(1);
-		cJobs.RefreshValue(item);
+	if (!cJobs.RefreshAllValue())
+		{ // if we don't refresh everything, then we refresh the 5 top jobs
+		cJobs.jobDoable.KeepTop(5);
+		foreach (item, value in cJobs.jobDoable)
+			{ // refresh the value & then sort by highest ranking
+			INSTANCE.Sleep(1);
+			cJobs.RefreshValue(item);
+			}
 		}
 	INSTANCE.jobs.UpdateDoableJobs();
 	smallList.AddList(cJobs.jobDoable);
@@ -526,10 +534,12 @@ function cJobs::UpdateDoableJobs()
 			local curmax = INSTANCE.jobs.GetTransportDistance(myjob.roadType, false, !INSTANCE.bank.unleash_road);
 			if (curmax < myjob.distance)	doable=false;
 			}
-		if (doable)
 		// not doable if any parent is already in use
-		if (parentListID.HasItem(myjob.parentID))	doable=false;
-								else	parentListID.AddItem(myjob.parentID,1);
+		if (parentListID.HasItem(myjob.parentID))	{ DWarn("Job already done by parent job !",1); doable=false; }
+								else	if (myjob.isUse)	parentListID.AddItem(myjob.parentID,1);
+		if (doable && !myjob.source_istown)
+			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
+		// not doable if the industry no longer exist
 		if (doable)	{
 				myjob.jobIndexer.SetValue(id, myjob.ranking);
 				myjob.jobDoable.AddItem(id, myjob.ranking);
@@ -641,5 +651,4 @@ foreach (ID, dummy in townjobs)
 		INSTANCE.Sleep(1);
 		}
 	}
-//cJobs.RefreshAllValue();
 }

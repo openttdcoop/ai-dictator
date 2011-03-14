@@ -109,7 +109,7 @@ function cCarrier::VehicleGetFormatString(veh)
 // return a vehicle string with the vehicle infos
 {
 if (!AIVehicle.IsValidVehicle(veh))	return "<Invalid vehicle>";
-local toret="#"+veh+" - "+AIVehicle.GetName(veh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(veh))+")";
+local toret=AIVehicle.GetName(veh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(veh))+")";
 return toret;
 }
 
@@ -212,6 +212,8 @@ local veh=vehlist.Begin();
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(idx);
 if (road == null)	return false;
+if (!road.source_entry)	return false;
+if (!road.target_entry)	return false;
 local oneorder=null;
 local twoorder=null;
 local srcplace=null;
@@ -323,8 +325,40 @@ function cCarrier::VehicleSetDepotOrder(veh)
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 // One day i should check rogues vehicles running out of control from a route, but this shouldn't happen :p
 local road=cRoute.GetRouteObject(idx);
-if (road == null)	return;
-local homedepot=road.GetRouteDepot();
+local homedepot = null;
+if (road != null)	homedepot=road.GetRouteDepot();
+if (homedepot == null)
+	{
+	if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false;
+	DError("DOH! Cannot find any depot to send "+INSTANCE.carrier.VehicleGetFormatString(veh)+" to !",0);
+	if (AIVehicle.SendVehicleToDepot(veh)) // it might find a depot near, let's hope
+		{
+		DWarn("Looks like "+INSTANCE.carrier.VehicleGetFormatString(veh)+" found a depot in its way");
+		INSTANCE.carrier.ToDepotList.AddItem(veh,DepotAction.SELL);
+		}
+	else	{
+		DError("DOH (again) ! We're really in bad situation with "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Trying to move it to some other route as last hope!",0);
+		local veh_in_group = AIVehicle.GetGroupID(veh);
+		local vehList = AIVehicleList();
+		if (vehList.HasItem(veh))	vehList.SetValue(veh,-1); // remove the bad vehicle from the list
+		vehList.RemoveValue(-1);
+		vehList.Valuate(AIVehicle.GetVehicleType);
+		vehList.KeepValue(AIVehicle.GetVehicleType(veh)); // now keep vehicles of same type as bad vehicle
+		vehList.Valuate(AIVehicle.GetGroupID);
+		vehList.RemoveValue(veh_in_group); // now remove any vehicle that are in the same bad group as it
+		local weird=true;
+		if (!vehList.IsEmpty())
+			{
+			DWarn("Found a group that can hold "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Moving it there",0);
+			if (!AIGroup.MoveVehicle(vehList.Begin(), veh))	weird=true;
+										else	weird=false;
+			}
+		else	{ DError("Cannot find a group to hold "+INSTANCE.carrier.VehicleGetFormatString(veh),0); }
+		if (weird)	DError("LOL ! And this fail, can only hope "+INSTANCE.carrier.VehicleGetFormatString(veh)+" get destroy itself now. Shoot it !",0);
+		}
+	return false;
+	}
+		
 AIOrder.UnshareOrders(veh);
 INSTANCE.carrier.VehicleOrdersReset(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
@@ -606,7 +640,7 @@ foreach (vehicle, dummy in tlist)
 		continue;
 		}
 	price=INSTANCE.carrier.VehicleGetProfit(vehicle);
-	DInfo("-> Vehicle "+name+" profits : "+price,2);
+//	DInfo("-> Vehicle "+name+" profits : "+price,2);
 	age=AIVehicle.GetAge(vehicle);
 	if (age > 240 && price < 0 && INSTANCE.OneMonth > 6) // (6 months after new year)
 		{

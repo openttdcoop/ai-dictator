@@ -43,12 +43,12 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();
 			INSTANCE.jobs.AddNewIndustryOrTown(industry, false);
-			INSTANCE.jobs.RefreshAllValue();
+			DInfo("New industry "+AIIndustry.GetName(industry),0);
 		break;
 		case AIEvent.AI_ET_INDUSTRY_CLOSE:
 			event = AIEventIndustryClose.Convert(event);
 			local industry = event.GetIndustryID();
-			DInfo("Industry "+AIIndustry.GetName(industry)+" is close !",0);
+			DInfo("Industry "+AIIndustry.GetName(industry)+" is closing !",0);
 		break;
 		case AIEvent.AI_ET_COMPANY_NEW:
 			event = AIEventCompanyNew.Convert(event);
