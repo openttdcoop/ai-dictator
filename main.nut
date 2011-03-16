@@ -116,16 +116,85 @@ function DictatorAI::Start()
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	AICompany.SetAutoRenewStatus(false);
 	CheckCurrentSettings();
-	//bank.SaveMoney();
 	if (loadedgame) 
 		{
-		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0);
-		DInfo("We have "+(cStation.database.len())+" stations",0);
-		DInfo("We have "+(cRoute.database.len())+" routes running",0);
-		DInfo(" ");
+		bank.SaveMoney();
 		jobs.PopulateJobs();
+		// our routes are saved in bank.canBuild & stations in bank.unleash_road
+		// and oneMonth=station database size and oneWeek=routedatabase size when saved
+		local all_stations=bank.unleash_road;
+		DInfo("Restoring stations",0);
+		local iter=0;
+		for (local i=0; i < all_stations.len(); i++)
+			{
+			local obj=cStation();
+			obj.stationID=all_stations[i];
+			obj.stationType=all_stations[i+1];
+			obj.specialType=all_stations[i+2];
+			obj.size=all_stations[i+3];
+			obj.maxsize=all_stations[i+4]; //1000
+			obj.depot=all_stations[i+5];
+			obj.radius=all_stations[i+6];
+			local counter=all_stations[i+7];
+			DInfo("counter="+counter+ " i="+i);
+			local nextitem=i+8+counter;
+			DInfo("nextitem="+nextitem);
+			local temparray=[];
+			for (local z=0; z < counter; z++)	temparray.push(all_stations[i+8+z]);
+			obj.locations=ArrayToList(temparray);
+			counter=all_stations[nextitem];
+			DInfo("2nd counter="+counter);
+			temparray=[];
+			for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
+			i=nextitem+counter;
+			DInfo("new i="+i);
+			iter++;
+			//obj.owner=ArrayToList(temparray);
+			//if (obj.owner.IsEmpty())	DWarn("Station "+AIStation.GetName(obj.stationID)+" is not own by any route",0);
+			cStation.stationdatabase[obj.stationID] <- obj;
+			}
+		DInfo(iter+" stations found.",0);
+		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,0);
+		DInfo("Restoring routes",0);
+		iter=0;
+		local all_routes=bank.canBuild;
+		for (local i=0; i < all_routes.len(); i++)
+			{
+			local obj=cRoute();
+			obj.UID=all_routes[i];
+			obj.sourceID=all_routes[i+1];
+			obj.source_location=all_routes[i+2];
+			obj.source_istown=all_routes[i+3];
+			obj.targetID=all_routes[i+4];
+			obj.target_location=all_routes[i+5];
+			obj.target_istown=all_routes[i+6];
+			obj.route_type=all_routes[i+7];
+			obj.station_type=all_routes[i+8];
+			obj.isWorking=all_routes[i+9];
+			obj.status=all_routes[i+10];
+			obj.groupID=all_routes[i+11];
+			obj.source_stationID=all_routes[i+12];
+			obj.target_stationID=all_routes[i+13];
+			obj.cargoID=all_routes[i+14];
+			i+=14;
+			iter++;
+			cRoute.database[obj.UID] <- obj;
+			obj.RouteUpdate(); // re-enable the link to stations
+			cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
+			if (obj.UID == 0)	cRoute.VirtualAirGroup[0]=obj.groupID;
+			if (obj.UID == 1)	cRoute.VirtualAirGroup[1]=obj.groupID;
+			}
+		cRoute.RouteRebuildIndex();
+		DInfo(iter+" routes found.",0);
+		DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,0);
+
+		OneWeek=0;
+		OneMonth=0;
+		bank.canBuild=false;
+		bank.unleash_road=false;
+		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0);
 		}
-	 else 	{
+	 else {
 		AIInit();
 		checkHQ();
 		bank.SaveMoney();
@@ -141,7 +210,7 @@ function DictatorAI::Start()
 		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
 		bank.CashFlow();
 		this.ClearSignsALL();
-		builder.ShowStationCapacity();
+		//builder.ShowStationCapacity();
 		if (bank.canBuild)
 				{
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
@@ -180,33 +249,82 @@ function DictatorAI::NeedDelay(delay=30)
 DInfo("We are waiting: "+delay,2);
 if (debug) ::AIController.Sleep(delay);
 } 
- 
+
 function DictatorAI::Save()
-{ // hmmm, some devs might not like all those saved datas
+{ // save
 local table = 
 	{
 	routes = null,
 	stations = null,
 	cargo = null,
-	// virtual_air could be found easy
-	vapass=null,
-	vamail=null
+	busyroute=null,
+	virtualgroup=null,
+	dbstation=null,
+	dbroute=null,
+	}
+
+DInfo("Saving game... "+cRoute.database.len()+" routes, "+cStation.stationdatabase.len()+" stations",0);
+local all_stations=[];
+local all_routes=[];
+local temparray=[];
+
+// routes
+foreach (obj in cRoute.database)
+	{
+	all_routes.push(obj.UID);
+	all_routes.push(obj.sourceID);
+	all_routes.push(obj.source_location);
+	all_routes.push(obj.source_istown);
+	all_routes.push(obj.targetID);
+	all_routes.push(obj.target_location);
+	all_routes.push(obj.target_istown);
+	all_routes.push(obj.route_type);
+	all_routes.push(obj.station_type);
+	all_routes.push(obj.isWorking);
+	all_routes.push(obj.status);
+	all_routes.push(obj.groupID);
+	all_routes.push(obj.source_stationID);
+	all_routes.push(obj.target_stationID);
+	all_routes.push(obj.cargoID);
+	}
+// stations
+foreach(obj in cStation.stationdatabase)
+	{
+	all_stations.push(obj.stationID);
+	all_stations.push(obj.stationType);
+	all_stations.push(obj.specialType);
+	all_stations.push(obj.size);
+	all_stations.push(obj.maxsize);
+	all_stations.push(obj.depot);
+	all_stations.push(obj.radius);
+	temparray=ListToArray(obj.locations);
+	all_stations.push(temparray.len());
+	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
+	temparray=ListToArray(obj.owner);
+	all_stations.push(temparray.len());
+	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
 	}
 
 table.cargo=cargo_favorite;
+table.routes=all_routes;
+table.stations=all_stations;
+table.busyroute=builder.building_route;
+table.virtualgroup=cRoute.VirtualAirGroup[0];
+table.dbstation=cStation.stationdatabase.len();
+table.dbroute=cRoute.database.len();
 return table;
 }
  
 function DictatorAI::Load(version, data)
 {
-	DInfo("Loading a saved game with DictatorAI. ");
-/*	if ("routes" in data) carrier.RList=data.routes;
-	if ("stations" in data) carrier.GList=data.stations;
-	if ("vapass" in data) carrier.virtual_air_group_pass=data.vapass;
-	if ("vamail" in data) carrier.virtual_air_group_mail=data.vamail;
-	if ("cargo" in data) cargo_favorite=data.cargo;
-*/
-	loadedgame = true;
+DInfo("Loading a saved game with DictatorAI. ");
+if ("cargo" in data) cargo_favorite=data.cargo;
+if ("routes" in data) bank.canBuild=data.routes;
+if ("stations" in data) bank.unleash_road=data.stations;
+if ("busyroute" in data) builder.building_route=data.busyroute;
+if ("dbstation" in data) OneMonth=data.dbstation;
+if ("dbroute" in data) OneWeek=data.dbroute;
+loadedgame = true;
 }
 
  
@@ -253,25 +371,29 @@ if (AIController.GetSetting("use_air") && !AIGameSettings.IsDisabledVehicleType(
 	use_air = true;
 else	use_air = false;
 	
-local vehiclelist = AIVehicleList();
-vehiclelist.Valuate(AIVehicle.GetVehicleType);
+local allvehiclelist = AIVehicleList();
+allvehiclelist.Valuate(AIVehicle.GetVehicleType);
+local vehiclelist=AIList();
+vehiclelist.AddList(allvehiclelist);
 vehiclelist.KeepValue(AIVehicle.VT_ROAD);
 if (vehiclelist.Count() + 5 > AIGameSettings.GetValue("vehicle.max_roadveh")) use_road = false;
-vehiclelist = AIVehicleList();
-vehiclelist.Valuate(AIVehicle.GetVehicleType);
+vehiclelist.Clear();
+vehiclelist.AddList(allvehiclelist);
 vehiclelist.KeepValue(AIVehicle.VT_RAIL);
 if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.max_trains")) use_train = false;
-/*
-TODO: find how the internal ttd name vehicle.max_boats vehicle.max_aircrafts
-vehiclelist = AIVehicleList();
-vehiclelist.Valuate(AIVehicle.GetVehicleType);
-vehiclelist.KeepValue(AIVehicle.VT_RAIL);
-if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.max_boats")) use_train = false;
-vehiclelist = AIVehicleList();
-vehiclelist.Valuate(AIVehicle.GetVehicleType);
-vehiclelist.KeepValue(AIVehicle.VT_RAIL);
-if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.max_aircrafts")) use_train = false;
-*/
+vehiclelist.Clear();
+vehiclelist.AddList(allvehiclelist);
+vehiclelist.KeepValue(AIVehicle.VT_AIR);
+if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.max_aircraft")) use_air = false;
+vehiclelist.Clear();
+vehiclelist.AddList(allvehiclelist);
+vehiclelist.KeepValue(AIVehicle.VT_WATER);
+if (vehiclelist.Count() + 1 > AIGameSettings.GetValue("vehicle.ships")) use_boat = false;
+
+if (AIGameSettings.GetValue("ai.ai_disable_veh_train") == 1)	use_train = false;
+if (AIGameSettings.GetValue("ai.ai_disable_veh_roadveh") == 1)	use_road = false;
+if (AIGameSettings.GetValue("ai.ai_disable_veh_aircraft") == 1)	use_air = false;
+if (AIGameSettings.GetValue("ai.ai_disable_veh_ship") == 1)	use_boat = false;
 
 switch (fairlevel)
 	{

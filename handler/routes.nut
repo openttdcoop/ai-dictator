@@ -18,7 +18,7 @@ static	database = {};
 static	RouteIndexer = AIList();	// list all UID of routes we are handling
 static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
 static	RouteDamage = AIList(); 	// list of routes that need repairs
-static	VirtualAirGroup = [];		// 0=passenger & 1=mail groups for network
+static	VirtualAirGroup = [-1,-1];		// 0=passenger & 1=mail groups for network
 
 static	function GetRouteObject(UID)
 		{
@@ -313,7 +313,7 @@ function cRoute::RouteInitNetwork()
 	if (AIGroup.IsValidGroup(n))	this.groupID=n;
 					else	DWarn("Cannot create group !",1);
 	AIGroup.SetName(n, "Virtual Network Passenger");
-	VirtualAirGroup.push(n);
+	VirtualAirGroup[0]=n;
 	passRoute.groupID=n;
 	passRoute.RouteSave();
 
@@ -331,7 +331,7 @@ function cRoute::RouteInitNetwork()
 	if (AIGroup.IsValidGroup(n))	this.groupID=n;
 					else	DWarn("Cannot create group !",1);
 	AIGroup.SetName(n, "Virtual Network Mail");
-	VirtualAirGroup.push(n);
+	VirtualAirGroup[1]=n;
 	mailRoute.groupID=n;
 	GroupIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
 	GroupIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);

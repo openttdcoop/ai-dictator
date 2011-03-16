@@ -283,12 +283,18 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 				local remain=cargowait - capacity;
 				if (remain <= 0)	vehneed=0;
 						else	vehneed=(cargowait / capacity)+1;
- }
+				}
 			else	{// This happen when we don't have a vehicle -> 0 vehicle = new route certainly
 				vehneed=1;
 				local producing=0;
-				if (road.source_istown)	{ producing=AITown.GetLastMonthProduction(road.sourceID,cargoid); }
-							else	{ producing=AIIndustry.GetLastMonthProduction(road.sourceID,cargoid); }
+				if (road.source_istown)
+					{
+					local prodsrc=AITown.GetLastMonthProduction(road.sourceID,cargoid);
+					local proddst=AITown.GetLastMonthProduction(road.targetID,cargoid);
+					producing=prodsrc;
+					if (prodsrc > proddst)	producing=proddst;
+					}
+				else	{ producing=AIIndustry.GetLastMonthProduction(road.sourceID,cargoid); }
 				if (road.route_type == AIVehicle.VT_ROAD)	{ vehneed= producing / futur_engine_capacity; }
 				if (vehneed > INSTANCE.carrier.road_upgrade)	{ vehneed = INSTANCE.carrier.road_upgrade; }
 				// limit first estimation to not upgrade a station
@@ -340,15 +346,17 @@ local vehneed=0;
 local vehvalue=0;
 local topvalue=0;
 INSTANCE.carrier.highcostAircraft=0;
+DInfo("Priority list="+priority.Count()+" Saved list="+priosave.Count(),1);
 foreach (groupid, ratio in priority)
 	{
-	if (priosave.HasItem(groupid))	vehneed=priosave.GetValue(groupid);
-						else	vehneed=0;
+	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicle",1); }
+						else	{ vehneed=0; DWarn("Group #"+groupid++" "+AIGroup.GetName(groupid)+" not found in priority list!",1); }
 	if (vehneed == 0) continue;
 	local uid=cRoute.GroupIndexer.GetValue(groupid);
 	local rtype=AIGroup.GetVehicleType(groupid);
 	local vehmodele=INSTANCE.carrier.GetVehicle(uid);
-	local vehvalue=AIEngine.GetPrice(vehmodele);
+	local vehvalue=0;
+	if (vehmodele != null)	vehvalue=AIEngine.GetPrice(vehmodele);
 	for (local z=0; z < vehneed; z++)
 		{
 		if (rtype == AIVehicle.VT_AIR && !INSTANCE.bank.CanBuyThat(vehvalue))

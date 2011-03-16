@@ -19,8 +19,8 @@
    function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
-   function GetVersion()       { return 014; }
-   function MinVersionToLoad() { return 3; }
+   function GetVersion()       { return 094; }
+   function MinVersionToLoad() { return 4; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
    function GetShortName()     { return "DCTR"; }
@@ -34,7 +34,7 @@
 	 medium_value = 0,
 	 hard_value = 0,
 	 custom_value = 0,
-	 flags = AICONFIG_INGAME | AICONFIG_BOOLEAN
+	 flags = AICONFIG_BOOLEAN
 	});
 
     AddSetting({name = "fairlevel",
@@ -45,14 +45,14 @@
 	 medium_value = 1,
 	 hard_value = 2,
 	 custom_value = 2,
-	 flags = AICONFIG_INGAME
+	 flags = 0
 	});
 
     AddLabels("fairlevel", {_0 = "Lazy", _1 = "Opportunist", _2 = "Dictator"});
 
 	AddSetting({
 		name = "use_train",
-		description = "Use trains",
+		description = "Use trains - NOT FUNCTIONAL",
 		easy_value = 0,
 		medium_value = 0,
 		hard_value = 0,
@@ -79,7 +79,7 @@
 	});
 	AddSetting({
 		name = "use_boat",
-		description = "Use boat vehicles",
+		description = "Use boat vehicles - NOT FUNCTIONAL",
 		easy_value = 0,
 		medium_value = 0,
 		hard_value = 0,

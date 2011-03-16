@@ -355,7 +355,7 @@ if (homedepot == null)
 		INSTANCE.carrier.ToDepotList.AddItem(veh,DepotAction.SELL);
 		}
 	else	{
-		DError("DOH (again) ! We're really in bad situation with "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Trying to move it to some other route as last hope!",0);
+		DError("DOH DOH ! We're really in bad situation with "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Trying to move it to some other route as last hope!",0);
 		local veh_in_group = AIVehicle.GetGroupID(veh);
 		local vehList = AIVehicleList();
 		if (vehList.HasItem(veh))	vehList.SetValue(veh,-1); // remove the bad vehicle from the list
@@ -367,9 +367,10 @@ if (homedepot == null)
 		local weird=true;
 		if (!vehList.IsEmpty())
 			{
-			DWarn("Found a group that can hold "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Moving it there",0);
-			if (!AIGroup.MoveVehicle(vehList.Begin(), veh))	weird=true;
-										else	weird=false;
+			local newgroup=vehList.GetValue(vehList.Begin());
+			DWarn("Found group #"+newgroup+AIGroup.GetName(newgroup)+" that can hold "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Moving it there",0);
+			if (!AIGroup.MoveVehicle(newgroup, veh))	weird=true;
+									else	weird=false;
 			}
 		else	{ DError("Cannot find a group to hold "+INSTANCE.carrier.VehicleGetFormatString(veh),0); }
 		if (weird)	DError("LOL ! And this fail, can only hope "+INSTANCE.carrier.VehicleGetFormatString(veh)+" get destroy itself now. Shoot it !",0);
@@ -490,7 +491,8 @@ switch (AIVehicle.GetVehicleType(veh))
 		AIVehicle.MoveWagonChain(first, 0, newveh, AIVehicle.GetNumWagons(veh) - 1);
 	break;
 	case AIVehicle.VT_ROAD:
-		engine = INSTANCE.carrier.ChooseRoadVeh(road.cargoID);
+		engine = INSTANCE.carrier.GetVehicle(idx);
+		INSTANCE.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
 		newveh=AIVehicle.BuildVehicle(homedepot,engine);
 		AIVehicle.RefitVehicle(newveh, road.cargoID);
 	break;
@@ -637,7 +639,7 @@ local ignore_some=0;
 foreach (vehicle, dummy in tlist)
 	{
 	INSTANCE.Sleep(1);
-	if (ignore_some >4 && AIVehicle.GetVehicleType(vehicle) == AIVehicle.VT_ROAD)	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
+	if (ignore_some >6 && AIVehicle.GetVehicleType(vehicle) == AIVehicle.VT_ROAD)	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 	ignore_some++;
 	age=AIVehicle.GetAgeLeft(vehicle);
 	local topengine=INSTANCE.carrier.VehicleIsTop(vehicle);
@@ -658,12 +660,9 @@ foreach (vehicle, dummy in tlist)
 		continue;
 		}
 	price=INSTANCE.carrier.VehicleGetProfit(vehicle);
-//	DInfo("-> Vehicle "+name+" profits : "+price,2);
 	age=AIVehicle.GetAge(vehicle);
 	if (age > 240 && price < 0 && INSTANCE.OneMonth > 6) // (6 months after new year)
 		{
-		//DInfo("-> Vehicle "+name+" is not making profit, sending it to depot "+price,0);
-		//INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.SELL);
 		age=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 		INSTANCE.builder.RouteIsDamage(age);
 		}
@@ -674,18 +673,13 @@ foreach (vehicle, dummy in tlist)
 		AIVehicle.SendVehicleToDepotForServicing(vehicle);
 		local idx=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 		INSTANCE.builder.RouteIsDamage(idx);
-		INSTANCE.bank.busyRoute=true;
 		continue;
 		}
 	if (topengine != -1)
 		{
-		//if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
 		// reserving money for the upgrade
 		if (!cBanker.CanBuyThat(INSTANCE.carrier.vehnextprice+price))	continue; // no way, we lack funds for it
-/*		if (INSTANCE.carrier.vehnextprice==0)	INSTANCE.carrier.vehnextprice+=price;
-								else	continue; // 1 per 1 upgrade, slower but safer
-*/		
-		INSTANCE.carrier.vehnextprice+=price; // TODO: reenable mass upgrade, look if it's ok
+		INSTANCE.carrier.vehnextprice+=price;
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
 		INSTANCE.bank.busyRoute=true;
