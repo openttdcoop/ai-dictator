@@ -475,8 +475,11 @@ local homedepot=AIVehicle.GetLocation(veh);
 DInfo("Upgrading using depot at "+homedepot,2);
 PutSign(homedepot,"D");
 local money=0;
-//if (railtype > 20) railtype-=20;
-switch (AIVehicle.GetVehicleType(veh))
+local vehtype=AIVehicle.GetVehicleType(veh);
+// if it fail, still we sell the vehicle and don't care
+local oldenginename=INSTANCE.carrier.VehicleGetFormatString(veh);
+INSTANCE.carrier.VehicleSell(veh,false);
+switch (vehtype)
 	{
 	case AIVehicle.VT_RAIL:
 		AIRail.SetCurrentRailType(railtype);
@@ -510,18 +513,16 @@ switch (AIVehicle.GetVehicleType(veh))
 	}
 INSTANCE.builder.IsCriticalError();
 INSTANCE.builder.CriticalError=false;
-AIGroup.MoveVehicle(group,newveh);
-local oldenginename=AIEngine.GetName(AIVehicle.GetEngineType(veh));
-local newenginename=AIVehicle.GetName(newveh)+"("+AIEngine.GetName(AIVehicle.GetEngineType(newveh))+")";
-if (AIVehicle.IsValidVehicle(newveh))
+if (newveh != null && AIVehicle.IsValidVehicle(newveh))
 	{
-	DInfo("-> Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" replace with "+INSTANCE.carrier.VehicleGetFormatString(newveh),0);
+	local newenginename=INSTANCE.carrier.VehicleGetFormatString(newveh);
+	AIGroup.MoveVehicle(group,newveh);
+	DInfo("-> Vehicle "+oldenginename+" replace with "+newenginename,0);
 	AIVehicle.StartStopVehicle(newveh); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
 	INSTANCE.carrier.VehicleBuildOrders(group); // need to build it orders
 	INSTANCE.carrier.vehnextprice-=AIEngine.GetPrice(engine);
 	}
-// if it fail, still we sell the vehicle and don't care
-INSTANCE.carrier.VehicleSell(veh,false);
+if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
 }
 
 function cCarrier::VehicleIsTop_GetUniqID(engine, cargo)
@@ -643,7 +644,7 @@ foreach (vehicle, dummy in tlist)
 	ignore_some++;
 	age=AIVehicle.GetAgeLeft(vehicle);
 	local topengine=INSTANCE.carrier.VehicleIsTop(vehicle);
-	if (topengine == -1)	price=AIEngine.GetPrice(topengine);
+	if (topengine != -1)	price=AIEngine.GetPrice(topengine);
 				else	price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	price+=(0.5*price);
 	// add a 50% to price to avoid try changing an engine and running low on money because of fluctuating money
@@ -678,7 +679,9 @@ foreach (vehicle, dummy in tlist)
 	if (topengine != -1)
 		{
 		// reserving money for the upgrade
-		if (!cBanker.CanBuyThat(INSTANCE.carrier.vehnextprice+price))	continue; // no way, we lack funds for it
+		DInfo("Upgrade engine ! "+INSTANCE.bank.CanBuyThat(INSTANCE.carrier.vehnextprice+price)+" price: "+price+" vehnextprice="+vehnextprice,1);
+		if (!INSTANCE.bank.CanBuyThat(INSTANCE.carrier.vehnextprice+price))	continue; // no way, we lack funds for it
+		
 		INSTANCE.carrier.vehnextprice+=price;
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);

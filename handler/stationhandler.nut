@@ -267,8 +267,8 @@ function cStation::InitNewStation()
 		}
 	// for everyone, the cargos
 	this.vehicle_count=0;
-	this.CargosUpdate();
-	local dummy=this.CanUpgradeStation(); // just to set max_vehicle
 	this.StationSave();
+	//this.CargosUpdate();
+	local dummy=this.CanUpgradeStation(); // just to set max_vehicle
 	}
 

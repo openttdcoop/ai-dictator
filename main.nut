@@ -312,6 +312,7 @@ table.busyroute=builder.building_route;
 table.virtualgroup=cRoute.VirtualAirGroup[0];
 table.dbstation=cStation.stationdatabase.len();
 table.dbroute=cRoute.database.len();
+DInfo("Saving done...",0);
 return table;
 }
  

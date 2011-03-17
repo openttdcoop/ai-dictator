@@ -197,7 +197,12 @@ function cJobs::RefreshValue(jobID)
 		myjob.foule=AITown.GetLastMonthTransported(myjob.sourceID, myjob.cargoID);
 		if (myjob.target_istown)
 			{
-			myjob.cargoAmount=(myjob.cargoAmount+AITown.GetLastMonthProduction(myjob.targetID, myjob.cargoID)) / 2 ;
+			local average=AITown.GetLastMonthProduction(myjob.targetID, myjob.cargoID);
+			if (average < 60 || myjob.cargoAmount < 60) // poor towns makes poor routes
+					{
+					if (average < myjob.cargoAmount)	myjob.cargoAmount=average;
+					}
+					else	myjob.cargoAmount=(myjob.cargoAmount+average) / 2 ; // average towns pop, help find best route
 			myjob.foule+=AITown.GetLastMonthTransported(myjob.targetID, myjob.cargoID);
 			}
 		}

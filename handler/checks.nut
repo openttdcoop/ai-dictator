@@ -97,7 +97,6 @@ if (cCarrier.VirtualAirRoute.len() > 1)
 	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 	}
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
-INSTANCE.builder.BoostedBuys();
 }
 
 function cBuilder::RouteIsDamage(idx)
@@ -138,6 +137,7 @@ function cBuilder::YearlyChecks()
 {
 INSTANCE.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
+INSTANCE.builder.BoostedBuys();
 INSTANCE.carrier.do_profit.Clear();
 INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
 }
