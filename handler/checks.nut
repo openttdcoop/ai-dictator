@@ -217,7 +217,7 @@ foreach (stationID, dummy in allstations)
 	INSTANCE.Sleep(1);
 	local stobj=cStation.GetStationObject(stationID);
 	if (stobj == null) continue;
-	stobj.CargosUpdate();
+	stobj.UpdateStationInfos();
 	foreach (uid, dummy in stobj.owner)
 		{
 		INSTANCE.Sleep(1);

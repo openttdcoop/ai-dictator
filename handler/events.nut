@@ -38,7 +38,11 @@ while (AIEventController.IsEventWaiting())
 			local town = event.GetTownID();
 			INSTANCE.jobs.AddNewIndustryOrTown(industry, true);
 		break;
-*/			
+*/
+		case AIEvent.AI_ET_COMPANY_BANKRUPT:
+			foreach (uid, dummy in cRoute.RouteIndexer)	INSTANCE.builder.RouteIsDamage(uid);
+			// in case someone disapears, set a route health check for all routes
+		break;
 		case AIEvent.AI_ET_INDUSTRY_OPEN:
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();

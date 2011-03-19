@@ -49,7 +49,8 @@ local veh=AIVehicleList();
 if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
 //if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;
 if (INSTANCE.carrier.vehnextprice >0)	INSTANCE.bank.canBuild=false;
-if (INSTANCE.route.GroupIndexer.Count() == 0)	INSTANCE.bank.canBuild=true; // we have 0 route force a build
+local veh=AIVehicleList();
+if (veh.IsEmpty())	INSTANCE.bank.canBuild=true; // we have 0 vehicles force a build
 if (INSTANCE.bank.canBuild) DInfo("Construction is now allowed",1);
 DInfo("canBuild="+INSTANCE.bank.canBuild+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route+" warTreasure="+INSTANCE.carrier.warTreasure,1);
 }
@@ -123,9 +124,10 @@ return success;
 function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
-local tomax=5000000;
-local max=tomax;
-if (AICompany.GetMaxLoanAmount() < tomax)	max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
+//local tomax=5000000;
+//local max=tomax;
+//if (AICompany.GetMaxLoanAmount() < tomax)	max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
+local max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
 INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
 }
 

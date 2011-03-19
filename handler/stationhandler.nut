@@ -40,7 +40,9 @@ static	function GetStationObject(stationID)
 	radius		= null;	// radius of the station
 	vehicle_count	= null;	// vehicle using that station
 	vehicle_max		= null;	// max vehicle that station could handle
+	vehicle_capacity	= null;	// total capacity of all vehicle using the station, item=cargoID, value=capacity
 	owner			= null;	// list routes that own that station
+	lastUpdate		= null;	// record last date we update infos for the station
 	
 	constructor()
 		{
@@ -57,10 +59,62 @@ static	function GetStationObject(stationID)
 		cargo_accept	= AIList();
 		radius		= 0;
 		vehicle_count	= 0;	
-		vehicle_max		= 0;	
+		vehicle_max		= 0;
+		vehicle_capacity	= AIList();
 		owner			= AIList();
+		lastUpdate		= 0;
 		}
 }
+
+function cStation::UpdateStationInfos()
+// Update informations for that station if informations are old enough
+	{
+	local now=AIDate.GetCurrentDate();
+	if ( (now - this.lastUpdate) < 2)	return false;
+	this.lastUpdate=now;
+	this.UpdateCapacity();
+	this.UpdateCargos();
+	}
+
+function cStation::UpdateCapacity()
+// Update the capacity of vehicles using the station
+	{
+	local temp=AIVehicleList_Station(this.stationID);
+	if (temp.IsEmpty())	return;
+	local allveh=AIList();	// keep compatibility with 1.0.4, 1.0.5
+	allveh.AddList(temp);
+	temp=AICargoList();
+	local allcargos=AIList();
+	allcargos.AddList(temp);
+	foreach (cargoID, dummy in allcargos)	allcargos.SetValue(cargoID, 0);
+	foreach (veh, vehdummy in allveh)
+		{
+		local vehcapacity=0;
+		local vehtype=AIVehicle.GetVehicleType(veh);
+		if (vehtype == AIVehicle.VT_AIR)
+			{  // for aircrafts we only check passenger capacity, because mail capacity would make it fail else
+			local cargoID=cCargo.GetPassengerCargo();
+			vehcapacity=AIVehicle.GetCapacity(veh, cargoID);
+			local stacapacity=allcargos.GetValue(cargoID);
+			if (vehcapacity > 0)	allcargos.SetValue(cargoID, stacapacity+vehcapacity);
+			INSTANCE.Sleep(1);
+			}
+		else	{
+			foreach (cargoID, fullcapacity in allcargos)
+				{
+				vehcapacity=AIVehicle.GetCapacity(veh, cargoID);
+				if (vehcapacity > 0)
+					{
+					allcargos.SetValue(cargoID, fullcapacity+vehcapacity);
+					break;
+					}
+				INSTANCE.Sleep(1);
+				}
+			}
+		}
+	this.vehicle_capacity.Clear();
+	this.vehicle_capacity.AddList(allcargos);
+	}
 
 function cStation::StationSave()
 // Save the station in the database
@@ -124,7 +178,7 @@ function cStation::FindStationType(stationid)
 	return -1;
 	}
 
-function cStation::CargosUpdate()
+function cStation::UpdateCargos()
 // Update information for cargos
 	{
 	this.cargo_produce.Clear();
@@ -268,7 +322,6 @@ function cStation::InitNewStation()
 	// for everyone, the cargos
 	this.vehicle_count=0;
 	this.StationSave();
-	//this.CargosUpdate();
 	local dummy=this.CanUpgradeStation(); // just to set max_vehicle
 	}
 

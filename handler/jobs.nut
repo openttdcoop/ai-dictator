@@ -256,6 +256,9 @@ function cJobs::QuickRefresh()
 		local j=cJobs.GetJobObject(item);
 		if (!cBanker.CanBuyThat(j.moneyToBuild))	smallList.RemoveItem(item);
 		}
+	smallList.KeepTop(5);
+	if (INSTANCE.safeStart > 0 && smallList.IsEmpty())	INSTANCE.safeStart=0; // disable it if we cannot find any jobs
+	foreach (uid, value in smallList)	INSTANCE.builder.DumpJobs(uid);
 	return smallList;
 	}
 

@@ -122,9 +122,15 @@ function cRoute::RouteUpdateVehicle()
 		this.vehicle_count=maillist.Count()+passlist.Count();
 		return;
 		}
-	if (this.source_entry)	this.source.vehicle_count=AIVehicleList_Station(this.source.stationID).Count();
+	if (this.source_entry)	{ 
+					this.source.vehicle_count=AIVehicleList_Station(this.source.stationID).Count();
+					this.source.UpdateCapacity();
+					}
 				else	this.source.vehicle_count=0;
-	if (this.target_entry)	this.target.vehicle_count=AIVehicleList_Station(this.target.stationID).Count();
+	if (this.target_entry)	{
+					this.target.vehicle_count=AIVehicleList_Station(this.target.stationID).Count();
+					this.target.UpdateCapacity();
+					}
 				else	this.target.vehicle_count=0;
 	local vehingroup=AIVehicleList_Group(this.groupID);
 	this.vehicle_count=vehingroup.Count();

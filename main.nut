@@ -79,6 +79,7 @@ class DictatorAI extends AIController
 	jobs_obj = null;
 	route = null;
 	buildTimer=null;
+	safeStart=null;
 
    constructor()
    	{
@@ -105,6 +106,7 @@ class DictatorAI extends AIController
 	jobs_obj = null;
 	route = cRoute();
 	buildTimer=0;
+	safeStart=3;
 	} 
  }
  
@@ -216,7 +218,7 @@ function DictatorAI::Start()
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
 				if (builder.building_route != -1)
 					{
-					builder.DumpTopJobs();
+					//builder.DumpTopJobs();
 					jobs_obj=cJobs.GetJobObject(builder.building_route);
 					route=cRoute(); // reset it
 					route.CreateNewRoute(builder.building_route);
@@ -430,6 +432,12 @@ switch (fairlevel)
 use_boat=false; // we will handle boats later
 //use_air=false;
 use_train=false;
+if (INSTANCE.safeStart >0)
+	{ // Keep only road
+	use_boat=false;
+	use_train=false;
+	use_air=false;
+	}
 }
 
 function DictatorAI::ListToArray(list)

@@ -146,6 +146,7 @@ switch (chem.route_type)
 		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;
 	break;
 	case RouteType.AIRNET:
+		thatstation.CheckAirportLimits(); // force recheck limits
 		if (thatstation.CanUpgradeStation())
 			{
 			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID))	return false;
@@ -163,6 +164,7 @@ switch (chem.route_type)
 		if (chem.vehicle_count+1 > 4)	return false;
 	break;
 	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
+		thatstation.CheckAirportLimits(); // force recheck limits
 		if (thatstation.CanUpgradeStation())
 			{
 			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID)) return false;
@@ -172,7 +174,6 @@ switch (chem.route_type)
 		DInfo(airname+"Limit for that route (classic): "+chem.vehicle_count+"/"+limitmax,1);
 		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (!INSTANCE.use_air)	return false;
-		thatstation.CheckAirportLimits(); // force recheck limits
 		if (chem.vehicle_count+1 > limitmax)	return false;
 		// limit by route limit
 		if (thatstation.vehicle_count+1 > thatstation.vehicle_max)	return false;

@@ -230,11 +230,14 @@ INSTANCE.bank.busyRoute=false; // setup the flag
 local priority=AIList();
 local road=null;
 local chopper=false;
+local dual=false;
 INSTANCE.route.DutyOnAirNetwork(); // we handle the network load here
 foreach (uid, dummy in cRoute.RouteIndexer)
 	{
+	firstveh=false;
 	road=cRoute.GetRouteObject(uid);
 	if (road==null)	continue;
+	if (!road.isWorking)	continue;
 	if (road.route_type == RouteType.AIRNET)	continue;
 	if (road.source == null)	continue;
 	if (road.target == null)	continue;
@@ -268,45 +271,54 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			continue; // no train upgrade for now will do later
 		break;
 		}
-	local capacity=INSTANCE.carrier.GetGroupLoadCapacity(road.groupID);
-	DInfo("Total capacity="+capacity+" enginecapacity="+futur_engine_capacity,2);
+	road.source.UpdateStationInfos();
+	road.target.UpdateStationInfos();
 	local vehneed=0;
-	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicule on a route
+	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
+	if (firstveh)	DInfo("# vehicle"+road.vehicle_count,2);
 	local vehonroute=road.vehicle_count;
-	local dstcargowait=AIStation.GetCargoWaiting(road.target.stationID,cargoid);
-	local srccargowait=AIStation.GetCargoWaiting(road.source.stationID,cargoid);
-	local cargowait=srccargowait;
-	if (road.source_istown && dstcargowait < srccargowait) cargowait=dstcargowait;
-
-
-	if (capacity > 0)	{
-				local remain=cargowait - capacity;
-				if (remain <= 0)	vehneed=0;
-						else	vehneed=(cargowait / capacity)+1;
-				}
-			else	{// This happen when we don't have a vehicle -> 0 vehicle = new route certainly
-				vehneed=1;
-				local producing=0;
-				if (road.source_istown)
-					{
-					local prodsrc=AITown.GetLastMonthProduction(road.sourceID,cargoid);
-					local proddst=AITown.GetLastMonthProduction(road.targetID,cargoid);
-					producing=prodsrc;
-					if (prodsrc > proddst)	producing=proddst;
-					}
-				else	{ producing=AIIndustry.GetLastMonthProduction(road.sourceID,cargoid); }
-				if (road.route_type == AIVehicle.VT_ROAD)	{ vehneed= producing / futur_engine_capacity; }
-				if (vehneed > INSTANCE.carrier.road_upgrade)	{ vehneed = INSTANCE.carrier.road_upgrade; }
-				// limit first estimation to not upgrade a station
-				}
-	DInfo("vehneed by capacity: "+vehneed,2);
-	if (firstveh && vehneed < 2) vehneed=2;
-	if (firstveh && road.route_type == RouteType.RAIL) { vehneed = 1; }
-	if (firstveh && chopper)	{ vehneed = 1; }
-
+	local cargowait=0;
+	local capacity=0;
+//road.source.vehicle_capacity.GetValue(cargoID);
+	dual=road.source_istown; // we need to check both side if source is town we're on a dual route (pass or mail)
+	cargowait=road.source.cargo_produce.GetValue(cargoid);
+	capacity=road.source.vehicle_capacity.GetValue(cargoid);
+	if (capacity==0)
+		{
+		if (road.source_istown)	cargowait=AITown.GetLastMonthProduction(road.sourceID, cargoid);
+					else	cargowait=AIIndustry.GetLastMonthProduction(road.sourceID, cargoid);
+		capacity=futur_engine_capacity;
+		}
+	if (dual)
+		{
+		local src_capacity=capacity;
+		local dst_capacity= road.target.vehicle_capacity.GetValue(cargoid);
+		local src_wait = cargowait;
+		local dst_wait = road.target.cargo_produce.GetValue(cargoID);
+		if (dst_capacity == 0)	{ dst_wait=AITown.GetLastMonthProduction(road.targetID,cargoid); dst_capacity=futur_engine_capacity; }
+		if (src_wait < dst_wait)	cargowait=src_wait; // keep the lowest cargo amount
+						else	cargowait=dst_wait;
+		if (src_capacity < dst_capacity)	capacity=dst_capacity; // but keep the highest capacity we have
+							else	capacity=src_capacity;
+		DInfo("Source capacity="+src_capacity+" wait="+src_wait+" --- Target capacity="+dst_capacity+" wait="+dst_wait,2);
+		}
+	local remain = cargowait - capacity;
+	if (remain < 0)	vehneed=0;
+			else	vehneed = (cargowait / capacity)+1;
+	DInfo("Capacity ="+capacity+" wait="+cargowait+" remain="+remain+" needbycapacity="+vehneed,2);
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
 	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 && cargowait==0)	vehneed++;
+	if (firstveh)
+		{
+		if (road.route_type == RouteType.ROAD || road.route_type == RouteType.AIR)
+			{ // force 2 vehicle if none exists yet for truck/bus & aircraft
+			if (road.source.owner.Count()==1 && road.target.owner.Count()==1 && vehneed < 2)	vehneed=2;
+			}
+		else	vehneed=1; // everyones else is block to 1 vehicle
+		if (vehneed > road.source.vehicle_max)	vehneed=road.source.vehicle_max;
+		}
+	if (vehneed > 4)	vehneed=4; // max 4 at a time
 	local canaddonemore=INSTANCE.carrier.CanAddNewVehicle(uid, true);
 	if (!canaddonemore)	vehneed=0; // don't let us buy a new vehicle if we won't be allow to buy it	
 	DInfo("CanAddNewVehicle for source station says "+canaddonemore,2);
@@ -319,6 +331,8 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		{
 		INSTANCE.bank.busyRoute=true;
 		priority.AddItem(road.groupID,vehneed); // we record all groups needs for vehicle
+		road.source.vehicle_capacity.SetValue(cargoid, road.source.vehicle_capacity.GetValue(cargoid)+(vehneed*futur_engine_capacity));
+		road.target.vehicle_capacity.SetValue(cargoid, road.target.vehicle_capacity.GetValue(cargoid)+(vehneed*futur_engine_capacity));
 		}
 	}
 
