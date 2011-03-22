@@ -233,14 +233,14 @@ DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationI
 local handling=true;
 if (start)
 	{
-	if (!compare.cargo_produce.HasItem(INSTANCE.route.cargoID))
+	if (!compare.IsCargoProduce(INSTANCE.route.cargoID))
 		{
 		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't produce "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
 		handling=false;
 		}
 	}
 else	{
-	if (!compare.cargo_accept.HasItem(INSTANCE.route.cargoID))
+	if (!compare.IsCargoAccept(INSTANCE.route.cargoID))
 		{
 		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't accept "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
 		handling=false;
@@ -260,10 +260,6 @@ if (start)	{ startistown=INSTANCE.route.source_istown; goal=INSTANCE.route.sourc
 if (startistown)
 	{ // check if the station is also influencing our town
 	tilecheck=cTileTools.IsWithinTownInfluence(compare.stationID,goal);
-	// for airports, the IsWithinTownInfluence always fail
-	//if (!tilecheck && INSTANCE.route.station_type == AIStation.STATION_AIRPORT)
-		//if (AIAirport.
-//	if (!tilecheck && AIStation.HasStationType(INSTANCE.route.station_type) == AIStation.STATION_AIRPORT)
 	if (!tilecheck)	
 		{
 		DInfo("Station is outside "+AITown.GetName(goal)+" influence",2);
@@ -287,7 +283,7 @@ else	{ // check the station is within our industry
 DInfo("Checking if station can accept more vehicles",1);
 // TODO: fix that fast !!! We are giving stationID to a function that need routeID
 /*
-if (!INSTANCE.carrier.CanAddNewVehicle(compare.stationID,start))
+if (!INSTANCE.carrier.CanAddNewVehicle(compare.stationID,start,1))
 	{
 	DInfo("Station cannot get more vehicle, even compatible, we need a new one",1);
 	return false;
@@ -441,6 +437,7 @@ if (INSTANCE.route.status==5)
 	{ // check the route is really valid
 	if (INSTANCE.route.route_type == AIVehicle.VT_ROAD)
 		{
+		INSTANCE.route.CheckEntry();
 		success=INSTANCE.builder.CheckRoadHealth(INSTANCE.route.UID);
 		}
 	else	{ success=true; } // other route type for now are ok

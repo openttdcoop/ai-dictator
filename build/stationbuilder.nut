@@ -439,7 +439,7 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 	}
 else	{
 	INSTANCE.bank.RaiseFundsBigTime(); ClearSignsALL();
-	DInfo("Road info: "+tile+" direction"+direction+" type="+stationtype+" mod="+newstation);
+	DInfo("Road info: "+tile+" direction"+direction+" type="+stationtype+" mod="+newstation,2);
 	PutSign(tile,"s"); PutSign(direction,"c");
 	success=AIRoad.BuildRoadStation(tile, direction, stationtype, newstation);
 	if (!success)

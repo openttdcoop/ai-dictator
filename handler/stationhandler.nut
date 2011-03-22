@@ -33,10 +33,8 @@ static	function GetStationObject(stationID)
 						// for road, value = front tile location
 						// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper, 3=townID attach to it
 	depot			= null;	// depot position and id are the same
-	rating		= null;	// item=cargos, value=rating
-	cargo_produce	= null;	// cargos ID, amount waiting as value
-	cargo_rating	= null;	// cargos ID, rating as value
-	cargo_accept	= null;	// cargos ID, amount as value of cargos the station handle
+	cargo_produce	= null;	// cargos ID produce at station, value = amount waiting
+	cargo_accept	= null;	// cargos ID accept at station, value = cargo rating
 	radius		= null;	// radius of the station
 	vehicle_count	= null;	// vehicle using that station
 	vehicle_max		= null;	// max vehicle that station could handle
@@ -53,9 +51,7 @@ static	function GetStationObject(stationID)
 		maxsize		= 1;
 		locations		= AIList();
 		depot			= null;
-		rating		= AIList();
 		cargo_produce	= AIList();
-		cargo_rating	= AIList();
 		cargo_accept	= AIList();
 		radius		= 0;
 		vehicle_count	= 0;	
@@ -70,10 +66,37 @@ function cStation::UpdateStationInfos()
 // Update informations for that station if informations are old enough
 	{
 	local now=AIDate.GetCurrentDate();
-	if ( (now - this.lastUpdate) < 2)	return false;
-	this.lastUpdate=now;
+	if ( (now - this.lastUpdate) < 7)	return false;
 	this.UpdateCapacity();
+	this.lastUpdate=now;
 	this.UpdateCargos();
+	}
+
+function cStation::UpdateCargos(stationID=null)
+// Update Cargos waiting & rating at station
+	{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+				else	thatstation=cStation.GetStationObject(stationID);
+	local allcargos=AIList();
+	allcargos.AddList(thatstation.cargo_produce);
+	allcargos.AddList(thatstation.cargo_accept);
+	foreach (cargo, value in allcargos)
+		{
+		INSTANCE.Sleep(1);
+		if (thatstation.cargo_produce.HasItem(cargo))
+			{
+			local waiting=AIStation.GetCargoWaiting(thatstation.stationID, cargo);
+			thatstation.cargo_produce.SetValue(cargo, waiting);
+			DInfo("CARGOS-> Station #"+thatstation.stationID+" "+AIStation.GetName(thatstation.stationID)+" produce "+AICargo.GetCargoLabel(cargo)+" with "+waiting+" units",2);
+			}
+		if (thatstation.cargo_accept.HasItem(cargo))
+			{
+			local rating=AIStation.GetCargoRating(thatstation.stationID, cargo);
+			thatstation.cargo_accept.SetValue(cargo, rating);
+			DInfo("CARGOS-> Station #"+thatstation.stationID+" "+AIStation.GetName(thatstation.stationID)+" accept "+AICargo.GetCargoLabel(cargo)+" with "+rating+" rating",2);
+			}
+		}
 	}
 
 function cStation::UpdateCapacity()
@@ -178,26 +201,55 @@ function cStation::FindStationType(stationid)
 	return -1;
 	}
 
-function cStation::UpdateCargos()
-// Update information for cargos
+function cStation::IsCargoProduce(cargoID, stationID=null)
+// Check if a cargo is produce at that station
 	{
-	this.cargo_produce.Clear();
-	this.cargo_accept.Clear();
-	this.cargo_rating.Clear();
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+				else	thatstation=cStation.GetStationObject(stationID);
+	if (thatstation == null)	return;
+	return thatstation.cargo_produce.HasItem(cargoID);
+	}
+
+function cStation::IsCargoAccept(cargoID, stationID=null)
+// Check if a cargo is accept at that station
+	{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+				else	thatstation=cStation.GetStationObject(stationID);
+	if (thatstation == null)	return;
+	return thatstation.cargo_accept.HasItem(cargoID);
+	}
+
+function cStation::CheckCargoHandleByStation(stationID=null)
+// Check what cargo is accept or produce at station
+	{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+				else	thatstation=cStation.GetStationObject(stationID);
+	if (thatstation == null)	return;
+	thatstation.cargo_produce.Clear();
+	thatstation.cargo_accept.Clear();
 	local cargolist=AICargoList();
-	foreach (tiles, dummy in this.locations)
+	foreach (tiles, dummy in thatstation.locations)
+		{
+		INSTANCE.Sleep(1);
 		foreach (cargo_id, dummy in cargolist)
 			{
-			INSTANCE.Sleep(1);
-			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, this.radius);
-			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, this.radius);
-			if (accept > 7)	this.cargo_accept.AddItem(cargo_id, accept);
-			if (produce > 0)	
-				{
-				this.cargo_produce.AddItem(cargo_id, AIStation.GetCargoWaiting(this.stationID, cargo_id));
-				this.cargo_rating.AddItem(cargo_id, AIStation.GetCargoRating(this.stationID, cargo_id));
-				}
+			local valid=true;
+			if (thatstation.stationType == AIStation.STATION_BUS_STOP && cargo_id != cCargo.GetPassengerCargo())	valid=false;
+			if (thatstation.stationType == AIStation.STATION_TRUCK_STOP && cargo_id == cCargo.GetPassengerCargo())	valid=false;
+			if (thatstation.stationType == AIStation.STATION_AIRPORT && cargo_id != cCargo.GetPassengerCargo() && cargo_id != cCargo.GetMailCargo())	valid=false;
+			if (thatstation.cargo_accept.HasItem(cargo_id) && thatstation.cargo_produce.HasItem(cargo_id))	valid=false;
+			if (!valid)	continue;
+			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.radius);
+			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.radius);
+			local valid=true;
+			if (accept > 7 && valid)	thatstation.cargo_accept.AddItem(cargo_id, accept);
+			if (produce > 0 && valid)	thatstation.cargo_produce.AddItem(cargo_id, produce);
 			}
+		}
+	//thatstation.UpdateCargos();
 	}
 
 function cStation::DeleteStation(stationid)
@@ -229,6 +281,7 @@ function cStation::ClaimOwner(uid)
 		{
 		this.owner.AddItem(uid,1);
 		DInfo("STATIONS -> Route #"+uid+" claims station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
+		this.UpdateStationInfos()
 		}
 	}
 
@@ -239,6 +292,7 @@ function cStation::OwnerReleaseStation(uid)
 		{
 		this.owner.RemoveItem(uid);
 		DInfo("STATIONS -> Route #"+uid+" release station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
+		this.UpdateStationInfos();
 		if (this.owner.IsEmpty())
 			{
 			INSTANCE.builder.DeleteStation(uid, this.stationID);
@@ -323,5 +377,12 @@ function cStation::InitNewStation()
 	this.vehicle_count=0;
 	this.StationSave();
 	local dummy=this.CanUpgradeStation(); // just to set max_vehicle
+	this.CheckCargoHandleByStation();
+	this.UpdateStationInfos();
 	}
 
+function cStation::IsStationVirtual(stationID)
+// return true if the station is part of the airnetwork
+	{
+	return (cCarrier.VirtualAirRoute.len() > 1 && cStation.VirtualAirports.HasItem(stationID));
+	}

@@ -263,10 +263,15 @@ switch (road.route_type)
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
 	case AIVehicle.VT_WATER:
+		oneorder=AIOrder.AIOF_FULL_LOAD_ANY;
+		twoorder=AIOrder.AIOF_FULL_LOAD_ANY;
+		srcplace= AIStation.GetLocation(road.source.stationID);
+		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
 	case RouteType.AIRNET: // it's the air network
 		INSTANCE.carrier.AirNetworkOrdersHandler();
 		return true;
+	break;
 	case RouteType.CHOPPER:
 		oneorder=AIOrder.AIOF_FULL_LOAD_ANY;
 		twoorder=AIOrder.AIOF_FULL_LOAD_ANY;
@@ -312,6 +317,7 @@ local veh=null;
 local group=null;
 foreach (ownID, dummy in station.owner)
 	{
+	if (ownID == 1)	continue; // ignore virtual mail route, route 0 will re-reroute route 1 already
 	road=cRoute.GetRouteObject(ownID);
 	if (reroute)
 		{
@@ -330,8 +336,11 @@ foreach (ownID, dummy in station.owner)
 		if (vehlist.IsEmpty()) return false;
 		veh=vehlist.Begin();
 		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
-		if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
-			{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2); }
+		if (orderindex != -1)
+			{
+			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
+				{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2); }
+			}
 		}
 	else	{ INSTANCE.carrier.VehicleBuildOrders(road.groupID); }
 	}
@@ -347,11 +356,34 @@ local homedepot = null;
 if (road != null)	homedepot=road.GetRouteDepot();
 if (homedepot == null)
 	{
+	local tile=AIVehicle.GetLocation(veh);
+	local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
+	if (isDepot)
+		{
+		DInfo("Cannot find depot for "+INSTANCE.carrier.VehicleGetFormatString(veh)+" but it is at a depot :P",0);
+		AIVehicle.StartStopVehicle(veh);
+		INSTANCE.Sleep(10);
+		tile=AIVehicle.GetLocation(veh);
+		isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
+		if (!isDepot)	AIVehicle.StartStopVehicle(veh);
+		return;
+		}
 	if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false;
 	DError("DOH! Cannot find any depot to send "+INSTANCE.carrier.VehicleGetFormatString(veh)+" to !",0);
+	if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_AIR)
+		{
+		local virtgroup=cRoute.GetVirtualAirPassengerGroup();
+		local ingroup=AIVehicle.GetGroupID(veh);
+		if (ingroup != virtgroup)
+			{
+			DInfo("Moving the aircraft to virtual network as backup",1);
+			AIGroup.MoveVehicle(virtgroup, veh);
+			return;
+			}
+		}
 	if (AIVehicle.SendVehicleToDepot(veh)) // it might find a depot near, let's hope
 		{
-		DWarn("Looks like "+INSTANCE.carrier.VehicleGetFormatString(veh)+" found a depot in its way");
+		DWarn("Looks like "+INSTANCE.carrier.VehicleGetFormatString(veh)+" found a depot in its way",0);
 		INSTANCE.carrier.ToDepotList.AddItem(veh,DepotAction.SELL);
 		}
 	else	{
@@ -380,16 +412,25 @@ if (homedepot == null)
 		
 AIOrder.UnshareOrders(veh);
 INSTANCE.carrier.VehicleOrdersReset(veh);
+AIOrder.AppendOrder(veh, AIStation.GetLocation(road.source_stationID), AIOrder.AIOF_NONE);
+AIOrder.AppendOrder(veh, AIStation.GetLocation(road.target_stationID), AIOrder.AIOF_NONE);
+local orderindex=AIOrder.GetOrderCount(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
 // And another one day i will kills all vehicles that refuse to go to a depot !!!
-homedepot=road.target.depot;
+if (road.target_entry)	homedepot=road.target.depot;
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
+AIOrder.SkipToOrder(veh, orderindex);
+local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
+local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
+INSTANCE.Sleep(5);	// wait it to move a bit
+local newtake=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
+if (newtake > dist)	{ DInfo("Reversing direction of "+INSTANCE.carrier.VehicleGetFormatString(veh),1); AIVehicle.ReverseVehicle(veh); }
 // twice time, even we get caught by vehicle orders check, it will ask to send the vehicle.... to depot
 DInfo("Setting depot order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2);
 }
@@ -561,7 +602,7 @@ switch (AIVehicle.GetVehicleType(veh))
 	case AIVehicle.VT_AIR:
 		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 		road=cRoute.GetRouteObject(idx);
-		if (road == null) return;		
+		if (road == null) return -1;		
 		local modele=AircraftType.EFFICIENT;
 		if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST;
 		if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER;
@@ -570,6 +611,7 @@ switch (AIVehicle.GetVehicleType(veh))
 		top = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
 	break;
 	}
+if (top == null)	top = -1;
 if (ourEngine == top)	{
 			DInfo("Adding engine "+AIEngine.GetName(ourEngine)+" to vehicle top list",1);
 			INSTANCE.carrier.TopEngineList.AddItem(uniqID, ourEngine);

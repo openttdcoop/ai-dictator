@@ -79,7 +79,7 @@ result=INSTANCE.builder.BuildAirStation(start, firstroute.UID);
 if (!result) // should have pray a bit more, fail to build a bigger airport
 	{
 	INSTANCE.builder.CriticalError=false;
-	local result=INSTANCE.builder.AirportMaker(oldplace, oldtype);
+	result=INSTANCE.builder.AirportMaker(oldplace, oldtype);
 	}
 //INSTANCE.chemin.under_upgrade=false;
 if (!result) // and we also fail to rebuild the old one! We have kill that route (and maybe many more!)

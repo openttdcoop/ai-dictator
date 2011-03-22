@@ -97,6 +97,13 @@ if (cCarrier.VirtualAirRoute.len() > 1)
 	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 	}
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
+local stationList=AIList();	// check for no more working station if cargo disapears...
+stationList.AddList(AIStationList(AIStation.STATION_ANY));
+foreach (stationID, dummy in stationList)
+	{
+	INSTANCE.Sleep(1);
+	cStation.CheckCargoHandleByStation(stationID);
+	}
 }
 
 function cBuilder::RouteIsDamage(idx)

@@ -106,7 +106,7 @@ class DictatorAI extends AIController
 	jobs_obj = null;
 	route = cRoute();
 	buildTimer=0;
-	safeStart=3;
+	safeStart=0;
 	} 
  }
  
@@ -138,25 +138,21 @@ function DictatorAI::Start()
 			obj.depot=all_stations[i+5];
 			obj.radius=all_stations[i+6];
 			local counter=all_stations[i+7];
-			DInfo("counter="+counter+ " i="+i);
 			local nextitem=i+8+counter;
-			DInfo("nextitem="+nextitem);
 			local temparray=[];
 			for (local z=0; z < counter; z++)	temparray.push(all_stations[i+8+z]);
 			obj.locations=ArrayToList(temparray);
 			counter=all_stations[nextitem];
-			DInfo("2nd counter="+counter);
 			temparray=[];
 			for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
 			i=nextitem+counter;
-			DInfo("new i="+i);
 			iter++;
 			//obj.owner=ArrayToList(temparray);
 			//if (obj.owner.IsEmpty())	DWarn("Station "+AIStation.GetName(obj.stationID)+" is not own by any route",0);
 			cStation.stationdatabase[obj.stationID] <- obj;
 			}
 		DInfo(iter+" stations found.",0);
-		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,0);
+		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1);
 		DInfo("Restoring routes",0);
 		iter=0;
 		local all_routes=bank.canBuild;
@@ -188,13 +184,20 @@ function DictatorAI::Start()
 			}
 		cRoute.RouteRebuildIndex();
 		DInfo(iter+" routes found.",0);
-		DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,0);
-
+		DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2);
 		OneWeek=0;
 		OneMonth=0;
 		bank.canBuild=false;
 		bank.unleash_road=false;
 		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0);
+		local stationList=AIList();	// check for no more working station if cargo disapears...
+		stationList.AddList(AIStationList(AIStation.STATION_ANY));
+		foreach (stationID, dummy in stationList)
+			{
+			INSTANCE.Sleep(1);
+			cStation.CheckCargoHandleByStation(stationID);
+			}
+		INSTANCE.route.VirtualAirNetworkUpdate();
 		}
 	 else {
 		AIInit();
@@ -202,6 +205,7 @@ function DictatorAI::Start()
 		bank.SaveMoney();
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
+		safeStart=3;
 		}
 	bank.Update();
 	while(true)

@@ -479,6 +479,7 @@ function cJobs::JobIsNotDoable(uid)
 // set the undoable status for that jobs & rebuild our index
 	{
 	local badjob=cJobs.GetJobObject(uid);
+	if (badjob == null) return;
 	badjob.isdoable=false;
 	cJobs.UpdateDoableJobs();
 	}

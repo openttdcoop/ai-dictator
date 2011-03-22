@@ -454,6 +454,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 {
 local repair=cRoute.GetRouteObject(routeUID);
 if (repair == null)	{ DInfo("Cannot load that route for a repair.",1); repair=INSTANCE.route; }
+if (!repair.source_entry || !repair.target_entry)	return false;
 local good=true;
 local space="        ";
 local correction=false;
