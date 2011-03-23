@@ -412,8 +412,8 @@ if (homedepot == null)
 		
 AIOrder.UnshareOrders(veh);
 INSTANCE.carrier.VehicleOrdersReset(veh);
-AIOrder.AppendOrder(veh, AIStation.GetLocation(road.source_stationID), AIOrder.AIOF_NONE);
-AIOrder.AppendOrder(veh, AIStation.GetLocation(road.target_stationID), AIOrder.AIOF_NONE);
+if (road.source_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocation(road.source_stationID), AIOrder.AIOF_NONE);
+if (road.target_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocation(road.target_stationID), AIOrder.AIOF_NONE);
 local orderindex=AIOrder.GetOrderCount(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto depot order",2); }
