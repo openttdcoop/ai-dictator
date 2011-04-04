@@ -322,7 +322,7 @@ function cStation::CheckAirportLimits()
 	if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
 	this.locations.SetValue(this.locations.Begin(), planetype);
 	this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
-	local virtualized=(cCarrier.VirtualAirRoute.len() > 1 && cStation.VirtualAirports.HasItem(this.stationID));
+	local virtualized=cStation.IsStationVirtual(this.stationID);
 	// get out of airnetwork if the network is too poor
 	local rawlimit=INSTANCE.carrier.AirportTypeLimit[this.specialType];
 	DInfo("rawlimit="+rawlimit+" type="+this.specialType,1);

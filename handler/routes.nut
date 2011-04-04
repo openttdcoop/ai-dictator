@@ -259,6 +259,10 @@ function cRoute::CreateNewRoute(UID)
 		break;
 		case	RouteType.AIR:
 			this.station_type=AIStation.STATION_AIRPORT;
+			local randcargo=AIBase.RandRange(100);
+			if (randcargo >49)	this.cargoID=cCargo.GetMailCargo();
+						else	this.cargoID=cCargo.GetPassengerCargo();
+			DInfo("Airport work ! Choosen : "+randcargo+" "+AICargo.GetCargoLabel(this.cargoID),1);
 		break;
 		}
 	this.isWorking = false;

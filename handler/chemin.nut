@@ -239,7 +239,6 @@ if (INSTANCE.carrier.vehnextprice > 0 && INSTANCE.carrier.vehnextprice < INSTANC
 	return;
 	}
 local firstveh=false;
-INSTANCE.bank.busyRoute=false; // setup the flag
 local priority=AIList();
 local road=null;
 local chopper=false;
@@ -327,22 +326,19 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		{
 		if (road.route_type == RouteType.ROAD || road.route_type == RouteType.AIR)
 			{ // force 2 vehicle if none exists yet for truck/bus & aircraft
-			if (road.source.owner.Count()==1 && road.target.owner.Count()==1 && vehneed < 2)	vehneed=2;
+			if (vehneed < 2)	vehneed=2;
 			}
 		else	vehneed=1; // everyones else is block to 1 vehicle
+		if (vehneed > 4)	vehneed=4; // max 4 at a time
 		}
-	else	{ // only test limits when route have more than 0 vehicle on it
-		vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, true, vehneed);
-		DInfo("CanAddNewVehicle for source station says "+vehneed,2);
-		vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, false, vehneed);
-		DInfo("CanAddNewVehicle for destination station says "+vehneed,2);
-		}
-	if (vehneed > 4)	vehneed=4; // max 4 at a time
+	vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, true, vehneed);
+	DInfo("CanAddNewVehicle for source station says "+vehneed,2);
+	vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, false, vehneed);
+	DInfo("CanAddNewVehicle for destination station says "+vehneed,2);
 	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
 	// adding vehicle
 	if (vehneed > 0)
 		{
-		INSTANCE.bank.busyRoute=true;
 		priority.AddItem(road.groupID,vehneed); // we record all groups needs for vehicle
 		road.source.vehicle_capacity.SetValue(cargoid, road.source.vehicle_capacity.GetValue(cargoid)+(vehneed*futur_engine_capacity));
 		road.target.vehicle_capacity.SetValue(cargoid, road.target.vehicle_capacity.GetValue(cargoid)+(vehneed*futur_engine_capacity));
@@ -351,6 +347,9 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 
 // now we can try add others needed vehicles here but base on priority
 // and priority = aircraft before anyone, then others, in both case, we range from top group profit to lowest
+local allneed=0;
+local allbuy=0;
+INSTANCE.bank.busyRoute=false;
 DInfo("Priority list size : "+priority.Count(),2);
 if (priority.IsEmpty())	return;
 local priosave=AIList();
@@ -376,7 +375,7 @@ INSTANCE.carrier.highcostAircraft=0;
 DInfo("Priority list="+priority.Count()+" Saved list="+priosave.Count(),1);
 foreach (groupid, ratio in priority)
 	{
-	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicle",1); }
+	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicle",1); allneed+=vehneed; }
 						else	{ vehneed=0; DWarn("Group #"+groupid++" "+AIGroup.GetName(groupid)+" not found in priority list!",1); }
 	if (vehneed == 0) continue;
 	local uid=cRoute.GroupIndexer.GetValue(groupid);
@@ -396,9 +395,11 @@ foreach (groupid, ratio in priority)
 					{
 					local rinfo=cRoute.GetRouteObject(uid);
 					DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0);
+					allbuy++;
 					INSTANCE.carrier.vehnextprice=0; INSTANCE.carrier.highcostAircraft=0;
 					}
 		}
 	}
+if (allbuy < allneed)	INSTANCE.bank.busyRoute=true;
 }
 

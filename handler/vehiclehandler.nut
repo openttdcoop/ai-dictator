@@ -177,6 +177,13 @@ local passgroup=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
 local allgroup=AIList();
 allgroup.AddList(mailgroup);
 allgroup.AddList(passgroup);
+allgroup.Valuate(AIVehicle.GetState);
+foreach (vehicle, dummy in allgroup)
+	{ // if vehicle is in our todepotlist, it's going to depot for something, so set it as in depot -> it will be remove from list
+	if (INSTANCE.carrier.ToDepotList.HasItem(vehicle))	allgroup.SetValue(vehicle,AIVehicle.VS_IN_DEPOT);
+	INSTANCE.Sleep(1);
+	}
+allgroup.KeepValue(AIVehicle.VS_RUNNING);
 if (allgroup.IsEmpty())	return;
 allgroup.Valuate(AIVehicle.GetAge);
 allgroup.Sort(AIList.SORT_BY_VALUE, false);
@@ -707,7 +714,7 @@ foreach (vehicle, dummy in tlist)
 		if (!INSTANCE.bank.CanBuyThat(price+INSTANCE.carrier.vehnextprice)) continue;
 		DInfo("-> Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" days left), replacing it",0);
 		INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.REPLACE);
-		INSTANCE.bank.busyRoute=true;
+		//INSTANCE.bank.busyRoute=true;
 		continue;
 		}
 	price=INSTANCE.carrier.VehicleGetProfit(vehicle);
@@ -735,7 +742,7 @@ foreach (vehicle, dummy in tlist)
 		INSTANCE.carrier.vehnextprice+=price;
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
-		INSTANCE.bank.busyRoute=true;
+		//INSTANCE.bank.busyRoute=true;
 		continue;
 		}
 	age=AIOrder.GetOrderCount(vehicle);

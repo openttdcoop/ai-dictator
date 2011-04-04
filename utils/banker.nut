@@ -46,12 +46,12 @@ if (cash < goodcash)	{ INSTANCE.bank.canBuild=false; }
 if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)	{ DInfo("Trying to repay loan",2); INSTANCE.bank.canBuild=false; } // wait to repay loan
 if (ourLoan +(2*AICompany.GetLoanInterval()) < maxLoan)	{ INSTANCE.bank.canBuild=true; }
 local veh=AIVehicleList();
-//if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
+if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
 //if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;
 if (INSTANCE.carrier.vehnextprice >0)	INSTANCE.bank.canBuild=false;
 local veh=AIVehicleList();
 if (veh.IsEmpty())	INSTANCE.bank.canBuild=true; // we have 0 vehicles force a build
-if (INSTANCE.bank.canBuild) DInfo("Construction is now allowed",1);
+if (INSTANCE.bank.canBuild) DWarn("Construction is now allowed",1);
 DInfo("canBuild="+INSTANCE.bank.canBuild+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route+" warTreasure="+INSTANCE.carrier.warTreasure,1);
 }
 

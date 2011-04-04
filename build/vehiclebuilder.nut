@@ -90,14 +90,18 @@ if (chem == null) return 0;
 chem.RouteUpdateVehicle();
 local thatstation=null;
 local thatentry=null;
-if (start)	{ thatstation=chem.source; }
-	else	{ thatstation=chem.target; }
+local otherstation=null;
+if (start)	{ thatstation=chem.source; otherstation=chem.target; }
+	else	{ thatstation=chem.target; otherstation=chem.source; }
 local divisor=0;
 local sellvalid=( (AIDate.GetCurrentDate() - chem.date_VehicleDelete) > 60);
 // prevent buy a new vehicle if we sell one less than 60 days before (this isn't affect by replacing/upgrading vehicle)
 if (!sellvalid)	{ max_allow=0; DInfo("Route sold a vehicle not a long time ago",1); }
 local virtualized=cStation.IsStationVirtual(thatstation.stationID);
+local othervirtual=cStation.IsStationVirtual(otherstation.stationID);
 local airportmode="(classic)";
+local shared=false;
+if (thatstation.owner.Count() > 1)	{ shared=true; airportmode="(shared)"; }
 if (virtualized)	airportmode="(network)";
 local airname=AIStation.GetName(thatstation.stationID)+"-> ";
 switch (chem.route_type)
@@ -169,8 +173,21 @@ switch (chem.route_type)
 			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID)) max_allow=0;
 			}
 		local limitmax=INSTANCE.carrier.air_max;
+		if (shared)
+			{
+			limitmax=limitmax / thatstation.owner.Count();
+			if (limitmax < 1)	limitmax=1;
+			}
 		if (virtualized)	limitmax=2; // only 2 aircrafts when the airport is also in network
-		DInfo(airname+"Limit for that route (classic): "+chem.vehicle_count+"/"+limitmax,1);
+		local dualnetwork=false;
+		local routemod="(classic)";
+		if (virtualized && othervirtual)	
+			{
+			limitmax=0;	// no aircrafts at all on that route if both airport are in the network
+			dualnetwork=true;
+			routemod="(dual network)";
+			}
+		DInfo(airname+"Limit for that route "+routemod+": "+chem.vehicle_count+"/"+limitmax,1);
 		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (!INSTANCE.use_air)	max_allow=0;
 		if (chem.vehicle_count+max_allow > limitmax)	max_allow=limitmax - chem.vehicle_count;
@@ -179,6 +196,7 @@ switch (chem.route_type)
 		// limit by airport capacity
 	break;
 	}
+if (max_allow < 0)	max_allow=0;
 return max_allow;
 }
 
@@ -307,9 +325,9 @@ DInfo("srcplace="+srcplace+" dstplace="+dstplace,2);
 PutSign(srcplace,"Route "+routeidx+" Source Airport ");
 PutSign(dstplace,"Route "+routeidx+" Destination Airport");
 local veh = INSTANCE.carrier.GetAirVehicle(routeidx);
-local price = AIEngine.GetPrice(veh);
 if (veh == null)
 	{ DError("Cannot pickup an aircraft",1); return false; }
+local price = AIEngine.GetPrice(veh);
 INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
