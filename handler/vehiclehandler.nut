@@ -182,13 +182,15 @@ allgroup.Valuate(AIVehicle.GetAge);
 allgroup.Sort(AIList.SORT_BY_VALUE, false);
 rabbit=allgroup.Begin();
 allgroup.RemoveTop(1);
+local orderpossave=AIList();
+foreach (vehicle, dummy in allgroup)	allgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT));
 local numorders=AIOrder.GetOrderCount(rabbit);
 if (numorders != cCarrier.VirtualAirRoute.len())
 	{
 	for (local i=0; i < INSTANCE.carrier.VirtualAirRoute.len(); i++)
 		{
 		local destination=INSTANCE.carrier.VirtualAirRoute[i];
-		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_FULL_LOAD_ANY))
+		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_NONE))
 			{ DError("Aircraft network order refuse",2); }
 		}
 	if (numorders > 0)
@@ -198,7 +200,13 @@ if (numorders != cCarrier.VirtualAirRoute.len())
 				{ AIOrder.RemoveOrder(rabbit, AIOrder.ResolveOrderPosition(rabbit,0)); }
 		}
 	}
-foreach (vehicle, dummy in allgroup)	AIOrder.ShareOrders(vehicle,rabbit);
+foreach (vehicle, stationtile in allgroup)
+	{
+	AIOrder.ShareOrders(vehicle,rabbit);
+	// now try to get it back to its initial station destination
+	local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(stationtile));
+	if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
+	}
 }
 
 function cCarrier::VehicleOrdersReset(veh)

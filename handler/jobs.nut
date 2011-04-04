@@ -497,6 +497,13 @@ function cJobs::UpdateDoableJobs()
 	local topwater=0;
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
+		local myjob=cJobs.GetJobObject(id);
+		if (myjob.isUse)	parentListID.AddItem(myjob.parentID,1);
+		// build list of parent jobs already done
+		INSTANCE.Sleep(1);
+		}
+	foreach (id, value in INSTANCE.jobs.jobIndexer)
+		{
 		if (id == 0 || id == 1)	continue;
 //		INSTANCE.builder.DumpJobs(id);
 //		INSTANCE.NeedDelay(20);
@@ -545,7 +552,6 @@ function cJobs::UpdateDoableJobs()
 			}
 		// not doable if any parent is already in use
 		if (parentListID.HasItem(myjob.parentID))	{ DWarn("Job already done by parent job !",1); doable=false; }
-								else	if (myjob.isUse)	parentListID.AddItem(myjob.parentID,1);
 		if (doable && !myjob.source_istown)
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
 		// not doable if the industry no longer exist

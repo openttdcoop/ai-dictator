@@ -190,6 +190,14 @@ function DictatorAI::Start()
 		bank.canBuild=false;
 		bank.unleash_road=false;
 		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0);
+		DInfo("Registering our routes",0);
+		foreach (item in cRoute.database)
+			{
+			local regjob=cJobs.GetJobObject(item.UID);
+			if (regjob == null)	continue;
+			regjob.isUse=true;
+			INSTANCE.Sleep(1);
+			}
 		local stationList=AIList();	// check for no more working station if cargo disapears...
 		stationList.AddList(AIStationList(AIStation.STATION_ANY));
 		foreach (stationID, dummy in stationList)

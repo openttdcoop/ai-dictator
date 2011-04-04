@@ -193,6 +193,7 @@ local cargowaiting=bigairportObj.cargo_produce.GetValue(cCargo.GetPassengerCargo
 if ((cargowaiting-totalcapacity) > 0)	vehneed=cargowaiting / onecapacity;
 if (totalcapacity==0 && vehneed==0 && AIStation.GetCargoRating(bigairportID, cCargo.GetPassengerCargo())<25) vehneed=1;
 // one because poor station rating
+if (vehnumber < (cCarrier.VirtualAirRoute.len() / 2))	vehneed=(cCarrier.VirtualAirRoute.len() /2) - vehnumber;
 DInfo("NETWORK -> need="+vehneed,1);
 PutSign(bigairportlocation,"Network Airport Reference: "+cargowaiting);
 if (vehneed > 0)
@@ -329,13 +330,14 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			if (road.source.owner.Count()==1 && road.target.owner.Count()==1 && vehneed < 2)	vehneed=2;
 			}
 		else	vehneed=1; // everyones else is block to 1 vehicle
-		if (vehneed > road.source.vehicle_max)	vehneed=road.source.vehicle_max;
+		}
+	else	{ // only test limits when route have more than 0 vehicle on it
+		vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, true, vehneed);
+		DInfo("CanAddNewVehicle for source station says "+vehneed,2);
+		vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, false, vehneed);
+		DInfo("CanAddNewVehicle for destination station says "+vehneed,2);
 		}
 	if (vehneed > 4)	vehneed=4; // max 4 at a time
-	vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, true, vehneed);
-	DInfo("CanAddNewVehicle for source station says "+vehneed,2);
-	vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, false, vehneed);
-	DInfo("CanAddNewVehicle for destination station says "+vehneed,2);
 	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
 	// adding vehicle
 	if (vehneed > 0)
