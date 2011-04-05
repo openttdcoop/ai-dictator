@@ -600,8 +600,8 @@ if (good)
 		ClearSignsALL();
 		}
 	msg=space+"Connection from source station to target station : "
-	local one = repair.source.locations.GetValue(repair.source.GetRoadStationEntry());
-	local two = repair.target.locations.GetValue(repair.target.GetRoadStationEntry());
+	local one = repair.source.GetRoadStationEntry();
+	local two = repair.target.GetRoadStationEntry();
 	if (!INSTANCE.builder.RoadRunner(one, two, AIVehicle.VT_ROAD))
 		{
 		msg+="Damage & ";
