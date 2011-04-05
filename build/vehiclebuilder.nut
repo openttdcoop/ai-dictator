@@ -175,7 +175,7 @@ switch (chem.route_type)
 		local limitmax=INSTANCE.carrier.air_max;
 		if (shared)
 			{
-			limitmax=limitmax / thatstation.owner.Count();
+			if (thatstation.owner.Count()>0)	limitmax=limitmax / thatstation.owner.Count();
 			if (limitmax < 1)	limitmax=1;
 			}
 		if (virtualized)	limitmax=2; // only 2 aircrafts when the airport is also in network
