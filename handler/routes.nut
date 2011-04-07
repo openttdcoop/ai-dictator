@@ -279,8 +279,8 @@ function cRoute::GetRouteDepot()
 // Return a depot, try return source depot, if it fail backup to target depot
 // Platform are the kind of route that can make source depot fail
 	{
-	if (this.source_entry && this.source.depot != null)	return	this.source.depot;
-	if (this.target_entry && this.target.depot != null)	return	this.target.depot;
+	if (this.source_entry && cStation.IsDepot(this.source.depot))	return	this.source.depot;
+	if (this.target_entry && cStation.IsDepot(this.target.depot))	return	this.target.depot;
 	return null;
 	}
 

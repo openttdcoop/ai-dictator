@@ -139,11 +139,11 @@ if (deletethatone != -1)
 	}
 }
 
-
 function cBuilder::YearlyChecks()
 {
 INSTANCE.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
+INSTANCE.jobs.CheckTownStatue();
 INSTANCE.builder.BoostedBuys();
 INSTANCE.carrier.do_profit.Clear();
 INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
@@ -380,6 +380,7 @@ foreach (stations, dummy in truckstation)
 			DInfo("Station "+AIStation.GetName(stations)+" produce "+AICargo.GetCargoLabel(stacargo)+" with "+amount_wait+" units waiting",1);
 			foreach (vehicle, vehcargo in truck_getter_waiting)
 				{
+				if (AIVehicle.GetCapacity(vehicle, stacargo)==0)	continue; // not a vehicle using that cargo
 				if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
 				if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
 				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
@@ -404,7 +405,8 @@ function cBuilder::BoostedBuys()
 if (!INSTANCE.use_air)	return;
 local airportList=AIStationList(AIStation.STATION_AIRPORT);
 local waitingtimer=0;
-if (airportList.Count() < 2)
+local vehlist=AIVehicleList();
+if (airportList.Count() < 2 && vehlist.Count()>45)
 	{ // try to boost a first air route creation
 	local goalairport=cJobs.CostTopJobs[AIVehicle.VT_AIR];
 	DWarn("Waiting to get an aircraft job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goalairport,1);
@@ -431,7 +433,7 @@ waitingtimer=0;
 local aircraftnumber=AIVehicleList();
 aircraftnumber.Valuate(AIVehicle.GetVehicleType);
 aircraftnumber.KeepValue(AIVehicle.VT_AIR);
-if (aircraftnumber.Count() < 6 && airportList.Count() > 1)
+if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 	{ // try boost aircrafts buys until we have 6
 	local goal=INSTANCE.carrier.highcostAircraft+(INSTANCE.carrier.highcostAircraft * 0.1);
 	local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);

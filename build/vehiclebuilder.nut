@@ -247,12 +247,20 @@ local homedepot = road.GetRouteDepot();
 local price = AIEngine.GetPrice(veh);
 local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0 && road.cargoID == cCargo.GetPassengerCargo());
 if (altplace)	homedepot = road.target.depot;
+if (!cStation.IsDepot(homedepot))	
+	{
+	INSTANCE.builder.RouteIsDamage(roadidx);
+	DInfo("Route "+road.name+" depot isn't valid, adding to route to repair task.",1);
+	}
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
 INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
 if (!AIVehicle.IsValidVehicle(firstveh))
-	{ DWarn("Cannot buy the road vehicle : "+price,1); return false; }
+	{
+	DWarn("Cannot buy the road vehicle : "+price+" - "+AIError.GetLastErrorString(),1);
+	return false;
+	}
 else	{ DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(firstveh),0); }
 if (AIEngine.GetCargoType(veh) != cargoid) AIVehicle.RefitVehicle(firstveh, cargoid);
 local firstorderflag = null;
@@ -271,7 +279,7 @@ AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(firstveh);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
-if (!altplace)	INSTANCE.Sleep(74);
+//if (!altplace)	INSTANCE.Sleep(74);
 return true;
 }
 

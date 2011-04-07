@@ -300,6 +300,14 @@ function cStation::OwnerReleaseStation(uid)
 		}
 	}
 
+function cStation::IsDepot(tile)
+// return true if we have a depot at tile
+	{
+	if (tile == null)	return false;
+	local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile) || AIAirport.IsHangarTile(tile));
+	return isDepot;
+	}
+
 function cStation::CheckAirportLimits()
 // Set limits for airports
 	{

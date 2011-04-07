@@ -49,6 +49,6 @@ return true;
 
 function cBuilder::DeleteDepot(tile)
 {
-local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
+local isDepot=cStation.IsDepot(tile);
 if (isDepot)	return cTileTools.DemolishTile(tile);
 }

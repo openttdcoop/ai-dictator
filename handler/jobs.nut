@@ -26,6 +26,7 @@ static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to
 static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,150,200];
 static	CostTopJobs = [0, 0, 0, 0]; // price of best job for rail, road, water & air
 static	lastRefresh = [0];	// last date we refresh all jobs
+static	statueTown = AIList();	// list of towns we use, for statues, decrease everytime a statue is there
 
 
 static	function GetJobObject(UID)
@@ -644,6 +645,7 @@ local townjobs=AITownList();
 townjobs.Valuate(AITown.GetPopulation);
 townjobs.Sort(AIList.SORT_BY_VALUE,false);
 townjobs.KeepTop(40);
+cJobs.statueTown.AddList(townjobs);
 //indjobs.KeepTop(0);
 local curr=0;
 DInfo("Finding all industries & towns jobs, this will take a while !",0);
@@ -668,3 +670,24 @@ foreach (ID, dummy in townjobs)
 		}
 	}
 }
+
+function cJobs::CheckTownStatue()
+// check if can add a statue to the town
+	{
+	if (INSTANCE.fairlevel==0)	return; // no action if we play easy
+	DInfo(cJobs.statueTown.Count()+" towns to build statue found.",1);
+	foreach (townID, dummy in cJobs.statueTown)
+		{
+		if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BUILD_STATUE))
+			{
+			if (AITown.HasStatue(townID))	{ cJobs.statueTown.RemoveItem(townID);	continue; }
+			AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BUILD_STATUE);
+			if (AITown.HasStatue(townID))
+				{
+				DInfo("Build a statue at "+AITown.GetName(townID),0);
+				cJobs.statueTown.RemoveItem(townID);
+				}
+			}
+		INSTANCE.Sleep(1);
+		}
+	}

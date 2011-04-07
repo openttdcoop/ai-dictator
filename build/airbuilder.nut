@@ -54,11 +54,10 @@ foreach (ownID, dummy in station.owner)
 	}
 INSTANCE.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 
-
 local oldtype=station.specialType;
 local oldplace=AIStation.GetLocation(stationid);
 local counter=0;
-local maxcount=100;
+local maxcount=200;
 local result=false;
 // time to pray a bit for success, we could invalidate a working route here
 do	{

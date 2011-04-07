@@ -577,7 +577,7 @@ if (good)
 			msg+="Damage & ";
 			INSTANCE.builder.BuildRoadROAD(front, src_depot_front);
 			if (!INSTANCE.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
-				{ msg+=error_error; good=false; }
+				{ msg+=error_error; good=false;  cTileTools.DemolishTile(repair.source.depot); }
 			else	{ msg+=error_repair; }
 			DInfo(msg,1);
 			}
@@ -592,7 +592,7 @@ if (good)
 			msg+="Damage & ";
 			INSTANCE.builder.BuildRoadROAD(front, tgt_depot_front);
 			if (!INSTANCE.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
-				{ msg+=error_error; good=false; }
+				{ msg+=error_error; good=false; cTileTools.DemolishTile(repair.target.depot); }
 			else	{ msg+=error_repair; }
 			DInfo(msg,1);
 			}

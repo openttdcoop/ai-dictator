@@ -336,7 +336,6 @@ foreach (ownID, dummy in station.owner)
 	road=cRoute.GetRouteObject(ownID);
 	if (reroute)
 		{
-		DInfo("Re-routing traffic on route "+road.name+" to ignore "+AIStation.GetName(stationID),0);
 		vehlist=AIVehicleList_Group(road.groupID);
 		vehlist.Valuate(AIVehicle.GetState);
 		vehlist.RemoveValue(AIVehicle.VS_STOPPED);
@@ -353,6 +352,7 @@ foreach (ownID, dummy in station.owner)
 		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
 		if (orderindex != -1)
 			{
+			DInfo("Re-routing traffic on route "+road.name+" to ignore "+AIStation.GetName(stationID),0);
 			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
 				{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2); }
 			}
@@ -372,14 +372,14 @@ if (road != null)	homedepot=road.GetRouteDepot();
 if (homedepot == null)
 	{
 	local tile=AIVehicle.GetLocation(veh);
-	local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
+	local isDepot=cStation.IsDepot(tile);
 	if (isDepot)
 		{
 		DInfo("Cannot find depot for "+INSTANCE.carrier.VehicleGetFormatString(veh)+" but it is at a depot :P",0);
 		AIVehicle.StartStopVehicle(veh);
 		INSTANCE.Sleep(10);
 		tile=AIVehicle.GetLocation(veh);
-		isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile));
+		isDepot=cStation.IsDepot(tile);
 		if (!isDepot)	AIVehicle.StartStopVehicle(veh);
 		return;
 		}

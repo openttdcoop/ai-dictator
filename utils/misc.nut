@@ -112,7 +112,6 @@ cargo_favorite=ListGetItem(crglist, cargo_favorite);
 DInfo("We will promote "+AICargo.GetCargoLabel(cargo_favorite),0);
 }
 
-
 function AIInit()
 {
 local myName = "Krinn Company";
