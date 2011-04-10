@@ -246,11 +246,12 @@ local veh = INSTANCE.carrier.ChooseRoadVeh(cargoid);
 local homedepot = road.GetRouteDepot();
 local price = AIEngine.GetPrice(veh);
 local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0 && road.cargoID == cCargo.GetPassengerCargo());
-if (altplace)	homedepot = road.target.depot;
+if (altplace && road.target.depot != null)	homedepot = road.target.depot;
 if (!cStation.IsDepot(homedepot))	
 	{
 	INSTANCE.builder.RouteIsDamage(roadidx);
-	DInfo("Route "+road.name+" depot isn't valid, adding to route to repair task.",1);
+	DInfo("Route "+road.name+" depot isn't valid, adding route to repair task.",1);
+	return false;
 	}
 if (veh == null)
 	{ DError("Fail to pickup a vehicle",1); return false; }
