@@ -236,6 +236,7 @@ function cRoute::CreateNewRoute(UID)
 // Create and add to database a new route with informations taken from cJobs
 	{
 	local jobs=cJobs.GetJobObject(UID);
+	if (jobs == null) return; // workaround to loading savegame where the jobs has disapears
 	jobs.isUse = true;
 	this.UID = jobs.UID;
 	this.sourceID = jobs.sourceID;
