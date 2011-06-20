@@ -364,6 +364,7 @@ function cRoute::RouteIsNotDoable()
 	DInfo("Marking route "+this.name+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
 	this.CheckEntry();
+	INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID);
 	if (this.source_stationID != null)	
 		{
 		if (this.source != null)	if (this.source.owner.HasItem(this.UID))	this.source.owner.RemoveItem(this.UID);

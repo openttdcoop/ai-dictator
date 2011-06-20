@@ -234,9 +234,12 @@ function DictatorAI::Start()
 					jobs_obj=cJobs.GetJobObject(builder.building_route);
 					route=cRoute(); // reset it
 					route.CreateNewRoute(builder.building_route);
-					bank.RaiseFundsTo(jobs.moneyToBuild);
-//DInfo("dump: "+jobs_obj.sourceID+" "+jobs_obj.targetID);
-					builder.TryBuildThatRoute();
+					if (route == null)
+						{ builder.building_route=-1; }
+					else	{
+						bank.RaiseFundsTo(jobs.moneyToBuild);
+						builder.TryBuildThatRoute();
+						}
 					//DInfo(" ");
 					// now jump to build stage
 					}

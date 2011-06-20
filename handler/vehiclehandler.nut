@@ -809,24 +809,26 @@ function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 // Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
 {
 local road=INSTANCE.route.GetRouteObject(idx);
-if (road ==null)	return;
+if (road == null)	return;
 local vehlist=null;
 if (road.groupID != null)
 	{
 	vehlist=AIVehicleList_Group(road.groupID);
-	foreach (vehicle in vehlist)
+	DInfo("Remove a group of vehicle : "+vehlist.Count(),1);
+	foreach (vehicle, dummy in vehlist)
 		{
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		}
-	foreach (vehicle in vehlist)
+	foreach (vehicle, dummy in vehlist)
 		{
-		local waitmax=222; // 1 month / vehicle, as 222*10(sleep)=2220/74
+		local waitmax=444; // 2 month / vehicle, as 444*10(sleep)=4440/74
 		local waitcount=0;
-		local wait=false;
+		local wait=true;
 		do	{
 			AIController.Sleep(10);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
-			if (AIVehicle.IsValidVehicle(vehicle))	wait=true;
+			wait=(AIVehicle.IsValidVehicle(vehicle));
+			DInfo("wait? "+AIVehicle.IsValidVehicle(vehicle)+" waiting:"+wait+" waitcount="+waitcount,0);
 			waitcount++;
 			if (waitcount > waitmax)	wait=false;
 			} while (wait);

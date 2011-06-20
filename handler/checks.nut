@@ -230,7 +230,16 @@ foreach (stationID, dummy in allstations)
 		INSTANCE.Sleep(1);
 		local road=cRoute.GetRouteObject(uid);
 		if (road == null)	continue; // might happen if the route isn't saved because not finished yet
-		if (road.source_stationID == stobj.stationID)	continue;
+		if (road.source_stationID == stobj.stationID)
+			{
+			if (!stobj.cargo_produce.HasItem(road.cargoID))
+				{
+				DWarn("Station "+AIStation.GetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0);
+				// road.RouteReleaseStation(stationID);
+				road.RouteIsNotDoable();
+				continue;
+				}
+			}
 		if (road.target_stationID == stobj.stationID)
 			{
 			if (!stobj.cargo_accept.HasItem(road.cargoID))

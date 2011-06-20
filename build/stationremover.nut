@@ -36,7 +36,11 @@ if (exist)
 		}
 	}
 local wasnamed=AIStation.GetName(stationid);
-if (!AITile.DemolishTile(AIStation.GetLocation(stationid))) return false;
+local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
+foreach (tile, dummy in tilelist)
+	{
+	if (!AITile.DemolishTile(tile)) return false;
+	}
 DInfo("Removing station "+wasnamed,0);
 if (exist)
 	{
