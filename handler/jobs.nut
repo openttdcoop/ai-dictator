@@ -349,7 +349,8 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	// filters unwanted jobs, don't let aircraft do something other than pass/mail
 	if (road_type == AIVehicle.VT_AIR && cargo_id != cCargo.GetPassengerCargo()) return;
 	// only pass for aircraft, we will randomize if pass or mail later
-	if (cargo_id == cCargo.GetMailCargo() && road_type != AIVehicle.VT_ROAD) return;
+//	if (cargo_id == cCargo.GetMailCargo() && road_type != AIVehicle.VT_ROAD) return;
+	if (cargo_id == cCargo.GetMailCargo()) return; // disable mail for anyone it sucks to do mail
 	// only do mail with trucks
 	newjob.target_istown = cCargo.IsCargoForTown(cargo_id);
 	if (newjob.source_istown)	newjob.source_location=AITown.GetLocation(srcID);

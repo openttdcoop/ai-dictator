@@ -99,5 +99,17 @@ if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	}
 }
 
+function cBuilder::ShowSlopes()
+{
+DInfo("running slopes");
+local tlist=AITileList();
+tlist.AddRectangle(30594,33402);
+tlist.Valuate(AITile.GetSlope);
+tlist.RemoveValue(0);
+tlist.Valuate(AITile.GetMaxHeight);
+//showLogic(tlist);
+cTileTools.CheckLandForContruction(0,0);
+}
+
 
 

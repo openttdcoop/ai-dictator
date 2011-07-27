@@ -212,6 +212,9 @@ function DictatorAI::Start()
 		checkHQ();
 		bank.SaveMoney();
 		route.RouteInitNetwork();
+		builder.ShowSlopes();
+		DInfo("Stopwatch");
+		this.ClearSignsALL();
 		jobs.PopulateJobs();
 		safeStart=3;
 		}

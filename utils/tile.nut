@@ -151,32 +151,174 @@ do	{
 	} while (!min==max || trys==100);
 }*/
 
-function cTileTools::FlattenTileAt(tileAs, tileto)
+function cTileTools::ShapeTile(tile, wantedHeight)
 {
-local srcL=AITile.GetMinHeight(tileAs);
-local srcH=AITile.GetMaxHeight(tileAs);
-if (!srcL==srcH) return;
-
-local dstH=AITile.GetMaxHeight(tileto);
-local dstL=AITile.GetMinHeight(tileto);
-local compH=AITile.GetComplementSlope(tileto);
-
-if (dstH > srcH)	{ KInfo("Lowering tile"); AITile.LowerTile(tileto,compH); }
-if (dstH < srcH)	{ KInfo("Raising tile"); AITile.RaiseTile(tileto,compH); }
-
-if (dstL > srcL)	{ KInfo("Lowering tile"); AITile.LowerTile(tileto,compH); }
-if (dstL < srcL)	{ KInfo("Raising tile"); AITile.RaiseTile(tileto,compH); }
-
+//
+local srcL=AITile.GetMinHeight(tile);
+local srcH=AITile.GetMaxHeight(tile);
+local slope=AITile.GetSlope(tile);
+local compSlope=AITile.GetComplementSlope(tile);
+compSlope=AITile.SLOPE_ELEVATED-slope;
+if (srcL == wantedHeight && srcH == wantedHeight)
+	{
+	//DInfo("Tile at level");
+	PutSign(tile,"=");	
+	return true;
+	}
+DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH);
+local error=null;
+if (srcL > wantedHeight || srcH > wantedHeight)
+	{
+	PutSign(tile,"v");
+	AITile.LowerTile(tile, slope);
+	error=AIError.GetLastError();
+	DInfo("Lowering tile "+AIError.GetLastErrorString());
+	if (error == AIError.ERR_NONE)	return true;
+						else	return false;
+	}
+if (srcL < wantedHeight || srcH < wantedHeight)
+	{
+	PutSign(tile,"^");
+	//local invSlope=AITile.SLOPE_ELEVATED-slope;
+	AITile.RaiseTile(tile, compSlope);
+	error=AIError.GetLastError();	
+	DInfo("Raising tile "+AIError.GetLastErrorString());
+	if (error == AIError.ERR_NONE)	return true;
+						else	return false;
+	}
+// we fail to lower slope if we try lower one that is bellow first
 }
 
+function cTileTools::TerraformTile(tile, wantedHeight, Check=false)
+{
+local srcL=null;
+local srcH=null;
+local success=false;
+do
+	{
+	srcL=AITile.GetMinHeight(tile);
+	srcH=AITile.GetMaxHeight(tile);
+	success=cTileTools.ShapeTile(tile, wantedHeight);
+	if (!success)	INSTANCE.NeedDelay(50);
+	} while (success && srcL != wantedHeight && srcH != wantedHeight);
+if (!success)	DInfo("Fail");
+return success;
+}
+	
 function cTileTools::FlattenTile(tilefrom, tileto)
 {
 return AITile.LevelTiles(tilefrom, tileto);
 }
 
+function cTileTools::MostItemInList(list, item)
+// add item to list if not exist and set counter to 1, else increase counter
+// return the list
+{
+if (!list.HasItem(item))	{ list.AddItem(item,1); DInfo("new item : "+item); }
+				else	{ local c=list.GetValue(item); c++; list.SetValue(item,c); DInfo("Item "+item+" now at "+c); }
+DInfo("deb: "+list.GetValue(item));
+return list;
+}
+
 function cTileTools::CheckLandForContruction(fromTile, toTile)
 // Check fromTile toTile if we need raise/lower or demolish things
 {
+local maxH=AITileList();
+local minH=AITileList();
+fromTile=30594;
+toTile=33402;
+maxH.AddRectangle(fromTile,toTile);
+minH.AddList(maxH);
+maxH.Valuate(AITile.GetMaxHeight);
+minH.Valuate(AITile.GetMinHeight);
+local cellHCount=AIList();
+local cellLCount=AIList();
+local shouldsuccess=true;
+foreach (tile, max in maxH)
+	{
+	//PutSign(tile,"*");
+/*	if (!cellHCount.HasItem(max))
+			{
+			cellHCount.AddItem(max,1);
+			}
+		else	{
+			local c=cellHCount.GetValue(max);
+			c++; cellHCount.SetValue(max,c);
+			}
+	DInfo("new: "+max+" newval:"+cellHCount.GetValue(max));*/
+	cellHCount=cTileTools.MostItemInList(cellHCount,maxH.GetValue(tile)); // could use "max" var instead, but clearer as-is
+	cellLCount=cTileTools.MostItemInList(cellLCount,minH.GetValue(tile));
+	}
+DInfo("CellHCount size"+cellHCount.Count());
+DInfo("CellLCount size"+cellLCount.Count());
+foreach (item, value in cellHCount)
+	{
+	DInfo("High -> "+item+" / "+value);
+	}
+foreach (item, value in cellLCount)
+	{
+	DInfo("Low -> "+item+" / "+value);
+	}
+foreach (tile, max in maxH)
+	{
+	//PutSign(tile,AITile.GetMinHeight(tile)+"/"+max);
+	}
 
+cellHCount.Sort(AIList.SORT_BY_VALUE,false);
+cellLCount.Sort(AIList.SORT_BY_VALUE,false);
+local HeightIsLow=true;
+local currentHeight=-1;
+local h_firstitem=1000;
+local l_firstitem=1000;
+do	{
+	h_firstitem=cellHCount.Begin();
+	l_firstitem=cellLCount.Begin();
+	DInfo("Checking h:"+cellHCount.GetValue(h_firstitem)+" vs l:"+cellLCount.GetValue(l_firstitem));
+	if (cellHCount.GetValue(h_firstitem) < cellLCount.GetValue(l_firstitem))
+			{
+			DInfo("Pick low level");
+			HeightIsLow=true;
+			currentHeight=l_firstitem;
+			cellLCount.RemoveItem(l_firstitem);
+			}
+	else		{
+			HeightIsLow=false;
+			currentHeight=h_firstitem;
+			DInfo("Pick high level");
+			cellHCount.RemoveItem(h_firstitem);
+			}
+	DInfo("currentHeight="+currentHeight+" low?"+HeightIsLow);
+	INSTANCE.NeedDelay(50);
+	// Now we have determine what low or high height we need to reach by priority (most tiles first, with a pref to lower height)
+	local doable=true;
+	if (currentHeight == 0) // not serious to build at that level
+		{
+		DInfo("Water level detect!");
+		doable=false;
+		continue;
+		}
+	local tTile=AITileList();
+	tTile.AddList(maxH);
+	tTile.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
+	foreach (tile, max in tTile)
+		{
+		if (!cTileTools.TerraformTile(tile, currentHeight)) 
+			{
+			doable=false;
+			break;
+			}
+		//INSTANCE.NeedDelay(10);
+		}
+
+	if (doable)
+		{ DInfo("It' doable!"); break; }
+	DInfo("conditions: "+h_firstitem+" / "+l_firstitem);
+	} while (h_firstitem > 0 || l_firstitem > 0); // loop until both lists are empty
+
+//DInfo("Stopwatch");
+foreach (tile, dummyvalue in maxH)
+	{
+	}
+return maxH;
 }
 
