@@ -157,15 +157,14 @@ function cTileTools::ShapeTile(tile, wantedHeight)
 local srcL=AITile.GetMinHeight(tile);
 local srcH=AITile.GetMaxHeight(tile);
 local slope=AITile.GetSlope(tile);
-local compSlope=AITile.GetComplementSlope(tile);
-compSlope=AITile.SLOPE_ELEVATED-slope;
+local compSlope=AITile.GetComplementSlope(slope);
 if (srcL == wantedHeight && srcH == wantedHeight)
 	{
 	//DInfo("Tile at level");
 	PutSign(tile,"=");	
 	return true;
 	}
-DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH);
+DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" half:"+AITile.IsHalftileSlope(tile)+" steep:"+AITile.IsSteepSlope(tile));
 local error=null;
 if (srcL > wantedHeight || srcH > wantedHeight)
 	{
@@ -179,7 +178,6 @@ if (srcL > wantedHeight || srcH > wantedHeight)
 if (srcL < wantedHeight || srcH < wantedHeight)
 	{
 	PutSign(tile,"^");
-	//local invSlope=AITile.SLOPE_ELEVATED-slope;
 	AITile.RaiseTile(tile, compSlope);
 	error=AIError.GetLastError();	
 	DInfo("Raising tile "+AIError.GetLastErrorString());
@@ -194,6 +192,8 @@ function cTileTools::TerraformTile(tile, wantedHeight, Check=false)
 local srcL=null;
 local srcH=null;
 local success=false;
+local emulate=null;
+if (Check) emulate=AITestMode();
 do
 	{
 	srcL=AITile.GetMinHeight(tile);
@@ -202,6 +202,7 @@ do
 	if (!success)	INSTANCE.NeedDelay(50);
 	} while (success && srcL != wantedHeight && srcH != wantedHeight);
 if (!success)	DInfo("Fail");
+emulate=null;
 return success;
 }
 	
@@ -300,16 +301,32 @@ do	{
 	local tTile=AITileList();
 	tTile.AddList(maxH);
 	tTile.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
-	foreach (tile, max in tTile)
+	DInfo("Fake run");
+	local costs=AIAccounting();
+	/*foreach (tile, max in tTile)
 		{
-		if (!cTileTools.TerraformTile(tile, currentHeight)) 
+		if (!cTileTools.TerraformTile(tile, currentHeight, true))
 			{
 			doable=false;
 			break;
 			}
-		//INSTANCE.NeedDelay(10);
+		}*/
+	DInfo("Total spend: "+costs.GetCosts());
+	if (doable)
+		{
+		DInfo("real run"); INSTANCE.NeedDelay();
+		foreach (tile, max in tTile)
+			{
+			if (!cTileTools.TerraformTile(tile, currentHeight)) 
+				{
+				doable=false;
+				break;
+				}
+			//INSTANCE.NeedDelay(10);
+			}
 		}
 
+	DInfo("Total spend: "+costs.GetCosts());
 	if (doable)
 		{ DInfo("It' doable!"); break; }
 	DInfo("conditions: "+h_firstitem+" / "+l_firstitem);
