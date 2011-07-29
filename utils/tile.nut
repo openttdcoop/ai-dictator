@@ -161,28 +161,33 @@ local compSlope=AITile.GetComplementSlope(slope);
 if (srcL == wantedHeight && srcH == wantedHeight)
 	{
 	//DInfo("Tile at level");
-	PutSign(tile,"=");	
-	return true;
+	//PutSign(tile,"=");	
+	return 1;
 	}
 DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" half:"+AITile.IsHalftileSlope(tile)+" steep:"+AITile.IsSteepSlope(tile));
 local error=null;
 if (srcL > wantedHeight || srcH > wantedHeight)
 	{
+	if (compSlope == 15 && srcL!=wantedHeight &&  srcH!=wantedHeight)	
+		{
+		DInfo("bug found");
+		return -1; // avoid 4 corners terraforming bug
+		}
 	PutSign(tile,"v");
 	AITile.LowerTile(tile, slope);
 	error=AIError.GetLastError();
-	DInfo("Lowering tile "+AIError.GetLastErrorString());
-	if (error == AIError.ERR_NONE)	return true;
-						else	return false;
+	//DInfo("Lowering tile "+AIError.GetLastErrorString());
+	if (error == AIError.ERR_NONE)	return 1;
+						else	return 0;
 	}
 if (srcL < wantedHeight || srcH < wantedHeight)
 	{
 	PutSign(tile,"^");
 	AITile.RaiseTile(tile, compSlope);
 	error=AIError.GetLastError();	
-	DInfo("Raising tile "+AIError.GetLastErrorString());
-	if (error == AIError.ERR_NONE)	return true;
-						else	return false;
+	//DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile));
+	if (error == AIError.ERR_NONE)	return 1;
+						else	return 0;
 	}
 // we fail to lower slope if we try lower one that is bellow first
 }
@@ -191,18 +196,25 @@ function cTileTools::TerraformTile(tile, wantedHeight, Check=false)
 {
 local srcL=null;
 local srcH=null;
-local success=false;
+local success=0;
 local emulate=null;
-if (Check) emulate=AITestMode();
-do
-	{
+local getout=false;
+if (Check)	getout=true;
+
+//do
+//	{
 	srcL=AITile.GetMinHeight(tile);
 	srcH=AITile.GetMaxHeight(tile);
 	success=cTileTools.ShapeTile(tile, wantedHeight);
-	if (!success)	INSTANCE.NeedDelay(50);
-	} while (success && srcL != wantedHeight && srcH != wantedHeight);
-if (!success)	DInfo("Fail");
-emulate=null;
+//	if (success == -1 || success == 1)	return success;
+//	if (success)	{ INSTANCE.NeedDelay(50); PutSign(tile,"!"); }
+//	if (!Check && srcL != wantedHeight && srcH != wantedHeight)	getout=false;
+	//									else	getout=true;
+	//getout=true;
+//getout=true;
+	//DInfo("Get out ? "+getout);
+//	} while (success == 0);
+//if (!success)	DInfo("Fail");
 return success;
 }
 	
@@ -221,6 +233,23 @@ DInfo("deb: "+list.GetValue(item));
 return list;
 }
 
+function cTileTools::TileHeuristic(tile, wantedHeight)
+// check each tile that will be affected by our terraforming & check them for possible success
+// tile= tile to check
+// wantedHeight = height we want reach
+// return AIList of tiles affected, with item=tile & value=1 clear tile, 0 unclear
+{
+
+}
+
+function cTileTools::GetHeightDifference(tile)
+	{
+	local srcL=AITile.GetMinHeight(tile);
+	local srcH=AITile.GetMaxHeight(tile);
+	local hdiff=abs(srcL-srcH);
+	return hdiff;
+	}
+
 function cTileTools::CheckLandForContruction(fromTile, toTile)
 // Check fromTile toTile if we need raise/lower or demolish things
 {
@@ -234,6 +263,8 @@ maxH.Valuate(AITile.GetMaxHeight);
 minH.Valuate(AITile.GetMinHeight);
 local cellHCount=AIList();
 local cellLCount=AIList();
+local virtualH=AIList();
+local virtualL=AIList();
 local shouldsuccess=true;
 foreach (tile, max in maxH)
 	{
@@ -252,6 +283,8 @@ foreach (tile, max in maxH)
 	}
 DInfo("CellHCount size"+cellHCount.Count());
 DInfo("CellLCount size"+cellLCount.Count());
+virtualH.AddList(cellHCount);
+virtualL.AddList(cellLCount);
 foreach (item, value in cellHCount)
 	{
 	DInfo("High -> "+item+" / "+value);
@@ -271,6 +304,7 @@ local HeightIsLow=true;
 local currentHeight=-1;
 local h_firstitem=1000;
 local l_firstitem=1000;
+local doable=true;
 do	{
 	h_firstitem=cellHCount.Begin();
 	l_firstitem=cellLCount.Begin();
@@ -288,47 +322,76 @@ do	{
 			DInfo("Pick high level");
 			cellHCount.RemoveItem(h_firstitem);
 			}
-	DInfo("currentHeight="+currentHeight+" low?"+HeightIsLow);
+	DInfo("currentHeight="+currentHeight+" low? "+HeightIsLow);
 	INSTANCE.NeedDelay(50);
 	// Now we have determine what low or high height we need to reach by priority (most tiles first, with a pref to lower height)
-	local doable=true;
+	//local doable=true;
+	
+	// raising 1 corner from tilemin=tileheight to tileheight+1= 4 tiles affect, effect = raise corner to
+	// raising 1 corner from tilemin&tileheight+1
 	if (currentHeight == 0) // not serious to build at that level
 		{
 		DInfo("Water level detect!");
 		doable=false;
 		continue;
 		}
+
 	local tTile=AITileList();
 	tTile.AddList(maxH);
 	tTile.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
-	DInfo("Fake run");
+//	tTile.Valuate(cTileTools.GetHeightDifference);
+//	tTile.Sort(AIList.SORT_BY_VALUE, false);
+//	virtualH.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
+//	virtualL.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
+//	DInfo("Fake run");
+/*	foreach (tile, max in tTile)
+		{
+		if (HeightIsLow) // we're trying to higher them
+			{
+			//if (virtualH.GetValue(tile) < wantedHeight)
+			}
+		}
+*/
 	local costs=AIAccounting();
-	/*foreach (tile, max in tTile)
+/*	local testrun=AITestMode();
+	foreach (tile, max in tTile)
 		{
 		if (!cTileTools.TerraformTile(tile, currentHeight, true))
 			{
 			doable=false;
 			break;
 			}
-		}*/
-	DInfo("Total spend: "+costs.GetCosts());
+		}
+	DInfo("End test run : "+doable);
+	testrun=null; */
+	//DInfo("Total spend: "+costs.GetCosts());
+	doable=true;
+	local success=0;
+	local bugthere=false;
+	local keeploop=false;
 	if (doable)
-		{
-		DInfo("real run"); INSTANCE.NeedDelay();
+	do	{
+		bugthere=false;
+		keeploop=false;
 		foreach (tile, max in tTile)
 			{
-			if (!cTileTools.TerraformTile(tile, currentHeight)) 
+			success=cTileTools.ShapeTile(tile, currentHeight);
+			if (success == 0)
 				{
 				doable=false;
 				break;
 				}
+			if (success == -1)	bugthere=true;
 			//INSTANCE.NeedDelay(10);
+			if (!AITile.GetMinHeight(tile) == currentHeight || !AITile.GetMaxHeight(tile) == currentHeight)	keeploop=true;
 			}
-		}
+		DInfo("real run "+success+" bug? "+bugthere+" keeploop:"+keeploop);
+		} while (doable && bugthere && keeploop);
 
+INSTANCE.NeedDelay();
 	DInfo("Total spend: "+costs.GetCosts());
 	if (doable)
-		{ DInfo("It' doable!"); break; }
+		{ DInfo("It has been done !"); break; }
 	DInfo("conditions: "+h_firstitem+" / "+l_firstitem);
 	} while (h_firstitem > 0 || l_firstitem > 0); // loop until both lists are empty
 
@@ -339,3 +402,8 @@ foreach (tile, dummyvalue in maxH)
 return maxH;
 }
 
+function cTileTools::TerraformPrediction(tlist)
+// look at tiles in tlist to predict tiles changes
+{
+
+}
