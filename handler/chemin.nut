@@ -306,7 +306,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		local src_capacity=capacity;
 		local dst_capacity= road.target.vehicle_capacity.GetValue(cargoid);
 		local src_wait = cargowait;
-		local dst_wait = road.target.cargo_produce.GetValue(cargoID);
+		local dst_wait = road.target.cargo_produce.GetValue(cargoid);
 		if (cStation.IsStationVirtual(road.target.stationID))	dst_capacity-=cRoute.VirtualAirGroup[2];
 		if (dst_capacity == 0)	{ dst_wait=AITown.GetLastMonthProduction(road.targetID,cargoid); dst_capacity=futur_engine_capacity; }
 		if (src_wait < dst_wait)	cargowait=src_wait; // keep the lowest cargo amount

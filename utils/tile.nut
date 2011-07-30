@@ -158,36 +158,37 @@ local srcL=AITile.GetMinHeight(tile);
 local srcH=AITile.GetMaxHeight(tile);
 local slope=AITile.GetSlope(tile);
 local compSlope=AITile.GetComplementSlope(slope);
+if (slope == AITile.SLOPE_FLAT) compSlope = AITile.SLOPE_ELEVATED;
 if (srcL == wantedHeight && srcH == wantedHeight)
 	{
 	//DInfo("Tile at level");
 	//PutSign(tile,"=");	
-	return 1;
+	return true;
 	}
 DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" half:"+AITile.IsHalftileSlope(tile)+" steep:"+AITile.IsSteepSlope(tile));
 local error=null;
 if (srcL > wantedHeight || srcH > wantedHeight)
 	{
-	if (compSlope == 15 && srcL!=wantedHeight &&  srcH!=wantedHeight)	
+/*	if (compSlope == 15 && srcL!=wantedHeight &&  srcH!=wantedHeight)	
 		{
 		DInfo("bug found");
 		return -1; // avoid 4 corners terraforming bug
-		}
+		}*/
 	PutSign(tile,"v");
-	AITile.LowerTile(tile, slope);
+	AITile.LowerTile(tile, compSlope);
 	error=AIError.GetLastError();
-	//DInfo("Lowering tile "+AIError.GetLastErrorString());
-	if (error == AIError.ERR_NONE)	return 1;
-						else	return 0;
+	DInfo("Lowering tile "+AIError.GetLastErrorString());
+	if (error == AIError.ERR_NONE)	return true;
+						else	return false;
 	}
 if (srcL < wantedHeight || srcH < wantedHeight)
 	{
 	PutSign(tile,"^");
-	AITile.RaiseTile(tile, compSlope);
+	AITile.RaiseTile(tile, AITile.SLOPE_ELEVATED);
 	error=AIError.GetLastError();	
-	//DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile));
-	if (error == AIError.ERR_NONE)	return 1;
-						else	return 0;
+	DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile));
+	if (error == AIError.ERR_NONE)	return true;
+						else	return false;
 	}
 // we fail to lower slope if we try lower one that is bellow first
 }
@@ -201,8 +202,8 @@ local emulate=null;
 local getout=false;
 if (Check)	getout=true;
 
-//do
-//	{
+do
+	{
 	srcL=AITile.GetMinHeight(tile);
 	srcH=AITile.GetMaxHeight(tile);
 	success=cTileTools.ShapeTile(tile, wantedHeight);
@@ -213,8 +214,8 @@ if (Check)	getout=true;
 	//getout=true;
 //getout=true;
 	//DInfo("Get out ? "+getout);
-//	} while (success == 0);
-//if (!success)	DInfo("Fail");
+	} while (success && srcL != wantedHeight && srcH != wantedHeight);
+if (!success)	DInfo("Fail");
 return success;
 }
 	
@@ -366,27 +367,27 @@ do	{
 	testrun=null; */
 	//DInfo("Total spend: "+costs.GetCosts());
 	doable=true;
-	local success=0;
-	local bugthere=false;
-	local keeploop=false;
+	local success=false;
+//	local bugthere=false;
+//	local keeploop=false;
 	if (doable)
-	do	{
-		bugthere=false;
-		keeploop=false;
+		{
+//		bugthere=false;
+//		keeploop=false;
 		foreach (tile, max in tTile)
 			{
-			success=cTileTools.ShapeTile(tile, currentHeight);
-			if (success == 0)
+			success=cTileTools.TerraformTile(tile, currentHeight);
+			if (!success)
 				{
 				doable=false;
 				break;
 				}
-			if (success == -1)	bugthere=true;
+			//if (success == -1)	bugthere=true;
 			//INSTANCE.NeedDelay(10);
-			if (!AITile.GetMinHeight(tile) == currentHeight || !AITile.GetMaxHeight(tile) == currentHeight)	keeploop=true;
+			//if (!AITile.GetMinHeight(tile) == currentHeight || !AITile.GetMaxHeight(tile) == currentHeight)	keeploop=true;
 			}
-		DInfo("real run "+success+" bug? "+bugthere+" keeploop:"+keeploop);
-		} while (doable && bugthere && keeploop);
+		DInfo("real run "+success);
+		}
 
 INSTANCE.NeedDelay();
 	DInfo("Total spend: "+costs.GetCosts());
