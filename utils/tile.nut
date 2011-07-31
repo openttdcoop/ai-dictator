@@ -39,12 +39,11 @@ return tilelist;
 }
 
 function cTileTools::IsWithinTownInfluence(stationid, townid)
-// A correction to AIStation.IsWithinTownInfluence bug
+// A tweak for AIStation.IsWithinTownInfluence in openttd < 1.1.2
 {
 local stationtile=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
-local within=false;
-foreach (tile, dummy in stationtile)	{ if (AITile.IsWithinTownInfluence(tile, townid)) within=true; }
-return within;
+foreach (tile, dummy in stationtile)	{ if (AITile.IsWithinTownInfluence(tile, townid)) return true; }
+return false;
 }
 
 function cTileTools::DemolishTile(tile)
@@ -140,87 +139,76 @@ function cTileTools::ClearTile(tile)
 {
 return AITile.DemolishTile(tile);
 }
-/*
-function cTileTools::RaiseCornersTo(level)
-{
-local trys=0;
-local min=0;
-local max=1;
-do	{
-	min=
-	} while (!min==max || trys==100);
-}*/
 
-function cTileTools::ShapeTile(tile, wantedHeight)
+function cTileTools::ShapeTile(tile, wantedHeight, evaluateOnly)
+// Flatten the tile at wanted height level
+// tile: tile to shape
+// wantedHeight: height to flatten land to
+// evaluateOnly: ignore steep slope : that's to not fail when we evaluate the success
 {
-//
 local srcL=AITile.GetMinHeight(tile);
 local srcH=AITile.GetMaxHeight(tile);
 local slope=AITile.GetSlope(tile);
+local error=null;
+local generror=false;
+local tsign=null;
 local compSlope=AITile.GetComplementSlope(slope);
-if (slope == AITile.SLOPE_FLAT) compSlope = AITile.SLOPE_ELEVATED;
-if (srcL == wantedHeight && srcH == wantedHeight)
+if (srcL == wantedHeight && srcH == wantedHeight)	return generror;
+if (!INSTANCE.terraform)
 	{
-	//DInfo("Tile at level");
-	//PutSign(tile,"=");	
+	DInfo("ShapeTile-> AI terraforming is disable, failure",2);
 	return true;
 	}
-DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" half:"+AITile.IsHalftileSlope(tile)+" steep:"+AITile.IsSteepSlope(tile));
-local error=null;
-if (srcL > wantedHeight || srcH > wantedHeight)
-	{
-/*	if (compSlope == 15 && srcL!=wantedHeight &&  srcH!=wantedHeight)	
-		{
-		DInfo("bug found");
-		return -1; // avoid 4 corners terraforming bug
-		}*/
-	PutSign(tile,"v");
-	AITile.LowerTile(tile, compSlope);
-	error=AIError.GetLastError();
-	DInfo("Lowering tile "+AIError.GetLastErrorString());
-	if (error == AIError.ERR_NONE)	return true;
-						else	return false;
-	}
-if (srcL < wantedHeight || srcH < wantedHeight)
-	{
-	PutSign(tile,"^");
-	AITile.RaiseTile(tile, AITile.SLOPE_ELEVATED);
-	error=AIError.GetLastError();	
-	DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile));
-	if (error == AIError.ERR_NONE)	return true;
-						else	return false;
-	}
-// we fail to lower slope if we try lower one that is bellow first
-}
-
-function cTileTools::TerraformTile(tile, wantedHeight, Check=false)
-{
-local srcL=null;
-local srcH=null;
-local success=0;
-local emulate=null;
-local getout=false;
-if (Check)	getout=true;
-
-do
-	{
+do	{
 	srcL=AITile.GetMinHeight(tile);
 	srcH=AITile.GetMaxHeight(tile);
-	success=cTileTools.ShapeTile(tile, wantedHeight);
-//	if (success == -1 || success == 1)	return success;
-//	if (success)	{ INSTANCE.NeedDelay(50); PutSign(tile,"!"); }
-//	if (!Check && srcL != wantedHeight && srcH != wantedHeight)	getout=false;
-	//									else	getout=true;
-	//getout=true;
-//getout=true;
-	//DInfo("Get out ? "+getout);
-	} while (success && srcL != wantedHeight && srcH != wantedHeight);
-if (!success)	DInfo("Fail");
-return success;
+	slope=AITile.GetSlope(tile);
+	compSlope=AITile.GetComplementSlope(slope);
+	if ((slope & AITile.SLOPE_STEEP) == AITile.SLOPE_STEEP)
+		{
+		slope-=AITile.SLOPE_STEEP;
+		compSlope=AITile.GetComplementSlope(slope);
+		DInfo("ShapeTile-> Tile: "+tile+" Removing SteepSlope",2);
+		AITile.RaiseTile(tile,compSlope);
+		error=AIError.GetLastError();
+		if (error != AIError.ERR_NONE)	generror=true;
+		slope=AITile.GetSlope(tile);
+		compSlope=AITile.GetComplementSlope(slope);
+		srcL=AITile.GetMinHeight(tile);
+		srcH=AITile.GetMaxHeight(tile);
+		if (evaluateOnly)	return false;
+		}
+	DInfo("ShapeTile-> Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2);
+	PutSign(tile,"!");
+	INSTANCE.Sleep(1);
+	if ((srcH < wantedHeight || srcL < wantedHeight) && !generror)
+		{
+		if (AITile.GetSlope(tile) == AITile.SLOPE_ELEVATED)
+					AITile.RaiseTile(tile, AITile.SLOPE_FLAT);			
+				else	AITile.RaiseTile(tile, compSlope);
+		error=AIError.GetLastError();	
+		DInfo("ShapeTile-> Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2);
+		if (error != AIError.ERR_NONE)	generror=true;
+		}
+	if ((srcL > wantedHeight || srcH > wantedHeight) && !generror)
+		{
+		if (AITile.GetSlope(tile) == AITile.SLOPE_FLAT)
+					{ AITile.LowerTile(tile, AITile.SLOPE_ELEVATED);}
+				else	{ AITile.LowerTile(tile, slope); }
+		error=AIError.GetLastError();	
+		DInfo("ShapeTile-> Lowering tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2);
+		if (error != AIError.ERR_NONE)	generror=true;
+		}
+	} while (!generror && srcH != wantedHeight && srcL != wantedHeight && !evaluateOnly);
+return generror;
 }
-	
+
 function cTileTools::FlattenTile(tilefrom, tileto)
+// flatten tiles from tilefrom to tileto, use first tile as reference for the height to reach
 {
+local tlist=AITileList();
+tlist.AddRectangle(tilefrom, tileto);
+
 return AITile.LevelTiles(tilefrom, tileto);
 }
 
@@ -228,91 +216,147 @@ function cTileTools::MostItemInList(list, item)
 // add item to list if not exist and set counter to 1, else increase counter
 // return the list
 {
-if (!list.HasItem(item))	{ list.AddItem(item,1); DInfo("new item : "+item); }
-				else	{ local c=list.GetValue(item); c++; list.SetValue(item,c); DInfo("Item "+item+" now at "+c); }
-DInfo("deb: "+list.GetValue(item));
+if (!list.HasItem(item))	{ list.AddItem(item,1); }
+				else	{ local c=list.GetValue(item); c++; list.SetValue(item,c); }
 return list;
 }
 
-function cTileTools::TileHeuristic(tile, wantedHeight)
-// check each tile that will be affected by our terraforming & check them for possible success
-// tile= tile to check
-// wantedHeight = height we want reach
-// return AIList of tiles affected, with item=tile & value=1 clear tile, 0 unclear
+function cTileTools::CheckLandForConstruction(fromTile, toTile)
 {
-
-}
-
-function cTileTools::GetHeightDifference(tile)
-	{
-	local srcL=AITile.GetMinHeight(tile);
-	local srcH=AITile.GetMaxHeight(tile);
-	local hdiff=abs(srcL-srcH);
-	return hdiff;
-	}
-
-function cTileTools::CheckLandForContruction(fromTile, toTile)
-// Check fromTile toTile if we need raise/lower or demolish things
-{
-local maxH=AITileList();
-local minH=AITileList();
 fromTile=30594;
 toTile=33402;
-maxH.AddRectangle(fromTile,toTile);
+if (!cTileTools.TerraformLevelTiles(fromTile, toTile))	DInfo("Operation failure");
+}
+
+function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
+// terraform from tileFrom to tileTo
+// return true if success
+{
+local tlist=AITileList();
+tlist.AddRectangle(tileFrom, tileTo);
+local Solve=cTileTools.TerraformHeightSolver(tlist);
+Solve.RemoveValue(0); // discard failures
+local money=-1;
+foreach (solution, direction in Solve)	DInfo("sol: "+solution+" dir: "+direction);
+// need to sort the list to try cheapest solves first
+if (!Solve.IsEmpty())
+	{
+	foreach (solution, direction in Solve)
+		{
+		local realmoney=abs(direction);
+		if (!cBanker.CanBuyThat(realmoney))
+			{
+			DInfo("TerraformLevelTiles-> Stopping action. We won't have enought money to succed",1);
+			continue;
+			}
+		cBanker.RaiseFundsBigTime();
+		if (direction < 0)	money=cTileTools.TerraformDoAction(tlist, solution, true, false);
+					else	money=cTileTools.TerraformDoAction(tlist, solution, false, false);	
+		if (money != -1)
+			{
+			DInfo("TerraformLevelTiles-> Success, we spent "+money+" credits for the operation",1);
+			return true;
+			}
+		}
+	}
+DInfo("TerraformLevelTiles-> Fail",2);
+return false;
+}
+
+function cTileTools::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=false)
+// Try flatten tiles in tlist to the wanted height level
+// tlist : tiles to check
+// wantedHeight : the level to flatten tiles to
+// UpOrDown: true to level down, false to level up the tiles
+// evaluate : true to only check if we can do it, else we will execute the terraforming
+// return :	-1 in both case if this will fail
+//		when evaluate & success return estimated costs need to do the operation
+//		when !evaluate & success return costs taken to do the operation
+{
+local moneySpend=0;
+local moneyNeed=0;
+local tTile=AITileList();
+tTile.AddList(tlist);
+tTile.Sort(AIList.SORT_BY_VALUE,UpOrDown);
+local costs=AIAccounting();
+local testrun=AITestMode();
+local error=false;
+foreach (tile, max in tTile)
+	{
+	error=cTileTools.ShapeTile(tile, wantedHeight, true);
+	if (error)	break;
+	}
+testrun=null;
+moneyNeed=costs.GetCosts();	
+DInfo("TerraformDoAction-> predict failure : "+error+" Money need="+moneyNeed,2);
+if (error)	moneyNeed=-1;
+if (evaluate)	return moneyNeed;
+costs.ResetCosts();
+if (!error)
+	{
+	foreach (tile, max in tTile)
+		{
+		error=cTileTools.ShapeTile(tile, wantedHeight, false);
+		if (error) break;
+		}
+	}
+moneySpend=costs.GetCosts();
+DInfo("TerraformDoAction-> spent "+moneySpend+" money",2);
+if (!error)
+	{
+	DInfo("TerraformDoAction-> flatten successfuly land at level : "+wantedHeight,1);
+	return moneySpend;
+	}
+DInfo("TerraformDoAction-> fail flatten land at level : "+wantedHeight,1);
+return -1;
+}
+
+function cTileTools::TerraformHeightSolver(tlist)
+// Look at tiles in tlist and try to find the height that cost us the less to flatten them all at same height
+// tlist: the tile list to check
+// return : tilelist table with item=height
+//		value = 0 when failure
+//		value > 0 should success if raising tiles, it's also money we need to do it
+//		value < 0 should success if lowering tiles
+// so best solve is lowest value && value != 0
+{
+if (tlist.IsEmpty())	
+	{
+	DInfo("TerraformSolver-> doesn't find any tiles to work on!",1);
+	return AIList();
+	}
+local maxH=tlist;
+local minH=AITileList();
+local moneySpend=0;
+local moneyNeed=0;
 minH.AddList(maxH);
 maxH.Valuate(AITile.GetMaxHeight);
 minH.Valuate(AITile.GetMinHeight);
 local cellHCount=AIList();
 local cellLCount=AIList();
-local virtualH=AIList();
-local virtualL=AIList();
-local shouldsuccess=true;
 foreach (tile, max in maxH)
 	{
-	//PutSign(tile,"*");
-/*	if (!cellHCount.HasItem(max))
-			{
-			cellHCount.AddItem(max,1);
-			}
-		else	{
-			local c=cellHCount.GetValue(max);
-			c++; cellHCount.SetValue(max,c);
-			}
-	DInfo("new: "+max+" newval:"+cellHCount.GetValue(max));*/
+	// this loop count each tile lower height and higher height on each tiles
 	cellHCount=cTileTools.MostItemInList(cellHCount,maxH.GetValue(tile)); // could use "max" var instead, but clearer as-is
 	cellLCount=cTileTools.MostItemInList(cellLCount,minH.GetValue(tile));
 	}
-DInfo("CellHCount size"+cellHCount.Count());
-DInfo("CellLCount size"+cellLCount.Count());
-virtualH.AddList(cellHCount);
-virtualL.AddList(cellLCount);
-foreach (item, value in cellHCount)
-	{
-	DInfo("High -> "+item+" / "+value);
-	}
-foreach (item, value in cellLCount)
-	{
-	DInfo("Low -> "+item+" / "+value);
-	}
-foreach (tile, max in maxH)
-	{
-	//PutSign(tile,AITile.GetMinHeight(tile)+"/"+max);
-	}
-
+//DInfo("CellHCount size"+cellHCount.Count());
+//DInfo("CellLCount size"+cellLCount.Count());
 cellHCount.Sort(AIList.SORT_BY_VALUE,false);
 cellLCount.Sort(AIList.SORT_BY_VALUE,false);
 local HeightIsLow=true;
 local currentHeight=-1;
 local h_firstitem=1000;
 local l_firstitem=1000;
-local doable=true;
+local Solve=AIList();
+local terratrys=0;
 do	{
 	h_firstitem=cellHCount.Begin();
 	l_firstitem=cellLCount.Begin();
-	DInfo("Checking h:"+cellHCount.GetValue(h_firstitem)+" vs l:"+cellLCount.GetValue(l_firstitem));
+	//DInfo("Checking h:"+cellHCount.GetValue(h_firstitem)+" vs l:"+cellLCount.GetValue(l_firstitem));
 	if (cellHCount.GetValue(h_firstitem) < cellLCount.GetValue(l_firstitem))
 			{
-			DInfo("Pick low level");
+			DInfo("TerraformSolver-> trying lowering tiles level to "+currentHeight,2);
 			HeightIsLow=true;
 			currentHeight=l_firstitem;
 			cellLCount.RemoveItem(l_firstitem);
@@ -320,91 +364,34 @@ do	{
 	else		{
 			HeightIsLow=false;
 			currentHeight=h_firstitem;
-			DInfo("Pick high level");
 			cellHCount.RemoveItem(h_firstitem);
+			DInfo("TerraformSolver-> trying raising tiles level to "+currentHeight,2);
 			}
-	DInfo("currentHeight="+currentHeight+" low? "+HeightIsLow);
-	INSTANCE.NeedDelay(50);
 	// Now we have determine what low or high height we need to reach by priority (most tiles first, with a pref to lower height)
-	//local doable=true;
-	
-	// raising 1 corner from tilemin=tileheight to tileheight+1= 4 tiles affect, effect = raise corner to
-	// raising 1 corner from tilemin&tileheight+1
+	terratrys++;
 	if (currentHeight == 0) // not serious to build at that level
 		{
-		DInfo("Water level detect!");
-		doable=false;
+		DInfo("TerraformSolver-> Water level detect !",1);
+		Solve.AddItem(0,0);
 		continue;
 		}
-
-	local tTile=AITileList();
-	tTile.AddList(maxH);
-	tTile.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
-//	tTile.Valuate(cTileTools.GetHeightDifference);
-//	tTile.Sort(AIList.SORT_BY_VALUE, false);
-//	virtualH.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
-//	virtualL.Sort(AIList.SORT_BY_VALUE,HeightIsLow);
-//	DInfo("Fake run");
-/*	foreach (tile, max in tTile)
-		{
-		if (HeightIsLow) // we're trying to higher them
+	local money=0;
+	local error=false;
+	money=cTileTools.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);
+	if (money != -1)
 			{
-			//if (virtualH.GetValue(tile) < wantedHeight)
+			DInfo("TerraformSolver-> found a solve, "+money+" credits need to reach level "+currentHeight,1);
+			if (money == 0)	money=1; // in case no money is need, we still ask 1 credit, else we will mistake as a failure
+			if (HeightIsLow)	money=0-money; // force negative to lower tile
 			}
-		}
-*/
-	local costs=AIAccounting();
-/*	local testrun=AITestMode();
-	foreach (tile, max in tTile)
-		{
-		if (!cTileTools.TerraformTile(tile, currentHeight, true))
+		else	money=0; // 0 == failure
+	if (Solve.HasItem(currentHeight))
 			{
-			doable=false;
-			break;
+			if (Solve.GetValue(currentHeight) < money)	Solve.SetValue(currentHeight,money); // add it if solve cost less
 			}
-		}
-	DInfo("End test run : "+doable);
-	testrun=null; */
-	//DInfo("Total spend: "+costs.GetCosts());
-	doable=true;
-	local success=false;
-//	local bugthere=false;
-//	local keeploop=false;
-	if (doable)
-		{
-//		bugthere=false;
-//		keeploop=false;
-		foreach (tile, max in tTile)
-			{
-			success=cTileTools.TerraformTile(tile, currentHeight);
-			if (!success)
-				{
-				doable=false;
-				break;
-				}
-			//if (success == -1)	bugthere=true;
-			//INSTANCE.NeedDelay(10);
-			//if (!AITile.GetMinHeight(tile) == currentHeight || !AITile.GetMaxHeight(tile) == currentHeight)	keeploop=true;
-			}
-		DInfo("real run "+success);
-		}
-
-INSTANCE.NeedDelay();
-	DInfo("Total spend: "+costs.GetCosts());
-	if (doable)
-		{ DInfo("It has been done !"); break; }
-	DInfo("conditions: "+h_firstitem+" / "+l_firstitem);
+		else	Solve.AddItem(currentHeight,money);
 	} while (h_firstitem > 0 || l_firstitem > 0); // loop until both lists are empty
-
-//DInfo("Stopwatch");
-foreach (tile, dummyvalue in maxH)
-	{
-	}
-return maxH;
+DInfo("TerraformSolver has search "+terratrys+" time",1);
+return Solve;
 }
 
-function cTileTools::TerraformPrediction(tlist)
-// look at tiles in tlist to predict tiles changes
-{
-
-}

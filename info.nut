@@ -19,7 +19,7 @@
    function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
-   function GetVersion()       { return 105; }
+   function GetVersion()       { return 106; }
    function MinVersionToLoad() { return 4; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
@@ -59,6 +59,7 @@
 		custom_value = 0,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
+
 	AddSetting({
 		name = "use_road",
 		description = "Use road vehicles",
@@ -77,6 +78,7 @@
 		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
+
 	AddSetting({
 		name = "use_boat",
 		description = "Use boat vehicles - NOT FUNCTIONAL",
@@ -84,6 +86,16 @@
 		medium_value = 0,
 		hard_value = 0,
 		custom_value = 0,
+		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+	});
+
+	AddSetting({
+		name = "use_terraform",
+		description = "Allow the ai to terraform when need, disable in Lazy mode",
+		easy_value = 0,
+		medium_value = 1,
+		hard_value = 1,
+		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
     	AddSetting({

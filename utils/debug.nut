@@ -108,7 +108,7 @@ tlist.Valuate(AITile.GetSlope);
 tlist.RemoveValue(0);
 tlist.Valuate(AITile.GetMaxHeight);
 //showLogic(tlist);
-cTileTools.CheckLandForContruction(0,0);
+cTileTools.CheckLandForConstruction(0,0);
 }
 
 

@@ -66,6 +66,7 @@ class DictatorAI extends AIController
 	use_train = null;
 	use_boat = null;
 	use_air = null;
+	terraform = null;
 	fairlevel = null;
 	debug = null;
 	builddelay=null;
@@ -93,6 +94,7 @@ class DictatorAI extends AIController
 	use_train = false;
 	use_boat = false;
 	use_air = false;
+	terraform = false;
 	fairlevel = 0;
 	debug = false;
 	builddelay=false;
@@ -212,9 +214,9 @@ function DictatorAI::Start()
 		checkHQ();
 		bank.SaveMoney();
 		route.RouteInitNetwork();
-		//builder.ShowSlopes();
-		//DInfo("Stopwatch");
-		//this.ClearSignsALL();
+		builder.ShowSlopes();
+		DInfo("Stopwatch");
+		this.ClearSignsALL();
 		jobs.PopulateJobs();
 		safeStart=3;
 		}
@@ -391,7 +393,8 @@ else	use_boat = false;
 if (AIController.GetSetting("use_air") && !AIGameSettings.IsDisabledVehicleType(AIVehicle.VT_AIR))
 	use_air = true;
 else	use_air = false;
-	
+if (AIController.GetSetting("use_terraform"))	terraform = true;
+							else	terraform = false;
 local allvehiclelist = AIVehicleList();
 allvehiclelist.Valuate(AIVehicle.GetVehicleType);
 local vehiclelist=AIList();
@@ -426,6 +429,7 @@ switch (fairlevel)
 		carrier.water_max=2;
 		carrier.air_max=4;
 		carrier.airnet_max=2;
+		terraform = false; // no terraforming in easy difficulty
 	break;
 	case 1: 
 		carrier.road_max_onroute=12;
@@ -448,7 +452,6 @@ switch (fairlevel)
 	}
 
 use_boat=false; // we will handle boats later
-//use_air=false;
 use_train=false;
 if (INSTANCE.safeStart >0)
 	{ // Keep only road

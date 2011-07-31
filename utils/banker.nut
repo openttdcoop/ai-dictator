@@ -124,9 +124,6 @@ return success;
 function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
-//local tomax=5000000;
-//local max=tomax;
-//if (AICompany.GetMaxLoanAmount() < tomax)	max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
 local max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
 INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
 }
@@ -137,7 +134,7 @@ function cBanker::CanBuyThat(money)
 local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
 local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
 if (cash >= money)	return true;
-	else	return false;
+			else	return false;
 }
 
 function cBanker::SaveMoney()
