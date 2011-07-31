@@ -236,15 +236,22 @@ local tlist=AITileList();
 tlist.AddRectangle(tileFrom, tileTo);
 local Solve=cTileTools.TerraformHeightSolver(tlist);
 Solve.RemoveValue(0); // discard failures
+local bestOrder=AIList();
+bestOrder.AddList(Solve);
+foreach (level, prize in bestOrder)
+	{
+	local c=abs(prize);
+	bestOrder.SetValue(level,prize);
+	}
+bestOrder.Sort(AIList.SORT_BY_VALUE, true);
 local money=-1;
-foreach (solution, direction in Solve)	DInfo("sol: "+solution+" dir: "+direction);
-// need to sort the list to try cheapest solves first
+foreach (solution, prize in bestOrder)	DInfo("sol: "+solution+" prize: "+prize);
 if (!Solve.IsEmpty())
 	{
-	foreach (solution, direction in Solve)
+	foreach (solution, prize in bestOrder)
 		{
-		local realmoney=abs(direction);
-		if (!cBanker.CanBuyThat(realmoney))
+		local direction=Solve.GetValue(solution);
+		if (!cBanker.CanBuyThat(prize))
 			{
 			DInfo("TerraformLevelTiles-> Stopping action. We won't have enought money to succed",1);
 			continue;
