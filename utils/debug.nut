@@ -104,11 +104,8 @@ function cBuilder::ShowSlopes()
 DInfo("running slopes");
 local tlist=AITileList();
 tlist.AddRectangle(30594,33402);
-tlist.Valuate(AITile.GetSlope);
-tlist.RemoveValue(0);
-tlist.Valuate(AITile.GetMaxHeight);
-//showLogic(tlist);
-cTileTools.CheckLandForConstruction(0,0);
+PutSign(30594,"S");
+cTileTools.CheckLandForConstruction(30594,12,15);
 }
 
 

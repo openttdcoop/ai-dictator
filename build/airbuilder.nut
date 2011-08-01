@@ -188,7 +188,7 @@ if (!helipadonly)
 	INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 	foreach (i, dummy in tilelist)
 		{
-		local bestplace=cTileTools.IsBuildableRectangleAtThisPoint(i, air_x, air_y);
+		local bestplace=cTileTools.CheckLandForConstruction(i, air_x, air_y);
 		if (bestplace > -1)
 			{
 			success=INSTANCE.builder.AirportMaker(bestplace, airporttype);

@@ -118,7 +118,6 @@ tilelist.Valuate(AITile.IsBuildable);
 before=tilelist.Count();
 tilelist.KeepValue(1);
 after=tilelist.Count();
-
 if (after==before)	return returntile;
 
 // tile is @ topleft of the rectangle
@@ -208,7 +207,6 @@ function cTileTools::FlattenTile(tilefrom, tileto)
 {
 local tlist=AITileList();
 tlist.AddRectangle(tilefrom, tileto);
-
 return AITile.LevelTiles(tilefrom, tileto);
 }
 
@@ -221,11 +219,16 @@ if (!list.HasItem(item))	{ list.AddItem(item,1); }
 return list;
 }
 
-function cTileTools::CheckLandForConstruction(fromTile, toTile)
+function cTileTools::CheckLandForConstruction(tile, width, height)
+// Check the tiles area for construction, look if tiles are clear, and flatten the land if need
+// return -1 on failure, the tile where to drop a construction (upper left tile)
 {
-fromTile=30594;
-toTile=33402;
-if (!cTileTools.TerraformLevelTiles(fromTile, toTile))	DInfo("Operation failure");
+local newTile=cTileTools.IsBuildableRectangleAtThisPoint(tile, width, height);
+if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
+local tileTo=newTile+AIMap.GetTileIndex(width,height);
+if (cTileTools.TerraformLevelTiles(newTile, tileTo))
+		return newTile;
+	else	return -1;
 }
 
 function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
@@ -324,8 +327,8 @@ function cTileTools::TerraformHeightSolver(tlist)
 // return : tilelist table with item=height
 //		value = 0 when failure
 //		value > 0 should success if raising tiles, it's also money we need to do it
-//		value < 0 should success if lowering tiles
-// so best solve is lowest value && value != 0
+//		value < 0 should success if lowering tiles, it's also the negative value of money need to do it
+// so best solve is lowest value (by abs value) && value != 0
 {
 if (tlist.IsEmpty())	
 	{
