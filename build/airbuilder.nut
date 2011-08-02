@@ -36,6 +36,7 @@ local ourloc=0;
 
 local ournoise=AIAirport.GetNoiseLevelIncrease(station.locations.Begin(),airporttype);
 DInfo("Town rating = "+townrating+" noiselevel="+noiselevel,2);
+cTileTools.SeduceTown(townid,AITown.TOWN_RATING_MEDIOCRE);
 if (townrating < AITown.TOWN_RATING_MEDIOCRE)
 	{ DInfo("Cannot upgrade airport, town will refuse that.",1); return false; }
 local cost=AIAirport.GetPrice(airporttype);
@@ -125,6 +126,7 @@ function cBuilder::AirportMaker(tile, airporttype)
 // Build an airport at tilebase
 {
 local essai=false;
+cTileTools.SeduceTown(AITile.GetClosestTown(tile),-200);
 INSTANCE.bank.RaiseFundsBigTime();
 INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
@@ -139,7 +141,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 local road=null;
 if (routeID==null)	road=INSTANCE.route;
 		else		road=cRoute.GetRouteObject(routeID);
-DInfo("Looking for a place to build an airport",2);
+DInfo("Looking for a place to build an airport",1);
 local helipadonly=false;
 // Pickup the airport we can build
 local airporttype=cBuilder.GetAirportType();
@@ -191,6 +193,7 @@ if (!helipadonly)
 		local bestplace=cTileTools.CheckLandForConstruction(i, air_x, air_y);
 		if (bestplace > -1)
 			{
+			DInfo("Trying to build airport at "+bestplace,2);
 			success=INSTANCE.builder.AirportMaker(bestplace, airporttype);
 			if (success)
 					{
@@ -201,6 +204,7 @@ if (!helipadonly)
 				else	{
 					INSTANCE.builder.IsCriticalError();
 					if (!INSTANCE.builder.CriticalError)	allfail=false;
+											else	break; // stop we found something that sure make all fail
 					INSTANCE.builder.CriticalError=false;
 					}
 			}

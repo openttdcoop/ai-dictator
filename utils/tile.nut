@@ -71,9 +71,12 @@ tiles.AddRectangle(place - offset, place + offset);
 return tiles;
 }
 
-function cTileTools::IsBuildableRectangleAtThisPoint(tile, width, height)
+function cTileTools::IsBuildableRectangleAtThisPoint(tile, width, height, ignoreList=AIList())
 // This check if the rectangle area is buildable in any directions from that point
 // Like the IsBuildableRectangle, but not limit to upper left point
+// tile : tile to search a solve for
+// width & height : dimensions
+// ignoreList: AIList() with tiles we should ignore (report them as if they were IsBuildable even something is there)
 // return tile point where to put the objet or -1 if nothing is buildable there
 {
 local returntile=-1;
@@ -92,6 +95,10 @@ returntile=secondtile;
 tilelist.AddRectangle(tile,secondtile);
 tilelist.Valuate(AITile.IsBuildable);
 before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
 tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	return returntile;
@@ -104,6 +111,10 @@ returntile=tile+AIMap.GetTileIndex(0-width,0);
 tilelist.AddRectangle(tile,secondtile);
 tilelist.Valuate(AITile.IsBuildable);
 before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
 tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	return returntile;
@@ -116,6 +127,10 @@ returntile=tile+AIMap.GetTileIndex(0,0-height);
 tilelist.AddRectangle(tile,secondtile);
 tilelist.Valuate(AITile.IsBuildable);
 before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
 tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	return returntile;
@@ -128,6 +143,10 @@ returntile=tile;
 tilelist.AddRectangle(tile,secondtile);
 tilelist.Valuate(AITile.IsBuildable);
 before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
 tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	return returntile;
@@ -219,11 +238,12 @@ if (!list.HasItem(item))	{ list.AddItem(item,1); }
 return list;
 }
 
-function cTileTools::CheckLandForConstruction(tile, width, height)
+function cTileTools::CheckLandForConstruction(tile, width, height, ignoreList=AIList())
 // Check the tiles area for construction, look if tiles are clear, and flatten the land if need
 // return -1 on failure, the tile where to drop a construction (upper left tile)
 {
-local newTile=cTileTools.IsBuildableRectangleAtThisPoint(tile, width, height);
+PutSign(tile,"HERE");
+local newTile=cTileTools.IsBuildableRectangleAtThisPoint(tile, width, height, ignoreList);
 if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
 local tileTo=newTile+AIMap.GetTileIndex(width,height);
 if (cTileTools.TerraformLevelTiles(newTile, tileTo))
@@ -360,6 +380,7 @@ local h_firstitem=1000;
 local l_firstitem=1000;
 local Solve=AIList();
 local terratrys=0;
+DInfo("TerrraformSolver-> Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),1);
 do	{
 	h_firstitem=cellHCount.Begin();
 	l_firstitem=cellLCount.Begin();
@@ -405,3 +426,30 @@ DInfo("TerraformSolver has search "+terratrys+" time",1);
 return Solve;
 }
 
+function cTileTools::SeduceTown(townID, needRating)
+// Fill a tile with trees
+// needRating : rating we must reach
+// return true if we reach needRating level with that town
+{
+local towntiles=cTileTools.GetTilesAroundTown(townID);
+local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
+towntiles.Valuate(AITile.IsBuildable);
+towntiles.KeepValue(1);
+local good=true;
+local money=AIAccounting();
+DInfo("Town: "+AITown.GetName(townID)+" rating: "+AITown.GetRating(townID, AICompany.COMPANY_SELF),0);
+foreach (tile, dummy in towntiles)
+	{
+	if (curRating > needRating)	break;
+	do	{
+		good=AITile.PlantTree(tile);
+		INSTANCE.bank.RaiseFundsTo(12000);
+		DInfo("Plants tree -> +"good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF));
+		} while (good && AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000);
+	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
+	}
+local endop="Success !";
+if (!good || curRating < needRating)	endop="Failure.";
+DInfo("SeduceTown-> "+endop+" Rate now:"+curRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1);
+return (curRating > needRating);
+}

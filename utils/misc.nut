@@ -87,12 +87,8 @@ function checkHQ()
 if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
 	{
 	local townlist = AITownList();
-	townlist.Valuate(AITown.GetPopulation);
-	townlist.Sort(AIList.SORT_BY_VALUE, false);
-	local townid = townlist.Begin();
-	local townloc = AITown.GetLocation(townid);
-	local place_id = AITile.GetClosestTown(townloc);
-	DictatorAI.BuildHQ(place_id);
+	townlist.Valuate(AIBase.RandItem);
+	DictatorAI.BuildHQ(townlist.Begin());
 	}
 }
 

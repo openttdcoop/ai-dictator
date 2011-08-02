@@ -149,9 +149,8 @@ function DictatorAI::Start()
 			for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
 			i=nextitem+counter;
 			iter++;
-			//obj.owner=ArrayToList(temparray);
-			//if (obj.owner.IsEmpty())	DWarn("Station "+AIStation.GetName(obj.stationID)+" is not own by any route",0);
 			cStation.stationdatabase[obj.stationID] <- obj;
+			// add checks for dead stations or tigger that
 			}
 		DInfo(iter+" stations found.",0);
 		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1);
@@ -211,12 +210,8 @@ function DictatorAI::Start()
 		}
 	 else {
 		AIInit();
-		checkHQ();
 		bank.SaveMoney();
 		route.RouteInitNetwork();
-		builder.ShowSlopes();
-		DInfo("Stopwatch");
-		this.ClearSignsALL();
 		jobs.PopulateJobs();
 		safeStart=3;
 		}
@@ -244,6 +239,7 @@ function DictatorAI::Start()
 					else	{
 						bank.RaiseFundsTo(jobs.moneyToBuild);
 						builder.TryBuildThatRoute();
+						this.checkHQ();
 						}
 					//DInfo(" ");
 					// now jump to build stage
@@ -360,12 +356,11 @@ foreach (tile, dummy in tilelist)
 	{
 	if (AICompany.BuildCompanyHQ(tile))
 		{
-		AIController.Sleep(25);
-		local name = null;
-		name = AITown.GetName(centre);
+		local name = AITown.GetName(AITile.GetClosestTown(tile));
 		AILog.Info("Built company headquarters near " + name);
-		break;
+		return;
 		}
+	AIController.Sleep(1);
 	}	
 }
 

@@ -183,7 +183,8 @@ switch (INSTANCE.route.route_type)
 	local fromsrc=INSTANCE.route.source.GetRoadStationEntry();
 	local todst=INSTANCE.route.target.GetRoadStationEntry();
 	DInfo("Calling road pathfinder: from src="+fromsrc+" to dst="+todst,2);
-	return INSTANCE.builder.BuildRoadROAD(fromsrc,todst);
+	if (!INSTANCE.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD))	return INSTANCE.builder.BuildRoadROAD(fromsrc,todst);
+												else	return true;
 	break;
 
 	case AIVehicle.VT_RAIL:
