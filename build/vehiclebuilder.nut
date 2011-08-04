@@ -346,7 +346,7 @@ else	{ DInfo("Just brought a new aircraft: "+AIVehicle.GetName(firstveh)+" "+AIE
 // as thir engine is the fastest always
 local firstorderflag = null;
 local secondorderflag = null;
-secondorderflag = AIOrder.AIOF_FULL_LOAD_ANY;
+secondorderflag = AIOrder.AIOF_NONE;
 AIOrder.AppendOrder(firstveh, srcplace, secondorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 AIGroup.MoveVehicle(road.groupID, firstveh);

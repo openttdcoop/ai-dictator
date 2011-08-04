@@ -12,7 +12,10 @@
  *
 **/
 
-class cTileTools { }
+class cTileTools
+{
+static	terraformCost = AIList();
+}
 
 function cTileTools::GetTilesAroundTown(town_id)
 // Get tile around a town
@@ -71,6 +74,18 @@ tiles.AddRectangle(place - offset, place + offset);
 return tiles;
 }
 
+function cTileTools::IsBuildable(tile)
+// function to check a water tile is buildable, handle non water with AITIle.IsBuildable()
+{
+if (AIMarine.IsDockTile(tile))	return false;
+if (AIMarine.IsWaterDepotTile(tile))	return false;
+if (AIMarine.IsBuoyTile(tile))	return false; 
+if (AIMarine.IsCanalTile(tile))	return false;
+if (AIMarine.IsLockTile(tile))	return false;
+if (!AITile.IsWaterTile(tile))	return AITile.IsBuildable(tile);
+return true;
+}
+
 function cTileTools::IsBuildableRectangleAtThisPoint(tile, width, height, ignoreList=AIList())
 // This check if the rectangle area is buildable in any directions from that point
 // Like the IsBuildableRectangle, but not limit to upper left point
@@ -84,64 +99,65 @@ local tilelist=AITileList();
 local secondtile=0;
 local before=0;
 local after=0;
+DInfo("IsBuildableRectangle-> Width: "+width+" height: "+height,1);
 width-=1;
 height-=1;
 if (width < 0) width=0;
 if (height < 0) height=0;
-// tile is @ lowerright of the rectangle
-// secondtile is @ upperleft
-secondtile=tile+AIMap.GetTileIndex(0-width,0-height);
-returntile=secondtile;
-tilelist.AddRectangle(tile,secondtile);
-tilelist.Valuate(AITile.IsBuildable);
-before=tilelist.Count();
-foreach (itile, idummy in ignoreList)
-	{
-	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-	}
-tilelist.KeepValue(1);
-after=tilelist.Count();
-if (after==before)	return returntile;
-
-// tile is @ lowerleft of the rectangle
-// secondtile is @ upperright
-tilelist=AITileList();
-secondtile=tile+AIMap.GetTileIndex(0-width,height);
-returntile=tile+AIMap.GetTileIndex(0-width,0);
-tilelist.AddRectangle(tile,secondtile);
-tilelist.Valuate(AITile.IsBuildable);
-before=tilelist.Count();
-foreach (itile, idummy in ignoreList)
-	{
-	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-	}
-tilelist.KeepValue(1);
-after=tilelist.Count();
-if (after==before)	return returntile;
-
-// tile is @ topright of the rectangle
-// secondtile is @ lowerleft
-tilelist=AITileList();
-secondtile=tile+AIMap.GetTileIndex(width,0-height);
-returntile=tile+AIMap.GetTileIndex(0,0-height);
-tilelist.AddRectangle(tile,secondtile);
-tilelist.Valuate(AITile.IsBuildable);
-before=tilelist.Count();
-foreach (itile, idummy in ignoreList)
-	{
-	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-	}
-tilelist.KeepValue(1);
-after=tilelist.Count();
-if (after==before)	return returntile;
-
 // tile is @ topleft of the rectangle
 // secondtile is @ lowerright
 tilelist=AITileList();
 secondtile=tile+AIMap.GetTileIndex(width,height);
 returntile=tile;
 tilelist.AddRectangle(tile,secondtile);
-tilelist.Valuate(AITile.IsBuildable);
+tilelist.Valuate(cTileTools.IsBuildable);
+before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
+tilelist.KeepValue(1);
+if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"1");
+after=tilelist.Count();
+if (after==before)	return returntile;
+// tile is @ topright of the rectangle
+// secondtile is @ lowerleft
+tilelist=AITileList();
+secondtile=tile+AIMap.GetTileIndex(width,0-height);
+returntile=tile+AIMap.GetTileIndex(0,0-height);
+tilelist.AddRectangle(tile,secondtile);
+tilelist.Valuate(cTileTools.IsBuildable);
+before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
+tilelist.KeepValue(1);
+if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"2");
+after=tilelist.Count();
+if (after==before)	return returntile;
+// tile is @ lowerleft of the rectangle
+// secondtile is @ upperright
+tilelist=AITileList();
+secondtile=tile+AIMap.GetTileIndex(0-width,height);
+returntile=tile+AIMap.GetTileIndex(0-width,0);
+tilelist.AddRectangle(tile,secondtile);
+tilelist.Valuate(cTileTools.IsBuildable);
+before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
+tilelist.KeepValue(1);
+if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"3");
+after=tilelist.Count();
+if (after==before)	return returntile;
+// tile is @ lowerright of the rectangle
+// secondtile is @ upperleft
+secondtile=tile+AIMap.GetTileIndex(0-width,0-height);
+returntile=secondtile;
+tilelist.AddRectangle(tile,secondtile);
+tilelist.Valuate(cTileTools.IsBuildable);
 before=tilelist.Count();
 foreach (itile, idummy in ignoreList)
 	{
@@ -149,7 +165,9 @@ foreach (itile, idummy in ignoreList)
 	}
 tilelist.KeepValue(1);
 after=tilelist.Count();
+if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"4");
 if (after==before)	return returntile;
+
 return -1;
 }
 
@@ -174,7 +192,7 @@ local compSlope=AITile.GetComplementSlope(slope);
 if (srcL == wantedHeight && srcH == wantedHeight)	return generror;
 if (!INSTANCE.terraform)
 	{
-	DInfo("ShapeTile-> AI terraforming is disable, failure",2);
+	DInfo("ShapeTile-> AI terraforming is disable, failure",1);
 	return true;
 	}
 do	{
@@ -240,12 +258,12 @@ return list;
 
 function cTileTools::CheckLandForConstruction(tile, width, height, ignoreList=AIList())
 // Check the tiles area for construction, look if tiles are clear, and flatten the land if need
-// return -1 on failure, the tile where to drop a construction (upper left tile)
+// return -1 on failure, on success the tile where to drop a construction (upper left tile)
 {
 PutSign(tile,"HERE");
 local newTile=cTileTools.IsBuildableRectangleAtThisPoint(tile, width, height, ignoreList);
 if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
-local tileTo=newTile+AIMap.GetTileIndex(width,height);
+local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
 if (cTileTools.TerraformLevelTiles(newTile, tileTo))
 		return newTile;
 	else	return -1;
@@ -257,6 +275,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 {
 local tlist=AITileList();
 tlist.AddRectangle(tileFrom, tileTo);
+if (INSTANCE.debug)	foreach (tile, dummy in tlist)	PutSign(tile,"T");
 local Solve=cTileTools.TerraformHeightSolver(tlist);
 Solve.RemoveValue(0); // discard failures
 local bestOrder=AIList();
@@ -276,8 +295,10 @@ if (!Solve.IsEmpty())
 		local direction=Solve.GetValue(solution);
 		if (!cBanker.CanBuyThat(prize))
 			{
-			DInfo("TerraformLevelTiles-> Stopping action. We won't have enought money to succed",1);
-			continue;
+			DInfo("TerraformLevelTiles-> Stopping action. We won't have enought money to succeed",1);
+			cTileTools.terraformCost.Clear();
+			cTileTools.terraformCost.AddItem(0,prize);
+			break;
 			}
 		cBanker.RaiseFundsBigTime();
 		if (direction < 0)	money=cTileTools.TerraformDoAction(tlist, solution, true, false);
@@ -289,7 +310,7 @@ if (!Solve.IsEmpty())
 			}
 		}
 	}
-DInfo("TerraformLevelTiles-> Fail",2);
+DInfo("TerraformLevelTiles-> Fail",1);
 return false;
 }
 
@@ -431,25 +452,35 @@ function cTileTools::SeduceTown(townID, needRating)
 // needRating : rating we must reach
 // return true if we reach needRating level with that town
 {
-local towntiles=cTileTools.GetTilesAroundTown(townID);
+local towntiles=cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID));
 local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 towntiles.Valuate(AITile.IsBuildable);
 towntiles.KeepValue(1);
 local good=true;
 local money=AIAccounting();
-DInfo("Town: "+AITown.GetName(townID)+" rating: "+AITown.GetRating(townID, AICompany.COMPANY_SELF),0);
+towntiles.Valuate(AITile.GetDistanceManhattanToTile,AITown.GetLocation(townID));
+towntiles.Sort(AIList.SORT_BY_VALUE, true);
+towntiles.KeepBelowValue(60);
+//foreach (tile, dummy in towntiles)	PutSign(tile,"R");
+// 1 -> 2 = 293 trees
+// 2 -> 3 = 417 trees
+DInfo("SeduceTown-> Town: "+AITown.GetName(townID)+" rating: "+AITown.GetRating(townID, AICompany.COMPANY_SELF),1);
+local totalTree=0;
+local totalspent=0;
 foreach (tile, dummy in towntiles)
 	{
-	if (curRating > needRating)	break;
+	if (curRating >= needRating || curRating == AITown.TOWN_RATING_GOOD)	break;
 	do	{
 		good=AITile.PlantTree(tile);
+		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
 		INSTANCE.bank.RaiseFundsTo(12000);
-		DInfo("Plants tree -> +"good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF));
-		} while (good && AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000);
+		DInfo("Plants tree -> "+good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,0);
+		AIController.Sleep(1);
+		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000));
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
 	}
 local endop="Success !";
 if (!good || curRating < needRating)	endop="Failure.";
 DInfo("SeduceTown-> "+endop+" Rate now:"+curRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1);
-return (curRating > needRating);
+return (curRating >= needRating);
 }

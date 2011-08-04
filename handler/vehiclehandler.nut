@@ -272,8 +272,8 @@ switch (road.route_type)
 */
 	break;
 	case AIVehicle.VT_AIR:
-		oneorder=AIOrder.AIOF_FULL_LOAD_ANY;
-		twoorder=AIOrder.AIOF_FULL_LOAD_ANY;
+		oneorder=AIOrder.AIOF_NONE;
+		twoorder=AIOrder.AIOF_NONE;
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;

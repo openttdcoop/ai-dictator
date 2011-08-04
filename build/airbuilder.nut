@@ -46,7 +46,6 @@ if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
 	{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",1); return false; }
 DInfo("Trying to upgrade airport #"+stationid+" "+AIStation.GetName(stationid),0);
 // find traffic that use that airport & reroute it
-//INSTANCE.chemin.under_upgrade=true;
 // prior to reroute aircraft, make sure they have a route to go
 foreach (ownID, dummy in station.owner)
 	{
@@ -81,7 +80,6 @@ if (!result) // should have pray a bit more, fail to build a bigger airport
 	INSTANCE.builder.CriticalError=false;
 	result=INSTANCE.builder.AirportMaker(oldplace, oldtype);
 	}
-//INSTANCE.chemin.under_upgrade=false;
 if (!result) // and we also fail to rebuild the old one! We have kill that route (and maybe many more!)
 	{
 	foreach (uid, dummy in saved_owners)
@@ -126,11 +124,11 @@ function cBuilder::AirportMaker(tile, airporttype)
 // Build an airport at tilebase
 {
 local essai=false;
-cTileTools.SeduceTown(AITile.GetClosestTown(tile),-200);
+cTileTools.SeduceTown(AITile.GetClosestTown(tile),AITown.TOWN_RATING_POOR);
 INSTANCE.bank.RaiseFundsBigTime();
 INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
-if (essai)	DInfo("Building an airport at "+tile,0);
+if (essai)	DInfo("AirportMaker-> Building an airport at "+tile,1);
 return essai;	
 }
 
@@ -141,7 +139,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 local road=null;
 if (routeID==null)	road=INSTANCE.route;
 		else		road=cRoute.GetRouteObject(routeID);
-DInfo("Looking for a place to build an airport",1);
+DInfo("BuildAirStation-> Looking for a place to build an airport",1);
 local helipadonly=false;
 // Pickup the airport we can build
 local airporttype=cBuilder.GetAirportType();
@@ -191,9 +189,12 @@ if (!helipadonly)
 	foreach (i, dummy in tilelist)
 		{
 		local bestplace=cTileTools.CheckLandForConstruction(i, air_x, air_y);
+		// clear signs
+		local sweeper=AISignList();
+		foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
 		if (bestplace > -1)
 			{
-			DInfo("Trying to build airport at "+bestplace,2);
+			DInfo("BuildAirStation-> Trying to build airport at "+bestplace,1);
 			success=INSTANCE.builder.AirportMaker(bestplace, airporttype);
 			if (success)
 					{
@@ -211,7 +212,7 @@ if (!helipadonly)
 		}
 	}
 else	{ success=true; }
-DInfo("Success to build airport "+success+" allfail="+allfail,2);
+DInfo("BuildAirStation-> Success to build airport "+success+" allfail="+allfail,1);
 if (success)
 	{
 	if (!helipadonly)
@@ -226,7 +227,7 @@ if (success)
 		road.route_type = RouteType.CHOPPER;
 		road.CreateNewStation(start);
 		road.CheckEntry();
-		DInfo("Chopper says depot is "+road.source.depot);
+		DInfo("BuildAirStation-> Chopper says depot is "+road.source.depot,1);
 		road.source.depot=null;
 		}
 /*	if (helipadonly)

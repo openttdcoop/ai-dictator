@@ -23,7 +23,7 @@ static	database = {};
 static	jobIndexer = AIList();	// this list have all UID in the database, value = ranking
 static	jobDoable = AIList();	// same as upper, but only doable ones, value = ranking
 static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
-static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,150,200];
+static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,200,250];
 static	CostTopJobs = [0, 0, 0, 0]; // price of best job for rail, road, water & air
 static	lastRefresh = [0];	// last date we refresh all jobs
 static	statueTown = AIList();	// list of towns we use, for statues, decrease everytime a statue is there
@@ -164,10 +164,10 @@ function cJobs::RankThisJob()
 				stationrank= (100 - (this.foule *100));	// give up when 1 station is present
 			break;
 			case	1:
-				stationrank= (100- (this.foule *100));	// give up when 2 stations are there
+				stationrank= (100- (this.foule *50));	// give up when 2 stations are there
 			break;
 			case	2:
-				stationrank= (100- (this.foule *100));	// give up after 4 stations
+				stationrank= (100- (this.foule *25));	// give up after 4 stations
 			break;
 			}
 	if (stationrank <=0 && INSTANCE.fairlevel > 0)	stationrank=1;

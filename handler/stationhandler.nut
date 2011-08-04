@@ -41,6 +41,7 @@ static	function GetStationObject(stationID)
 	vehicle_capacity	= null;	// total capacity of all vehicle using the station, item=cargoID, value=capacity
 	owner			= null;	// list routes that own that station
 	lastUpdate		= null;	// record last date we update infos for the station
+	moneyUpgrade	= null;	// money we need for upgrading the station
 	
 	constructor()
 		{
@@ -59,6 +60,7 @@ static	function GetStationObject(stationID)
 		vehicle_capacity	= AIList();
 		owner			= AIList();
 		lastUpdate		= 0;
+		moneyUpgrade	= 0;
 		}
 }
 
