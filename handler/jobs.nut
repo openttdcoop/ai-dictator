@@ -669,7 +669,7 @@ function cJobs::RawJobDelete(ID, isTown)
 	if (isTown)	seekID+=10000;
 	if (cJobs.rawJobs.HasItem(seekID))
 		{
-		cJobs.RemoveItem(seekID);
+		cJobs.rawJobs.RemoveItem(seekID);
 		DInfo("Removing industry from rawJob database "+seekID,1,"RawJobDelete");
 		}
 	}
