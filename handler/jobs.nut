@@ -650,11 +650,11 @@ function cJobs::RawJobHandling()
 	jfilter.RemoveValue(1); // keep only one not done yet
 	jfilter.Valuate(AIBase.RandItem); // randomize remain entries
 	DInfo("rawJobs to do: "+jfilter.Count()+" / "+cJobs.rawJobs.Count(),1,"RawJobHandling");
-	if (jfilter.IsEmpty())	DInfo("All raw jobs process",1,"RawJobHandling");
+	if (jfilter.IsEmpty())	DInfo("All raw industry jobs process",2,"RawJobHandling");
 				else	{
 					local realID=jfilter.Begin();
 					local isTown=(realID >= 10000) ? true : false;
-					DInfo("isTown = "+isTown+" id="+realID);
+					DInfo("isTown = "+isTown+" id="+realID,1,"RawJobHandling:Industry");
 					if (isTown)	realID-=10000;
 					cJobs.AddNewIndustryOrTown(realID,isTown);
 					cJobs.rawJobs.SetValue(jfilter.Begin(),1); // mark it done
@@ -677,11 +677,8 @@ function cJobs::RawJobDelete(ID, isTown)
 function cJobs::RawJobAdd(ID, isTown)
 // Add industry or town to rawJob database
 	{
-	if (!cJobs.rawJobs.HasItem(ID))
-		{
-		if (isTown)	cJobs.rawJobs.AddItem(ID+10000,0);
-			else	cJobs.rawJobs.AddItem(ID,0);
-		}
+	if (isTown)	ID+=10000;
+	if (!cJobs.rawJobs.HasItem(ID))	cJobs.rawJobs.AddItem(ID,0);
 	}
 
 function cJobs::PopulateJobs()
@@ -696,23 +693,21 @@ local curr=0;
 DInfo("Finding all industries & towns jobs...",0,"PopulateJobs");
 foreach (ID, dummy in indjobs)
 	{
-	//AddNewIndustryOrTown(ID, false);
 	cJobs.RawJobAdd(ID,false);
 	curr++;
 	if (curr % 4 == 0)
 		{
-		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs");
+		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Industry");
 		INSTANCE.Sleep(1);
 		}
 	}
 foreach (ID, dummy in townjobs)
 	{
-	//AddNewIndustryOrTown(ID, true);
 	cJobs.RawJobAdd(ID,true);
 	curr++;
 	if (curr % 4 == 0)
 		{
-		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs");
+		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Town");
 		INSTANCE.Sleep(1);
 		}
 	}
