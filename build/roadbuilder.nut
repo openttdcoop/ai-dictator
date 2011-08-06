@@ -761,3 +761,368 @@ if (path != null && path != false)
 else	{ return false;	}
 }
 
+function cBuilder::RoadFindCompatibleDepot(tile)
+/**
+* Try to find an existing road depot near tile and reuse it
+*
+* @param tile the tile to search the depot
+* @return -1 on failure, depot location on success
+*/
+{
+local reusedepot=cTileTools.GetTilesAroundPlace(tile);
+reusedepot.Valuate(AIRoad.IsRoadDepotTile);
+reusedepot.KeepValue(1);
+reusedepot.Valuate(AITile.GetOwner);
+local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+reusedepot.KeepValue(weare);
+reusedepot.Valuate(AITile.GetDistanceManhattanToTile,tile);
+reusedepot.Sort(AIList.SORT_BY_VALUE, true);
+reusedepot.RemoveAboveValue(10);
+
+local newdeploc=-1;
+if (!reusedepot.IsEmpty())
+	{
+	newdeploc=reusedepot.Begin();
+	}
+return newdeploc;
+}
+
+function cBuilder::RoadStationNeedUpgrade(roadidx,start)
+/**
+* Upgrade a road station.
+* @param roadidx index of the route to upgrade
+* @param start true to upgrade source station, false for destination station
+* @return true or false
+*/
+{
+//local new_location=[AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,-1), AIMap.GetTileIndex(-1,1), AIMap.GetTileIndex(1,-1), AIMap.GetTileIndex(1,1)];
+// left, right, behind middle, front middle, behind left, behind right, front left, front right
+//local new_facing=[AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1)];
+// 0 will be same as original station, north, south, east, west
+local road=cRoute.GetRouteObject(roadidx);
+if (road == null)	return false;
+local work=null;
+if (start)	work=road.source;
+	else	work=road.target;
+if (work == null)	return;
+DInfo("Upgrading road station "+AIStation.GetName(work.stationID),0);
+local depot_id=work.depot;
+DInfo("Road depot is at "+depot_id,2);
+// first lookout where is the station, where is its entry, where is the depot, where is the depot entry
+local sta_pos=AIStation.GetLocation(work.stationID);
+local sta_front=AIRoad.GetRoadStationFrontTile(sta_pos);
+local dep_pos=depot_id;
+local dep_front=AIRoad.GetRoadDepotFrontTile(depot_id);
+local depotdead=false;
+local statype= AIRoad.ROADVEHTYPE_BUS;
+if (work.stationType == AIStation.STATION_TRUCK_STOP)	statype=AIRoad.ROADVEHTYPE_TRUCK;
+local deptype=AIRoad.ROADVEHTYPE_BUS+100000; // we add 100000
+local new_sta_pos=-1;
+local new_dep_pos=-1;
+local success=false;
+local upgradepos=[];
+local facing=INSTANCE.builder.GetDirection(sta_pos, sta_front);
+local p_left=0;
+local p_right=0;
+local p_back=0;
+switch (facing)
+	{
+	case DIR_NW:
+		p_left = AIMap.GetTileIndex(1,0);
+		p_right =AIMap.GetTileIndex(-1,0);
+		p_back = AIMap.GetTileIndex(0,-1);
+		PutSign(sta_pos,"NW");
+	break;
+	case DIR_NE:
+		p_left = AIMap.GetTileIndex(0,-1);
+		p_right =AIMap.GetTileIndex(0,1);
+		p_back = AIMap.GetTileIndex(-1,0);
+		PutSign(sta_pos,"NE");
+	break;
+	case DIR_SW: // facing left ok
+		p_left = AIMap.GetTileIndex(0,1);
+		p_right =AIMap.GetTileIndex(0,-1); 
+		p_back = AIMap.GetTileIndex(1,0);
+		PutSign(sta_pos,"SW");
+	break;
+	case DIR_SE: // facing sud
+		p_left =AIMap.GetTileIndex(-1,0);
+		p_right = AIMap.GetTileIndex(1,0);
+		p_back = AIMap.GetTileIndex(0,1);
+		PutSign(sta_pos,"SE");
+	break;
+	}
+PutSign(sta_pos+p_left,"L");
+PutSign(sta_pos+p_right,"R");
+PutSign(sta_pos+p_back,"B");
+DInfo("Size :"+work.size,2);
+INSTANCE.NeedDelay(30);
+if (work.size == 1)
+	{
+	if (!AIRoad.IsRoadTile(sta_front+p_left))
+		{ cTileTools.DemolishTile(sta_front+p_left); AIRoad.BuildRoad(sta_front, sta_front+p_left); }
+	if (!AIRoad.IsRoadTile(sta_front+p_right))
+		{ cTileTools.DemolishTile(sta_front+p_right); AIRoad.BuildRoad(sta_front, sta_front+p_right); }
+	}
+// possible entry + location of station
+// these ones = left, right, front (other side of road), frontleft, frontright
+upgradepos.push(sta_front+p_left);
+upgradepos.push(sta_pos+p_left);	// same left
+upgradepos.push(sta_front+p_right);
+upgradepos.push(sta_pos+p_right); // same right
+upgradepos.push(sta_front+p_left);
+upgradepos.push(sta_front+p_back+p_left);
+upgradepos.push(sta_front+p_right);
+upgradepos.push(sta_front+p_back+p_right);
+upgradepos.push(sta_front);
+upgradepos.push(sta_front+p_back); // revert middle
+upgradepos.push(sta_pos+p_left+p_left);
+upgradepos.push(sta_pos+p_left); // same left
+upgradepos.push(sta_pos+p_right+p_right);
+upgradepos.push(sta_pos+p_right); // same right
+upgradepos.push(sta_front+p_back+p_left+p_left);
+upgradepos.push(sta_front+p_back+p_left);
+upgradepos.push(sta_front+p_back+p_right+p_right);
+upgradepos.push(sta_front+p_back+p_right);
+local allfail=true;
+for (local i=0; i < upgradepos.len()-1; i++)
+	{
+	local tile=upgradepos[i+1];
+	local direction=upgradepos[i];
+	if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
+	if (AIRoad.IsRoadStationTile(direction))	continue;
+	if (AIRoad.IsRoadTile(tile))	continue; // don't build on a road if we could
+	new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.stationID);
+	if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
+	INSTANCE.builder.CriticalError=false; // discard it
+	if (new_sta_pos != -1)	break;
+	AIController.Sleep(1);
+	INSTANCE.NeedDelay(30);
+	i++; if (i>=upgradepos.len())	break;
+	}
+DInfo("2nd try don't care roads");
+// same as upper but destructive
+if (new_sta_pos==-1)
+	{
+	for (local i=0; i < upgradepos.len()-1; i++)
+		{
+		local tile=upgradepos[i+1];
+		local direction=upgradepos[i];
+		if (AIRoad.IsRoadStationTile(tile))	continue; // don't build on a station
+		if (AIRoad.IsRoadStationTile(direction))	continue;
+		if (!cTileTools.DemolishTile(tile))	{ DInfo("Cannot clean the place for the new station at "+tile,1); }
+		new_sta_pos=INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.stationID);
+		if (!INSTANCE.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
+		INSTANCE.builder.CriticalError=false; // discard it
+		if (new_sta_pos != -1)	break;
+		AIController.Sleep(1);
+		INSTANCE.NeedDelay(30);
+		i++; if (i>=upgradepos.len())	break;
+		}
+	}
+
+if (new_sta_pos == dep_pos)	{ depotdead = true; }
+if (new_sta_pos == dep_front)
+	{
+	depotdead=true; // the depot entry is now block by the station
+	cTileTools.DemolishTile(dep_pos);
+	}
+if (depotdead)	
+	{
+	DWarn("Road depot was destroy while upgrading",1);
+	new_dep_pos=INSTANCE.builder.BuildRoadDepotAtTile(new_sta_pos);
+	work.depot=new_dep_pos;
+	INSTANCE.builder.CriticalError=false;
+	// Should be more than enough
+	}
+if (new_sta_pos > -1)
+	{
+	DInfo("Station "+AIStation.GetName(work.stationID)+" has been upgrade",0);
+	local loc=AIStation.GetLocation(work.stationID);
+	work.locations=cTileTools.FindStationTiles(loc);
+	foreach(loc, dummy in work.locations)	work.locations.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
+	work.size=work.locations.Count();
+	DInfo("New station size: "+work.size+"/"+work.maxsize,2);
+	INSTANCE.builder.BuildRoadROAD(AIRoad.GetRoadStationFrontTile(new_sta_pos), AIRoad.GetRoadDepotFrontTile(work.depot));
+	}
+else	{ // fail to upgrade station
+	DInfo("Failure to upgrade "+AIStation.GetName(work.stationID),1);
+	if (allfail)
+		{
+		work.maxsize=work.size;
+		DInfo("Cannot upgrade "+AIStation.GetName(work.stationID)+" anymore !",1);
+		}
+	success=false;
+	}
+foreach (uid, dummy in work.owner)	{ INSTANCE.builder.RouteIsDamage(uid); }
+// ask ourselves a check for every routes that own that station, because station or depot might have change
+return success;
+}
+
+function cBuilder::BuildRoadStationOrDepotAtTile(tile, direction, stationtype, stationnew)
+/**
+* Build a road depot or station, add tile to blacklist on critical failure
+* Also build the entry tile with road if need. Try also to find a compatible depot near the wanted position and re-use it
+*
+* @param tile the tile where to put the structure
+* @param direction the tile where the structure will be connected
+* @param stationtype if AIRoad.ROADVEHTYPE_BUS+100000 build a depot, else build a station of stationtype type
+* @param stationnew invalid station id to build a new station, else joint the station with stationid
+* @return tile position on success. -1 on error, set CriticalError
+*/
+{
+// before spending money on a "will fail" structure, check the structure could be connected to a road
+if (AITile.IsStationTile(tile))	return -1; // don't destroy a station, might even not be our
+INSTANCE.bank.RaiseFundsBigTime(); 
+if (!AIRoad.IsRoadTile(direction))
+	{
+	if (!cTileTools.DemolishTile(direction))
+		{
+		DWarn("Can't remove the tile front structure to build a road at "+direction,2); PutSign(direction,"X");
+		INSTANCE.builder.IsCriticalError();
+		return -1;
+		}
+	}
+
+if (!AIRoad.AreRoadTilesConnected(direction,tile))
+	{
+	if (!AIRoad.BuildRoad(direction,tile))
+		{
+		DWarn("Can't build road entrance for the structure",2);
+		INSTANCE.builder.IsCriticalError();
+		return -1;
+		}
+	}
+INSTANCE.builder.CriticalError=false;
+if (!cTileTools.DemolishTile(tile))
+	{
+	DWarn("Can't remove the structure tile position at "+tile,2); PutSign(tile,"X");
+	INSTANCE.builder.IsCriticalError();
+	return -1;
+	}
+local success=false;
+local newstation=0;
+if (AIStation.IsValidStation(stationnew))	newstation=stationnew;
+						else	newstation=AIStation.STATION_NEW;
+if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
+	{
+	INSTANCE.bank.RaiseFundsBigTime();
+	// first let's hack another depot if we can
+	local hackdepot=INSTANCE.builder.RoadFindCompatibleDepot(tile);
+	if (hackdepot == -1)	success=AIRoad.BuildRoadDepot(tile,direction);
+			else	{
+				tile=hackdepot;
+				direction=AIRoad.GetRoadDepotFrontTile(tile);
+				success=true;
+				}
+	PutSign(tile,"D");
+	if (!success)
+		{
+		DWarn("Can't built a road depot at "+tile,2);
+		INSTANCE.builder.IsCriticalError();
+		}
+	else	{
+		if (hackdepot == -1)	DInfo("Built a road depot at "+tile,0);
+				else	DInfo("Found a road depot near "+tile+", reusing that one",0);
+		}
+	}
+else	{
+	INSTANCE.bank.RaiseFundsBigTime(); ClearSignsALL();
+	DInfo("Road info: "+tile+" direction"+direction+" type="+stationtype+" mod="+newstation,2);
+	PutSign(tile,"s"); PutSign(direction,"c");
+	success=AIRoad.BuildRoadStation(tile, direction, stationtype, newstation);
+	if (!success)
+		{
+		DWarn("Can't built the road station at "+tile,2);
+		INSTANCE.builder.IsCriticalError();
+		}
+	else	DInfo("Built a road station at "+tile,0);
+	}
+if (!success)
+	{
+	return -1;
+	}
+else	{
+	if (!AIRoad.AreRoadTilesConnected(tile, direction))
+		if (!AIRoad.BuildRoad(tile, direction))
+		{
+		DWarn("Fail to connect the road structure with the road in front of it",2);
+		INSTANCE.builder.IsCriticalError();
+		if (!cTileTools.DemolishTile(tile))
+			{
+			DWarn("Can't remove bad road structure !",2);
+			}
+		return -1;
+		}
+	return tile;
+	}
+}
+
+function cBuilder::RoadRunner(source, target, road_type, walkedtiles=null, origin=null)
+// Follow all directions to walk through the path starting at source, ending at target
+// check if the path is valid by using road_type (railtype, road)
+// return true if we reach target
+{
+local max_wrong_direction=15;
+if (origin == null)	origin=AITile.GetDistanceManhattanToTile(source, target);
+if (walkedtiles == null)	{ walkedtiles=AIList(); }
+local valid=false;
+local direction=null;
+local found=(source == target);
+local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
+foreach (voisin in directions)
+	{
+	direction=source+voisin;
+	if (road_type == AIVehicle.VT_ROAD)
+		{
+		if (AIBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
+			{
+			local endat=null;
+			endat=AIBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
+
+			// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
+			// if we are connect to someone, i reset "source" to be "someone" and continue
+			local guessTile=null;	
+			foreach (where in directions)
+				{
+				if (AIRoad.AreRoadTilesConnected(endat, endat+where))
+					{ guessTile=endat+where; }
+				}
+			if (guessTile != null)
+				{
+				source=guessTile;
+				direction=source+voisin;
+				}
+			}
+		valid=AIRoad.AreRoadTilesConnected(source, direction);
+		}
+	else	{ valid=AIRail.AreTilesConnected(source, direction, direction); }
+	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
+	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
+	if (walkedtiles.HasItem(direction))	{ valid=false; } 
+	if (valid)	walkedtiles.AddItem(direction,0);
+	//if (valid && INSTANCE.debug)	PutSign(direction,"*");
+	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
+	if (!found && valid)	found=INSTANCE.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
+	if (found) return found;
+	}
+return found;
+}
+
+function cBuilder::IsRoadStationBusy(stationid)
+// Check if a road station is busy and return the vehicle list that busy it
+// Station must be AIStation.StationType==STATION_TRUCK_STOP
+// We will valuate it with cargo type each vehicle use before return it
+// Return false if not
+{
+if (!AIStation.HasStationType(stationid,AIStation.STATION_TRUCK_STOP))	return false;
+local veh_using_station=AIVehicleList_Station(stationid);
+if (veh_using_station.IsEmpty())	return false;
+local station_tiles=cTileTools.FindRoadStationTiles(AIStation.GetLocation(stationid));
+local station_index=INSTANCE.chemin.GListGetStationIndex(stationid);
+if (station_index == false)	return false;
+local station_obj=INSTANCE.chemin.GListGetItem(station_index);
+veh_using_station.Valuate(AITile.GetDistanceManhattanToTile, AIStation.GetLocation(stationid));
+}
+
+

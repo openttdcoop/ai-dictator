@@ -46,13 +46,15 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.AI_ET_INDUSTRY_OPEN:
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();
-			INSTANCE.jobs.AddNewIndustryOrTown(industry, false);
+			//INSTANCE.jobs.AddNewIndustryOrTown(industry, false);
+			cJobs.RawJobAdd(industry,false);
 			DInfo("New industry "+AIIndustry.GetName(industry),0);
 		break;
 		case AIEvent.AI_ET_INDUSTRY_CLOSE:
 			event = AIEventIndustryClose.Convert(event);
 			local industry = event.GetIndustryID();
 			DInfo("Industry "+AIIndustry.GetName(industry)+" is closing !",0);
+			cJobs.RawJobDelete(industry, false)
 		break;
 		case AIEvent.AI_ET_COMPANY_NEW:
 			event = AIEventCompanyNew.Convert(event);

@@ -16,7 +16,7 @@ function PutSign(place,msg)
 // put a sign at place
 {
 if (!INSTANCE.debug) return;
-if (DictatorAI.GetSetting("debug") < 1) return;
+if (DictatorAI.GetSetting("debug") < 2) return;
 if (place != null) AISign.BuildSign(place,msg);
 }
 
@@ -24,7 +24,7 @@ function ClearSignsALL()
 // this just clear any signs we can
 {
 local sweeper=AISignList();
-DInfo("Removing Signs ! "+sweeper.Count(),2);
+DInfo("Removing Signs ! "+sweeper.Count(),2,"ClearSignsALL");
 foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
 }
 
@@ -69,7 +69,7 @@ if (tjob.source_istown)	src=AITown.GetName(tjob.sourceID)+src;
 		else	src=AIIndustry.GetName(tjob.sourceID)+src;
 if (tjob.target_istown)	dst=AITown.GetName(tjob.targetID)+dst;
 		else	dst=AIIndustry.GetName(tjob.targetID)+dst;
-DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" Amount="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,2);
+DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+AICargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" Amount="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,2,"DumbJobs");
 }
 
 function cBuilder::DumpTopJobs()
@@ -98,15 +98,4 @@ if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	PutSign(outpos,outtxt);
 	}
 }
-
-function cBuilder::ShowSlopes()
-{
-DInfo("running slopes");
-local tlist=AITileList();
-tlist.AddRectangle(30594,33402);
-PutSign(30594,"S");
-cTileTools.CheckLandForConstruction(30594,12,15);
-}
-
-
 

@@ -35,19 +35,25 @@ enum DepotAction {
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
 require("build/builder.nut");
+require("build/stationbuilder.nut");
+require("build/airportbuilder.nut");
+require("build/waterbuilder.nut");
+require("build/railbuilder.nut");
+require("build/roadbuilder.nut");
+require("build/stationremover.nut");
 require("build/vehiclebuilder.nut");
+require("build/aircraftbuilder.nut");
+require("build/trainbuilder.nut");
+require("build/truckbuilder.nut");
+require("build/boatbuilder.nut");
 require("handler/routes.nut");
 require("handler/events.nut");
 require("handler/checks.nut");
 require("handler/cargo.nut");
 require("handler/vehiclehandler.nut");
+require("handler/ordershandler.nut");
 require("handler/stationhandler.nut");
 require("handler/chemin.nut");
-require("build/railbuilder.nut");
-require("build/roadbuilder.nut");
-require("build/airbuilder.nut");
-require("build/stationbuilder.nut");
-require("build/stationremover.nut");
 require("utils/banker.nut");
 require("utils/misc.nut");
 require("handler/jobs.nut");
@@ -115,8 +121,8 @@ class DictatorAI extends AIController
  
 function DictatorAI::Start()
 {
-	DInfo("DicatorAI started.");
 	::INSTANCE <- this;
+	DInfo("DicatorAI started.",0,"main");
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	AICompany.SetAutoRenewStatus(false);
 	CheckCurrentSettings();
@@ -127,7 +133,7 @@ function DictatorAI::Start()
 		// our routes are saved in bank.canBuild & stations in bank.unleash_road
 		// and oneMonth=station database size and oneWeek=routedatabase size when saved
 		local all_stations=bank.unleash_road;
-		DInfo("Restoring stations",0);
+		DInfo("Restoring stations",0,"main");
 		local iter=0;
 		for (local i=0; i < all_stations.len(); i++)
 			{
@@ -152,9 +158,9 @@ function DictatorAI::Start()
 			cStation.stationdatabase[obj.stationID] <- obj;
 			// add checks for dead stations or tigger that
 			}
-		DInfo(iter+" stations found.",0);
-		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1);
-		DInfo("Restoring routes",0);
+		DInfo(iter+" stations found.",0,"main");
+		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1,"main");
+		DInfo("Restoring routes",0,"main");
 		iter=0;
 		local all_routes=bank.canBuild;
 		for (local i=0; i < all_routes.len(); i++)
@@ -184,14 +190,14 @@ function DictatorAI::Start()
 			if (obj.UID == 1)	cRoute.VirtualAirGroup[1]=obj.groupID;
 			}
 		cRoute.RouteRebuildIndex();
-		DInfo(iter+" routes found.",0);
-		DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2);
+		DInfo(iter+" routes found.",0,"main");
+		DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2,"main");
 		OneWeek=0;
 		OneMonth=0;
 		bank.canBuild=false;
 		bank.unleash_road=false;
-		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0);
-		DInfo("Registering our routes",0);
+		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0,"main");
+		DInfo("Registering our routes",0,"main");
 		foreach (item in cRoute.database)
 			{
 			local regjob=cJobs.GetJobObject(item.UID);
@@ -211,6 +217,7 @@ function DictatorAI::Start()
 	 else {
 		AIInit();
 		bank.SaveMoney();
+		use_boat=true;
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
 		safeStart=3;
@@ -221,7 +228,7 @@ function DictatorAI::Start()
 		this.SetRailType();
 		this.CheckCurrentSettings();
 		if (use_train) builder.BaseStationRailBuilder(80835);
-		DInfo("Running the AI in debug mode slowdown the AI !!!",1);
+		DWarn("Running the AI in debug mode slowdown the AI and can do random issues !!!",1,"main");
 		bank.CashFlow();
 		this.ClearSignsALL();
 		//builder.ShowStationCapacity();
@@ -253,18 +260,19 @@ function DictatorAI::Start()
 		AIController.Sleep(60);
 		builder.WeeklyChecks();
 		builder.MonthlyChecks();
+		jobs.RawJobHandling();
 		}
 }
 
 function DictatorAI::Stop()
 {
-DInfo("DictatorAI is stopped");
+DInfo("DictatorAI is stopped",0,"main");
 ClearSignsALL();
 }
 
 function DictatorAI::NeedDelay(delay=30)
 {
-DInfo("We are waiting: "+delay,2);
+DInfo("We are waiting: "+delay,2,"NeedDelay");
 if (debug) ::AIController.Sleep(delay);
 } 
 
@@ -281,7 +289,7 @@ local table =
 	dbroute=null,
 	}
 
-DInfo("Saving game... "+cRoute.database.len()+" routes, "+cStation.stationdatabase.len()+" stations",0);
+DInfo("Saving game... "+cRoute.database.len()+" routes, "+cStation.stationdatabase.len()+" stations",0,"Save");
 local all_stations=[];
 local all_routes=[];
 local temparray=[];
@@ -330,13 +338,13 @@ table.busyroute=builder.building_route;
 table.virtualgroup=cRoute.VirtualAirGroup[0];
 table.dbstation=cStation.stationdatabase.len();
 table.dbroute=cRoute.database.len();
-DInfo("Saving done...",0);
+DInfo("Saving done...",0,"Save");
 return table;
 }
  
 function DictatorAI::Load(version, data)
 {
-DInfo("Loading a saved game with DictatorAI. ");
+DInfo("Loading a saved game with DictatorAI. ",0,"Load");
 if ("cargo" in data) cargo_favorite=data.cargo;
 if ("routes" in data) bank.canBuild=data.routes;
 if ("stations" in data) bank.unleash_road=data.stations;
@@ -357,7 +365,7 @@ foreach (tile, dummy in tilelist)
 	if (AICompany.BuildCompanyHQ(tile))
 		{
 		local name = AITown.GetName(AITile.GetClosestTown(tile));
-		AILog.Info("Built company headquarters near " + name);
+		DInfo("Built company headquarters near " + name,0,"BuildHQ");
 		return;
 		}
 	AIController.Sleep(1);

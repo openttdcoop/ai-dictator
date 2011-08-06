@@ -47,39 +47,49 @@ return nameo[x]+" "+namet[y]+" (DictatorAI)";
 
 }
 
-function DInfo(putMsg,debugValue=0)
+function DebugShowFunction(func)
+{
+local f="";
+if (INSTANCE.debug)	f=func+"-> ";
+return f;
+}
+
+function DInfo(putMsg,debugValue=0,func="unkown",cat=this)
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");
+func=DebugShowFunction(func);
 if (debugValue <= debugState )
 	{
-	AILog.Info(putMsg);
+	AILog.Info(func+putMsg);
 	}
 }
 
-function DError(putMsg,debugValue=1)
+function DError(putMsg,debugValue=1,func="unkown")
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");
+func=DebugShowFunction(func);
 if (debugValue <= debugState )
 	{
-	AILog.Error(putMsg+" Error:"+AIError.GetLastErrorString());
+	AILog.Error(func+putMsg+" Error:"+AIError.GetLastErrorString());
 	}
 }
 
-function DWarn(putMsg, debugValue=1)
+function DWarn(putMsg, debugValue=1,func="unkown")
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");
+func=DebugShowFunction(func);
 if (debugValue <= debugState )
 	{
-	AILog.Warning(putMsg);
+	AILog.Warning(func+putMsg);
 	}
 }
 
 function ShowTick()
 {
-DInfo("Live tick : "+this.GetTick(),2);
+DInfo("ShowTick-> "+this.GetTick(),2);
 }
 
 function checkHQ()
@@ -105,7 +115,7 @@ function AIGetCargoFavorite()
 local crglist=AICargoList();
 cargo_favorite=AIBase.RandRange(crglist.Count());
 cargo_favorite=ListGetItem(crglist, cargo_favorite);
-DInfo("We will promote "+AICargo.GetCargoLabel(cargo_favorite),0);
+DInfo("We will promote "+AICargo.GetCargoLabel(cargo_favorite),0,"AIGetCargoFavorite");
 }
 
 function AIInit()
@@ -116,13 +126,13 @@ FinalName = PickCompanyName(666);
 AIController.Sleep(15);
 AICompany.SetName(FinalName);
 AICompany.SetPresidentGender(AICompany.GENDER_MALE);
-DInfo("We're now "+FinalName);
+DInfo("We're now "+FinalName,0,"AIInit");
 local randomPresident = 666;
 if (DictatorAI.GetSetting("PresidentName")) { randomPresident = AIBase.RandRange(12); }
 local lastrand = "";
 local nickrand = getFirstName(randomPresident);
 lastrand = nickrand + " "+ getLastName(randomPresident);
-DInfo(lastrand+" will rules the company with an iron fist");
+DInfo(lastrand+" will rules the company with an iron fist",0,"AIInit");
 AICompany.SetPresidentName(lastrand);
 AIGetCargoFavorite();
 }

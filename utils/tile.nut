@@ -86,7 +86,7 @@ if (!AITile.IsWaterTile(tile))	return AITile.IsBuildable(tile);
 return true;
 }
 
-function cTileTools::IsBuildableRectangleAtThisPoint(tile, width, height, ignoreList=AIList())
+function cTileTools::IsBuildableRectangle(tile, width, height, ignoreList=AIList())
 // This check if the rectangle area is buildable in any directions from that point
 // Like the IsBuildableRectangle, but not limit to upper left point
 // tile : tile to search a solve for
@@ -99,7 +99,7 @@ local tilelist=AITileList();
 local secondtile=0;
 local before=0;
 local after=0;
-DInfo("IsBuildableRectangle-> Width: "+width+" height: "+height,1);
+DInfo("Width: "+width+" height: "+height,1,"IsBuildableRectangle");
 width-=1;
 height-=1;
 if (width < 0) width=0;
@@ -192,7 +192,7 @@ local compSlope=AITile.GetComplementSlope(slope);
 if (srcL == wantedHeight && srcH == wantedHeight)	return generror;
 if (!INSTANCE.terraform)
 	{
-	DInfo("ShapeTile-> AI terraforming is disable, failure",1);
+	DInfo("AI terraforming is disable, failure",1,"ShapeTile");
 	return true;
 	}
 do	{
@@ -204,7 +204,7 @@ do	{
 		{
 		slope-=AITile.SLOPE_STEEP;
 		compSlope=AITile.GetComplementSlope(slope);
-		DInfo("ShapeTile-> Tile: "+tile+" Removing SteepSlope",2);
+		DInfo("Tile: "+tile+" Removing SteepSlope",2,"ShapeTile");
 		AITile.RaiseTile(tile,compSlope);
 		error=AIError.GetLastError();
 		if (error != AIError.ERR_NONE)	generror=true;
@@ -214,7 +214,7 @@ do	{
 		srcH=AITile.GetMaxHeight(tile);
 		if (evaluateOnly)	return false;
 		}
-	DInfo("ShapeTile-> Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2);
+	DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2,"ShapeTile");
 	PutSign(tile,"!");
 	INSTANCE.Sleep(1);
 	if ((srcH < wantedHeight || srcL < wantedHeight) && !generror)
@@ -223,7 +223,7 @@ do	{
 					AITile.RaiseTile(tile, AITile.SLOPE_FLAT);			
 				else	AITile.RaiseTile(tile, compSlope);
 		error=AIError.GetLastError();	
-		DInfo("ShapeTile-> Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2);
+		DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
 		if (error != AIError.ERR_NONE)	generror=true;
 		}
 	if ((srcL > wantedHeight || srcH > wantedHeight) && !generror)
@@ -232,7 +232,7 @@ do	{
 					{ AITile.LowerTile(tile, AITile.SLOPE_ELEVATED);}
 				else	{ AITile.LowerTile(tile, slope); }
 		error=AIError.GetLastError();	
-		DInfo("ShapeTile-> Lowering tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2);
+		DInfo("Lowering tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
 		if (error != AIError.ERR_NONE)	generror=true;
 		}
 	} while (!generror && srcH != wantedHeight && srcL != wantedHeight && !evaluateOnly);
@@ -260,8 +260,8 @@ function cTileTools::CheckLandForConstruction(tile, width, height, ignoreList=AI
 // Check the tiles area for construction, look if tiles are clear, and flatten the land if need
 // return -1 on failure, on success the tile where to drop a construction (upper left tile)
 {
-PutSign(tile,"HERE");
-local newTile=cTileTools.IsBuildableRectangleAtThisPoint(tile, width, height, ignoreList);
+PutSign(tile,"?");
+local newTile=cTileTools.IsBuildableRectangle(tile, width, height, ignoreList);
 if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
 local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
 if (cTileTools.TerraformLevelTiles(newTile, tileTo))
@@ -287,7 +287,7 @@ foreach (level, prize in bestOrder)
 	}
 bestOrder.Sort(AIList.SORT_BY_VALUE, true);
 local money=-1;
-foreach (solution, prize in bestOrder)	DInfo("sol: "+solution+" prize: "+prize);
+foreach (solution, prize in bestOrder)	DInfo("sol: "+solution+" prize: "+prize,2,"TerraformLevelTiles");
 if (!Solve.IsEmpty())
 	{
 	foreach (solution, prize in bestOrder)
@@ -295,7 +295,7 @@ if (!Solve.IsEmpty())
 		local direction=Solve.GetValue(solution);
 		if (!cBanker.CanBuyThat(prize))
 			{
-			DInfo("TerraformLevelTiles-> Stopping action. We won't have enought money to succeed",1);
+			DInfo("Stopping action. We won't have enought money to succeed",1,"TerraformLevelTiles");
 			cTileTools.terraformCost.Clear();
 			cTileTools.terraformCost.AddItem(0,prize);
 			break;
@@ -305,12 +305,12 @@ if (!Solve.IsEmpty())
 					else	money=cTileTools.TerraformDoAction(tlist, solution, false, false);	
 		if (money != -1)
 			{
-			DInfo("TerraformLevelTiles-> Success, we spent "+money+" credits for the operation",1);
+			DInfo("Success, we spent "+money+" credits for the operation",1,"TerraformLevelTiles");
 			return true;
 			}
 		}
 	}
-DInfo("TerraformLevelTiles-> Fail",1);
+DInfo("Fail",1,"TerraformLevelTiles");
 return false;
 }
 
@@ -339,7 +339,7 @@ foreach (tile, max in tTile)
 	}
 testrun=null;
 moneyNeed=costs.GetCosts();	
-DInfo("TerraformDoAction-> predict failure : "+error+" Money need="+moneyNeed,2);
+DInfo("predict failure : "+error+" Money need="+moneyNeed,2,"TerraformDoAction");
 if (error)	moneyNeed=-1;
 if (evaluate)	return moneyNeed;
 costs.ResetCosts();
@@ -352,13 +352,13 @@ if (!error)
 		}
 	}
 moneySpend=costs.GetCosts();
-DInfo("TerraformDoAction-> spent "+moneySpend+" money",2);
+DInfo("spent "+moneySpend+" money",2,"TerraformDoAction");
 if (!error)
 	{
-	DInfo("TerraformDoAction-> flatten successfuly land at level : "+wantedHeight,1);
+	DInfo("flatten successfuly land at level : "+wantedHeight,1,"TerraformDoAction");
 	return moneySpend;
 	}
-DInfo("TerraformDoAction-> fail flatten land at level : "+wantedHeight,1);
+DInfo("fail flatten land at level : "+wantedHeight,1,"TerraformDoAction");
 return -1;
 }
 
@@ -373,7 +373,7 @@ function cTileTools::TerraformHeightSolver(tlist)
 {
 if (tlist.IsEmpty())	
 	{
-	DInfo("TerraformSolver-> doesn't find any tiles to work on!",1);
+	DInfo("doesn't find any tiles to work on!",1,"TerraformHeightSolver");
 	return AIList();
 	}
 local maxH=tlist;

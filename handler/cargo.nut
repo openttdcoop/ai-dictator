@@ -12,6 +12,7 @@
  *
 **/
 
+// handle cargos
 
 class cCargo
 	{
