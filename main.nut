@@ -220,6 +220,8 @@ function DictatorAI::Start()
 		use_boat=true;
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
+		for (local i=0; i < 5; i++)	jobs.RawJobHandling();
+		// feed the ai with some jobs to start play with
 		safeStart=3;
 		}
 	bank.Update();
