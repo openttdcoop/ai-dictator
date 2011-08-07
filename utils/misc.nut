@@ -50,7 +50,7 @@ return nameo[x]+" "+namet[y]+" (DictatorAI)";
 function DebugShowFunction(func)
 {
 local f="";
-if (INSTANCE.debug)	f=func+"-> ";
+if (::DictatorAI.debug)	f=func+"-> ";
 return f;
 }
 
