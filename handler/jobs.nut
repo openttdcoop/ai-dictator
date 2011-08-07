@@ -20,7 +20,7 @@
 class cJobs
 {
 static	database = {};
-static	jobIndexer = AIList();	// this list have all UID in the database, value = ranking
+static	jobIndexer = AIList();	// this list have all UID in the database, value = date of last refresh for that UID infos
 static	jobDoable = AIList();	// same as upper, but only doable ones, value = ranking
 static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
 static	TRANSPORT_DISTANCE=[50,150,200, 40,80,110, 40,90,150, 50,200,250];
@@ -112,7 +112,7 @@ function cJobs::Save()
 		else	{
 			DInfo("Adding job "+this.UID+" ("+parentID+") to job database: "+jobinfo,2,"Jobs::Save");
 			database[this.UID] <- this;
-			jobIndexer.AddItem(this.UID, 1);
+			jobIndexer.AddItem(this.UID, 0);
 			}
 	}
 
@@ -180,7 +180,10 @@ function cJobs::RefreshValue(jobID)
 // refresh the datas from object
 	{
 	::AIController.Sleep(1);
-	if (jobID == 0 || jobID == 1)	return; // don't refresh virtual routes
+	if (cJobs.IsInfosUpdate(jobID))	{ DInfo("JobID: "+jobID+" infos are fresh",2,"RefreshValue"); return null; }
+						else	{ DInfo("JobID: "+jobID+" refreshing infos",2,"RefreshValue"); }
+	cJobs.jobIndexer.SetValue(jobID,AIDate.GetCurrentDate());
+	if (jobID == 0 || jobID == 1)	return null; // don't refresh virtual routes
 	local myjob = cJobs.GetJobObject(jobID);
 	if (myjob == null) return null;
 	local badind=false;
@@ -225,22 +228,40 @@ function cJobs::RefreshValue(jobID)
 	myjob.RankThisJob();
 	}
 
-function cJobs::RefreshAllValue()
-// refesh datas of all objects
+function cJobs::IsInfosUpdate(jobID)
+// return true if jobID info is recent, false if we need to refresh it
+// we also use this one as valuator
 	{
+	local now=AIDate.GetCurrentDate();
+	local jdate=null;
+	if (cJobs.jobIndexer.HasItem(jobID))	jdate=cJobs.jobIndexer.GetValue(jobID);
+							else	return true; // if job is not index return infos are fresh
+	return ( (now-jdate) < 240) ? true : false;
+	}
+
+function cJobs::RefreshAllValue()
+// refesh datas of all jobs objects
+	{
+/*
 	local now=AIDate.GetCurrentDate();
 	local last=cJobs.lastRefresh[0];
 	if ( (now - last) < 240)	return false;
 	cJobs.lastRefresh[0]=now;
+*/
 	DInfo("Collecting jobs infos, will take time...",0,"RefreshALLValue");
 	local curr=0;
-	foreach (item, value in cJobs.jobIndexer)
+	local needRefresh=AIList();
+	needRefresh.AddList(cJobs.jobIndexer);
+	needRefresh.Valuate(cJobs.IsInfosUpdate);
+	needRefresh.KeepValue(0); // only keep ones that need refresh
+	DInfo("Need refresh: "+needRefresh.Count()+"/"+cJobs.jobIndexer.Count(),1,"RefreshValue");
+	foreach (item, jdate in needRefresh)
 		{
 		cJobs.RefreshValue(item);
 		curr++;
 		if (curr % 15 == 0)
 			{
-			DInfo(curr+" / "+cJobs.jobIndexer.Count(),0);
+			DInfo(curr+" / "+cJobs.needRefresh.Count(),0);
 			INSTANCE.Sleep(1);
 			}
 		}
@@ -251,6 +272,7 @@ function cJobs::QuickRefresh()
 // refresh datas on first 5 doable top jobs
 	{
 	local smallList=AIList();
+/*
 	if (!cJobs.RefreshAllValue())
 		{ // if we don't refresh everything, then we refresh the 5 top jobs
 		cJobs.jobDoable.KeepTop(5);
@@ -259,14 +281,23 @@ function cJobs::QuickRefresh()
 			INSTANCE.Sleep(1);
 			cJobs.RefreshValue(item);
 			}
-		}
+		}*/
+	smallList.AddList(cJobs.jobIndexer);
+	smallList.Valuate(cJobs.IsInfosUpdate);
+	smallList.KeepValue(0); // keep only ones that need refresh
+	smallList.Valuate(AIBase.RandItem);
+	smallList.Sort(AIList.SORT_BY_VALUE,true);
+	smallList.KeepTop(5);
+	foreach (smallID, dvalue in smallList)	INSTANCE.jobs.RefreshValue(smallID);
 	INSTANCE.jobs.UpdateDoableJobs();
+	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
 	foreach (item, value in smallList)
 		{ // now remove jobs that we cannot build because of money need for that
 		local j=cJobs.GetJobObject(item);
 		if (!cBanker.CanBuyThat(j.moneyToBuild))	smallList.RemoveItem(item);
 		}
+	smallList.Sort(AIList.SORT_BY_VALUE,false);
 	smallList.KeepTop(5);
 	if (INSTANCE.safeStart > 0 && smallList.IsEmpty())	INSTANCE.safeStart=0; // disable it if we cannot find any jobs
 	foreach (uid, value in smallList)	INSTANCE.builder.DumpJobs(uid);
@@ -347,6 +378,7 @@ function cJobs::EstimateCost()
 		}
 	this.moneyToBuild=money;
 	this.cargoValue=AICargo.GetCargoIncome(this.cargoID, this.distance, daystransit);
+	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+this.cargoValue,2,"EstimateCost");
 	}
 
 function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
@@ -393,10 +425,10 @@ function cJobs::GetTransportDistance(transport_type, get_min, limited)
 		if (target == i)
 			{
 			if (get_min)	toret=min;
-				else	toret=(limited) ? lim : max;
+					else	toret=(limited) ? lim : max;
 			}
 		if (min < small)	small=min;
-		if (lim > big)		big=lim;
+		if (lim > big)	big=lim;
 		i+=2; // next iter
 		}
 	distanceLimits[0]=small;
@@ -508,13 +540,14 @@ function cJobs::UpdateDoableJobs()
 	local toproad=0;
 	local toprail=0;
 	local topwater=0;
+/*
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
 		local myjob=cJobs.GetJobObject(id);
 		if (myjob.isUse)	parentListID.AddItem(myjob.parentID,1);
 		// build list of parent jobs already done
 		INSTANCE.Sleep(1);
-		}
+		}*/
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
 		if (id == 0 || id == 1)	continue;
@@ -546,8 +579,8 @@ function cJobs::UpdateDoableJobs()
 			break;
 			}
 		// not doable if disabled
-		if (doable && myjob.isUse)	doable=false;
-		// not doable if already done
+		if (myjob.isUse)	{ doable=false; parentListID.AddItem(myjob.parentID,1); }
+		// not doable if already done, also record the parentID to block similar jobs
 		if (doable && myjob.ranking==0)	doable=false;
 		// not doable if ranking is at 0
 		if (doable)
@@ -557,12 +590,12 @@ function cJobs::UpdateDoableJobs()
 			if (curmax < myjob.distance)	doable=false;
 			}
 		// not doable if any parent is already in use
-		if (parentListID.HasItem(myjob.parentID))	{ DInfo("Job already done by parent job !",2,"UpdateDoableJobs"); doable=false; }
+		if (parentListID.HasItem(myjob.parentID))	{ DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs"); doable=false; }
 		if (doable && !myjob.source_istown)
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
 		// not doable if the industry no longer exist
 		if (doable)	{
-				myjob.jobIndexer.SetValue(id, myjob.ranking);
+				//myjob.jobIndexer.SetValue(id, myjob.ranking);
 				myjob.jobDoable.AddItem(id, myjob.ranking);
 				switch (myjob.roadType)
 					{
@@ -596,8 +629,18 @@ function cJobs::UpdateDoableJobs()
 					break;
 					}
 				}
-			else	myjob.jobIndexer.SetValue(id, 0);
+			//else	myjob.jobIndexer.SetValue(id, 0);
 
+		}
+	foreach (jobID, rank in jobDoable)
+		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
+			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
+		local myjob=cJobs.GetJobObject(jobID);
+		if (parentListID.HasItem(myjob.parentID))
+			{
+			DInfo("Job already done by parent job ! Second pass filter",2,"UpdateDoableJobs");
+			jobDoable.RemoveItem(jobID);
+			}
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
 	DInfo(INSTANCE.jobs.jobIndexer.Count()+" jobs found",2,"UpdateDoableJobs");
@@ -648,17 +691,21 @@ function cJobs::RawJobHandling()
 	local jfilter=AIList();
 	jfilter.AddList(cJobs.rawJobs);
 	jfilter.RemoveValue(1); // keep only one not done yet
+	local stilltodo=jfilter.Count();
 	jfilter.Valuate(AIBase.RandItem); // randomize remain entries
-	DInfo("rawJobs to do: "+jfilter.Count()+" / "+cJobs.rawJobs.Count(),1,"RawJobHandling");
-	if (jfilter.IsEmpty())	DInfo("All raw industry jobs process",2,"RawJobHandling");
-				else	{
-					local realID=jfilter.Begin();
-					local isTown=(realID >= 10000) ? true : false;
-					DInfo("isTown = "+isTown+" id="+realID,1,"RawJobHandling:Industry");
-					if (isTown)	realID-=10000;
-					cJobs.AddNewIndustryOrTown(realID,isTown);
-					cJobs.rawJobs.SetValue(jfilter.Begin(),1); // mark it done
-					}
+	jfilter.Sort(AIList.SORT_BY_VALUE,true);
+	jfilter.KeepTop(4);
+	if (jfilter.IsEmpty())	DInfo("All raw jobs have been process",2,"RawJobHandling");
+				else	foreach (jid, dummyValue in jfilter)
+						{
+						local realID=jid;
+						local isTown=(realID >= 10000) ? true : false;
+						DInfo("isTown = "+isTown+" id="+realID,1,"RawJobHandling");
+						if (isTown)	realID-=10000;
+						cJobs.AddNewIndustryOrTown(realID,isTown);
+						cJobs.rawJobs.SetValue(jid,1); // mark it done
+						}
+	DInfo("rawJobs to do: "+stilltodo+" / "+cJobs.rawJobs.Count(),1,"RawJobHandling");
 	}
 
 function cJobs::RawJobDelete(ID, isTown)
