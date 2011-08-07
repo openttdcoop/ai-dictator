@@ -632,14 +632,14 @@ function cJobs::UpdateDoableJobs()
 			//else	myjob.jobIndexer.SetValue(id, 0);
 
 		}
-	foreach (jobID, rank in jobDoable)
+	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
 			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
 		local myjob=cJobs.GetJobObject(jobID);
 		if (parentListID.HasItem(myjob.parentID))
 			{
 			DInfo("Job already done by parent job ! Second pass filter",2,"UpdateDoableJobs");
-			jobDoable.RemoveItem(jobID);
+			INSTANCE.jobs.jobDoable.RemoveItem(jobID);
 			}
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
