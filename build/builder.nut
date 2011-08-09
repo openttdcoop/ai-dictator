@@ -297,6 +297,7 @@ function cBuilder::FindCompatibleStationExists()
 // if compatible, we could link to use that station too
 {
 // find source station compatible
+if (INSTANCE.route.station_type==null) return false;
 local sList=AIStationList(INSTANCE.route.station_type);
 DInfo("Looking for a compatible station sList="+sList.Count(),2);
 DInfo("statyppe="+INSTANCE.route.station_type+" BUS="+AIStation.STATION_BUS_STOP+" TRUCK="+AIStation.STATION_TRUCK_STOP,1);

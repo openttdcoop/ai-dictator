@@ -590,7 +590,13 @@ function cJobs::UpdateDoableJobs()
 			if (curmax < myjob.distance)	doable=false;
 			}
 		// not doable if any parent is already in use
-		if (parentListID.HasItem(myjob.parentID))	{ DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs"); doable=false; }
+		if (parentListID.HasItem(myjob.parentID))
+			{
+			DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs");
+			doable=false;
+			cJobs.DeleteJob(id)
+			continue;
+			}
 		if (doable && !myjob.source_istown)
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
 		// not doable if the industry no longer exist
@@ -640,6 +646,7 @@ function cJobs::UpdateDoableJobs()
 			{
 			DInfo("Job already done by parent job ! Second pass filter",2,"UpdateDoableJobs");
 			INSTANCE.jobs.jobDoable.RemoveItem(jobID);
+			cJobs.DeleteJob(jobID);
 			}
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
