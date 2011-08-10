@@ -258,7 +258,7 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 	thatstation.cargo_produce.Clear();
 	thatstation.cargo_accept.Clear();
 	local cargolist=AICargoList();
-	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(stationID));
+	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(thatstation.stationID));
 	foreach (cargo_id, cdummy in cargolist)
 		{
 		foreach (tiles, sdummy in staloc)
@@ -383,10 +383,10 @@ function cStation::InitNewStation()
 // Autofill most values for a station. stationID must be set
 // Should not be call as-is, cRoute.CreateNewStation is there for that task
 	{
-	if (this.stationID == null)	{ DWarn("InitNewStation() Bad station id : null",1); return; }
+	if (this.stationID == null)	{ DWarn("Bad station id : null",1,"InitNewStation"); return; }
 	this.stationType = cStation.FindStationType(this.stationID);
 	local loc=AIStation.GetLocation(this.stationID);
-	locations=cTileTools.FindStationTiles(loc);
+	this.locations=cTileTools.FindStationTiles(loc);
 	if (this.stationType != AIStation.STATION_AIRPORT)	this.radius=AIStation.GetCoverageRadius(this.stationType);
 	// avoid getting the warning message for coverage of airport with that function
 	switch	(this.stationType)
@@ -394,8 +394,8 @@ function cStation::InitNewStation()
 		case	AIStation.STATION_TRAIN:
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
-			locations.Clear();
-			for (local zz=0; zz < 5; zz++)	locations.AddItem(i,0); // create special cases for train usage
+			this.locations=AIList();
+			for (local zz=0; zz < 5; zz++)	this.locations.AddItem(zz,0); // create special cases for train usage
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do it
 			this.maxsize=1; this.size=1;

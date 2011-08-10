@@ -188,7 +188,7 @@ switch (INSTANCE.route.route_type)
 	break;
 
 	case AIVehicle.VT_RAIL:
-	success=INSTANCE.builder.CreateStationsConnection(road.ROUTE.src_station, road.ROUTE.dst_station);
+	success=INSTANCE.builder.CreateStationsConnection(INSTANCE.route.source_stationID, INSTANCE.route.target_stationID);
 	local sentry=false; local dentry=false;
 	if (success)	{
 			local sSt=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
@@ -335,13 +335,16 @@ function cBuilder::TryBuildThatRoute()
 // advance the route construction
 {
 local success=false;
-DInfo("Route #"+INSTANCE.builder.building_route+" Status:"+INSTANCE.route.status,1);
+local trainspec=null;
+DInfo("Route #"+INSTANCE.builder.building_route+" Status:"+INSTANCE.route.status,1,"TryBuildThatRoute");
 if (INSTANCE.route.status==0) // not using switch/case so we can advance steps in one pass
 	{
 	switch (INSTANCE.route.route_type)
 		{
 		case	RouteType.RAIL:
-			success=INSTANCE.carrier.ChooseRailCouple(INSTANCE.route.cargoID);
+			trainspec=INSTANCE.carrier.ChooseRailCouple(INSTANCE.route.cargoID);
+			if (trainspec.IsEmpty())	success=null;
+							else	success=true;
 		break;
 		case	RouteType.ROAD:
 			success=INSTANCE.carrier.ChooseRoadVeh(INSTANCE.route.cargoID);
@@ -357,7 +360,7 @@ if (INSTANCE.route.status==0) // not using switch/case so we can advance steps i
 		}
 	if (success == null)
 		{
-		DWarn("There's no vehicle for that transport type we could use to carry that cargo: "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		DWarn("There's no vehicle we could use to carry that cargo: "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"TryBuildThatRoute");
 		INSTANCE.route.RouteIsNotDoable();
 		return false;
 		}
@@ -379,13 +382,21 @@ if (INSTANCE.route.status==1)
 		}
 	INSTANCE.route.status=2;
 	}
-
+local buildWithRailType=null;
 if (INSTANCE.route.status==2)
 	{
-	if (INSTANCE.route.source_stationID==null)	{ success=INSTANCE.builder.BuildStation(true); }
+	if (INSTANCE.route.source_stationID==null)
+			{
+			if (INSTANCE.route.route_type == RouteType.RAIL) 
+				{
+				buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
+				INSTANCE.SetRailType(buildWithRailType);
+				}
+			success=INSTANCE.builder.BuildStation(true);
+			}
 		else	{
 			success=true;
-			DInfo("Source station is already build, we're reusing an existing one",0);
+			DInfo("Source station is already build, we're reusing an existing one",0,"TryBuildThatRoute");
 			INSTANCE.route.RouteUpdate();
 			}
 	if (!success)
@@ -400,13 +411,20 @@ if (INSTANCE.route.status==2)
 		}
 	else { INSTANCE.route.status=3; }
 	}
-
 if (INSTANCE.route.status==3)	
 	{
-	if (INSTANCE.route.target_stationID==null)	{ success=INSTANCE.builder.BuildStation(false); }
+	if (INSTANCE.route.target_stationID==null)
+			{
+			if (INSTANCE.route.route_type == RouteType.RAIL) 
+				{
+				buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
+				INSTANCE.SetRailType(buildWithRailType);
+				}
+			success=INSTANCE.builder.BuildStation(false);
+			}
 		else	{
 			success=true;
-			DInfo("Destination station is already build, we're reusing an existing one",0);
+			DInfo("Destination station is already build, we're reusing an existing one",0,"TryBuildThatRoute");
 			INSTANCE.route.RouteUpdate();
 			}
 	if (!success)
@@ -449,7 +467,7 @@ if (INSTANCE.route.status==5)
 if (INSTANCE.route.status==6)
 	{
 	INSTANCE.route.RouteDone();
-	DInfo("Route contruction complete ! "+INSTANCE.route.name,0);
+	DInfo("Route contruction complete ! "+INSTANCE.route.name,0,"TryBuildThatRoute");
 	INSTANCE.builddelay=true;
 	INSTANCE.builder.building_route=-1; // Allow us to work on a new route now
 	if (INSTANCE.safeStart >0 && INSTANCE.route.route_type == RouteType.ROAD)	INSTANCE.safeStart--;

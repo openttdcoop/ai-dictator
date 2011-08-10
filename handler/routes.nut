@@ -395,7 +395,7 @@ function cRoute::CreateNewStation(start)
 	local scheck=this.source_stationID;
 	if (!start)	scheck=this.target_stationID;
 	if (!AIStation.IsValidStation(scheck))
-		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1); }
+		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1,"CRoute::CreateNewStation"); }
 	local station=cStation();
 	station.stationID=scheck;
 	station.InitNewStation();

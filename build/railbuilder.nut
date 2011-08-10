@@ -379,7 +379,7 @@ if (objtype==10) // depot
 			success=AIRail.BuildRailTrack(t,f);
 			success=success && AIRail.BuildRailTrack(t,s);
 			success=success && AIRail.BuildRailDepot(depottile, t);
-			root.builder.savedepot=depottile;
+			INSTANCE.builder.savedepot=depottile;
 			}
 	}
 */
@@ -394,7 +394,7 @@ return true;
 
 
 
-function cBuilder::BuildTrainStation(road_index,start)
+function cBuilder::BuildTrainStation(start)
 // It's where we find a spot for our train station
 // Unlike classic stations that need best spot where to get cargo, train stations best spot
 // is the one that can do its task while still provide most space to futher allow station upgrading
@@ -408,41 +408,42 @@ function cBuilder::BuildTrainStation(road_index,start)
 // chance to enlarge the station without going too much into the city
 local dir, tilelist, otherplace, isneartown = null;
 local rad = AIStation.GetCoverageRadius(AIStation.STATION_TRAIN);
-local road = root.chemin.RListGetItem(road_index);
 local istown=false;
 local srcpoint=null;
 local sourceplace=null;
+local statile=null;
 if (start) 	{
-		dir = root.builder.GetDirection(road.ROUTE.src_place, road.ROUTE.dst_place);
-		if (road.ROUTE.src_istown)
+		dir = INSTANCE.builder.GetDirection(INSTANCE.route.source_location, INSTANCE.route.target_location);
+		if (INSTANCE.route.source_istown)
 			{
-			tilelist = cTileTools.GetTilesAroundTown(road.ROUTE.src_id);
+			tilelist = cTileTools.GetTilesAroundTown(INSTANCE.route.sourceID);
 			isneartown=true; istown=true;
 			}
 		else	{
-			tilelist = AITileList_IndustryProducing(road.ROUTE.src_id, rad);
+			tilelist = AITileList_IndustryProducing(INSTANCE.route.sourceID, rad);
 			isneartown=true; istown=false;
 			}
-		otherplace=road.ROUTE.dst_place; sourceplace=road.ROUTE.src_place;
+		otherplace=INSTANCE.route.target_location; sourceplace=INSTANCE.route.source_location;
 		}
 	else	{
-		dir = root.builder.GetDirection(road.ROUTE.dst_place, road.ROUTE.src_place);
-		if (road.ROUTE.dst_istown)
+		dir = INSTANCE.builder.GetDirection(INSTANCE.route.target_location, INSTANCE.route.source_location);
+		if (INSTANCE.route.target_istown)
 			{
-			tilelist = cTileTools.GetTilesAroundTown(road.ROUTE.dst_id);
+			tilelist = cTileTools.GetTilesAroundTown(INSTANCE.route.targetID);
 			isneartown=true; istown=true;
 			}
 		else	{
-			tilelist = AITileList_IndustryAccepting(road.ROUTE.dst_id, rad);
+			tilelist = AITileList_IndustryAccepting(INSTANCE.route.targetID, rad);
 			isneartown=false; istown=false;
 			}
-		otherplace=road.ROUTE.src_place; sourceplace=road.ROUTE.dst_place;
+		otherplace=INSTANCE.route.source_location; sourceplace=INSTANCE.route.target_location;
 		}
-tilelist.Valuate(AITile.IsBuildable);
-tilelist.KeepValue(1);
-//showLogic(tilelist); // !
+//tilelist.Valuate(AITile.IsBuildable);
+//tilelist.KeepValue(1);
+//showLogic(tilelist);
+isneartown=false; // dirty hack
 if (isneartown)	{
-		tilelist.Valuate(AITile.GetCargoAcceptance, road.ROUTE.cargo_id, 1, 1, rad);
+		tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.route.cargoID, 1, 1, rad);
 		tilelist.KeepAboveValue(8); 
 		tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
 		tilelist.Sort(AIList.SORT_BY_VALUE, true); // first values = biggest distance from the town
@@ -455,28 +456,15 @@ if (isneartown)	{
 
 local success = false;
 //showLogic(tilelist); // !
-local savetown=tilelist;
-/*
-if (isneartown)
-	{
-	tilelist.Valuate(AITile.GetCargoAcceptance, road.ROUTE.cargo_id, 1, 1, rad);
-	tilelist.KeepAboveValue(2); 
-	tilelist.Sort(AIList.SORT_BY_VALUE, false);
-	showLogic(tilelist) // !
-	}
-*/
-DInfo("Tilelist set to "+tilelist.Count(),2);
-//if (tilelist.IsEmpty())	{ tilelist=savetown; DInfo("Location list is empty !",2); } // restore previous list, we need a place
-
-showLogic(tilelist) // !
+DInfo("Tilelist set to "+tilelist.Count(),2,"BuildTrainStation");
+showLogic(tilelist); 
 ClearSignsALL();
-DInfo("isneartown="+isneartown+" istown="+istown,2);
+DInfo("isneartown="+isneartown+" istown="+istown,2,"BuildTrainStation");
 foreach (tile, dummy in tilelist)
 	{
-	if (start)	dir=root.builder.GetDirection(tile, road.ROUTE.src_place);
-		else	dir=root.builder.GetDirection(road.ROUTE.dst_place,tile);
+	if (start)	dir=INSTANCE.builder.GetDirection(tile, INSTANCE.route.source_location);
+		else	dir=INSTANCE.builder.GetDirection(INSTANCE.route.target_location,tile);
 	// find where that point is compare to its source for the station
-	// TODO: switch station direction
 	PutSign(tile,""+dir+"");
 	if (isneartown) // now we hack direction to build a different station direction when we're in a town
 		{ // we get a NE_SW station for 2/3 and a NW_SE for 0/1
@@ -495,41 +483,28 @@ foreach (tile, dummy in tilelist)
 				dir=2;
 			break;
 			}
-		DInfo("New direction set to "+dir,2);
+		DInfo("New direction set to "+dir,2,"BuildTrainStation");
 		}
 		
-	if (cBuilder.CanBuildRailStation(tile, dir, 5))
+	if (INSTANCE.builder.CreateAndBuildTrainStation(tile, dir))
 		{
-		success = true;
-		//PutSign(tile,"!"+dir);
+		success=true;
+		statile=tile;
 		break;
 		}
-	else	continue;
 	}
 ClearSignsALL();
 
 if (!success) 
 	{
-	DInfo("Can't find a good place to build the train station ! "+tilelist.Count(),1);
+	DInfo("Can't find a good place to build the train station ! "+tilelist.Count(),1,"BuildTrainStation");
 	return false;
 	}
-// if we are here all should be fine, we could build now
-success=root.builder.CreateAndBuildTrainStation(statop,stationdir);
-if (!success)
-	{
-//	DInfo("Railtype? "+AIRail.IsRailTypeAvailable(AIRail.GetCurrentRailType()),2); 
-	DInfo("Station construction was stopped.",1)
-	return false;
-	}
-
-if (start)
-	{
-	road.ROUTE.src_station = root.chemin.GListGetSize()-1;
-	}
- else	{
-	road.ROUTE.dst_station = root.chemin.GListGetSize()-1;
-	}
-root.chemin.RListUpdateItem(road_index,road);
+// here, so we success to build one
+local staID=AIStation.GetStationID(statile);
+if (start)	INSTANCE.route.source_stationID=staID;
+		INSTANCE.route.target_stationID=staID;
+INSTANCE.route.CreateNewStation(start);
 return true;
 }
 
@@ -544,7 +519,7 @@ pathfinder._max_bridge_length = 20;
 pathfinder._max_tunnel_length = 20;
 pathfinder.InitializePath([head1], [head2]);
 local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-root.bank.SaveMoney(); // thinking long time, don't waste money
+INSTANCE.bank.SaveMoney(); // thinking long time, don't waste money
 DInfo("Rail Pathfinding...",1);
 local counter = 0;
 local path = false;
@@ -562,11 +537,11 @@ if (path != null && path != false)
 else	{
 	ClearSignsALL();
 	DInfo("Pathfinding failed.",1);
-	root.builder.CriticalError=true;
-	root.bank.RaiseFundsTo(savemoney);
+	INSTANCE.builder.CriticalError=true;
+	INSTANCE.bank.RaiseFundsTo(savemoney);
 	return false;
 	}
-	root.bank.RaiseFundsBigTime();
+	INSTANCE.bank.RaiseFundsBigTime();
 	local prev = null;
 	local prevprev = null;
 	local pp1, pp2, pp3 = null;
@@ -964,12 +939,6 @@ if (!AIRail.BuildRailStation(tilepos, direction, 1, 5, AIStation.STATION_NEW))
 	DInfo("Rail station couldn't be built: "+AIError.GetLastErrorString(),1);
 	return false;
 	}
-obj.STATION.direction=direction;
-obj.STATION.station_id=AIStation.GetStationID(tilepos);
-obj.STATION.railtype=AIRail.GetRailType(tilepos);
-obj.STATION.type=1;
-INSTANCE.builder.RailStationFindEntrancePoints(obj);
-INSTANCE.chemin.GListAddItem(obj);
 return true;
 }
 
