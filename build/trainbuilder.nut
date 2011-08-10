@@ -40,11 +40,22 @@ function cCarrier::ChooseRailCouple(cargo, rtype=null)
 {
 local couple=AIList();
 local engine=ChooseRailEngine(rtype);
-
+if (rtype==null)	rtype=cCarrier.GetRailTypeNeedForEngine(engine);
+if (engine==null || rtype==-1)	return couple;
 local wagon=cCarrier.ChooseRailWagon(cargo, rtype);
-if (wagon==null)	return couple;
-if (engine!=null)	couple.AddItem(engine,wagon);
+if (wagon != null)	couple.AddItem(engine,wagon);
 return couple;
+}
+
+function cCarrier::GetRailTypeNeedForEngine(engineID)
+// return the railtype the engine need to work on
+{
+local rtypelist=AIRailTypeList();
+foreach (rtype, dum in rtypelist)
+	{
+	if (AIEngine.HasPowerOnRail(engineID, rtype))	return rtype;
+	}
+return -1;
 }
 
 function cCarrier::ChooseRailEngine(rtype=null)
@@ -60,11 +71,12 @@ vehlist.Valuate(AIEngine.IsWagon);
 vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.GetMaxSpeed);
 vehlist.Sort(AIList.SORT_BY_VALUE,false);
-vehlist.KeepValue(vehlist.Begin());
-vehlist.Valuate(AIEngine.GetMaxPower);
+vehlist.KeepValue(vehlist.GetValue(vehlist.Begin()));
+vehlist.Valuate(AIEngine.GetPower);
 vehlist.Sort(AIList.SORT_BY_VALUE,false);
 local veh = null;
 if (!vehlist.IsEmpty())	veh=vehlist.Begin();
+DInfo("Selected train engine : "+AIEngine.GetName(veh),2,"ChooseRailEngine");
 return veh;
 }
 

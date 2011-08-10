@@ -386,8 +386,6 @@ function DictatorAI::SetRailType(rtype=null)
 	AIRail.SetCurrentRailType(rtype);
 }
 
-function DictatorAI::Set
-
 function DictatorAI::CheckCurrentSettings()
 {
 if (AIController.GetSetting("debug") == 0) 

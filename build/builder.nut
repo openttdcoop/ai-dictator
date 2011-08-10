@@ -341,7 +341,7 @@ if (INSTANCE.route.status==0) // not using switch/case so we can advance steps i
 	switch (INSTANCE.route.route_type)
 		{
 		case	RouteType.RAIL:
-			success=INSTANCE.carrier.Choosenull;
+			success=INSTANCE.carrier.ChooseRailCouple(INSTANCE.route.cargoID);
 		break;
 		case	RouteType.ROAD:
 			success=INSTANCE.carrier.ChooseRoadVeh(INSTANCE.route.cargoID);

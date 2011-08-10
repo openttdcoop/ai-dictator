@@ -346,10 +346,13 @@ function cJobs::EstimateCost()
 		case	AIVehicle.VT_RAIL:
 			local rtype=AIRail.GetCurrentRailType();
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 3 tracks entries and length*rail
-			engine=INSTANCE.carrier.ChooseRailVeh();
-			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
-						else	engineprice=500000000;
-			money+=engineprice*2; // this should cover some wagons costs
+			engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
+			if (engine.IsEmpty())	engineprice=500000000;
+						else	{
+							engineprice+=AIEngine.GetPrice(engine.Begin());
+							engineprice+=AIEngine.GetPrice(engine.GetValue(engine.Begin()));
+							}
+			money+=engineprice;
 			money+=(2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)); // station train 5 length
 			money+=2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT));
 			money+=4*clean;
@@ -575,7 +578,8 @@ function cJobs::UpdateDoableJobs()
 			break;
 			case	AIVehicle.VT_RAIL:
 				if (!INSTANCE.use_train)	doable=false;
-				if (!INSTANCE.carrier.ChooseRailVeh())	doable=false;
+				local pickcouple=INSTANCE.carrier.ChooseRailCouple(myjob.cargoID);
+				if (pickcouple.IsEmpty())	doable=false;
 			break;
 			}
 		// not doable if disabled
