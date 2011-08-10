@@ -30,8 +30,14 @@ static	function GetStationObject(stationID)
 	size			= null;	// size of station: road = number of stations, trains=width, airport=width*height
 	maxsize		= null; 	// maximum size a station could be
 	locations		= null;	// locations of station tiles
-						// for road, value = front tile location
-						// for airport, 1st value = 0- big planes, 1- small planes, 2- chopper, 3=townID attach to it
+						// for road, item=tile location, value = front tile location
+						// for airport: tiles locations (nothing yet use until we add support for any airport type)
+						// for train:
+						// 0: train_infos
+						// 1: entry_in
+						// 2: entry_out
+						// 3: exit_in
+						// 4: exit_out
 	depot			= null;	// depot position and id are the same
 	cargo_produce	= null;	// cargos ID produce at station, value = amount waiting
 	cargo_accept	= null;	// cargos ID accept at station, value = cargo rating
@@ -42,23 +48,42 @@ static	function GetStationObject(stationID)
 	owner			= null;	// list routes that own that station
 	lastUpdate		= null;	// record last date we update infos for the station
 	moneyUpgrade	= null;	// money we need for upgrading the station
+/* train station are made like that:
+train_infos:
+bit0 entry is working on/off
+bit1 exit is working on/off
+bit2 south/west escape line is working on/off
+bit3 north/east escape line is working on/off
+bit4 use semaphore on/off
+
+train_entry_in = tile location of rails we should connect a rail route to use that station entry to go in
+train_entry_out= tile location... to use that station entry to get out of the station
+train_exit_in  = tile location of rails we should connect a rail route to use that station entry to go in
+train_exit_out = tile location... to use that station exit to get out of the station
+
+ - = rail, S = station, E=entry in, e=entry out, X=exit in, x=exit out, H=hub that connect each lines, L&l=escape lines
+		HLLLLLLLLLLH 
+	---E--H-SSSSSSSS-H---X---
+	---e--H-SSSSSSSS-H---x---
+		HllllllllllH
+*/
 	
 	constructor()
 		{
-		stationID		= null;
-		stationType		= null;
-		specialType		= null;
-		size			= 1;
-		maxsize		= 1;
-		locations		= AIList();
-		depot			= null;
+		stationID		= null;	// * = info is save
+		stationType		= null;	// *
+		specialType		= null;	// *
+		size			= 1;    	// *
+		maxsize		= 1;    	// *
+		locations		= AIList(); // *
+		depot			= null;	// *
 		cargo_produce	= AIList();
 		cargo_accept	= AIList();
-		radius		= 0;
+		radius		= 0;		// *
 		vehicle_count	= 0;	
 		vehicle_max		= 0;
 		vehicle_capacity	= AIList();
-		owner			= AIList();
+		owner			= AIList();	// * save but unuse, reclaims when loading
 		lastUpdate		= 0;
 		moneyUpgrade	= 0;
 		}
@@ -233,25 +258,38 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 	thatstation.cargo_produce.Clear();
 	thatstation.cargo_accept.Clear();
 	local cargolist=AICargoList();
-	foreach (tiles, dummy in thatstation.locations)
+	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(stationID));
+	foreach (cargo_id, cdummy in cargolist)
 		{
-		INSTANCE.Sleep(1);
-		foreach (cargo_id, dummy in cargolist)
+		foreach (tiles, sdummy in staloc)
 			{
+			if (thatstation.cargo_accept.HasItem(cargo_id) || thatstation.cargo_produce.HasItem(cargo_id))	break;
 			local valid=true;
-			if (thatstation.stationType == AIStation.STATION_BUS_STOP && cargo_id != cCargo.GetPassengerCargo())	valid=false;
-			if (thatstation.stationType == AIStation.STATION_TRUCK_STOP && cargo_id == cCargo.GetPassengerCargo())	valid=false;
-			if (thatstation.stationType == AIStation.STATION_AIRPORT && cargo_id != cCargo.GetPassengerCargo() && cargo_id != cCargo.GetMailCargo())	valid=false;
-			if (thatstation.cargo_accept.HasItem(cargo_id) && thatstation.cargo_produce.HasItem(cargo_id))	valid=false;
-			if (!valid)	continue;
+			switch (thatstation.stationType)
+				{
+				case AIStation.STATION_BUS_STOP:
+					if (cargo_id != cCargo.GetPassengerCargo())	valid=false;
+					break;
+				case AIStation.STATION_TRUCK_STOP:
+					if (cargo_id == cCargo.GetPassengerCargo())	valid=false;
+					break;
+				case AIStation.STATION_AIRPORT:
+					if (cargo_id != cCargo.GetPassengerCargo() && cargo_id != cCargo.GetMailCargo()) valid=false;
+					break;
+				case AIStation.STATION_TRAIN:
+					break;
+				case AIStation.STATION_DOCK:
+					break;
+				}
+			if (!valid)	break;
 			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.radius);
 			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.radius);
-			local valid=true;
 			if (accept > 7 && valid)	thatstation.cargo_accept.AddItem(cargo_id, accept);
 			if (produce > 0 && valid)	thatstation.cargo_produce.AddItem(cargo_id, produce);
+			INSTANCE.Sleep(1);
 			}
+		INSTANCE.Sleep(1);
 		}
-	//thatstation.UpdateCargos();
 	}
 
 function cStation::DeleteStation(stationid)
@@ -347,16 +385,17 @@ function cStation::InitNewStation()
 	{
 	if (this.stationID == null)	{ DWarn("InitNewStation() Bad station id : null",1); return; }
 	this.stationType = cStation.FindStationType(this.stationID);
-	//if (this.stationType == -1)	{ DError("BUG ! Don't call cStation::InitNewStation() without a real station !",1); return; }
 	local loc=AIStation.GetLocation(this.stationID);
 	locations=cTileTools.FindStationTiles(loc);
 	if (this.stationType != AIStation.STATION_AIRPORT)	this.radius=AIStation.GetCoverageRadius(this.stationType);
 	// avoid getting the warning message for coverage of airport with that function
 	switch	(this.stationType)
 		{
-		case	AIStation.STATION_TRAIN:		// TODO: fix & finish
-			this.specialType=AIRail.GetRailType(locations.Begin()); // set rail type the station use
+		case	AIStation.STATION_TRAIN:
+			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
+			locations.Clear();
+			for (local zz=0; zz < 5; zz++)	locations.AddItem(i,0); // create special cases for train usage
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do it
 			this.maxsize=1; this.size=1;
@@ -366,9 +405,8 @@ function cStation::InitNewStation()
 			this.maxsize=INSTANCE.carrier.road_max;
 			this.size=locations.Count();
 			if (AIRoad.HasRoadType(locations.Begin(), AIRoad.ROADTYPE_ROAD))
-				{
 				this.specialType=AIRoad.ROADTYPE_ROAD;	// set road type the station use
-				}
+			else	this.specialType=AIRoad.ROADTYPE_TRAM;
 			foreach(loc, dummy in this.locations)	this.locations.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
 		break;
 		case	AIStation.STATION_AIRPORT:
@@ -376,10 +414,7 @@ function cStation::InitNewStation()
 			this.size=this.locations.Count();
 			this.specialType=AIAirport.GetAirportType(this.locations.Begin());
 			this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
-			local planetype=0;	// big planes
-			if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
-			this.locations.SetValue(this.locations.Begin(), planetype);
-			this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
+			this.depot=AIAirport.GetHangarOfAirport(loc);
 			DInfo("Airport size: "+this.locations.Count(),2);
 		break;
 		}

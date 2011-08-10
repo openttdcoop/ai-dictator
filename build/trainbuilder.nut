@@ -12,31 +12,59 @@
  *
 **/
 
-function cCarrier::ChooseWagon(cargo)
+function cCarrier::ChooseRailWagon(cargo, rtype=null)
+// pickup a wagon that could be use to carry "cargo", on railtype "rtype"
+
 {
 	local wagonlist = AIEngineList(AIVehicle.VT_RAIL);
-	wagonlist.Valuate(AIEngine.CanRunOnRail, AIRail.GetCurrentRailType());
-	wagonlist.KeepValue(1);
+	if (rtype!=null)	
+		{
+		wagonlist.Valuate(AIEngine.CanRunOnRail, rtype);
+		wagonlist.KeepValue(1);
+		}
 	wagonlist.Valuate(AIEngine.IsWagon);
 	wagonlist.KeepValue(1);
 	wagonlist.Valuate(AIEngine.GetCargoType);
 	wagonlist.KeepValue(cargo);
 	wagonlist.Valuate(AIEngine.GetCapacity);
-	if (wagonlist.Count() == 0) 
-		{ DError("No wagons can transport that cargo.",1); return null; }
+	wagonlist.Sort(AIList.SORT_BY_VALUE,false);
+	if (wagonlist.IsEmpty()) 
+		{ DError("No wagons can transport that cargo.",1,"ChooseWagon"); return null; }
 	return wagonlist.Begin();
 }
 
-function cCarrier::ChooseRailVeh() // TODO: fix&recheck that, for case where a train could be better base on power
+function cCarrier::ChooseRailCouple(cargo, rtype=null)
+// This function will choose a wagon to carry that cargo, and a train engine to carry it
+// It will return AIList with item=engineID, value=wagonID
+// AIList() on error
+{
+local couple=AIList();
+local engine=ChooseRailEngine(rtype);
+
+local wagon=cCarrier.ChooseRailWagon(cargo, rtype);
+if (wagon==null)	return couple;
+if (engine!=null)	couple.AddItem(engine,wagon);
+return couple;
+}
+
+function cCarrier::ChooseRailEngine(rtype=null)
+// return fastest+powerfulest engine
 {
 local vehlist = AIEngineList(AIVehicle.VT_RAIL);
-vehlist.Valuate(AIEngine.HasPowerOnRail, AIRail.GetCurrentRailType());
-vehlist.KeepValue(1);
+if (rtype != null)
+	{
+	vehlist.Valuate(AIEngine.HasPowerOnRail, rtype);
+	vehlist.KeepValue(1);
+	}
 vehlist.Valuate(AIEngine.IsWagon);
 vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.GetMaxSpeed);
+vehlist.Sort(AIList.SORT_BY_VALUE,false);
+vehlist.KeepValue(vehlist.Begin());
+vehlist.Valuate(AIEngine.GetMaxPower);
+vehlist.Sort(AIList.SORT_BY_VALUE,false);
 local veh = null;
-if (vehlist.Count() > 0)	veh=vehlist.Begin();
+if (!vehlist.IsEmpty())	veh=vehlist.Begin();
 return veh;
 }
 

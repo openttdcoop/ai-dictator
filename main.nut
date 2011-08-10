@@ -122,10 +122,11 @@ class DictatorAI extends AIController
 function DictatorAI::Start()
 {
 	::INSTANCE <- this;
-	DInfo("DicatorAI started.",0,"main");
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
-	AICompany.SetAutoRenewStatus(false);
 	CheckCurrentSettings();
+	this.SetRailType();
+	DInfo("DicatorAI started.",0,"main");
+	AICompany.SetAutoRenewStatus(false);
 	if (loadedgame) 
 		{
 		bank.SaveMoney();
@@ -209,7 +210,6 @@ function DictatorAI::Start()
 		stationList.AddList(AIStationList(AIStation.STATION_ANY));
 		foreach (stationID, dummy in stationList)
 			{
-			INSTANCE.Sleep(1);
 			cStation.CheckCargoHandleByStation(stationID);
 			}
 		INSTANCE.route.VirtualAirNetworkUpdate();
@@ -227,9 +227,8 @@ function DictatorAI::Start()
 	bank.Update();
 	while(true)
 		{
-		this.SetRailType();
 		this.CheckCurrentSettings();
-		if (use_train) builder.BaseStationRailBuilder(80835);
+		//if (use_train) builder.BaseStationRailBuilder(80835);
 		DWarn("Running the AI in debug mode slowdown the AI and can do random issues !!!",1,"main");
 		bank.CashFlow();
 		this.ClearSignsALL();
@@ -374,11 +373,20 @@ foreach (tile, dummy in tilelist)
 	}	
 }
 
-function DictatorAI::SetRailType()
+function DictatorAI::SetRailType(rtype=null)
+// set current railtype
 {
-	local railtypes = AIRailTypeList();
-	AIRail.SetCurrentRailType(railtypes.Begin());
+	if (rtype == null)
+		{
+		local railtypes = AIRailTypeList();
+		if (railtypes.IsEmpty())	{ DError("There's no railtype avaiable !",1,"SetRailType"); return false; }
+		rtype=railtypes.Begin();
+		}
+	if (!AIRail.IsRailTypeAvailable(rtype))	{ DError("Railtype "+rtype+" is not available !",1,"SetRailType"); return false; }
+	AIRail.SetCurrentRailType(rtype);
 }
+
+function DictatorAI::Set
 
 function DictatorAI::CheckCurrentSettings()
 {
@@ -457,13 +465,17 @@ switch (fairlevel)
 	}
 
 use_boat=false; // we will handle boats later
-use_train=false;
+//use_train=false;
 if (INSTANCE.safeStart >0)
 	{ // Keep only road
 	use_boat=false;
 	use_train=false;
 	use_air=false;
 	}
+INSTANCE.safeStart=0;
+use_train=true;
+use_road=false;
+use_air=false;
 }
 
 function DictatorAI::ListToArray(list)

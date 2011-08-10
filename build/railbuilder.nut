@@ -11,6 +11,7 @@
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
+
 function cBuilder::TrainStationTesting()
 {
 local stat=AIStationList(AIStation.STATION_TRAIN);
@@ -238,7 +239,7 @@ local success=true;
 local i=0;
 for (i=0; i < oneway.len(); i++)
 	{
-	success=root.builder.AutoRailBuilder(oneway[i], oneway[i+1], src, entry, direction, false);
+	success=INSTANCE.builder.AutoRailBuilder(oneway[i], oneway[i+1], src, entry, direction, false);
 	i++;
 	if (!success)	break;
 	}
@@ -246,7 +247,7 @@ if (!success)
 	{ // failure, removing rail by demolish, not removing the station
 	for (local j=0; j <= i; j++)
 		{
-		root.builder.AutoRailBuilder(oneway[j], oneway[j+1], src, entry, direction, true);
+		INSTANCE.builder.AutoRailBuilder(oneway[j], oneway[j+1], src, entry, direction, true);
 		j++;
 		}
 	}

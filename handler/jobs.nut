@@ -707,7 +707,6 @@ function cJobs::RawJobHandling()
 						{
 						local realID=jid;
 						local isTown=(realID >= 10000) ? true : false;
-						DInfo("isTown = "+isTown+" id="+realID,1,"RawJobHandling");
 						if (isTown)	realID-=10000;
 						cJobs.AddNewIndustryOrTown(realID,isTown);
 						cJobs.rawJobs.SetValue(jid,1); // mark it done

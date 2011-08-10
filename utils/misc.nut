@@ -47,18 +47,12 @@ return nameo[x]+" "+namet[y]+" (DictatorAI)";
 
 }
 
-function DebugShowFunction(func)
-{
-local f="";
-if (::DictatorAI.debug)	f=func+"-> ";
-return f;
-}
-
-function DInfo(putMsg,debugValue=0,func="unkown",cat=this)
+function DInfo(putMsg,debugValue=0,func="unkown")
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");
-func=DebugShowFunction(func);
+if (debugState > 0)	func+="-> ";
+			else	func="";
 if (debugValue <= debugState )
 	{
 	AILog.Info(func+putMsg);
@@ -69,7 +63,8 @@ function DError(putMsg,debugValue=1,func="unkown")
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");
-func=DebugShowFunction(func);
+if (debugState > 0)	func+="-> ";
+			else	func="";
 if (debugValue <= debugState )
 	{
 	AILog.Error(func+putMsg+" Error:"+AIError.GetLastErrorString());
@@ -80,7 +75,8 @@ function DWarn(putMsg, debugValue=1,func="unkown")
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");
-func=DebugShowFunction(func);
+if (debugState > 0)	func+="-> ";
+			else	func="";
 if (debugValue <= debugState )
 	{
 	AILog.Warning(func+putMsg);
