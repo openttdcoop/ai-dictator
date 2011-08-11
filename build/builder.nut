@@ -179,10 +179,9 @@ local success=false;
 switch (INSTANCE.route.route_type)
 	{
 	case AIVehicle.VT_ROAD:
-	DInfo("source instance "+INSTANCE.route.source,1);
 	local fromsrc=INSTANCE.route.source.GetRoadStationEntry();
 	local todst=INSTANCE.route.target.GetRoadStationEntry();
-	DInfo("Calling road pathfinder: from src="+fromsrc+" to dst="+todst,2);
+	DInfo("Calling road pathfinder: from src="+fromsrc+" to dst="+todst,2,"BuildRoadByType");
 	if (!INSTANCE.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD))	return INSTANCE.builder.BuildRoadROAD(fromsrc,todst);
 												else	return true;
 	break;
@@ -200,7 +199,7 @@ switch (INSTANCE.route.route_type)
 						else		{ srclink=sSt.STATION.s_link; sentry=false; }
 			if (dSt.STATION.e_loc == dstpos)	{ dstlink=dSt.STATION.e_link; dentry=true; }
 						else		{ dstlink=dSt.STATION.s_link; dentry=false; }
-			DInfo("Calling rail pathfinder: src="+srcpos+" dst="+dstpos,2);
+			DInfo("Calling rail pathfinder: src="+srcpos+" dst="+dstpos,2,"BuildRoadByType");
 			PutSign(srcpos,"Source"+srcpos); PutSign(dstpos,"Target"+dstpos);
 			//PutSign(srclink,"Distance: "+srclink); PutSign(dstlink,"LinkTarget"+dstlink);
 			success=INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]);
@@ -229,6 +228,8 @@ if (compare == null)	// might happen, we found a dead station
 	INSTANCE.builder.DeleteStation(-1, stationID);
 	return false;
 	}
+if (compare.stationID == INSTANCE.route.source_stationID)	return false;
+if (compare.stationID == INSTANCE.route.target_stationID)	return false;
 DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
 // find if station will accept our cargo
 local handling=true;

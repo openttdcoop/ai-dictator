@@ -395,7 +395,8 @@ function cStation::InitNewStation()
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 			this.locations=AIList();
-			for (local zz=0; zz < 5; zz++)	this.locations.AddItem(zz,0); // create special cases for train usage
+			for (local zz=0; zz < 5; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
+			this.locations.SetValue(0,1+2);
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do it
 			this.maxsize=1; this.size=1;

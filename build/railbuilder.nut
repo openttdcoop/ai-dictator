@@ -644,25 +644,32 @@ function cBuilder::ReportHole(start, end, waserror)
 
 function cBuilder::FindStationEntryToExitPoint(src, dst)
 // find the closest path from station src to station dst
-// we return result values src.BestWay & dst.BestWay 
+// We return result in AIList, item=src tile, value=dst tile
 // 
 {
 // check entry/exit avaiablility on stations
-if ((!src.STATION.haveEntry) && (!src.STATION.haveExit)) return false;
-if ((!dst.STATION.haveEntry) && (!dst.STATION.haveExit)) return false;
+local srcEntry=INSTANCE.builder.IsRailStationEntryOpen(src);
+local srcExit=INSTANCE.builder.IsRailStationExitOpen(src);
+local dstEntry=INSTANCE.builder.IsRailStationEntryOpen(dst);
+local dstExit=INSTANCE.builder.IsRailStationEntryOpen(dst);
+local srcEntryLoc=INSTANCE.builder.GetRailStationEntryIn(src);
+local srcExitLoc=INSTANCE.builder.GetRailStationExitIn(src);
+local dstEntryLoc=INSTANCE.builder.GetRailStationEntryIn(src);
+local dstExitLoc=INSTANCE.builder.GetRailStationExitIn(src);
+
+
+if (!srcEntry && !srcExit) return AIList();
+if (!dstEntry && !dstExit) return AIList();
 local best=100000000000;
 local bestsrc=0;
 local bestdst=0;
 local check=0;
-DInfo(" esrc:"+src.STATION.e_loc+" edst:"+dst.STATION.e_loc,2);
-DInfo(" ssrc:"+src.STATION.s_loc+" sdst:"+dst.STATION.s_loc,2);
 
-if (src.STATION.haveEntry)  	// source entree: 85800, sortie: 80680
-		{		// target entree: 11066, sortie: 5946
-				// manual = sortie source + entree target -> 80680+11066
-		if (dst.STATION.haveEntry)
-			{
-			check = AIMap.DistanceManhattan(src.STATION.e_loc,dst.STATION.e_loc); 
+if (srcEntry)
+	{
+	if (dstExit)
+		{
+		check = AIMap.DistanceManhattan(srcEntry_loc,dst.STATION.e_loc); 
 			if (check < best)	{ best=check; bestsrc=src.STATION.e_loc; bestdst=dst.STATION.e_loc; }
 			}
 		DInfo("check="+check+" bestsrc="+bestsrc+" bestdst="+bestdst,2);
@@ -877,20 +884,20 @@ return success;
 
 function cBuilder::CreateStationsConnection(fromObj, toObj)
 // Connect station fromObj to station toObj
-// Upgrade the stations if need, pickup entry/exit close to each other
-// Create the connections in front of that stations
+// Pickup entry/exit close to each other
+// Create the connections in front of these stations
 {
 local success=false;
-local srcStation=INSTANCE.chemin.GListGetItem(fromObj);
-local dstStation=INSTANCE.chemin.GListGetItem(toObj);
-DInfo("Connecting rail station "+AIStation.GetName(srcStation.STATION.station_id)+" to "+AIStation.GetName(dstStation.STATION.station_id),1);
+local srcStation=cStation.GetStationObject(fromObj);
+local dstStation=cStation.GetStationObject(toObj);
+DInfo("Connecting rail station "+AIStation.GetName(srcStation.stationID)+" to "+AIStation.GetName(dstStation.stationID),1,"CreateStationsConnection");
 local retry=true;
 local fst= true;
 local sst=true;
-local sse=srcStation.STATION.e_count;
+/*local sse=srcStation.STATION.e_count;
 local sss=srcStation.STATION.s_count;
 local dse=dstStation.STATION.e_count;
-local dss=dstStation.STATION.s_count;
+local dss=dstStation.STATION.s_count;*/
 do	{
 	retry=INSTANCE.builder.FindStationEntryToExitPoint(srcStation, dstStation);
 
@@ -942,6 +949,24 @@ if (!AIRail.BuildRailStation(tilepos, direction, 1, 5, AIStation.STATION_NEW))
 return true;
 }
 
+function cBuilder::IsRailStationEntryOpen(stationID=null)
+// return true if station entry bit is set
+{
+if (stationID==null)	stationID=this;
+		else		stationID=cStation.GetStationObj(stationID);
+local entry=stationID.locations.GetValue(0);
+if (entry & 1 == 1)	return true;
+return false;
+}
 
+function cBuilder::IsRailStationExitOpen(stationID=null)
+// return true if station exit bit is set
+{
+if (stationID==null)	stationID=this;
+		else		stationID=cStation.GetStationObj(stationID);
+local exit=stationID.locations.GetValue(0);
+if (exit & 2 == 2)	return true;
+return false;
+}
 
 
