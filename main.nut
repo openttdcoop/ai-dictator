@@ -124,7 +124,7 @@ function DictatorAI::Start()
 	::INSTANCE <- this;
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	CheckCurrentSettings();
-	this.SetRailType();
+	builder.SetRailType();
 	DInfo("DicatorAI started.",0,"main");
 	AICompany.SetAutoRenewStatus(false);
 	if (loadedgame) 
@@ -371,19 +371,6 @@ foreach (tile, dummy in tilelist)
 		}
 	AIController.Sleep(1);
 	}	
-}
-
-function DictatorAI::SetRailType(rtype=null)
-// set current railtype
-{
-	if (rtype == null)
-		{
-		local railtypes = AIRailTypeList();
-		if (railtypes.IsEmpty())	{ DError("There's no railtype avaiable !",1,"SetRailType"); return false; }
-		rtype=railtypes.Begin();
-		}
-	if (!AIRail.IsRailTypeAvailable(rtype))	{ DError("Railtype "+rtype+" is not available !",1,"SetRailType"); return false; }
-	AIRail.SetCurrentRailType(rtype);
 }
 
 function DictatorAI::CheckCurrentSettings()

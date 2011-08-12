@@ -38,6 +38,12 @@ static	function GetStationObject(stationID)
 						// 2: entry_out
 						// 3: exit_in
 						// 4: exit_out
+						// 5: entry_crossing
+						// 6: exit_crossing
+						// 7: number of train dropper using entry
+						// 8: number of train dropper using exit
+						// 9: number of train taker using entry
+						// 10: number of train taker using exit
 	depot			= null;	// depot position and id are the same
 	cargo_produce	= null;	// cargos ID produce at station, value = amount waiting
 	cargo_accept	= null;	// cargos ID accept at station, value = cargo rating
@@ -48,6 +54,9 @@ static	function GetStationObject(stationID)
 	owner			= null;	// list routes that own that station
 	lastUpdate		= null;	// record last date we update infos for the station
 	moneyUpgrade	= null;	// money we need for upgrading the station
+// station size = (tte)+(tde / 2)+(ttx)+(tdx/2)
+// station size =3 + connect all front & back
+// station size =2
 /* train station are made like that:
 train_infos:
 bit0 entry is working on/off
@@ -60,12 +69,16 @@ train_entry_in = tile location of rails we should connect a rail route to use th
 train_entry_out= tile location... to use that station entry to get out of the station
 train_exit_in  = tile location of rails we should connect a rail route to use that station entry to go in
 train_exit_out = tile location... to use that station exit to get out of the station
+crossing       = tile location where rails cross each other to connect parrallel lines, distance from station may vary but always >1 tiles and < XxEe
 
- - = rail, S = station, E=entry in, e=entry out, X=exit in, x=exit out, H=hub that connect each lines, L&l=escape lines
-		HLLLLLLLLLLH 
-	---E--H-SSSSSSSS-H---X---
-	---e--H-SSSSSSSS-H---x---
-		HllllllllllH
+
+ - = rail, S = station, E=entry in, e=entry out, X=exit in, x=exit out, H=hub that connect each lines, L&l=escape lines, F=a fire
+\/ crossing point, where the rail cross each other
+/\ crossing point can be farer then H
+	       /-FLLLLLLLLLL-F-\
+	-E-F-\/--F-SSSSSSSS--F--\/-F-X--
+	-e-F-/\--F-SSSSSSSS--F--/\-F-x--
+	       \-FlllllllllllF-/
 */
 	
 	constructor()
@@ -115,13 +128,13 @@ function cStation::UpdateCargos(stationID=null)
 			{
 			local waiting=AIStation.GetCargoWaiting(thatstation.stationID, cargo);
 			thatstation.cargo_produce.SetValue(cargo, waiting);
-			DInfo("CARGOS-> Station #"+thatstation.stationID+" "+AIStation.GetName(thatstation.stationID)+" produce "+AICargo.GetCargoLabel(cargo)+" with "+waiting+" units",2);
+			DInfo("CARGOS-> Station #"+thatstation.stationID+" "+AIStation.GetName(thatstation.stationID)+" produce "+AICargo.GetCargoLabel(cargo)+" with "+waiting+" units",2,"cStation::UpdateCargos");
 			}
 		if (thatstation.cargo_accept.HasItem(cargo))
 			{
 			local rating=AIStation.GetCargoRating(thatstation.stationID, cargo);
 			thatstation.cargo_accept.SetValue(cargo, rating);
-			DInfo("CARGOS-> Station #"+thatstation.stationID+" "+AIStation.GetName(thatstation.stationID)+" accept "+AICargo.GetCargoLabel(cargo)+" with "+rating+" rating",2);
+			DInfo("CARGOS-> Station #"+thatstation.stationID+" "+AIStation.GetName(thatstation.stationID)+" accept "+AICargo.GetCargoLabel(cargo)+" with "+rating+" rating",2,"cStation::UpdateCargos");
 			}
 		}
 	}
@@ -170,9 +183,9 @@ function cStation::StationSave()
 // Save the station in the database
 	{
 	if (this.stationID in cStation.stationdatabase)
-		{ DInfo("STATIONS -> Station #"+this.stationID+" already in database "+cStation.stationdatabase.len(),2); }
+		{ DInfo("Station #"+this.stationID+" already in database "+cStation.stationdatabase.len(),2,"cStation::StationSave"); }
 	else	{
-		DInfo("STATIONS -> Adding station : "+this.stationID+" to station database",2);
+		DInfo("Adding station : "+this.stationID+" to station database",2,"cStation::StationSave");
 		cStation.stationdatabase[this.stationID] <- this;
 		}
 
@@ -196,7 +209,7 @@ function cStation::CanUpgradeStation()
 			local newairport = cBuilder.GetAirportType();
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
 			if (newairport > this.specialType)
-				{ DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2); }
+				{ DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2,"cStation::CanUpgradeStation"); }
 			if (this.locations.Count()==1)	return false; // plaforms have 1 size only
 			if (newairport > this.specialType)	return true;
 								else	return false;
@@ -300,7 +313,7 @@ function cStation::DeleteStation(stationid)
 		local statprop=cStation.GetStationObject(stationid);
 		if (statprop.owner.Count() == 0) // no more own by anyone
 			{
-			DInfo("STATION -> Removing station #"+stationid+" from station database",1);
+			DInfo("Removing station #"+stationid+" from station database",1,"cStation::DeleteStation");
 			delete cStation.stationdatabase[stationid];
 			cStation.VirtualAirports.RemoveItem(stationid);
 			}
@@ -320,7 +333,7 @@ function cStation::ClaimOwner(uid)
 	if (!this.owner.HasItem(uid))
 		{
 		this.owner.AddItem(uid,1);
-		DInfo("STATIONS -> Route #"+uid+" claims station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
+		DInfo("Route #"+uid+" claims station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1,"cStation::ClaimOwner");
 		this.UpdateStationInfos()
 		}
 	}
@@ -331,7 +344,7 @@ function cStation::OwnerReleaseStation(uid)
 	if (this.owner.HasItem(uid))
 		{
 		this.owner.RemoveItem(uid);
-		DInfo("STATIONS -> Route #"+uid+" release station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
+		DInfo("Route #"+uid+" release station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1,"cStation::OwnerReleaseStation");
 		this.UpdateStationInfos();
 		if (this.owner.IsEmpty())
 			{
@@ -353,14 +366,14 @@ function cStation::CheckAirportLimits()
 	{
 	if (!AIStation.IsValidStation(this.stationID))
 		{
-		DWarn("Invalid airport station ID",1);
+		DWarn("Invalid airport station ID",1,"CheckAirportLimits");
 		return; // it happen if the airport is moved and now invalid
 		}
 	locations=cTileTools.FindStationTiles(AIStation.GetLocation(this.stationID));
 	this.specialType=AIAirport.GetAirportType(this.locations.Begin());
 	if (this.specialType == 255)
 		{
-		DWarn("Invalid airport type at "+this.locations.Begin(),1);
+		DWarn("Invalid airport type at "+this.locations.Begin(),1,"CheckAirportLimits");
 		PutSign(this.locations.Begin(),"INVALID AIRPORT TYPE !");
 		INSTANCE.NeedDelay(100);
 		return;
@@ -383,7 +396,7 @@ function cStation::InitNewStation()
 // Autofill most values for a station. stationID must be set
 // Should not be call as-is, cRoute.CreateNewStation is there for that task
 	{
-	if (this.stationID == null)	{ DWarn("Bad station id : null",1,"InitNewStation"); return; }
+	if (this.stationID == null)	{ DWarn("Bad station id : null",1,"InitNewStation","InitNewStation"); return; }
 	this.stationType = cStation.FindStationType(this.stationID);
 	local loc=AIStation.GetLocation(this.stationID);
 	this.locations=cTileTools.FindStationTiles(loc);
@@ -395,8 +408,9 @@ function cStation::InitNewStation()
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 			this.locations=AIList();
-			for (local zz=0; zz < 5; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
-			this.locations.SetValue(0,1+2);
+			for (local zz=0; zz < 7; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
+			for (local zz=7; zz < 11; zz++)	this.locations.AddItem(zz,0);
+			this.locations.SetValue(0,1+2); // enable IN && OUT for the new station
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do it
 			this.maxsize=1; this.size=1;
@@ -416,7 +430,7 @@ function cStation::InitNewStation()
 			this.specialType=AIAirport.GetAirportType(this.locations.Begin());
 			this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
 			this.depot=AIAirport.GetHangarOfAirport(loc);
-			DInfo("Airport size: "+this.locations.Count(),2);
+			DInfo("Airport size: "+this.locations.Count(),2,"InitNewStation");
 		break;
 		}
 	// for everyone, the cargos

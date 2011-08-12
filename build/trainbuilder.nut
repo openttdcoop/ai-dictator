@@ -76,7 +76,7 @@ vehlist.Valuate(AIEngine.GetPower);
 vehlist.Sort(AIList.SORT_BY_VALUE,false);
 local veh = null;
 if (!vehlist.IsEmpty())	veh=vehlist.Begin();
-DInfo("Selected train engine : "+AIEngine.GetName(veh),2,"ChooseRailEngine");
+//DInfo("Selected train engine : "+AIEngine.GetName(veh),2,"ChooseRailEngine");
 return veh;
 }
 

@@ -62,7 +62,7 @@ function cBuilder::IsCriticalError()
 if (INSTANCE.builder.CriticalError) return true; // tell everyone we fail until the flag is remove
 local lasterror=AIError.GetLastError();
 local errcat=AIError.GetErrorCategory();
-DInfo("Error check: "+AIError.GetLastErrorString()+" Cat: "+errcat,2);
+DInfo("Error check: "+AIError.GetLastErrorString()+" Cat: "+errcat,2,"cBuilder::IsCriticalError");
 switch (lasterror)
 	{
 	case AIError.ERR_NOT_ENOUGH_CASH:
@@ -237,23 +237,23 @@ if (start)
 	{
 	if (!compare.IsCargoProduce(INSTANCE.route.cargoID))
 		{
-		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't produce "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't produce "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		handling=false;
 		}
 	}
 else	{
 	if (!compare.IsCargoAccept(INSTANCE.route.cargoID))
 		{
-		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't accept "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't accept "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		handling=false;
 		}
 	}
 if (!handling)	{
-		DInfo("Station "+AIStation.GetName(compare.stationID)+" refuse "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2);
+		DInfo("Station "+AIStation.GetName(compare.stationID)+" refuse "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		return false;
 		}
 // here station are compatible, but still do that station is within our original station area ?
-DInfo("Checking if station is within area of our industry/town",2);
+DInfo("Checking if station is within area of our industry/town",2,"cBuilder::FindCompatibleStationExistsForAllCases");
 local tilecheck = null;
 local goal=null;
 local startistown=false;
@@ -264,7 +264,7 @@ if (startistown)
 	tilecheck=cTileTools.IsWithinTownInfluence(compare.stationID,goal);
 	if (!tilecheck)	
 		{
-		DInfo("Station is outside "+AITown.GetName(goal)+" influence",2);
+		DInfo("Station is outside "+AITown.GetName(goal)+" influence",2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		return false;
 		}
 	}
@@ -276,13 +276,14 @@ else	{ // check the station is within our industry
 	foreach (position, dummy in compare.locations)
 		{	if (tilecheck.HasItem(position))	touching = true; }
 	if (touching)
-		{ DInfo("Station is within our industry radius",2); }
-	else	{ DInfo("Station is outside "+AIIndustry.GetName(goal)+" radius",2);
+		{ DInfo("Station is within our industry radius",2,"cBuilder::FindCompatibleStationExistsForAllCases"); }
+	else	{
+		DInfo("Station is outside "+AIIndustry.GetName(goal)+" radius",2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		return false;
 		}
 	}
 
-DInfo("Checking if station can accept more vehicles",1);
+DInfo("Checking if station can accept more vehicles",1,"cBuilder::FindCompatibleStationExistsForAllCases");
 // TODO: fix that fast !!! We are giving stationID to a function that need routeID
 /*
 if (!INSTANCE.carrier.CanAddNewVehicle(compare.stationID,start,1))
@@ -300,8 +301,8 @@ function cBuilder::FindCompatibleStationExists()
 // find source station compatible
 if (INSTANCE.route.station_type==null) return false;
 local sList=AIStationList(INSTANCE.route.station_type);
-DInfo("Looking for a compatible station sList="+sList.Count(),2);
-DInfo("statyppe="+INSTANCE.route.station_type+" BUS="+AIStation.STATION_BUS_STOP+" TRUCK="+AIStation.STATION_TRUCK_STOP,1);
+DInfo("Looking for a compatible station sList="+sList.Count(),2,"cBuilder::FindCompatibleStationExists");
+DInfo("statyppe="+INSTANCE.route.station_type+" BUS="+AIStation.STATION_BUS_STOP+" TRUCK="+AIStation.STATION_TRUCK_STOP,1,"cBuilder::FindCompatibleStationExists");
 INSTANCE.builder.DumpRoute();
 local source_success=false;
 local target_success=false;
@@ -313,7 +314,7 @@ if (!sList.IsEmpty())
 		if (source_success)
 			{
 			INSTANCE.route.source_stationID=stations_check;
-			DInfo("Found a compatible station for the source station",1);
+			DInfo("Found a compatible station for the source station",1,"cBuilder::FindCompatibleStationExists");
 			break;
 			}
 		}
@@ -323,13 +324,13 @@ if (!sList.IsEmpty())
 		if (target_success)
 			{
 			INSTANCE.route.target_stationID=stations_check;
-			DInfo("Found a compatible station for the target station",1);
+			DInfo("Found a compatible station for the target station",1,"cBuilder::FindCompatibleStationExists");
 			break;
 			}
 		}
 	}
-if (!source_success)	DInfo("Failure, creating a new station for our source station.",1);
-if (!target_success)	DInfo("Failure, creating a new station for our destination station.",1);
+if (!source_success)	DInfo("Failure, creating a new station for our source station.",1,"cBuilder::FindCompatibleStationExists");
+if (!target_success)	DInfo("Failure, creating a new station for our destination station.",1,"cBuilder::FindCompatibleStationExists");
 }
 
 function cBuilder::TryBuildThatRoute()
@@ -391,7 +392,7 @@ if (INSTANCE.route.status==2)
 			if (INSTANCE.route.route_type == RouteType.RAIL) 
 				{
 				buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
-				INSTANCE.SetRailType(buildWithRailType);
+				INSTANCE.builder.SetRailType(buildWithRailType);
 				}
 			success=INSTANCE.builder.BuildStation(true);
 			}
@@ -419,7 +420,7 @@ if (INSTANCE.route.status==3)
 			if (INSTANCE.route.route_type == RouteType.RAIL) 
 				{
 				buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
-				INSTANCE.SetRailType(buildWithRailType);
+				INSTANCE.builder.SetRailType(buildWithRailType);
 				}
 			success=INSTANCE.builder.BuildStation(false);
 			}

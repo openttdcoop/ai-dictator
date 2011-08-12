@@ -52,7 +52,8 @@ return false;
 function cTileTools::DemolishTile(tile)
 // same as AITile.DemolishTile but retry after a little wait
 {
-if (AITile.IsBuildable(tile)) return true;
+if (cTileTools.IsBuildable(tile)) return true;
+if (AIRail.IsRailTile(tile))	return false;
 local res=AITile.DemolishTile(tile);
 if (!res)
 	{
@@ -401,14 +402,14 @@ local h_firstitem=1000;
 local l_firstitem=1000;
 local Solve=AIList();
 local terratrys=0;
-DInfo("TerrraformSolver-> Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),1);
+DInfo("Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),1,"cTileTools::TerraformSolver");
 do	{
 	h_firstitem=cellHCount.Begin();
 	l_firstitem=cellLCount.Begin();
 	//DInfo("Checking h:"+cellHCount.GetValue(h_firstitem)+" vs l:"+cellLCount.GetValue(l_firstitem));
 	if (cellHCount.GetValue(h_firstitem) < cellLCount.GetValue(l_firstitem))
 			{
-			DInfo("TerraformSolver-> trying lowering tiles level to "+currentHeight,2);
+			DInfo("Trying lowering tiles level to "+currentHeight,2,"cTileTools::TerraformSolver");
 			HeightIsLow=true;
 			currentHeight=l_firstitem;
 			cellLCount.RemoveItem(l_firstitem);
@@ -417,13 +418,13 @@ do	{
 			HeightIsLow=false;
 			currentHeight=h_firstitem;
 			cellHCount.RemoveItem(h_firstitem);
-			DInfo("TerraformSolver-> trying raising tiles level to "+currentHeight,2);
+			DInfo("Trying raising tiles level to "+currentHeight,2,"cTileTools::TerraformSolver");
 			}
 	// Now we have determine what low or high height we need to reach by priority (most tiles first, with a pref to lower height)
 	terratrys++;
 	if (currentHeight == 0) // not serious to build at that level
 		{
-		DInfo("TerraformSolver-> Water level detect !",1);
+		DInfo("Water level detect !",1,"cTileTools::TerraformSolver");
 		Solve.AddItem(0,0);
 		continue;
 		}
@@ -432,7 +433,7 @@ do	{
 	money=cTileTools.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);
 	if (money != -1)
 			{
-			DInfo("TerraformSolver-> found a solve, "+money+" credits need to reach level "+currentHeight,1);
+			DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,1,"cTileTools::TerraformSolver");
 			if (money == 0)	money=1; // in case no money is need, we still ask 1 credit, else we will mistake as a failure
 			if (HeightIsLow)	money=0-money; // force negative to lower tile
 			}
@@ -443,7 +444,7 @@ do	{
 			}
 		else	Solve.AddItem(currentHeight,money);
 	} while (h_firstitem > 0 || l_firstitem > 0); // loop until both lists are empty
-DInfo("TerraformSolver has search "+terratrys+" time",1);
+DInfo("Solver has search "+terratrys+" time",1,"cTileTools::TerraformSolver");
 return Solve;
 }
 
@@ -480,7 +481,7 @@ foreach (tile, dummy in towntiles)
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
 	}
 local endop="Success !";
-if (!good || curRating < needRating)	endop="Failure.";
-DInfo("SeduceTown-> "+endop+" Rate now:"+curRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1);
+if (!good && curRating < needRating)	endop="Failure.";
+DInfo("SeduceTown-> "+endop+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1);
 return (curRating >= needRating);
 }
