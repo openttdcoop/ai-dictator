@@ -375,6 +375,13 @@ foreach (tile, dummy in tilelist)
 
 function DictatorAI::CheckCurrentSettings()
 {
+// this are settings we should take care of (one day ^^ )
+// max_train_length
+// max_bridge_length = 64
+// max_tunnel_length 
+// join_stations = true
+// adjacent_stations = true
+
 if (AIController.GetSetting("debug") == 0) 
 	debug=false;
 else	debug=true;
@@ -448,7 +455,12 @@ switch (fairlevel)
 		carrier.airnet_max=4;		// 4 aircrafts / airport in the air network, ie: 10 airports = 120 aircrafts
 	break;
 	}
-
+local spdcheck=null;
+if (AIGameSettings.IsValid("station_spread"))
+	{
+	spdcheck=AIGameSettings.GetValue("station_spread");
+	if (spdcheck < carrier.rail_max)	carrier.rail_max=spdcheck;
+	}
 use_boat=false; // we will handle boats later
 //use_train=false;
 if (INSTANCE.safeStart >0)

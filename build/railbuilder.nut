@@ -287,8 +287,11 @@ local srcExitLoc=INSTANCE.builder.GetRailStationIN(false,src);
 local dstEntryLoc=INSTANCE.builder.GetRailStationIN(true,dst);
 local dstExitLoc=INSTANCE.builder.GetRailStationIN(false,dst);
 
-if (!srcEntry && !srcExit) return AIList(); // that station is not valid, we need a valid entry or exit
-if (!dstEntry && !dstExit) return AIList(); // ...
+if ( (!srcEntry && !srcExit) || (!dstEntry && !dstExit) )
+	{
+	DInfo("That station have its entry and exit closed. No more connections could be made with it",1,"FindStationEntryToExitPoint");
+	return AIList();
+	}
 local best=100000000000;
 local bestsrc=0;
 local bestdst=0;
@@ -354,8 +357,12 @@ local bestWay=AIList();
 local sss=srcStation.STATION.s_count;
 local dse=dstStation.STATION.e_count;
 local dss=dstStation.STATION.s_count;*/
+local srcresult=false;
+local dstresult=false;
 do	{
 	bestWay=INSTANCE.builder.FindStationEntryToExitPoint(fromObj, toObj);
+	srcresult=false;
+	dstresult=false;
 	if (bestWay.IsEmpty())	retry=false;
 				else	retry=true;
 	if (retry) // we found a possible connection
@@ -363,16 +370,19 @@ do	{
 		local srcUseEntry=(bestWay.GetValue(bestWay.Begin())==1);
 		local dstUseEntry=(bestWay.GetValue(bestWay.Next())==1);
 		DInfo("srcUseEntry="+srcUseEntry+" dstUseEntry="+dstUseEntry,2,"cBuilder::CreateStationsConnection");
-		if (!INSTANCE.builder.RailStationGrow(fromObj, srcUseEntry, true))
+		if (!srcresult)	srcresult=INSTANCE.builder.RailStationGrow(fromObj, srcUseEntry, true);
+		if (!srcresult)
 			{
 			DWarn("RailStationGrow report failure",1,"cBuilder::CreateStationConnection");
-			return false;
+			if (INSTANCE.builder.CriticalError)	return false;
 			}
-		if (!INSTANCE.builder.RailStationGrow(toObj, dstUseEntry, false))
+		if (!dstresult)	dstresult=INSTANCE.builder.RailStationGrow(toObj, dstUseEntry, false);
+		if (!dstresult)
 			{
 			DWarn("RailStationGrow report failure",1,"cBuilder::CreateStationConnection");
-			return false;
+			if (INSTANCE.builder.CriticalError)	return false;
 			}
+		if (dstresult && srcresult)	retry=false;
 		}
 	} while (retry);
 return true;
@@ -418,6 +428,31 @@ local exit=thatstation.locations.GetValue(0);
 if ((exit & 2) == 2)	return true;
 return false;
 }
+
+function cBuilder::RailStationCloseEntry(stationID=null)
+// return true if station entry bit is set
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+local entry=thatstation.locations.GetValue(0);
+entry=entry & 1;
+thatstation.locations.SetValue(0, entry);
+DInfo("Closing the entry of station "+AIStation.GetName(thatstation.stationID),1,"RailStationCloseEntry");
+}
+
+function cBuilder::RailStationCloseExit(stationID=null)
+// Unset exit bit of the station
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+local exit=thatstation.locations.GetValue(0);
+exit=exit & 1;
+thatstation.locations.SetValue(0, exit);
+DInfo("Closing the exit of station "+AIStation.GetName(thatstation.stationID),1,"RailStationCloseEntry");
+}
+
 
 function cBuilder::GetRailStationIN(getEntry, stationID=null)
 // Return the tile where the station IN point is
@@ -562,7 +597,10 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 // useEntry: true to add a train to its entry, false to add it at exit
 // taker: true to add a taker train, false to add a dropper train
 {
-local needCleanup=AIList();
+// when a station entry cannot be change anymore, we lock it and refuse any train on it
+// "" for exit
+// when both entry and exit are locked, still the station might be a valid & working one
+// so a dead one is : entry+exit locked, no train using it, size=1
 local thatstation=cStation.GetStationObject(staID);
 if (thatstation.stationID == null)	return false;
 local trainEntryTaker=thatstation.locations.GetValue(9);
@@ -635,6 +673,12 @@ local displace=AIMap.GetTileIndex(0,0); // don't move
 if (newStationSize > thatstation.size)
 	{
 	DInfo("Upgrading "+AIStation.GetName(thatstation.stationID)+" to "+newStationSize,0,"RailStationGrow");
+	if (thatstation.maxsize==thatstation.size)
+		{
+		DInfo("We'll need another platform to handle that train, but the station "+AIStation.GetName(thatstation.stationID)+" cannot grow anymore.",1,"RailStationGrow");
+		INSTANCE.builder.CriticalError=true; // raise it ourselves
+		return false;
+		}
 	local allfail=false;
 	local fail=false;
 	fail=CreateAndBuildTrainStation(position+leftTileOf, direction, thatstation.stationID);
@@ -650,17 +694,12 @@ if (newStationSize > thatstation.size)
 			{
 			INSTANCE.builder.IsCriticalError();
 			if (INSTANCE.builder.CriticalError && allfail)
-				{ // We will never be able to build one more station track in that station so
+				{ // We will never be able to build one more station platform in that station so
 				DInfo("Critical failure, station couldn't be upgrade anymore!",1,"RailStationGrow");
-				local stopexitentry=null;
-				stopexitentry=thatstation.locations.GetValue(0);
-				stopexitentry=stopexitentry & 1;
-				stopexitentry=stopexitentry & 2;
-				thatstation.locations.SetValue(0,stopexitentry);
 				thatstation.maxsize=thatstation.size;
 				local guessplatform=INSTANCE.builder.RailStationGuessEmptyPlatform(position);
 				INSTANCE.builder.RailStationRemovePlatform(guessplatform);
-				INSTANCE.builder.CriticalError=true; // ask caller to check that
+				INSTANCE.builder.CriticalError=true; // Make sure caller will be aware of that failure
 				return false;
 				}
 			else	{
@@ -670,7 +709,6 @@ if (newStationSize > thatstation.size)
 			}
 		}
 	// if we are here, we endup successfuly add a new track to the station
-	//for (local j=0; j < 5; j++)	needCleanup.AddItem(position+displace+(j*backwardTileOf));
 	thatstation.size++;
 	}
 local se_IN, se_OUT, se_crossing = null; // entry
@@ -692,11 +730,12 @@ local deadExit=false;
 local rail=null;
 local success=false;
 local crossing=null;
-if (thatstation.size == 1) // a simple station
+// define & build crossing point
+if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	{
 	// try to level the area to work on
-	if (direction == AIRail.RAILTRACK_NE_SW)	cTileTools.CheckLandForConstruction(workTile, 5, 1);
-							else	cTileTools.CheckLandForConstruction(workTile, 1, 5);
+	/*if (direction == AIRail.RAILTRACK_NE_SW)	cTileTools.CheckLandForConstruction(workTile, 5, 1);
+							else	cTileTools.CheckLandForConstruction(workTile, 1, 5);*/
 	// We first try to build the crossing area from worktile+1 upto worktile+3 to find where one is doable
 	// Because a rail can cross a road, we choose one that will fail to cross one to be sure it's a valid spot for crossing
 	rail=railLeft;
@@ -704,6 +743,7 @@ if (thatstation.size == 1) // a simple station
 	local j=1;
 	do	{
 		PutSign(workTile+(j*forwardTileOf),"x"); INSTANCE.NeedDelay();
+		AITile.LevelTiles(workTile+backwardTileOf, workTile+(j*forwardTileOf));
 		success=INSTANCE.builder.DropRailHere(rail, workTile+(j*forwardTileOf));
 		if (success)	{
 					if (useEntry)	{ se_crossing=workTile+(j*forwardTileOf); crossing=se_crossing; }
@@ -713,53 +753,96 @@ if (thatstation.size == 1) // a simple station
 		} while (j < 4 && !success);
 	if (success)
 		{
-		INSTANCE.builder.DropRailHere(rail, crossing,true);
+		for (local h=1; h < 4; h++)	INSTANCE.builder.DropRailHere(rail,workTile+(j*forwardTileOf),true);
+		// remove previous tracks to clean area
 		INSTANCE.builder.DropRailHere(railFront, crossing);
 		INSTANCE.builder.DropRailHere(railCross, crossing);
 		if (useEntry)
 				{
 				thatstation.locations.SetValue(5,se_crossing);
 				DInfo("Entry crossing is now set to : "+se_crossing,2,"RailStationGrow");
-				PutSign(se_crossing,"X");
+				PutSign(se_crossing,"eX");
 				}
 			else	{
 				thatstation.locations.SetValue(6,sx_crossing);
 				DInfo("Exit crossing is now set to : "+sx_crossing,2,"RailStationGrow");
-				PutSign(sx_crossing,"X");
+				PutSign(sx_crossing,"xX");
 				}
 		}
 	else	{
 		INSTANCE.builder.IsCriticalError();
 		if (INSTANCE.builder.CriticalError)
 				{
-				if (useEntry)	deadEntry=true;
-						else	deadExit=true;
+				if (useEntry)	INSTANCE.builder.RailStationCloseEntry(thatstation.stationID);
+						else	INSTANCE.builder.RailStationCloseExit(thatstation.stationID);
 				INSTANCE.builder.CriticalError=false;
+				return false;
 				}
 			else	return false; // just give up this time
 		}
 	}
 
-if (deadExit || deadEntry)
+// build entry/exit IN, if anyone use entry or exit, we need it built
+local eopen=INSTANCE.builder.IsRailStationEntryOpen(thatstation.stationID);
+local xopen=INSTANCE.builder.IsRailStationExitOpen(thatstation.stationID);
+if ((se_IN == -1 && useEntry && eopen) || (sx_IN == -1 && !useEntry && xopen))
 	{
-	local stopexitentry=null;
-	stopexitentry=thatstation.locations.GetValue(0);
-	if (deadEntry)	stopexitentry=stopexitentry & 1;
-	if (deadExit)	stopexitentry=stopexitentry & 2;
-	thatstation.locations.SetValue(0,stopexitentry);
-	if (deadEntry && deadExit)
-		{ // cannot grow anymore
-		thatstation.maxsize=thatstation.size;
-		local guessplatform=INSTANCE.builder.RailStationGuessEmptyPlatform(position);
-		INSTANCE.builder.RailStationRemovePlatform(guessplatform);
-		INSTANCE.builder.CriticalError=true; // ask caller to check that if size=1 that station is totally dead
-		return false;
+	DInfo("Building IN point",1,"RailStationGrow");
+	rail=railFront;
+	local j=1;
+	local fromtile=0;
+	if (useEntry)	fromtile=se_crossing;
+			else	fromtile=sx_crossing;
+	do	{
+		PutSign(fromtile+(j*forwardTileOf),"x"); INSTANCE.NeedDelay();
+		AITile.LevelTiles(fromtile, fromtile+(j*forwardTileOf));
+		success=INSTANCE.builder.DropRailHere(rail, fromtile+(j*forwardTileOf));
+		INSTANCE.builder.IsCriticalError();
+		if (INSTANCE.builder.CriticalError)	
+			{
+			if (useEntry)	INSTANCE.builder.RailStationCloseEntry(thatstation.stationID);
+					else	INSTANCE.builder.RailStationCloseExit(thatstation.stationID);
+			INSTANCE.builder.CriticalError=false;
+			return false;
+			}
+		else	return false; // giveup and retry later
+		DInfo("Building signal",1,"Deb");
+		success=AIRail.BuildSignal(fromtile+(j*forwardTileOf), fromttile+((j-1)*forwardTileOf), AIRail.SIGNALTYPE_NORMAL_TWOWAY);
+		if (success)	{
+					if (useEntry)	{ se_IN=fromtile+(j*forwardTileOf); }
+							else	{ sx_IN=fromtile+(j*forwardTileOf); }
+					}
+		j++;
+		} while (j < 4 && !success);
+	if (success)
+		{
+		if (useEntry)	{
+					thatstation.locations.SetValue(1,se_IN);
+					DInfo("IN Entry point set to "+se_IN,1,"RailStationGrow");
+					}
+				else	{
+					thatstation.locations.SetValue(3,sx_IN);
+					DInfo("IN Exit point set to "+sx_IN,1,"RailStationGrow");
+					}
 		}
 	}
+
+// 7: number of train dropper using entry
+// 8: number of train dropper using exit
+// 9: number of train taker using entry
+// 10: number of train taker using exit
+// If we reach this line, it means everything upper was succesful (and i hope this will be !)
+thatstation.locations.SetValue(9,trainEntryTaker);
+thatstation.locations.SetValue(10,trainExitTaker);
+thatstation.locations.SetValue(7,trainEntryDropper);
+thatstation.locations.SetValue(8,trainExitDropper);
+DInfo("Station "+AIStation.GetName(thatstation.stationID)+" have "+(trainEntryTaker+trainEntryDropper)+" trains using its entry and "+(trainExitTaker+trainExitDropper)+" using its exit",1,"RailStationGrow");
+return true;
 }
 
 function cBuilder::DropRailHere(railneed, pos, remove=false)
 // Put a rail at position pos, on failure clear the area and retry
+// Can also drop a signal if railneed >= 500
 {
 local lasterr=-1;
 if (remove)
