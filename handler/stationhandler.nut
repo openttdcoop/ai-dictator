@@ -44,7 +44,7 @@ static	function GetStationObject(stationID)
 						// 8: number of train dropper using exit
 						// 9: number of train taker using entry
 						// 10: number of train taker using exit
-						// 11: entry_in_link
+						// 11: entry_in_link tile to pathfind to enter the station by IN point
 						// 12: entry_out_link
 						// 13: exit_in_link
 						// 14: exit_out_link
