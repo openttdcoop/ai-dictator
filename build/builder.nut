@@ -184,32 +184,9 @@ switch (INSTANCE.route.route_type)
 	DInfo("Calling road pathfinder: from src="+fromsrc+" to dst="+todst,2,"BuildRoadByType");
 	if (!INSTANCE.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD))	return INSTANCE.builder.BuildRoadROAD(fromsrc,todst);
 												else	return true;
-	break;
-
 	case AIVehicle.VT_RAIL:
 	success=INSTANCE.builder.CreateStationsConnection(INSTANCE.route.source_stationID, INSTANCE.route.target_stationID);
-	local sentry=false; local dentry=false;
-	if (success)	{
-			local sSt=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
-			local dSt=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
-			local srcpos=sSt.STATION.query;
-			local dstpos=dSt.STATION.query;
-			local srclink=0; local dstlink=0;
-			if (sSt.STATION.e_loc == srcpos)	{ srclink=sSt.STATION.e_link; sentry=true; }
-						else		{ srclink=sSt.STATION.s_link; sentry=false; }
-			if (dSt.STATION.e_loc == dstpos)	{ dstlink=dSt.STATION.e_link; dentry=true; }
-						else		{ dstlink=dSt.STATION.s_link; dentry=false; }
-			DInfo("Calling rail pathfinder: src="+srcpos+" dst="+dstpos,2,"BuildRoadByType");
-			PutSign(srcpos,"Source"+srcpos); PutSign(dstpos,"Target"+dstpos);
-			//PutSign(srclink,"Distance: "+srclink); PutSign(dstlink,"LinkTarget"+dstlink);
-			success=INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]);
-			}
-	if (!success)	{ return false; } // leave critical status for caller
-	// if we are here we success
-	road.ROUTE.src_entry=sentry;
-	road.ROUTE.dst_entry=dentry;
-	INSTANCE.chemin.RListUpdateItem(idx,road);
-	break;
+	return success;
 	default:
 		return true;
 	break;

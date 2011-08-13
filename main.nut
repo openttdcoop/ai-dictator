@@ -262,6 +262,7 @@ function DictatorAI::Start()
 		builder.WeeklyChecks();
 		builder.MonthlyChecks();
 		jobs.RawJobHandling();
+		this.ClearSignsALL();
 		}
 }
 

@@ -44,6 +44,10 @@ static	function GetStationObject(stationID)
 						// 8: number of train dropper using exit
 						// 9: number of train taker using entry
 						// 10: number of train taker using exit
+						// 11: entry_in_link
+						// 12: entry_out_link
+						// 13: exit_in_link
+						// 14: exit_out_link
 	depot			= null;	// depot position and id are the same
 	cargo_produce	= null;	// cargos ID produce at station, value = amount waiting
 	cargo_accept	= null;	// cargos ID accept at station, value = cargo rating
@@ -408,7 +412,7 @@ function cStation::InitNewStation()
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 			this.locations=AIList();
-			for (local zz=0; zz < 7; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
+			for (local zz=0; zz < 15; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
 			for (local zz=7; zz < 11; zz++)	this.locations.AddItem(zz,0);
 			this.locations.SetValue(0,1+2); // enable IN && OUT for the new station
 		break;
