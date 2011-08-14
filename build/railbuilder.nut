@@ -163,7 +163,8 @@ while (path == false && counter < 350)
 	}
 if (path != null && path != false)
 	{
-	DInfo("Path found. (" + counter + ")");
+	DInfo("Path found. (" + counter + ")",0,"BuildRoadRAIL");
+	AISign.RemoveSign(pfInfo);
 	ClearSignsALL();
 	}
 else	{
@@ -656,6 +657,9 @@ else	{
 // 8: number of train dropper using exit
 // 9: number of train taker using entry
 // 10: number of train taker using exit
+
+INSTANCE.builder.RailConnectorSolver(0x3c4f0,0x3c4ef); // DEBUG
+
 local newStationSize=trainEntryTaker+trainExitTaker+(trainEntryDropper / 2)+(trainExitDropper / 2);
 local position=AIStation.GetLocation(thatstation.stationID);
 local direction=AIRail.GetRailStationDirection(position);
@@ -665,43 +669,55 @@ local workTile=null; // the station front tile, but depend on entry or exit
 local railFront, railCross, railLeft, railRight, railUpLeft, railUpRight, fire = null;
 if (direction == AIRail.RAILTRACK_NW_SE)
 	{
-	leftTileOf=AIMap.GetTileIndex(-1,0);
-	rightTileOf=AIMap.GetTileIndex(1,0);
 	railFront=AIRail.RAILTRACK_NW_SE;
 	railCross=AIRail.RAILTRACK_NE_SW;
-	railLeft=AIRail.RAILTRACK_SW_SE;
-	railRight=AIRail.RAILTRACK_NE_SE;
-	railUpLeft=AIRail.RAIL_TRACK_NE_SE; //fix it
-	railUpRight=AIRail.RAIL_TRACK_NE_SE;//fix it
-	if (useEntry)	{
+	if (useEntry)	{ // going NW->SE
+				leftTileOf=AIMap.GetTileIndex(-1,0);
+				rightTileOf=AIMap.GetTileIndex(1,0);
 				forwardTileOf=AIMap.GetTileIndex(0,-1);
 				backwardTileOf=AIMap.GetTileIndex(0,1);
 				workTile=position+forwardTileOf;
+				railLeft=AIRail.RAILTRACK_SW_SE;
+				railRight=AIRail.RAILTRACK_NE_SE;
+				railUpLeft=AIRail.RAILTRACK_NW_SW;
+				railUpRight=AIRail.RAILTRACK_NW_NE;
 				}
-			else	{
+			else	{ // going SE->NW
+				leftTileOf=AIMap.GetTileIndex(1,0);
+				rightTileOf=AIMap.GetTileIndex(-1,0);
 				forwardTileOf=AIMap.GetTileIndex(0,1);
 				backwardTileOf=AIMap.GetTileIndex(0,-1);
 				workTile=position+AIMap.GetTileIndex(0,5);
+				railLeft=AIRail.RAILTRACK_NW_NE;
+				railRight=AIRail.RAILTRACK_NW_SW;
+				railUpLeft=AIRail.RAILTRACK_NE_SE;
+				railUpRight=AIRail.RAILTRACK_SW_SE;
 				}
 	}
 else	{ // NE_SW
-	leftTileOf=AIMap.GetTileIndex(0,-1);
-	rightTileOf=AIMap.GetTileIndex(0,1);
 	railFront=AIRail.RAILTRACK_NE_SW;
 	railCross=AIRail.RAILTRACK_NW_SE;
-	railLeft=AIRail.RAILTRACK_NW_SW;
-	railRight=AIRail.RAILTRACK_SW_SE;
-	railUpLeft=AIRail.RAIL_TRACK_NE_SE; //fixit
-	railUpRight=AIRail.RAIL_TRACK_NE_SE; //fixit
-	if (useEntry)	{
+	if (useEntry)	{ // going NE->SW
+				leftTileOf=AIMap.GetTileIndex(0,-1);
+				rightTileOf=AIMap.GetTileIndex(0,1);
 				forwardTileOf=AIMap.GetTileIndex(-1,0);
 				backwardTileOf=AIMap.GetTileIndex(1,0);
 				workTile=position+forwardTileOf;
+				railLeft=AIRail.RAILTRACK_NW_SW;
+				railRight=AIRail.RAILTRACK_SW_SE;
+				railUpLeft=AIRail.RAILTRACK_NW_NE;
+				railUpRight=AIRail.RAILTRACK_NE_SE;
 				}
-			else	{
+			else	{ // going SW->NE
+				leftTileOf=AIMap.GetTileIndex(0,1);
+				rightTileOf=AIMap.GetTileIndex(0,-1);
 				forwardTileOf=AIMap.GetTileIndex(1,0);
 				backwardTileOf=AIMap.GetTileIndex(-1,0);
 				workTile=position+AIMap.GetTileIndex(5,0);
+				railLeft=AIRail.RAILTRACK_NE_SE;
+				railRight=AIRail.RAILTRACK_NW_NE;
+				railUpLeft=AIRail.RAILTRACK_SW_SE;
+				railUpRight=AIRail.RAILTRACK_NW_SW;
 				}
 	}
 if (useEntry)	DInfo("Working on station entry",1,"RailStationGrow");
@@ -769,7 +785,17 @@ local deadExit=false;
 local rail=null;
 local success=false;
 local crossing=null;
-// define & build crossing point
+/*local k=0;
+INSTANCE.builder.DropRailHere(railLeft,workTile+(k*forwardTileOf));
+k++;
+INSTANCE.builder.DropRailHere(railRight,workTile+(k*forwardTileOf));
+k++;
+INSTANCE.builder.DropRailHere(railUpLeft,workTile+(k*forwardTileOf));
+k++;
+INSTANCE.builder.DropRailHere(railUpRight,workTile+(k*forwardTileOf));
+k++;
+INSTANCE.NeedDelay(200);*/
+// define & build crossing point if none exist yet
 if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	{
 	// try to level the area to work on
@@ -783,7 +809,6 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	do	{
 		PutSign(workTile+(j*forwardTileOf),"x"); INSTANCE.NeedDelay();
 		cTileTools.TerraformLevelTiles(position,workTile+(j*forwardTileOf));
-		//AITile.LevelTiles(workTile+backwardTileOf, workTile+(j*forwardTileOf));
 		success=INSTANCE.builder.DropRailHere(rail, workTile+(j*forwardTileOf));
 		if (success)	{
 					if (useEntry)	{ se_crossing=workTile+(j*forwardTileOf); crossing=se_crossing; }
@@ -793,7 +818,11 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 		} while (j < 4 && !success);
 	if (success)
 		{
-		for (local h=1; h < 4; h++)	INSTANCE.builder.DropRailHere(rail,workTile+(j*forwardTileOf),true);
+		for (local h=1; h < 4; h++)	
+			{
+			INSTANCE.builder.DropRailHere(rail,workTile+(h*forwardTileOf),true);
+			INSTANCE.NeedDelay();
+			}
 		// remove previous tracks to clean area
 		INSTANCE.builder.DropRailHere(railFront, crossing);
 		INSTANCE.builder.DropRailHere(railCross, crossing);
@@ -825,6 +854,9 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 // build entry/exit IN, if anyone use entry or exit, we need it built
 local eopen=INSTANCE.builder.IsRailStationEntryOpen(thatstation.stationID);
 local xopen=INSTANCE.builder.IsRailStationExitOpen(thatstation.stationID);
+// depot positions are relative to crossing point
+local depotPositionArray=[(leftTileOf+forwardTileOf), (rightTileOf+forwardTileOf), leftTileOf, rightTileOf];
+local depotFrontArray=[leftTileOf, rightTileOf, 0, 0];
 if ((se_IN == -1 && useEntry && eopen) || (sx_IN == -1 && !useEntry && xopen))
 	{
 	DInfo("Building IN point",1,"RailStationGrow");
@@ -835,7 +867,6 @@ if ((se_IN == -1 && useEntry && eopen) || (sx_IN == -1 && !useEntry && xopen))
 			else	fromtile=sx_crossing;
 	do	{
 		PutSign(fromtile+(j*forwardTileOf),"."); INSTANCE.NeedDelay();
-		//AITile.LevelTiles(position, fromtile+(j*forwardTileOf));
 		cTileTools.TerraformLevelTiles(position,fromtile+(j*forwardTileOf));
 		success=INSTANCE.builder.DropRailHere(rail, fromtile+(j*forwardTileOf));
 		if (INSTANCE.builder.IsCriticalError())
@@ -874,20 +905,35 @@ if ((se_IN == -1 && useEntry && eopen) || (sx_IN == -1 && !useEntry && xopen))
 					}
 		}
 	}
+
+// build depot for it, tweaky
+// in order to build cleaner rail we build the depot where the OUT line should goes, reserving space for it
+// if this cannot be done, we build it next to the IN line, and we just swap lines (OUT<>IN)
 if (useEntry)	crossing=se_crossing;
 		else	crossing=sx_crossing;
-if (thatstation.depot==null && crossing!=-1)	// build depot for it
+if (thatstation.depot==null && ( (se_OUT==-1 && useEntry) || (sx_OUT==-1 && !useEntry) ))
 	{
 	local j=1;
 	local pass=0;
-	local swapTile=rightTileOf;
+	local swapTile=leftTileOf;
+	local rail1=railLeft;
+	local rail2=railUpLeft;
 	DInfo("Building station depot",1,"RailStationGrow");
 	do	{
-		if (pass=1)	swapTile=leftTileOf;
+		if (pass=1)	
+			{
+			swapTile=rightTileOf;
+			rail1=railRight;
+			rail2=railUpRight;
+			}
 		cTileTools.TerraformLevelTiles(crossing,crossing+(j*swapTile));
 		if (!AIRail.IsRailTile(crossing+(j*swapTile)))	success=AIRail.BuildRailDepot(crossing+(j*swapTile),crossing+((j-1)*swapTile));
+		local frontdepot=AIRail.GetRailDepotFrontTile(crossing+(j*swapTile));
+		success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail1,frontdepot));
+		success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail2,frontdepot));
 		if (success)	{ // TODO: we need a 2nd depot for exit
 					thatstation.depot=crossing+(j*swapTile);
+					pass=10;
 					}
 		j++;
 		if (j > 3)	{ pass++; j=1; }
@@ -905,6 +951,7 @@ thatstation.locations.SetValue(8,trainExitDropper);
 DInfo("Station "+AIStation.GetName(thatstation.stationID)+" have "+(trainEntryTaker+trainEntryDropper)+" trains using its entry and "+(trainExitTaker+trainExitDropper)+" using its exit",1,"RailStationGrow");
 
 //success=INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]);
+
 return true;
 }
 
@@ -934,3 +981,109 @@ if (!AIRail.BuildRailTrack(pos,railneed))
 else	return true;
 return !AIRail.BuildRailTrack(pos,railneed);
 }
+
+function cBuilder::RailConnectorSolver(tilepos, tilefront, fullconnect=false)
+// Look at tilefront and build rails to connect that to neightbourg tiles that are us with rails
+// tilepos : tile where we have a rail/depot...
+// tilefront: tile where we want to connect tilepos to
+// fullconnect: set to true to allow the tilefront to also connect neighbourg tiles to each other
+// so if tilepos=X, tilefront=Y, 2 tiles near Y as A & B
+// without fullconnect -> it create AX, BX and with it, also do AB
+// only return false if we fail to build all we tracks need at tilefront (and raise critical error)
+// flatten tilefront at tilepos level and ignore some errors (tile already build...)
+{
+local voisin=[AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0)]; // SE, NW, SW, NE
+local NE = 1; // we will use them as bitmask
+local	SW = 2;
+local	NW = 4;
+local	SE = 8;
+local trackMap=[
+	NE + SW,	// AIRail.RAILTRACK_NE_SW
+	NW + SE,	// AIRail.RAILTRACK_NW_SE
+	NW + NE,	// AIRail.RAILTRACK_NW_NE
+	SW + SE,	// AIRail.RAILTRACK_SW_SE
+	NW + SW,	// AIRail.RAILTRACK_NW_SW
+	NE + SE	// AIRail.RAILTRACK_NE_SE
+	];
+// dirValid is [VV,II,XX] VV=valid to go, II=invalid when no 90 turn is allow XX=connect
+// and for each direction we're going in order SE, NW, SW, NE
+local dirValid=[
+	0,0, SE,0, NE,SE, SW,SE,  	// SE->NW (when we go from->to)
+	NW,0, 0,0, NE,NW, SW,NW,  	// NW->SE
+	NW,SW, SE,SW, 0,0, SW,0, 	// SW->NE
+	NW,NE, SE,NE, NE,0, 0,0 	// NE->SW
+	];
+print("SE->NW="+cBuilder.GetDirection(0x3cef9, 0x3ccf9)); // 0
+print("NW->SE="+cBuilder.GetDirection(0x3ccf9, 0x3cef9)); // 1
+print("SW->NE="+cBuilder.GetDirection(0x3cefa, 0x3cef9)); // 2
+print("NE->SW="+cBuilder.GetDirection(0x3cef9, 0x3cefa)); // 3
+print("tilepos="+tilepos+" tilefront="+tilefront);
+
+local workTile=[];
+for (local i=0; i < 4; i++)	workTile.push(tilefront+voisin[i]);
+//foreach (tile in workTile)	PutSign(tile,tile);
+INSTANCE.NeedDelay(50);
+//foreach (near in voisin)	workTile.AddItem(tilefront+near,1);
+local direction=cBuilder.GetDirection(tilepos, tilefront);
+print("going : "+direction);
+local checkArray=[];
+for (local i=0; i<8; i++)	checkArray.push(dirValid[i+(8*direction)]);
+local tile=null;
+local tileposRT=AIRail.GetRailType(tilepos);
+local connection=false;
+for (local i=0; i<4; i++)
+	{
+	print("check dir:"+i);
+	if (i==direction)	continue; // don't check that dir, we start from there
+	tile=workTile[i];
+	local trackinfo=AIRail.GetRailTracks(tile);
+	local test=null;
+	if (trackinfo==255)
+		{ // maybe a tunnel, depot, station or bridge that are also valid point
+		local testdir=null;
+		if (AIRail.IsRailDepotTile(tile))
+			{
+			test=AIRail.GetRailDepotFrontTile(tile);
+			testdir=cBuilder.GetDirection(tile, test);
+			if (test==tilefront)
+				trackinfo= (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
+			}
+		if (AITunnel.IsTunnelTile(tile))
+			{
+			test=AITunnel.GetOtherTunnelEnd(tile);
+			testdir=cBuilder.GetDirection(tile, test);
+			trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
+			}
+		if (AIBridge.IsBridgeTile(tile))
+			{
+			test=AIBridge.GetOtherBridgeEnd(tile);
+			testdir=cBuilder.GetDirection(tile, test);
+			trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
+			}
+		}
+//	print("trackinfo after="+trackinfo);
+	if (trackinfo==255)	continue; // no rails here
+	test=AITile.GetOwner(tile);	
+//	if (test != AICompany.COMPANY_SELF)	continue; // we don't own that
+	test = AIRail.GetRailType(tile);
+	if (test != tileposRT)	continue; // not the same rail type
+	
+	local validbit=checkArray[0+(i*2)];
+	local turnbit=checkArray[1+(i*2)];
+	local bitcheck=0;
+	local connection=false;
+	local turn_enable=(AIGameSettings.GetValue("forbid_90_deg") == 0);
+	for (local k=0; k < trackMap.len(); k++)
+		{
+		if (trackinfo & k == k)	
+			{
+			local trackvalue=trackMap[k];
+			if (trackvalue & validbit == validbit)	connection=true;
+			if (!turn_enable)	if (trackvalue & turnbit == turnbit)	connection=false;
+			}
+		}
+	print("connect that tile ? "+connection);
+	}
+INSTANCE.NeedDelay(100);
+}
+
