@@ -997,28 +997,28 @@ local NE = 1; // we will use them as bitmask
 local	SW = 2;
 local	NW = 4;
 local	SE = 8;
-local trackMap=[
-	NE + SW,	// AIRail.RAILTRACK_NE_SW
-	NW + SE,	// AIRail.RAILTRACK_NW_SE
-	NW + NE,	// AIRail.RAILTRACK_NW_NE
-	SW + SE,	// AIRail.RAILTRACK_SW_SE
-	NW + SW,	// AIRail.RAILTRACK_NW_SW
-	NE + SE	// AIRail.RAILTRACK_NE_SE
-	];
+local trackMap=AIList();
+trackMap.AddItem(AIRail.RAILTRACK_NE_SW,	NE + SW);	// AIRail.RAILTRACK_NE_SW 1
+trackMap.AddItem(AIRail.RAILTRACK_NW_SE,	NW + SE);	// AIRail.RAILTRACK_NW_SE 2
+trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE 4
+trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE 8
+trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW 16
+trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE 32
+
 // dirValid is [VV,II,XX] VV=valid to go, II=invalid when no 90 turn is allow XX=connect
 // and for each direction we're going in order SE, NW, SW, NE
 local dirValid=[
-	0,0, SE,0, NE,SE, SW,SE,  	// SE->NW (when we go from->to)
-	NW,0, 0,0, NE,NW, SW,NW,  	// NW->SE
-	NW,SW, SE,SW, 0,0, SW,0, 	// SW->NE
-	NW,NE, SE,NE, NE,0, 0,0 	// NE->SW
+	0,0, SE,0, NE,SE, SW,SE,  	// SE->NW (when we go from->to)- 0
+	NW,0, 0,0, NE,NW, SW,NW,  	// NW->SE - 1
+	NW,SW, SE,SW, 0,0, SW,0, 	// SW->NE - 2
+	NW,NE, SE,NE, NE,0, 0,0 	// NE->SW - 3
 	];
 print("SE->NW="+cBuilder.GetDirection(0x3cef9, 0x3ccf9)); // 0
 print("NW->SE="+cBuilder.GetDirection(0x3ccf9, 0x3cef9)); // 1
 print("SW->NE="+cBuilder.GetDirection(0x3cefa, 0x3cef9)); // 2
 print("NE->SW="+cBuilder.GetDirection(0x3cef9, 0x3cefa)); // 3
 print("tilepos="+tilepos+" tilefront="+tilefront);
-
+	PutSign(tilepos,"!");
 local workTile=[];
 for (local i=0; i < 4; i++)	workTile.push(tilefront+voisin[i]);
 //foreach (tile in workTile)	PutSign(tile,tile);
@@ -1039,8 +1039,9 @@ for (local i=0; i<4; i++)
 	local trackinfo=AIRail.GetRailTracks(tile);
 	local test=null;
 	if (trackinfo==255)
-		{ // maybe a tunnel, depot, station or bridge that are also valid point
+		{ // maybe a tunnel, depot or bridge that are also valid point
 		local testdir=null;
+print("trackinfo might be change : "+trackinfo);
 		if (AIRail.IsRailDepotTile(tile))
 			{
 			test=AIRail.GetRailDepotFrontTile(tile);
@@ -1061,7 +1062,8 @@ for (local i=0; i<4; i++)
 			trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 			}
 		}
-//	print("trackinfo after="+trackinfo);
+	print("trackinfo after="+trackinfo);
+
 	if (trackinfo==255)	continue; // no rails here
 	test=AITile.GetOwner(tile);	
 //	if (test != AICompany.COMPANY_SELF)	continue; // we don't own that
@@ -1073,16 +1075,28 @@ for (local i=0; i<4; i++)
 	local bitcheck=0;
 	local connection=false;
 	local turn_enable=(AIGameSettings.GetValue("forbid_90_deg") == 0);
-	for (local k=0; k < trackMap.len(); k++)
+	turn_enable=false;
+	foreach (trackitem, trackmapping in trackMap)
 		{
-		if (trackinfo & k == k)	
+		print("searching tracks : "+trackinfo);
+//		INSTANCE.NeedDelay();						
+		if ((trackinfo & trackitem) == trackitem)	// we have that track
 			{
-			local trackvalue=trackMap[k];
-			if (trackvalue & validbit == validbit)	connection=true;
-			if (!turn_enable)	if (trackvalue & turnbit == turnbit)	connection=false;
+			print("track found: trackmap="+trackitem+" - trackmapping="+trackmapping+" - valid="+validbit+" - turn="+turnbit);
+//			local trackvalue=trackMap[k];
+			if ((trackmapping & validbit) == validbit)	connection=true;
+			if (!turn_enable)	if ((trackmapping & turnbit) == turnbit)	connection=false;
+			}
+		print("connect that tile ? "+connection);
+		if (connection)
+			{
+			AIRail.BuildRail(tilepos, tilefront, tile);
+			INSTANCE.builder.IsCriticalError();
+			INSTANCE.builder.CriticalError=false;
 			}
 		}
-	print("connect that tile ? "+connection);
+	
+	INSTANCE.NeedDelay(100);
 	}
 INSTANCE.NeedDelay(100);
 }
