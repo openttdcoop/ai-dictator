@@ -911,13 +911,21 @@ if (useEntry)	crossing=se_crossing;
 		else	crossing=sx_crossing;
 if (thatstation.depot==null && ( (se_OUT==-1 && useEntry) || (sx_OUT==-1 && !useEntry) ))
 	{
+	local depotlocations=[leftTileOf+forwardTileOf, rightTileOf+forwardTileOf, leftTileOf+backwardTileOf, rightTileOf+backwardTileOf, leftTileOf, rightTileOf];
+	local depotfront=[leftTileOf, rightTileOf, leftTileOf, rightTileOf, 0, 0];
 	local j=1;
 	local pass=0;
 	local swapTile=leftTileOf;
 	local rail1=railLeft;
 	local rail2=railUpLeft;
 	DInfo("Building station depot",1,"RailStationGrow");
-	do	{
+	for (local h=0; h < depotlocations.len(); h++)
+		{
+		cTileTools.TerraformLevelTiles(crossing,crossing+depotlocations[h]);
+		if (!AIRail.IsRailTile(crossing+depotlocations[h]))	success=AIRail.BuildRailDepot(crossing+depotlocations[h], crossing+depotfront[h]);
+		local depotFront=AIRail.GetRailDepotFrontTile(crossing+depotlocations[h]);
+		if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(crossing+depotlocations[h],depotFront,true);
+/*	do	{
 		if (pass=1)	
 			{
 			swapTile=rightTileOf;
@@ -927,15 +935,17 @@ if (thatstation.depot==null && ( (se_OUT==-1 && useEntry) || (sx_OUT==-1 && !use
 		cTileTools.TerraformLevelTiles(crossing,crossing+(j*swapTile));
 		if (!AIRail.IsRailTile(crossing+(j*swapTile)))	success=AIRail.BuildRailDepot(crossing+(j*swapTile),crossing+((j-1)*swapTile));
 		local frontdepot=AIRail.GetRailDepotFrontTile(crossing+(j*swapTile));
-		success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail1,frontdepot));
-		success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail2,frontdepot));
+		//success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail1,frontdepot));
+		//success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail2,frontdepot));
+*/
 		if (success)	{ // TODO: we need a 2nd depot for exit
 					thatstation.depot=crossing+(j*swapTile);
-					pass=10;
+					break;
 					}
-		j++;
+		}
+/*		j++;
 		if (j > 3)	{ pass++; j=1; }
-		} while (!success && pass<2);
+		} while (!success && pass<2);*/
 	}
 // 7: number of train dropper using entry
 // 8: number of train dropper using exit
@@ -1063,8 +1073,8 @@ for (local kk=0; kk<4; kk++)
 		}
 
 	if (trackinfo==255)	{ DInfo("No rails found",2,"RailConnectorSolver"); continue; } // no rails here
-	test=AITile.GetOwner(tile);	
-	if (test != AICompany.COMPANY_SELF)	{ DInfo("Not a rail of our company",2,"RailConnectorSolver"); continue; } // we don't own that
+	test=AITile.GetOwner(tile);
+	if (test != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	{ DInfo("Not a rail of our company",2,"RailConnectorSolver"); PutSign(tile,"N"); continue; } // we don't own that
 	test = AIRail.GetRailType(tile);
 	if (test != tileposRT)	{ DInfo("Rails are not of the same type",2,"RailConnectorSolver"); continue; } // not the same rail type
 	
@@ -1073,7 +1083,6 @@ for (local kk=0; kk<4; kk++)
 	local bitcheck=0;
 	local connection=false;
 	local turn_enable=(AIGameSettings.GetValue("forbid_90_deg") == 0);
-	turn_enable=false;
 	foreach (trackitem, trackmapping in trackMap)
 		{
 		if ((trackinfo & trackitem) == trackitem)	// we have that track
