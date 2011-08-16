@@ -465,7 +465,7 @@ towntiles.KeepBelowValue(60);
 //foreach (tile, dummy in towntiles)	PutSign(tile,"R");
 // 1 -> 2 = 293 trees
 // 2 -> 3 = 417 trees
-DInfo("SeduceTown-> Town: "+AITown.GetName(townID)+" rating: "+AITown.GetRating(townID, AICompany.COMPANY_SELF),1);
+DInfo("SeduceTown-> Town: "+AITown.GetName(townID)+" rating: "+AITown.GetRating(townID, AICompany.COMPANY_SELF),2);
 local totalTree=0;
 local totalspent=0;
 foreach (tile, dummy in towntiles)
@@ -475,7 +475,7 @@ foreach (tile, dummy in towntiles)
 		good=AITile.PlantTree(tile);
 		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
 		INSTANCE.bank.RaiseFundsTo(12000);
-		DInfo("Plants tree -> "+good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,0);
+		DInfo("Plants tree -> "+good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2);
 		AIController.Sleep(1);
 		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000));
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	

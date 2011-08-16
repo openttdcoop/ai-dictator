@@ -658,8 +658,6 @@ else	{
 // 9: number of train taker using entry
 // 10: number of train taker using exit
 
-INSTANCE.builder.RailConnectorSolver(0x3c4f0,0x3c4ef); // DEBUG
-
 local newStationSize=trainEntryTaker+trainExitTaker+(trainEntryDropper / 2)+(trainExitDropper / 2);
 local position=AIStation.GetLocation(thatstation.stationID);
 local direction=AIRail.GetRailStationDirection(position);
@@ -982,15 +980,14 @@ else	return true;
 return !AIRail.BuildRailTrack(pos,railneed);
 }
 
-function cBuilder::RailConnectorSolver(tilepos, tilefront, fullconnect=false)
+function cBuilder::RailConnectorSolver(tilepos, tilefront, fullconnect=true)
 // Look at tilefront and build rails to connect that to neightbourg tiles that are us with rails
 // tilepos : tile where we have a rail/depot...
 // tilefront: tile where we want to connect tilepos to
-// fullconnect: set to true to allow the tilefront to also connect neighbourg tiles to each other
+// fullconnect: set to true to allow the tilefront to also connect neighbourg tiles to each other (this might not respect 90 turn settings!)
 // so if tilepos=X, tilefront=Y, 2 tiles near Y as A & B
 // without fullconnect -> it create AX, BX and with it, also do AB
 // only return false if we fail to build all we tracks need at tilefront (and raise critical error)
-// flatten tilefront at tilepos level and ignore some errors (tile already build...)
 {
 local voisin=[AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0)]; // SE, NW, SW, NE
 local NE = 1; // we will use them as bitmask
@@ -998,54 +995,54 @@ local	SW = 2;
 local	NW = 4;
 local	SE = 8;
 local trackMap=AIList();
-trackMap.AddItem(AIRail.RAILTRACK_NE_SW,	NE + SW);	// AIRail.RAILTRACK_NE_SW 1
-trackMap.AddItem(AIRail.RAILTRACK_NW_SE,	NW + SE);	// AIRail.RAILTRACK_NW_SE 2
-trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE 4
-trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE 8
-trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW 16
-trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE 32
+trackMap.AddItem(AIRail.RAILTRACK_NE_SW,	NE + SW);	// AIRail.RAILTRACK_NE_SW
+trackMap.AddItem(AIRail.RAILTRACK_NW_SE,	NW + SE);	// AIRail.RAILTRACK_NW_SE
+trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE
+trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE
+trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW
+trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE
 
-// dirValid is [VV,II,XX] VV=valid to go, II=invalid when no 90 turn is allow XX=connect
+// dirValid is [VV,II] VV=valid to go, II=invalid when no 90 turn is allow
 // and for each direction we're going in order SE, NW, SW, NE
 local dirValid=[
-	0,0, SE,0, NE,SE, SW,SE,  	// SE->NW (when we go from->to)- 0
-	NW,0, 0,0, NE,NW, SW,NW,  	// NW->SE - 1
-	NW,SW, SE,SW, 0,0, SW,0, 	// SW->NE - 2
-	NW,NE, SE,NE, NE,0, 0,0 	// NE->SW - 3
+	NW,0, SE,0, NE,SE, SW,SE,  	// SE->NW (when we go from->to)- 0
+	NW,0, SE,0, NE,NW, SW,NW,  	// NW->SE - 1
+	NW,SW, SE,SW, NE,0, SW,0, 	// SW->NE - 2
+	NW,NE, SE,NE, NE,0, SW,0 	// NE->SW - 3
 	];
-print("SE->NW="+cBuilder.GetDirection(0x3cef9, 0x3ccf9)); // 0
-print("NW->SE="+cBuilder.GetDirection(0x3ccf9, 0x3cef9)); // 1
-print("SW->NE="+cBuilder.GetDirection(0x3cefa, 0x3cef9)); // 2
-print("NE->SW="+cBuilder.GetDirection(0x3cef9, 0x3cefa)); // 3
-print("tilepos="+tilepos+" tilefront="+tilefront);
-	PutSign(tilepos,"!");
 local workTile=[];
 for (local i=0; i < 4; i++)	workTile.push(tilefront+voisin[i]);
-//foreach (tile in workTile)	PutSign(tile,tile);
-INSTANCE.NeedDelay(50);
-//foreach (near in voisin)	workTile.AddItem(tilefront+near,1);
+if (AITile.GetDistanceManhattanToTile(tilepos,tilefront) > 1)
+	{ DError("We must use two tiles close to each other !",1,"RailConnectorSolver"); return false; }
 local direction=cBuilder.GetDirection(tilepos, tilefront);
-print("going : "+direction);
 local checkArray=[];
+local connections=[];
 for (local i=0; i<8; i++)	checkArray.push(dirValid[i+(8*direction)]);
 local tile=null;
 local tileposRT=AIRail.GetRailType(tilepos);
 local connection=false;
-for (local i=0; i<4; i++)
+local checkOrder=[];
+checkOrder.push(direction);
+for (local i=0; i <4; i++)
 	{
-	print("check dir:"+i);
-	if (i==direction)	continue; // don't check that dir, we start from there
+	if (i==direction)	continue;
+	checkOrder.push(i);
+	}
+local startposValid=false;
+for (local kk=0; kk<4; kk++)
+	{
+	local i = checkOrder[kk];
 	tile=workTile[i];
 	local trackinfo=AIRail.GetRailTracks(tile);
 	local test=null;
 	if (trackinfo==255)
-		{ // maybe a tunnel, depot or bridge that are also valid point
+		{ // maybe a tunnel, depot or bridge that "could" also be valid entries
 		local testdir=null;
-print("trackinfo might be change : "+trackinfo);
 		if (AIRail.IsRailDepotTile(tile))
 			{
 			test=AIRail.GetRailDepotFrontTile(tile);
 			testdir=cBuilder.GetDirection(tile, test);
+			DInfo("Rail depot found",2,"RailConnectorSolver");
 			if (test==tilefront)
 				trackinfo= (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 			}
@@ -1053,22 +1050,23 @@ print("trackinfo might be change : "+trackinfo);
 			{
 			test=AITunnel.GetOtherTunnelEnd(tile);
 			testdir=cBuilder.GetDirection(tile, test);
+			DInfo("Tunnel found",2,"RailConnectorSolver");
 			trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 			}
 		if (AIBridge.IsBridgeTile(tile))
 			{
 			test=AIBridge.GetOtherBridgeEnd(tile);
 			testdir=cBuilder.GetDirection(tile, test);
+			DInfo("Bridge found",2,"RailConnectorSolver");
 			trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 			}
 		}
-	print("trackinfo after="+trackinfo);
 
-	if (trackinfo==255)	continue; // no rails here
+	if (trackinfo==255)	{ DInfo("No rails found",2,"RailConnectorSolver"); continue; } // no rails here
 	test=AITile.GetOwner(tile);	
-//	if (test != AICompany.COMPANY_SELF)	continue; // we don't own that
+	if (test != AICompany.COMPANY_SELF)	{ DInfo("Not a rail of our company",2,"RailConnectorSolver"); continue; } // we don't own that
 	test = AIRail.GetRailType(tile);
-	if (test != tileposRT)	continue; // not the same rail type
+	if (test != tileposRT)	{ DInfo("Rails are not of the same type",2,"RailConnectorSolver"); continue; } // not the same rail type
 	
 	local validbit=checkArray[0+(i*2)];
 	local turnbit=checkArray[1+(i*2)];
@@ -1078,26 +1076,37 @@ print("trackinfo might be change : "+trackinfo);
 	turn_enable=false;
 	foreach (trackitem, trackmapping in trackMap)
 		{
-		print("searching tracks : "+trackinfo);
-//		INSTANCE.NeedDelay();						
 		if ((trackinfo & trackitem) == trackitem)	// we have that track
 			{
-			print("track found: trackmap="+trackitem+" - trackmapping="+trackmapping+" - valid="+validbit+" - turn="+turnbit);
-//			local trackvalue=trackMap[k];
 			if ((trackmapping & validbit) == validbit)	connection=true;
-			if (!turn_enable)	if ((trackmapping & turnbit) == turnbit)	connection=false;
+			if (connection && i==direction)	{ DInfo("Starting rails have entry we can work on",2,"RailConnectorSolver"); startposValid=true; break; }
+			if (!startposValid)	continue;
+			if (connection)	{ connections.push(tile); } // save status to later connect everyone if need, avoid 90 turn check
+			if (!turn_enable && turnbit!=0)	if ((trackmapping & turnbit) == turnbit)	connection=false;
 			}
-		print("connect that tile ? "+connection);
-		if (connection)
+		if (connection && startposValid)
 			{
-			AIRail.BuildRail(tilepos, tilefront, tile);
-			INSTANCE.builder.IsCriticalError();
-			INSTANCE.builder.CriticalError=false;
+			if (!AIRail.BuildRail(tilepos, tilefront, tile))
+				{
+				INSTANCE.builder.IsCriticalError();
+				if (INSTANCE.builder.CriticalError)	return false;
+				}
+			else	{ break; }
 			}
 		}
-	
-	INSTANCE.NeedDelay(100);
 	}
-INSTANCE.NeedDelay(100);
+if (connections.len()>1 && fullconnect && startposValid)
+	{
+	foreach (con1 in connections)
+		foreach (con2 in connections)
+			{
+			if (con1 != con2 && !AIRail.BuildRail(con1, tilefront, con2))
+				{
+				INSTANCE.builder.IsCriticalError();
+				if (INSTANCE.builder.CriticalError)	return false;
+				}
+			}
+	}
+return true;
 }
 
