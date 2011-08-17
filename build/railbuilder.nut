@@ -557,6 +557,60 @@ function cBuilder::SetRailType(rtype=null)
 	AIRail.SetCurrentRailType(rtype);
 }
 
+function cBuilder::GetRailStationDepth(staloc, entry=null)
+// return the depth of a rail station (it's lenght) when entry == null
+// return the position of the entry entrance front tile of the station when entry=true
+// return the position of the exit entrance front tile of the station when entry=false
+// the entry=true/false mode is for convenience, and shouldn't be use there, but by GetRailStationDepotFrontTile
+// staloc : the rail station tile
+// return -1 on error or the station depth or entry location or exit location
+{
+local stalenght=0;
+if (!AIRail.IsRailStationTile(staloc))
+	{
+	DInfo("Not a rail station location "+staloc,1,"cBuilder::GetRailStationDepth");
+	return -1;
+	}
+local direction, frontTile, backTile=null;
+direction=AIRail.GetRailStationDirection(staloc);
+if (direction == AIRail.RAILTRACK_NW_SE)
+	{
+	frontTile=AIMap.GetTileIndex(0,1);
+	backTile=AIMap.GetTileIndex(0,-1);
+	}
+else	{ // NE_SW
+	frontTile=AIMap.GetTileIndex(-1,0);
+	backTile=AIMap.GetTileIndex(1,0);
+	}
+local scanner=staloc;
+local entrypos, exitpos=null;
+while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=frontTile; }
+entrypos=scanner;
+scanner=staloc+backTile;
+while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; }
+exitpos=scanner;
+DInfo("Rail station depth is "+stalenght,1,"cBuilder::GetRailStationDepth");
+switch (entry)
+	{
+	case	null:
+		return stalenght;
+	case	true:
+		return entrypos;
+	case	false:
+		return exitpos;
+	}
+return -1;
+}
+
+function cBuilder::GetRailStationFrontTile(staloc, entry)
+// like AIRail.GetRailDepotFrontTile but with a rail station
+// staloc: the rail station tile
+// entry: true to return front tile of the station entry, else front tile of station exit (end of station)
+// return tile in front of the station or -1 on error
+{
+return cBuilder.GetRailStationDepth(staloc, entry);
+}
+
 function cBuilder::RailStationGuessEmptyPlatform(staloc)
 // Guess what platform is empty (its entry and exit is not yet connect with rails)
 // and return the tile where we found one
@@ -588,26 +642,31 @@ local lookup=staloc;
 // search up
 while (AIRail.IsRailStationTile(lookup))
 		{
-		local scanner=lookup+backTile;
-		isEntryClear=!AIRail.IsRailTile(lookup+frontTile);
-		while (AIRail.IsRailStationTile(scanner))	scanner+=backTile;
-		isExitClear=!AIRail.IsRailTile(scanner);
-		lookup+=leftTile;
+//		local scanner=lookup+backTile;
+		isEntryClear=(!AIRail.IsRailTile(cBuilder.GetRailStationFrontTile(staloc, true)));
+//		isEntryClear=!AIRail.IsRailTile(lookup+frontTile);
+//		while (AIRail.IsRailStationTile(scanner))	scanner+=backTile;
+		isExitClear=(!AIRail.IsRailTile(cBuilder.GetRailStationFrontTile(staloc, false)));
 		if (isEntryClear && isExitClear)	break;
+		lookup+=leftTile;
 		}
 // search down
 if (!isEntryClear && !isExitClear)
 	{
-	lookup=staloc;
+	lookup=staloc+rightTile;
 	while (AIRail.IsRailStationTile(lookup))
 			{
-			local scanner=lookup+backTile;
-			isEntryClear=!AIRail.IsRailTile(lookup+frontTile);
-			while (AIRail.IsRailStationTile(scanner))	scanner+=backTile;
-			isExitClear=!AIRail.IsRailTile(scanner);
+			isEntryClear=(!AIRail.IsRailTile(cBuilder.GetRailStationFrontTile(staloc, true)));
+//			local scanner=lookup+backTile;
+//			isEntryClear=!AIRail.IsRailTile(lookup+frontTile);
+//			while (AIRail.IsRailStationTile(scanner))	scanner+=backTile;
+//			isExitClear=!AIRail.IsRailTile(scanner);
+			isExitClear=(!AIRail.IsRailTile(cBuilder.GetRailStationFrontTile(staloc, false)));
+			if (isEntryClear && isExitClear)	break;
 			lookup+=rightTile;
 			}
 	}
+DInfo("Guess empty plaftorm="+lookup+" isEntryClear="+isEntryClear+" isExitClear="+isExitClear,2,"RailStationGuessEmptyPlatform");
 if (isEntryClear && isExitClear)	return lookup;
 					else	return -1;
 }
@@ -783,22 +842,9 @@ local deadExit=false;
 local rail=null;
 local success=false;
 local crossing=null;
-/*local k=0;
-INSTANCE.builder.DropRailHere(railLeft,workTile+(k*forwardTileOf));
-k++;
-INSTANCE.builder.DropRailHere(railRight,workTile+(k*forwardTileOf));
-k++;
-INSTANCE.builder.DropRailHere(railUpLeft,workTile+(k*forwardTileOf));
-k++;
-INSTANCE.builder.DropRailHere(railUpRight,workTile+(k*forwardTileOf));
-k++;
-INSTANCE.NeedDelay(200);*/
 // define & build crossing point if none exist yet
 if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	{
-	// try to level the area to work on
-	/*if (direction == AIRail.RAILTRACK_NE_SW)	cTileTools.CheckLandForConstruction(workTile, 5, 1);
-							else	cTileTools.CheckLandForConstruction(workTile, 1, 5);*/
 	// We first try to build the crossing area from worktile+1 upto worktile+3 to find where one is doable
 	// Because a rail can cross a road, we choose one that will fail to cross one to be sure it's a valid spot for crossing
 	rail=railLeft;
@@ -907,45 +953,52 @@ if ((se_IN == -1 && useEntry && eopen) || (sx_IN == -1 && !useEntry && xopen))
 // build depot for it, tweaky
 // in order to build cleaner rail we build the depot where the OUT line should goes, reserving space for it
 // if this cannot be done, we build it next to the IN line, and we just swap lines (OUT<>IN)
-if (useEntry)	crossing=se_crossing;
-		else	crossing=sx_crossing;
-if (thatstation.depot==null && ( (se_OUT==-1 && useEntry) || (sx_OUT==-1 && !useEntry) ))
+local tile_OUT=null;
+local depot_checker=null;
+local success=false;
+if (useEntry)
+	{
+	crossing=se_crossing;
+	tile_OUT=se_IN;
+	depot_checker=thatstation.depot;
+	}
+else	{
+	crossing=sx_crossing;
+	tile_OUT=sx_IN;
+	depot_checker=thatstation.locations[15];
+	}
+print("tile_out="+tile_OUT);
+if (!AIRail.IsRailDepotTile(depot_checker) && tile_OUT!=-1)
 	{
 	local depotlocations=[leftTileOf+forwardTileOf, rightTileOf+forwardTileOf, leftTileOf+backwardTileOf, rightTileOf+backwardTileOf, leftTileOf, rightTileOf];
 	local depotfront=[leftTileOf, rightTileOf, leftTileOf, rightTileOf, 0, 0];
-	local j=1;
-	local pass=0;
-	local swapTile=leftTileOf;
-	local rail1=railLeft;
-	local rail2=railUpLeft;
 	DInfo("Building station depot",1,"RailStationGrow");
 	for (local h=0; h < depotlocations.len(); h++)
 		{
 		cTileTools.TerraformLevelTiles(crossing,crossing+depotlocations[h]);
-		if (!AIRail.IsRailTile(crossing+depotlocations[h]))	success=AIRail.BuildRailDepot(crossing+depotlocations[h], crossing+depotfront[h]);
+		AIRail.BuildRailDepot(crossing+depotlocations[h], crossing+depotfront[h]);
 		local depotFront=AIRail.GetRailDepotFrontTile(crossing+depotlocations[h]);
 		if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(crossing+depotlocations[h],depotFront,true);
-/*	do	{
-		if (pass=1)	
-			{
-			swapTile=rightTileOf;
-			rail1=railRight;
-			rail2=railUpRight;
-			}
-		cTileTools.TerraformLevelTiles(crossing,crossing+(j*swapTile));
-		if (!AIRail.IsRailTile(crossing+(j*swapTile)))	success=AIRail.BuildRailDepot(crossing+(j*swapTile),crossing+((j-1)*swapTile));
-		local frontdepot=AIRail.GetRailDepotFrontTile(crossing+(j*swapTile));
-		//success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail1,frontdepot));
-		//success=(success && AIMap.IsValidTile(frontdepot) && INSTANCE.builder.DropRailHere(rail2,frontdepot));
-*/
-		if (success)	{ // TODO: we need a 2nd depot for exit
-					thatstation.depot=crossing+(j*swapTile);
+		if (success)	{
+					if (!AIRail.IsRailDepotTile(crossing+depotlocations[h]) || AITile.GetOwner(crossing+depotlocations[h]) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
+					if (useEntry)	thatstation.depot=crossing+depotlocations[h];
+							else	thatstation.locations[15]=crossing+depotlocations[h];
 					break;
 					}
 		}
-/*		j++;
-		if (j > 3)	{ pass++; j=1; }
-		} while (!success && pass<2);*/
+	}
+else	success=true; // depot already build
+// now connect all crossing with station entrances
+if (useEntry)	crossing=se_crossing;
+		else	crossing=sx_crossing;
+if (success)
+	{
+	local displace=cBuilder.RailStationGuessEmptyPlatform(position);
+	if (displace==-1)	return false;
+	local fromTile=INSTANCE.builder.GetRailStationFrontTile(position, true);
+	if (fromTile==-1)	return false;
+	PutSign(fromTile,"-");
+	// FIXME: find location of crossing tile to draw from frontTile to crossingTile-1	
 	}
 // 7: number of train dropper using entry
 // 8: number of train dropper using exit
@@ -957,9 +1010,6 @@ thatstation.locations.SetValue(10,trainExitTaker);
 thatstation.locations.SetValue(7,trainEntryDropper);
 thatstation.locations.SetValue(8,trainExitDropper);
 DInfo("Station "+AIStation.GetName(thatstation.stationID)+" have "+(trainEntryTaker+trainEntryDropper)+" trains using its entry and "+(trainExitTaker+trainExitDropper)+" using its exit",1,"RailStationGrow");
-
-//success=INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]);
-
 return true;
 }
 
