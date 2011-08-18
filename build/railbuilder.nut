@@ -839,6 +839,7 @@ if (success && !closeIt)
 			if (!success)	{ DInfo("Cannot find a valid rail to build station entrance signals",1,"RailStationGrow"); closeIt=true; }
 			}
 		else	{ DInfo("Cannot connect the station to crossing",1,"RailStationGrow"); closeIt=true; }
+		} while(true);// FIXME
 	}
 
 if (closeIt)
@@ -913,7 +914,8 @@ foreach (tile, dummy in many)
 	{
 	PutSign(tile,"Z"); AIController.Sleep(40);
 	if (AITile.GetOwner(tile) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
-	if (AIRail.IsRailDepotTile(tile) || AIRail.IsRailStationTile(tile))
+	IF (AIRail.IsRailStationTile(tile))	continue; // protect station
+	if (AIRail.IsRailDepotTile(tile))
 		{
 		AITile.DemolishTile(tile);
 		continue;

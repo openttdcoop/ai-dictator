@@ -646,6 +646,7 @@ return counter;
 
 function cStation::PlatformIsOpen(useEntry, platform)
 // return the status of a platform
+{
 local thatstation=null;
 local stationID=AIStation.GetStationID(platform);
 local whatPlatform=null;
