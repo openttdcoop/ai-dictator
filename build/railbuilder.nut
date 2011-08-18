@@ -931,8 +931,66 @@ foreach (tile, dummy in many)
 	}
 }
 
+function cBuilder::GetRailBitMask(rails)
+// Return a nibble bitmask with each NE,SW,NW,SE direction set to 1
+{
+local NE = 1; // we will use them as bitmask
+local	SW = 2;
+local	NW = 4;
+local	SE = 8;
+local trackMap=AIList();
+trackMap.AddItem(AIRail.RAILTRACK_NE_SW,	NE + SW);	// AIRail.RAILTRACK_NE_SW
+trackMap.AddItem(AIRail.RAILTRACK_NW_SE,	NW + SE);	// AIRail.RAILTRACK_NW_SE
+trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE
+trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE
+trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW
+trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE
+local railmask=0;
+foreach (tracks, value in trackMap)
+	{
+	if ((rails & tracks)==tracks)	{ railmask=railmask | value; }
+	if (railmask==(NE+SW+NW+SE))	return railmask; // no need to test further
+	}
+return railmask;
+}
+
+function cBuilder::AreRailTilesConnected(tilefrom, tileto)
+// Look at tilefront and build rails to connect that tile to its neightbourg tiles that are us with rails
+{
+local NE = 1; // we will use them as bitmask
+local	SW = 2;
+local	NW = 4;
+local	SE = 8;
+local direction=cBuilder.GetDirection(tilefrom, tileto);
+local tilefrom_mask=cBuilder.GetRailBitMask(AIRail.GetRailTracks(tilefrom));
+local tileto_mask=cBuilder.GetRailBitMask(AIRail.GetRailTracks(tileto));
+local tilefrom_need, tileto_need=0;
+switch (direction)
+	{
+	case	0: // SE-NW
+		tilefrom_need=SE;
+		tileto_need=NW;
+		break;
+	case	1: // NW-SE
+		tilefrom_need=NW;
+		tileto_need=SE;
+		break;
+	case	3: // SW-NE
+		tilefrom_need=SW;
+		tileto_need=NE;
+		break;
+	case	0: // NE-SW
+		tilefrom_need=NE;
+		tileto_need=SW;
+		break;
+	}
+if ( (tilefrom_mask & tilefrom_need)==tilefrom_need && (tileto_mask & tileto_need)==tileto_need)	return true;
+return false;
+}
+
+
 function cBuilder::RailConnectorSolver(tilepos, tilefront, fullconnect=true)
-// Look at tilefront and build rails to connect that to neightbourg tiles that are us with rails
+// Look at tilefront and build rails to connect that tile to its neightbourg tiles that are us with rails
 // tilepos : tile where we have a rail/depot...
 // tilefront: tile where we want to connect tilepos to
 // fullconnect: set to true to allow the tilefront to also connect neighbourg tiles to each other (this might not respect 90 turn settings!)

@@ -146,8 +146,7 @@ function cBuilder::BuildAndStickToRoad(tile, stationtype, stalink=-1)
 * @return -1 on error, tile position on success, CriticalError is set 
 */
 {
-local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)]; 
-
+local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
 // ok we know we are close to a road, let's find where the road is
 local direction=-1;
 local tooclose=false;
@@ -1061,7 +1060,7 @@ else	{
 function cBuilder::RoadRunner(source, target, road_type, walkedtiles=null, origin=null)
 // Follow all directions to walk through the path starting at source, ending at target
 // check if the path is valid by using road_type (railtype, road)
-// return true if we reach target
+// return true if we reach target by running the path
 {
 local max_wrong_direction=15;
 if (origin == null)	origin=AITile.GetDistanceManhattanToTile(source, target);
@@ -1073,35 +1072,36 @@ local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetT
 foreach (voisin in directions)
 	{
 	direction=source+voisin;
-	if (road_type == AIVehicle.VT_ROAD)
+	if (AIBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
 		{
-		if (AIBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
+		local endat=null;
+		endat=AIBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
+		// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
+		// if we are connect to someone, i reset "source" to be "someone" and continue
+		local guessTile=null;	
+		foreach (where in directions)
 			{
-			local endat=null;
-			endat=AIBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
-
-			// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
-			// if we are connect to someone, i reset "source" to be "someone" and continue
-			local guessTile=null;	
-			foreach (where in directions)
-				{
+			if (road_type == AIVehicle.VT_ROAD)
 				if (AIRoad.AreRoadTilesConnected(endat, endat+where))
 					{ guessTile=endat+where; }
-				}
-			if (guessTile != null)
-				{
-				source=guessTile;
-				direction=source+voisin;
-				}
+			if (road_type == AIVehicle.VT_RAIL)
+				if (cBuilder.AreRailTilesConnected(endat, endat+where))
+					{ guessTile=endat+where; }
 			}
-		valid=AIRoad.AreRoadTilesConnected(source, direction);
+		if (guessTile != null)
+			{
+			source=guessTile;
+			direction=source+voisin;
+			}
 		}
-	else	{ valid=AIRail.AreTilesConnected(source, direction, direction); }
+	if (road_type==AIVehicle.VT_ROAD)	valid=AIRoad.AreRoadTilesConnected(source, direction);
+	if (road_type==AIVehicle.VT_RAIL)	valid=cBuilder.AreRailTilesConnected(source, direction);
+	}
 	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; } 
 	if (valid)	walkedtiles.AddItem(direction,0);
-	//if (valid && INSTANCE.debug)	PutSign(direction,"*");
+	if (valid && INSTANCE.debug)	PutSign(direction,"*");
 	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
 	if (!found && valid)	found=INSTANCE.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
 	if (found) return found;
