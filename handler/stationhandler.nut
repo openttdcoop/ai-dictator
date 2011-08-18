@@ -33,8 +33,8 @@ static	function GetStationObject(stationID)
 						// for road, item=tile location, value = front tile location
 						// for airport: tiles locations (nothing yet use until we add support for any airport type)
 						// for train:
-						// 0: train_infos
-						// 1: entry_in
+						// 0: station_infos
+						// 1: entry_in tile where we should find the entry that lead to the station
 						// 2: entry_out
 						// 3: exit_in
 						// 4: exit_out
@@ -48,7 +48,11 @@ static	function GetStationObject(stationID)
 						// 12: entry_out_link
 						// 13: exit_in_link
 						// 14: exit_out_link
-						// 15: depot for exit, entry depot is cstation.depot
+						// 15: depot for exit, entry depot is "cstation.depot"
+						// 16: startpoint : when created, tile where the start of station is == AIStation.GetLocation
+						// 17: endpoint : when created, tile where the end of station is
+						// 18: direction: when created, the direction of the station return by AIRail.GetRailStationDirection
+						// 19: depth: when created, the lenght (depth) the station is, for its width, "cstation.size" keep that info
 	depot			= null;	// depot position and id are the same
 	cargo_produce	= null;	// cargos ID produce at station, value = amount waiting
 	cargo_accept	= null;	// cargos ID accept at station, value = cargo rating
@@ -59,16 +63,19 @@ static	function GetStationObject(stationID)
 	owner			= null;	// list routes that own that station
 	lastUpdate		= null;	// record last date we update infos for the station
 	moneyUpgrade	= null;	// money we need for upgrading the station
+	name			= null;	// station name
+	platform_entry	= null;	// railstation platforms AIList, item=fronttileplaformentry, value: 1=useable 0=closed
+	platform_exit	= null;	// railstation platforms AIList, item=fronttileplaformexit, value: 1=useable 0=closed
 // station size = (tte)+(tde / 2)+(ttx)+(tdx/2)
-// station size =3 + connect all front & back
+// station size >=3 + connect all front & back tiles
 // station size =2
 /* train station are made like that:
-train_infos:
+station_infos:
 bit0 entry is working on/off
 bit1 exit is working on/off
 bit2 south/west escape line is working on/off
 bit3 north/east escape line is working on/off
-bit4 use semaphore on/off
+bit4 use semaphore on/off (unuse as i don't know how to get semaphore from api yet)
 
 train_entry_in = tile location of rails we should connect a rail route to use that station entry to go in
 train_entry_out= tile location... to use that station entry to get out of the station
@@ -77,13 +84,13 @@ train_exit_out = tile location... to use that station exit to get out of the sta
 crossing       = tile location where rails cross each other to connect parrallel lines, distance from station may vary but always >1 tiles and < XxEe
 
 
- - = rail, S = station, E=entry in, e=entry out, X=exit in, x=exit out, H=hub that connect each lines, L&l=escape lines, F=a fire
+ - = rail, S = station, E=entry in, e=entry out, X=exit in, x=exit out, L&l=escape lines, F=a fire
 \/ crossing point, where the rail cross each other
-/\ crossing point can be farer then H
-	       /-FLLLLLLLLLL-F-\
-	-E-F-\/--F-SSSSSSSS--F--\/-F-X--
-	-e-F-/\--F-SSSSSSSS--F--/\-F-x--
-	       \-FlllllllllllF-/
+/\ crossing point can be +2 +5 from S
+	       /-FLLLLLLLLLLF-\
+	-E-F-\/--F-SSSSSSSS-F--\/-F-X--
+	-e-F-/\--F-SSSSSSSS-F--/\-F-x--
+	       \-FllllllllllF-/
 */
 	
 	constructor()
@@ -104,6 +111,9 @@ crossing       = tile location where rails cross each other to connect parrallel
 		owner			= AIList();	// * save but unuse, reclaims when loading
 		lastUpdate		= 0;
 		moneyUpgrade	= 0;
+		name			= null;
+		platform_entry	= AIList();
+		platform_exit	= AIList();
 		}
 }
 
@@ -401,7 +411,7 @@ function cStation::InitNewStation()
 // Autofill most values for a station. stationID must be set
 // Should not be call as-is, cRoute.CreateNewStation is there for that task
 	{
-	if (this.stationID == null)	{ DWarn("Bad station id : null",1,"InitNewStation","InitNewStation"); return; }
+	if (this.stationID == null)	{ DWarn("Bad station id : null",1,"InitNewStation"); return; }
 	this.stationType = cStation.FindStationType(this.stationID);
 	local loc=AIStation.GetLocation(this.stationID);
 	this.locations=cTileTools.FindStationTiles(loc);
@@ -413,9 +423,11 @@ function cStation::InitNewStation()
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 			this.locations=AIList();
-			for (local zz=0; zz < 16; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
-			for (local zz=7; zz < 11; zz++)	this.locations.AddItem(zz,0);
+			for (local zz=0; zz < 20; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
+			for (local zz=7; zz < 11; zz++)	this.locations.SetValue(zz,0);
 			this.locations.SetValue(0,1+2); // enable IN && OUT for the new station
+			this.GetRailStationMiscInfo();
+			this.maxsize=1; // TODO: remove the upgrade blocker
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do it
 			this.maxsize=1; this.size=1;
@@ -451,3 +463,194 @@ function cStation::IsStationVirtual(stationID)
 	{
 	return (cCarrier.VirtualAirRoute.len() > 1 && cStation.VirtualAirports.HasItem(stationID));
 	}
+
+function cStation::GetRailStationMiscInfo(stationID=null)
+// Setup misc infos about a station, we shouldn't use that function direcly as it's an helper to cStation::InitNewStation()
+// stationID: the stationID to check
+{
+local thatstation=null;
+if (stationID == null)	thatstation=this;
+			else	thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return -1;
+local stalenght=0;
+local entrypos=AIStation.GetLocation(thatstation.stationID);
+local direction, frontTile, backTile=null;
+direction=AIRail.GetRailStationDirection(entrypos);
+if (direction == AIRail.RAILTRACK_NW_SE)
+	{
+	frontTile=AIMap.GetTileIndex(0,-1);
+	backTile=AIMap.GetTileIndex(0,1);
+	}
+else	{ // NE_SW
+	frontTile=AIMap.GetTileIndex(-1,0);
+	backTile=AIMap.GetTileIndex(1,0);
+	}
+ClearSignsALL();
+local exitpos=null;
+PutSign(entrypos,"Start");
+local scanner=entrypos;
+while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; PutSign(scanner,"."); INSTANCE.NeedDelay(10); }
+exitpos=scanner+frontTile;
+PutSign(exitpos,"End");
+DInfo("Rail station depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1,"cStation::GetRailStationMiscInfo");
+thatstation.locations.SetValue(16,entrypos);
+thatstation.locations.SetValue(17,exitpos);
+thatstation.locations.SetValue(18,direction);
+thatstation.locations.SetValue(19,stalenght);
+ClearSignsALL();
+}
+
+function cStation::GetRailStationFrontTile(entry, platform, stationID=null)
+// like AIRail.GetRailDepotFrontTile but with a rail station
+// entry: true to return front tile of the station entry, else front tile of station exit (end of station)
+// platform: the platform location to find entry/exit front tile
+// stationID: the rail stationID
+// return -1 on error
+{
+local thatstation=null;
+if (stationID == null)	thatstation=this;
+			else	thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return -1;
+local direction=thatstation.locations.GetValue(18);
+local start=thatstation.locations.GetValue(16);
+local end=thatstation.locations.GetValue(17);
+local frontTile=null;
+if (direction==AIRail.RAILTRACK_NE_SW)
+		{
+		start=AIMap.GetTileIndex(AIMap.GetTileX(start),AIMap.GetTileY(platform))+AIMap.GetTileIndex(-1,0);
+		end=AIMap.GetTileIndex(AIMap.GetTileX(end),AIMap.GetTileY(platform))+AIMap.GetTileIndex(1,0);
+		}
+	else	{
+		start=AIMap.GetTileIndex(AIMap.GetTileX(platform),AIMap.GetTileY(start))+AIMap.GetTileIndex(0,-1);
+		end=AIMap.GetTileIndex(AIMap.GetTileX(platform),AIMap.GetTileY(end))+AIMap.GetTileIndex(0,1);
+		}
+if (entry)	frontTile=start;
+	else	frontTile=end;
+PutSign(frontTile,"Front="+entry);
+ClearSignsALL();
+return frontTile;
+}
+
+function cStation::IsRailStationEntryOpen(stationID=null)
+// return true if station entry bit is set
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+local entry=thatstation.locations.GetValue(0);
+if ((entry & 1) == 1)	{ DInfo("station "+stationID+" entry is open",2,"cStation::IsRailStationEntryOpen"); return true; }
+DInfo("station "+stationID+" entry is CLOSE",2,"cStation::IsRailStationEntryOpen");
+return false;
+}
+
+function cStation::IsRailStationExitOpen(stationID=null)
+// return true if station exit bit is set
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+local exit=thatstation.locations.GetValue(0);
+if ((exit & 2) == 2)	{ DInfo("station "+stationID+" exit is open",2,"cStation::IsRailStationExitOpen"); return true; }
+DInfo("station "+stationID+" exit is CLOSE",2,"cStation::IsRailStationExitOpen");
+return false;
+}
+
+function cStation::RailStationCloseEntry(stationID=null)
+// return true if station entry bit is set
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+local entry=thatstation.locations.GetValue(0);
+entry=entry & 1;
+thatstation.locations.SetValue(0, entry);
+DInfo("Closing the entry of station "+thatstation.GetName(),1,"RailStationCloseEntry");
+}
+
+function cStation::RailStationCloseExit(stationID=null)
+// Unset exit bit of the station
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+local exit=thatstation.locations.GetValue(0);
+exit=exit & 1;
+thatstation.locations.SetValue(0, exit);
+DInfo("Closing the exit of station "+thatstation.GetName(),1,"RailStationCloseExit");
+}
+
+function cStation::GetRailStationIN(getEntry, stationID=null)
+// Return the tile where the station IN point is
+// getEntry = true to return the entry IN, false to return exit IN
+// If the IN point doesn't exist, return the virtual position where the station IN would be (default=fronttile of station)
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return -1;
+return thatstation.GetRailStationFrontTile(getEntry,thatstation.GetLocation());
+}
+
+function cStation::GetRailStationOUT(getEntry, stationID=null)
+// Return the tile where the station OUT point is
+// getEntry = true to return the entry OUT, false to return exit OUT
+// If the OUT point doesn't exist, return the virtual position where the station OUT would be (default= left fronttile of station)
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation.GetRailStationDirection()==AIRail.RAILTRACK_NE_SW)
+	return (thatstation.GetRailStationIN(getEntry)+AIMap.GetTileIndex(0,-1));
+else	return (thatstation.GetRailStationIN(getEntry)+AIMap.GetTileIndex(-1,0));
+}
+
+function cStation::GetRailStationDirection()	{ return this.locations.GetValue(18); }
+// avoid errors by returning proper index for direction of a station
+
+function cStation::GetLocation(stationID=null)
+// avoid errors, return station location
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return -1;
+if (thatstation.stationType==AIStation.STATION_TRAIN)	return thatstation.locations.GetValue(16);
+return AIStation.GetLocation(thatstation.stationID);
+}
+
+function cStation::GetName(stationID=null)
+// return name of the station
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return "BAD STATIONID";
+if (thatstation.name == null)	thatstation.name=AIStation.GetName(thatstation.stationID);
+return thatstation.name;
+}
+
+function cStation::PlatformGetNumberOpen(useEntry, stationID=null)
+// return the number of platforms that station have with useable entries (they are working & connected)
+{
+local counter=0;
+local whatPlatform=null;
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return "BAD STATIONID";
+if (useEntry)	whatPlatform=thatstation.platform_entry;
+		else	whatPlatform=thatstation.platform_exit;
+foreach (platform, status in whatPlatform)	if (status==1)	counter++;
+return counter;
+}
+
+function cStation::PlatformIsOpen(useEntry, platform)
+// return the status of a platform
+local thatstation=null;
+local stationID=AIStation.GetStationID(platform);
+local whatPlatform=null;
+thatstation=cStation.GetStationObject(stationID);
+if (useEntry)	whatPlatform=thatstation.platform_entry;
+		else	whatPlatform=thatstation.platform_exit;
+return (whatPlatform.GetValue(platform)==1);
+}

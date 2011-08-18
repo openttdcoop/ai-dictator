@@ -23,6 +23,8 @@ if (place != null) AISign.BuildSign(place,msg);
 function ClearSignsALL()
 // this just clear any signs we can
 {
+if (!INSTANCE.debug)	return;
+AIController.Sleep(50);
 local sweeper=AISignList();
 DInfo("Removing Signs ! "+sweeper.Count(),2,"ClearSignsALL");
 foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
@@ -99,3 +101,14 @@ if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	}
 }
 
+function cBuilder::ShowPlatformStatus(stationID)
+{
+if (!INSTANCE.debug)	return;
+local station=cStation.GetStationObject(stationID);
+foreach (platform, status in station.platform_entry)
+	if (status==1)	PutSign(platform,"O");
+			else	PutSign(platform,"X");
+foreach (platform, status in station.platform_exit)
+	if (status==1)	PutSign(platform,"O");
+			else	PutSign(platform,"X");
+}

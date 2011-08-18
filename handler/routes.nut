@@ -428,4 +428,3 @@ function cRoute::RouteReleaseStation(stationid)
 	if (INSTANCE.route.RouteDamage.HasItem(this.UID))	INSTANCE.route.RouteDamage.RemoveItem(this.UID);
 	INSTANCE.builddelay=false; INSTANCE.bank.canBuild=true;
 	}
-

@@ -276,6 +276,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 {
 local tlist=AITileList();
 tlist.AddRectangle(tileFrom, tileTo);
+if (tlist.IsEmpty())	DInfo("No tiles to work with !",1,"TerraformLevelTiles");
 if (INSTANCE.debug)	foreach (tile, dummy in tlist)	PutSign(tile,"T");
 local Solve=cTileTools.TerraformHeightSolver(tlist);
 Solve.RemoveValue(0); // discard failures
@@ -392,8 +393,6 @@ foreach (tile, max in maxH)
 	cellHCount=cTileTools.MostItemInList(cellHCount,maxH.GetValue(tile)); // could use "max" var instead, but clearer as-is
 	cellLCount=cTileTools.MostItemInList(cellLCount,minH.GetValue(tile));
 	}
-//DInfo("CellHCount size"+cellHCount.Count());
-//DInfo("CellLCount size"+cellLCount.Count());
 cellHCount.Sort(AIList.SORT_BY_VALUE,false);
 cellLCount.Sort(AIList.SORT_BY_VALUE,false);
 local HeightIsLow=true;
