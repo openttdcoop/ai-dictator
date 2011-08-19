@@ -1082,11 +1082,9 @@ foreach (voisin in directions)
 		foreach (where in directions)
 			{
 			if (road_type == AIVehicle.VT_ROAD)
-				if (AIRoad.AreRoadTilesConnected(endat, endat+where))
-					{ guessTile=endat+where; }
+				if (AIRoad.AreRoadTilesConnected(endat, endat+where))	{ guessTile=endat+where; }
 			if (road_type == AIVehicle.VT_RAIL)
-				if (cBuilder.AreRailTilesConnected(endat, endat+where))
-					{ guessTile=endat+where; }
+				if (cBuilder.AreRailTilesConnected(endat, endat+where))	{ guessTile=endat+where; }
 			}
 		if (guessTile != null)
 			{
@@ -1096,7 +1094,6 @@ foreach (voisin in directions)
 		}
 	if (road_type==AIVehicle.VT_ROAD)	valid=AIRoad.AreRoadTilesConnected(source, direction);
 	if (road_type==AIVehicle.VT_RAIL)	valid=cBuilder.AreRailTilesConnected(source, direction);
-	}
 	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; } 

@@ -718,6 +718,7 @@ if ((se_IN == -1 && useEntry) || (sx_IN == -1 && !useEntry) && !closeIt)
 	local fromtile=0;
 	if (useEntry)	fromtile=se_crossing;
 			else	fromtile=sx_crossing;
+	local endconnector=fromtile;
 	do	{
 		PutSign(fromtile+(j*forwardTileOf),"."); INSTANCE.NeedDelay();
 		cTileTools.TerraformLevelTiles(position,fromtile+(j*forwardTileOf));
@@ -755,6 +756,17 @@ if ((se_IN == -1 && useEntry) || (sx_IN == -1 && !useEntry) && !closeIt)
 					}
 		}
 		else closeIt=true;
+	// now finish by connecting station to the crossing point
+//	endconnector
+	endconnector+=backwardTileOf;
+	while (!AIRail.IsRailStationTile(endconnector))
+		{
+		success=INSTANCE.builder.DropRailHere(rail, endconnector);
+		if (success)	sweeper.AddItem(endconnector,0);
+		endconnector+=backwardTileOf;
+		}
+	endconnector+=forwardTileOf;
+	if (!cBuilder.RoadRunner(endconnector, fromtile, AIVehicle.VT_RAIL))	closeIt=true;
 	}
 
 // build station entrance point to crossing point
@@ -808,11 +820,11 @@ else	success=true; // depot already build
 // now connect all crossing with station entrances
 if (useEntry)	crossing=se_crossing;
 		else	crossing=sx_crossing;
-//1 train = 1 entry 
-//2+ trains = connect every sides
-//2+ trains = must have IN & OUT
-//no out & 1 train = close entry
-// so to be valid IN must also run upto station at first
+//	1 train = 1 entry 
+//	2+ trains = connect every sides
+//	2+ trains = must have IN & OUT
+//	no out & 1 train = close entry
+//	so to be valid IN must also run upto station at first
 if (success && !closeIt)
 	{
 	do	{
@@ -914,7 +926,7 @@ foreach (tile, dummy in many)
 	{
 	PutSign(tile,"Z"); AIController.Sleep(40);
 	if (AITile.GetOwner(tile) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
-	IF (AIRail.IsRailStationTile(tile))	continue; // protect station
+	if (AIRail.IsRailStationTile(tile))	continue; // protect station
 	if (AIRail.IsRailDepotTile(tile))
 		{
 		AITile.DemolishTile(tile);
@@ -945,6 +957,7 @@ trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE
 trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE
 trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW
 trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE
+if (rails==255)	return 0;
 local railmask=0;
 foreach (tracks, value in trackMap)
 	{
@@ -975,16 +988,19 @@ switch (direction)
 		tilefrom_need=NW;
 		tileto_need=SE;
 		break;
-	case	3: // SW-NE
+	case	2: // SW-NE
 		tilefrom_need=SW;
 		tileto_need=NE;
 		break;
-	case	0: // NE-SW
+	case	3: // NE-SW
 		tilefrom_need=NE;
 		tileto_need=SW;
 		break;
 	}
+print("from mask="+tilefrom_mask+" from need="+tilefrom_need+"    tileto_mask="+tileto_mask+" tileto_need="+tileto_need);
+AIController.Sleep(10);
 if ( (tilefrom_mask & tilefrom_need)==tilefrom_need && (tileto_mask & tileto_need)==tileto_need)	return true;
+print("not connect");
 return false;
 }
 
