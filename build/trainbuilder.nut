@@ -80,61 +80,6 @@ if (!vehlist.IsEmpty())	veh=vehlist.Begin();
 return veh;
 }
 
-/*function cCarrier::CreateRailVehicle(roadidx)
-{
-local road=INSTANCE.chemin.RListGetItem(roadidx);
-local real_src_id=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
-local srcplace = real_src_id.STATION.station_id; // train real station is there
-DInfo("src station is valid :"+AIStation.IsValidStation(srcplace),1);
-local real_dst_id=INSTANCE.chemin.GListGetItem(road.ROUTE.dst_station);
-local dstplace = real_dst_id.STATION.station_id;
-DInfo("dst station is valid :"+AIStation.IsValidStation(dstplace),1);
-local cargoid= road.ROUTE.cargo_id;
-local veh = INSTANCE.carrier.ChooseRailVeh(roadidx);
-local wagon = INSTANCE.carrier.ChooseWagon(road.ROUTE.cargo_id);
-local homedepot = real_src_id.STATION.e_depot;
-local price = AIEngine.GetPrice(veh);
-price+=AIEngine.GetPrice(wagon)*5;
-local length = 5;
-DInfo("Stationid: "+srcplace+" "+AIStation.GetName(srcplace),2);
-DInfo("Depotid: "+homedepot,2);
-if (veh == null) return false;
-if (!INSTANCE.bank.RaiseFundsBy(price))
-	{
-	DWarn("I don't have enough money to buy that train and its wagons "+AIEngine.GetName(veh),1);
-	return false;
-	}
-else	{ DInfo("Train "+AIEngine.GetName(veh)+" and wagons will cost "+price,1); }
-local trainengine = AIVehicle.BuildVehicle(homedepot, veh);
-DInfo("Train created",2);
-AIVehicle.RefitVehicle(veh, road.ROUTE.cargo_id);
-local first=null;
-first=AIVehicle.BuildVehicle(homedepot, wagon); // 4 to start operating
-AIVehicle.BuildVehicle(homedepot, wagon);
-AIVehicle.BuildVehicle(homedepot, wagon);
-AIVehicle.BuildVehicle(homedepot, wagon);
-AIVehicle.MoveWagonChain(first, 0, trainengine, AIVehicle.GetNumWagons(trainengine) - 1);
-DInfo("wagons moved.",2);
-local firstorderflag = null;
-if (AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_PASSENGERS || AICargo.GetTownEffect(road.ROUTE.cargo_id) == AICargo.TE_MAIL)
-	{
-	firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	}
- else	{
-	firstorderflag = AIOrder.AIOF_FULL_LOAD_ANY + AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	}
-DInfo("Append order to "+AIEngine.GetName(trainengine)+" to "+AIStation.GetName(srcplace),2);
-if (!AIOrder.AppendOrder(trainengine, AIStation.GetLocation(srcplace), firstorderflag))
-	{ DError("Fail to set order !!!"+AIError.GetLastErrorString(),1); }
-if (!AIOrder.AppendOrder(trainengine, AIStation.GetLocation(dstplace), AIOrder.AIOF_NON_STOP_INTERMEDIATE))
-	{ DError("Fail to set order !!!"+AIError.GetLastErrorString(),1); }
-DInfo("orders set",1);
-if (!AIVehicle.StartStopVehicle(trainengine))
-	{ DInfo(AIVehicle.GetName(trainengine)+" refuse to start !!!"+AIError.GetLastErrorString(),1); }
-AIGroup.MoveVehicle(road.ROUTE.group_id, trainengine);
-return true;
-}*/
-
 function cCarrier::TrainSetOrders(trainID)
 // Set orders for a train
 {
@@ -209,10 +154,11 @@ local test=cEngine.GetPrice(engines.Begin()); print("test="+test);
 return true;
 }
 
-function cCarrier::AddWagons(uid, wagonNeed)
+function cCarrier::AddWagon(uid, wagonNeed)
 // Add wagons to route uid, handle the train engine by buying it if need
 {
 // TODO: handle getting all trains to depot before doing buys
+return true;
 local road=cRoute.GetRouteObject(uid);
 if (road==null)	return false;
 local numWagons=cCarrier.GetWagonsInGroup(road.groupID);
