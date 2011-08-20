@@ -235,7 +235,7 @@ function cRoute::DutyOnRoute()
 if (INSTANCE.carrier.vehnextprice > 0 && INSTANCE.carrier.vehnextprice < INSTANCE.carrier.highcostAircraft)
 	{
 	INSTANCE.bank.busyRoute=true;
-	DInfo("We're upgrading something, buys are blocked...",1);
+	DInfo("We're upgrading something, buys are blocked...",1,"DutyOnRoute");
 	return;
 	}
 local firstveh=false;
@@ -256,9 +256,11 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	local maxveh=0;
 	local cargoid=road.cargoID;
 	if (cargoid == null)	continue;
+	if (road.route_type == RouteType.RAIL)	{ INSTANCE.route.DutyOnRailsRoute(uid); continue; }
 	local futur_engine=INSTANCE.carrier.GetVehicle(uid);
 	local futur_engine_capacity=1;
 	if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);
+					else	continue;
 	switch (road.route_type)
 		{
 		case AIVehicle.VT_ROAD:
@@ -277,10 +279,6 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		break;
 		case AIVehicle.VT_WATER:
 			maxveh=INSTANCE.carrier.water_max;
-		break;
-		case AIVehicle.VT_RAIL:
-			maxveh=1;
-			continue; // no train upgrade for now will do later
 		break;
 		}
 	road.source.UpdateStationInfos();

@@ -355,7 +355,7 @@ switch (AIVehicle.GetVehicleType(veh))
 		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, 100);
 		if (INSTANCE.carrier.TopEngineList.HasItem(uniqID))	return -1;
 		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
-		top = INSTANCE.carrier.ChooseRailVeh(idx);
+		top = INSTANCE.carrier.ChooseRailEngine();
 	break;
 	case AIVehicle.VT_WATER:
 	return;

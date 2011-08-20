@@ -61,66 +61,105 @@ if (start)	{
 			}
 		otherplace=INSTANCE.route.source_location; sourceplace=INSTANCE.route.target_location;
 		}
-tilelist.Valuate(cTileTools.IsBuildable);
-tilelist.KeepValue(1);
-tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-tilelist.Sort(AIList.SORT_BY_VALUE, true);
+//tilelist.Valuate(cTileTools.IsBuildable);
+//tilelist.KeepValue(1);
 local success = false;
-DInfo("Tilelist set to "+tilelist.Count(),1,"BuildTrainStation");
-showLogic(tilelist); 
+local saveList=AIList();
+saveList.AddList(tilelist);
 //DInfo("isneartown="+isneartown+" istown="+istown,2,"BuildTrainStation");
-ClearSignsALL();
-foreach (tile, dummy in tilelist)
+local buildmode=0;
+do
 	{
-	if (start)	dir=INSTANCE.builder.GetDirection(tile, INSTANCE.route.source_location);
-		else	dir=INSTANCE.builder.GetDirection(INSTANCE.route.target_location,tile);
-	// find where that point is compare to its source for the station
-	switch (dir)
+/* 5 build mode:
+- try find a place with stationsize+4 tiles flatten and buildable
+- same other direction
+- try find a place with stationsize+4 tiles maybe not flat and buildable
+- same other direction
+- try find a place with stationsize+4 tiles maybe not flat and buildable even on water
+*/
+	tilelist.Clear();
+	tilelist.AddList(saveList);
+	switch (buildmode)
 		{
-		case DIR_NW: //0 south
-			if (istown)	dir=AIRail.RAILTRACK_NW_SE;
-				else	dir=AIRail.RAILTRACK_NE_SW;
+		case	0:
+			tilelist.Valuate(cTileTools.IsBuildableRectangleFlat,1,9);
+			tilelist.KeepValue(1);
 			break;
-		case DIR_SE: //1 north
-			if (istown)	dir=AIRail.RAILTRACK_NW_SE;
-				else	dir=AIRail.RAILTRACK_NE_SW;
+		case	1:
+			tilelist.Valuate(cTileTools.IsBuildableRectangleFlat,9,1);
+			tilelist.KeepValue(1);
 			break;
-		case DIR_SW: //3 est/droite
-			if (istown)	dir=AIRail.RAILTRACK_NE_SW;
-				else	dir=AIRail.RAILTRACK_NW_SE;
+		case	2:
+			tilelist.Valuate(AITile.IsBuildableRectangle,1,9); // allow terraform
+			tilelist.KeepValue(1);
 			break;
-		case DIR_NE: //2 west/gauche
-			if (istown)	dir=AIRail.RAILTRACK_NE_SW;
-				else	dir=AIRail.RAILTRACK_NW_SE;
+		case	3:
+			tilelist.Valuate(AITile.IsBuildableRectangle,9,1); // allow terraform
+			tilelist.KeepValue(1);
+			break;
+		case	4:
+			tilelist.Valuate(cTileTools.IsBuildable); // even water will be terraform
+			tilelist.KeepValue(1);
 			break;
 		}
-	DInfo("New station direction set to "+dir,1,"BuildTrainStation");
-	if (dir == AIRail.RAILTRACK_NW_SE)	statile=cTileTools.CheckLandForConstruction(tile, 1, 5);
-						else	statile=cTileTools.CheckLandForConstruction(tile, 5, 1);
-	if (statile == -1)	continue; // we have no solve to build a station here
-	if (istown)	
+	DInfo("Tilelist set to "+tilelist.Count()+" in mode "+buildmode,1,"BuildTrainStation");
+	tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
+	tilelist.Sort(AIList.SORT_BY_VALUE, true);
+	showLogic(tilelist); 
+	ClearSignsALL();
+	foreach (tile, dummy in tilelist)
 		{
-		if (start)	cTileTools.SeduceTown(INSTANCE.route.sourceID, AITown.TOWN_RATING_MEDIOCRE);
-			else	cTileTools.SeduceTown(INSTANCE.route.targetID, AITown.TOWN_RATING_MEDIOCRE);
-		}
-	success=INSTANCE.builder.CreateAndBuildTrainStation(statile, dir);
-	if (!success)
-		{
-		// switch again station direction, a solve exist there
-		if (dir == AIRail.RAILTRACK_NE_SW)	dir=AIRail.RAILTRACK_NW_SE;
-							else	dir=AIRail.RAILTRACK_NE_SW;
-		success=INSTANCE.builder.CreateAndBuildTrainStation(statile, dir);
-		}
-	if (success)	{
-				//statile=tile;
+		if (start)	dir=INSTANCE.builder.GetDirection(tile, INSTANCE.route.source_location);
+			else	dir=INSTANCE.builder.GetDirection(INSTANCE.route.target_location,tile);
+		// find where that point is compare to its source for the station
+		switch (dir)
+			{
+			case DIR_NW: //0 south
+				if (istown)	dir=AIRail.RAILTRACK_NW_SE;
+					else	dir=AIRail.RAILTRACK_NE_SW;
 				break;
-				}
-			else	{ // see why we fail
-				INSTANCE.builder.IsCriticalError();
-				if (INSTANCE.builder.CriticalError)	{ break; }
-				if (AIError.GetLastError()==AIError.ERR_LOCAL_AUTHORITY_REFUSES)	{ break; }
-				}
-	}
+			case DIR_SE: //1 north
+				if (istown)	dir=AIRail.RAILTRACK_NW_SE;
+					else	dir=AIRail.RAILTRACK_NE_SW;
+				break;
+			case DIR_SW: //3 est/droite
+				if (istown)	dir=AIRail.RAILTRACK_NE_SW;
+					else	dir=AIRail.RAILTRACK_NW_SE;
+				break;
+			case DIR_NE: //2 west/gauche
+				if (istown)	dir=AIRail.RAILTRACK_NE_SW;
+					else	dir=AIRail.RAILTRACK_NW_SE;
+				break;
+			}
+		DInfo("New station direction set to "+dir,1,"BuildTrainStation");
+		if (dir == AIRail.RAILTRACK_NW_SE)	statile=cTileTools.CheckLandForConstruction(tile, 1, 5);
+							else	statile=cTileTools.CheckLandForConstruction(tile, 5, 1);
+		if (statile == -1)	continue; // we have no solve to build a station here
+		if (istown)	
+			{
+			if (start)	cTileTools.SeduceTown(INSTANCE.route.sourceID, AITown.TOWN_RATING_MEDIOCRE);
+				else	cTileTools.SeduceTown(INSTANCE.route.targetID, AITown.TOWN_RATING_MEDIOCRE);
+			}
+		success=INSTANCE.builder.CreateAndBuildTrainStation(statile, dir);
+		if (!success)
+			{
+			// switch again station direction, a solve exist there
+			if (dir == AIRail.RAILTRACK_NE_SW)	dir=AIRail.RAILTRACK_NW_SE;
+								else	dir=AIRail.RAILTRACK_NE_SW;
+			success=INSTANCE.builder.CreateAndBuildTrainStation(statile, dir);
+			}
+		if (success)	{
+					//statile=tile;
+					break;
+					}
+				else	{ // see why we fail
+					INSTANCE.builder.IsCriticalError();
+					if (INSTANCE.builder.CriticalError)	{ break; }
+					if (AIError.GetLastError()==AIError.ERR_LOCAL_AUTHORITY_REFUSES)	{ break; }
+					}
+		}
+	buildmode++;
+	} while (!success && buildmode!=5);
 ClearSignsALL();
 
 if (!success) 
@@ -685,8 +724,7 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 		// remove previous tracks to clean area
 		INSTANCE.builder.DropRailHere(railFront, crossing);
 		INSTANCE.builder.DropRailHere(railCross, crossing);
-		sweeper.AddItem(railFront,0);
-		sweeper.AddItem(railCross,0);
+		sweeper.AddItem(crossing,0);
 		if (useEntry)
 				{
 				thatstation.locations.SetValue(5,se_crossing);
@@ -757,7 +795,6 @@ if ((se_IN == -1 && useEntry) || (sx_IN == -1 && !useEntry) && !closeIt)
 		}
 		else closeIt=true;
 	// now finish by connecting station to the crossing point
-//	endconnector
 	endconnector+=backwardTileOf;
 	while (!AIRail.IsRailStationTile(endconnector))
 		{
@@ -802,16 +839,18 @@ if (depot_checker==-1 && !closeIt)
 		removedepot=AIRail.BuildRailDepot(crossing+depotlocations[h], crossing+depotfront[h]);
 		local depotFront=AIRail.GetRailDepotFrontTile(crossing+depotlocations[h]);
 		if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(crossing+depotlocations[h],depotFront,true);
+		sweeper.AddItem(crossing+depotlocations[h],0);
+		sweeper.AddItem(depotFront,0);
 		if (success)	{
 					if (!AIRail.IsRailDepotTile(crossing+depotlocations[h]) || AITile.GetOwner(crossing+depotlocations[h]) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
 					if (useEntry)	thatstation.depot=crossing+depotlocations[h];
 							else	thatstation.locations[15]=crossing+depotlocations[h];
+					// assume we can't fail here, as the crossing must be already valid
+					if (depotFront!=crossing)	cBuilder.RailConnectorSolver(depotFront,crossing);
 					break;
 					}
 				else	{
 					// clean depot position
-					sweeper.AddItem(crossing+depotlocations[h],0);
-					sweeper.AddItem(crossing+depotFront,0);
 					closeIt=true;
 					}
 		}
@@ -825,6 +864,8 @@ if (useEntry)	crossing=se_crossing;
 //	2+ trains = must have IN & OUT
 //	no out & 1 train = close entry
 //	so to be valid IN must also run upto station at first
+
+/*
 if (success && !closeIt)
 	{
 	do	{
@@ -853,7 +894,7 @@ if (success && !closeIt)
 		else	{ DInfo("Cannot connect the station to crossing",1,"RailStationGrow"); closeIt=true; }
 		} while(true);// FIXME
 	}
-
+*/
 if (closeIt)
 	{ // something went wrong, the station entry or exit is now dead
 	if (useEntry)	thatstation.RailStationCloseEntry();

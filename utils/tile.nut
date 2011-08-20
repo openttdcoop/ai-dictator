@@ -87,6 +87,30 @@ if (!AITile.IsWaterTile(tile))	return AITile.IsBuildable(tile);
 return true;
 }
 
+function cTileTools::IsAreaFlat(startTile, width, height)
+// from nocab terraform.nut as Terraform::IsFlat
+// http://www.tt-forums.net/viewtopic.php?f=65&t=43259&sid=9335e2ce38b4bd5e3d4df99cf23d30d7
+{
+	local mapSizeX = AIMap.GetMapSizeX();
+	local goalHeight = AITile.GetMinHeight(startTile);
+	
+	// Check if the terrain isn't already flat.
+	for (local i = 0; i < width; i++)
+		for (local j = 0; j < height; j++)
+			if (AITile.GetMinHeight(startTile + i + j * mapSizeX) != goalHeight ||
+				AITile.GetSlope(startTile + i + j * mapSizeX) != AITile.SLOPE_FLAT)
+				return false;
+	return true;
+}
+
+function cTileTools::IsBuildableRectangleFlat(tile, width, height)
+// a wrapper to AITile.IsBuildableRectangle that also answer to "Are all tiles flat"
+{
+local check=AITile.IsBuildableRectangle(tile, width, height);
+if (!check)	return false;
+return cTileTools.IsAreaFlat(tile, width, height);
+}
+
 function cTileTools::IsBuildableRectangle(tile, width, height, ignoreList=AIList())
 // This check if the rectangle area is buildable in any directions from that point
 // Like the IsBuildableRectangle, but not limit to upper left point
@@ -238,14 +262,6 @@ do	{
 		}
 	} while (!generror && srcH != wantedHeight && srcL != wantedHeight && !evaluateOnly);
 return generror;
-}
-
-function cTileTools::FlattenTile(tilefrom, tileto)
-// flatten tiles from tilefrom to tileto, use first tile as reference for the height to reach
-{
-local tlist=AITileList();
-tlist.AddRectangle(tilefrom, tileto);
-return AITile.LevelTiles(tilefrom, tileto);
 }
 
 function cTileTools::MostItemInList(list, item)

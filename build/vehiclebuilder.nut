@@ -37,6 +37,7 @@ static	function GetVehicleObject(vehicleID)
 	airnet_count	=null;	// current number of aircrafts running the network
 	water_max		=null;	// maximum ships a station can handle
 	road_max_onroute	=null;	// maximum road vehicle on a route
+	train_length	=null;	// maximum length for train/rail station
 	vehnextprice	=null;	// we just use that to upgrade vehicle
 	do_profit		=null;	// Record each vehicle profits
 	warTreasure		=null;	// total current value of nearly all our road vehicle
@@ -52,6 +53,7 @@ static	function GetVehicleObject(vehicleID)
 		airnet_count	=0;
 		water_max		=0;
 		road_max_onroute	=0;
+		train_length	=0;
 		vehnextprice	=0;
 		do_profit		=AIList();
 		warTreasure		=0;

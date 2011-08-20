@@ -14,7 +14,6 @@
 class cStation
 {
 static	stationdatabase = {};
-//static	routeParent = AIList();	// map route uid to stationid (as value)
 static	VirtualAirports = AIList();	// stations in the air network as item, value=towns
 static	function GetStationObject(stationID)
 		{
@@ -562,7 +561,7 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 local entry=thatstation.locations.GetValue(0);
-entry=entry & 1;
+entry=entry ^ 1;
 thatstation.locations.SetValue(0, entry);
 DInfo("Closing the entry of station "+thatstation.GetName(),1,"RailStationCloseEntry");
 }
@@ -574,7 +573,7 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 local exit=thatstation.locations.GetValue(0);
-exit=exit & 1;
+exit=exit ^ 2;
 thatstation.locations.SetValue(0, exit);
 DInfo("Closing the exit of station "+thatstation.GetName(),1,"RailStationCloseExit");
 }
@@ -654,4 +653,16 @@ thatstation=cStation.GetStationObject(stationID);
 if (useEntry)	whatPlatform=thatstation.platform_entry;
 		else	whatPlatform=thatstation.platform_exit;
 return (whatPlatform.GetValue(platform)==1);
+}
+
+function cStation::GetRailDepot(stationID=null)
+// Return a valid rail depot for that stationID
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return "BAD STATIONID";
+if (cStation.IsDepot(thatstation.depot))	return thatstation.depot;
+if (cStation.IsDepot(thatstation.locations.GetValue(15)))	return thatstation.locations.GetValue(15);
+return -1;
 }

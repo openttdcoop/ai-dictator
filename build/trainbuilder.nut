@@ -80,7 +80,7 @@ if (!vehlist.IsEmpty())	veh=vehlist.Begin();
 return veh;
 }
 
-function cCarrier::CreateRailVehicle(roadidx)
+/*function cCarrier::CreateRailVehicle(roadidx)
 {
 local road=INSTANCE.chemin.RListGetItem(roadidx);
 local real_src_id=INSTANCE.chemin.GListGetItem(road.ROUTE.src_station);
@@ -133,4 +133,95 @@ if (!AIVehicle.StartStopVehicle(trainengine))
 	{ DInfo(AIVehicle.GetName(trainengine)+" refuse to start !!!"+AIError.GetLastErrorString(),1); }
 AIGroup.MoveVehicle(road.ROUTE.group_id, trainengine);
 return true;
+}*/
+
+function cCarrier::TrainSetOrders(trainID)
+// Set orders for a train
+{
+local uid=INSTANCE.carrier.VehicleFindRouteIndex(trainID);
+if (uid==null)	{ DError("Cannot find uid for that train",1,"cCarrier::TrainSetOrders"); return false; }
+local road=cRoute.GetRouteObject(uid);
+if (road==null)	return false;
+DInfo("Append orders to "+AIVehicle.GetName(trainID),2,"cCarrier::TrainSetOrder");
+if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), AIOrder.AIOF_NON_STOP_INTERMEDIATE+AIOrder.AIOF_FULL_LOAD_ANY))
+	{ DError(AIVehicle.GetName(trainID)+" refuse first order",2,"cCarrier::TrainSetOrder"); return false; }
+if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), AIOrder.AIOF_NON_STOP_INTERMEDIATE))
+	{ DError(AIVehicle.GetName(trainID)+" refuse second order",2,"cCarrier::TrainSetOrder"); return false; }
+return true;
 }
+
+function cCarrier::GetWagonsInGroup(groupID)
+// return number of wagons present in the group
+{
+local vehlist=AIVehicleList_Group(groupID);
+vehlist.Valuate(AIEngine.IsWagon);
+vehlist.KeepValue(1);
+local total=0;
+foreach (veh, dummy in vehlist)	total+=AIVehicle.GetNumWagons(veh);
+return total;
+}
+
+function cCarrier::CreateTrainsEngine(engineID, depot, cargoID)
+// Create vehicle engineID at depot
+{
+if (!AIEngine.IsValidEngine(engineID))	return -1;
+local price=AIEngine.GetPrice(engineID);
+INSTANCE.bank.RaiseFundsBy(price);
+if (!INSTANCE.bank.CanBuyThat(price))	DInfo("We lack money to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateTrainsEngine");
+local vehID=AIVehicle.BuildVehicle(depot, engineID);
+if (!AIVehicle.IsValidVehicle(vehID))	{ DInfo("Failure to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateTrainsEngine"); return -1; }
+cEngine.Update(vehID);
+AIVehicle.RefitVehicle(vehID, cargoID);
+return vehID;
+}
+
+function cCarrier::AddNewTrain(uid, wagonNeed)
+// Called when creating a route, as no train is there no need to worry that much
+{
+print("BREAKPOINT");	
+local road=cRoute.GetRouteObject(uid);
+if (road==null)	return false;
+local engines=INSTANCE.carrier.ChooseRailCouple(road.cargoID, road.source.specialType);
+if (engines.IsEmpty())	return false;
+local depot=road.source.GetRailDepot();
+if (depot==-1)	{ DInfo("Station "+road.source.name+" doesn't have a valid depot",1,"cCarrier::AddNewTrain"); return false; }
+local deletetrain=false;
+PutSign(depot,"Depot");
+print("depot="+depot);
+local pullerID=INSTANCE.carrier.CreateTrainsEngine(engines.Begin(), depot, road.cargoID);
+if (pullerID==-1)	return false;
+local wagonID=engines.GetValue(engines.Begin());
+for (local i=0; i < wagonNeed; i++)
+	{
+	wagonID=INSTANCE.carrier.CreateTrainsEngine(engines.GetValue(engines.Begin()), depot, road.cargoID);
+	if (wagonID!=-1)
+		if (!AIVehicle.MoveWagonChain(wagonID, 0, pullerID, AIVehicle.GetNumWagons(pullerID) - 1))
+			{ DError("Wagon "+AIEngine.GetName(engines.GetValue(engines.Begin()))+" cannot be attach to "+AIEngine.GetName(engines.Begin()),2,"cCarrier::AddNewTrain"); }
+	}
+if (AIVehicle.GetNumWagons(pullerID)==0)	{ DInfo("Train doesn't have any wagons attach to it",1,"cCarrier::AddNewTrain"); deletetrain=true; }
+AIGroup.MoveVehicle(road.groupID, pullerID);
+if (INSTANCE.carrier.TrainSetOrders(pullerID))	AIVehicle.StartStopVehicle(pullerID);
+							else	deletetrain=true;
+if (deletetrain)	{ AIVehicle.SellVehicle(pullerID); DInfo("Selling train engine as the train isn't working",1,"cCarrier::AddNewTrain"); }
+
+INSTANCE.NeedDelay(200);
+local test=cEngine.GetPrice(engines.Begin()); print("test="+test);
+return true;
+}
+
+function cCarrier::AddWagons(uid, wagonNeed)
+// Add wagons to route uid, handle the train engine by buying it if need
+{
+// TODO: handle getting all trains to depot before doing buys
+local road=cRoute.GetRouteObject(uid);
+if (road==null)	return false;
+local numWagons=cCarrier.GetWagonsInGroup(road.groupID);
+local vehlist=AIVehicleList_Group(groupID);
+local numTrains=vehlist.Count();
+if (numTrains==0)	{ return; }
+local balancing=0;
+local trainNeed=(numWagons+wagonNeed) / INSTANCE.carrier.train_length;
+if (numtrains >0)	balancing=(numWagons+wagonNeed)/numTrains;
+DWarn("WE REACH A DEAD END, NEED TO FINISH CODE",1,"cCarrier::AddWagons");
+}
+

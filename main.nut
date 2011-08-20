@@ -54,6 +54,8 @@ require("handler/vehiclehandler.nut");
 require("handler/ordershandler.nut");
 require("handler/stationhandler.nut");
 require("handler/chemin.nut");
+require("handler/railchemin.nut");
+require("handler/enginehandler.nut");
 require("utils/banker.nut");
 require("utils/misc.nut");
 require("handler/jobs.nut");
@@ -356,7 +358,6 @@ if ("dbroute" in data) OneWeek=data.dbroute;
 loadedgame = true;
 }
 
- 
 function DictatorAI::BuildHQ(centre)
 {
 local tilelist = null;
@@ -425,6 +426,7 @@ if (AIGameSettings.GetValue("ai.ai_disable_veh_roadveh") == 1)	use_road = false;
 if (AIGameSettings.GetValue("ai.ai_disable_veh_aircraft") == 1)	use_air = false;
 if (AIGameSettings.GetValue("ai.ai_disable_veh_ship") == 1)	use_boat = false;
 
+carrier.train_length=5;
 switch (fairlevel)
 	{
 	case 0: // easiest
