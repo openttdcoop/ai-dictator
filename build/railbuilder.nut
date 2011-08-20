@@ -721,7 +721,6 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 		} while (j < 4 && !success);
 	if (success)
 		{
-		// remove previous tracks to clean area
 		INSTANCE.builder.DropRailHere(railFront, crossing);
 		INSTANCE.builder.DropRailHere(railCross, crossing);
 		sweeper.AddItem(crossing,0);
@@ -846,6 +845,7 @@ if (depot_checker==-1 && !closeIt)
 					if (useEntry)	thatstation.depot=crossing+depotlocations[h];
 							else	thatstation.locations[15]=crossing+depotlocations[h];
 					// assume we can't fail here, as the crossing must be already valid
+					INSTANCE.builder.DropRailHere(railCross, crossing, true);
 					if (depotFront!=crossing)	cBuilder.RailConnectorSolver(depotFront,crossing);
 					break;
 					}
@@ -953,7 +953,6 @@ function cBuilder::RailCleaner(targetTile)
 local many=AIList();
 if (targetTile instanceof ::AIList)	many.AddList(targetTile);
 					else	many.AddItem(targetTile,0);
-print("to clean = "+many.Count());
 local voisin=[AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0)]; // SE, NW, SW, NE
 local trackMap=AIList();
 local seek=null;
