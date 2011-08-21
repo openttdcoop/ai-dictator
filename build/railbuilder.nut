@@ -431,8 +431,8 @@ do	{
 			local dstlink=0;
 			if (srcUseEntry)	{ srcpos=srcStation.locations.GetValue(1); srclink=srcStation.locations.GetValue(11); }
 					else	{ srcpos=srcStation.locations.GetValue(3); srclink=srcStation.locations.GetValue(13); }
-			if (dstUseEntry)	{ dstpos=dstStation.locations.GetValue(1); dstlink=dstStation.locations.GetValue(11); }
-					else	{ dstpos=dstStation.locations.GetValue(3); dstlink=dstStation.locations.GetValue(13); }
+			if (dstUseEntry)	{ dstpos=dstStation.locations.GetValue(2); dstlink=dstStation.locations.GetValue(12); }
+					else	{ dstpos=dstStation.locations.GetValue(4); dstlink=dstStation.locations.GetValue(14); }
 			ClearSignsALL();
 			DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"CreateStationConnection");
 			PutSign(dstpos,"D");
@@ -747,18 +747,21 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	}
 
 // build entry/exit IN, if anyone use entry or exit, we need it built
-if ((se_IN == -1 && useEntry) || (sx_IN == -1 && !useEntry) && !closeIt)
+if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry && taker) || (se_OUT==-1 && useEntry && !taker) || (sx_OUT==-1 && !useEntry && !taker) ))
 	{
-	DInfo("Building IN point",1,"RailStationGrow");
+	local in_str="OUT";
+	if (taker)	in_str="IN";
+	DInfo("Building "+in_str+" point",1,"RailStationGrow");
 	rail=railFront;
 	local j=1;
 	local fromtile=0;
 	if (useEntry)	fromtile=se_crossing;
 			else	fromtile=sx_crossing;
+	if (!taker)	fromtile+=leftTileOf;
 	local endconnector=fromtile;
 	do	{
-		PutSign(fromtile+(j*forwardTileOf),"."); INSTANCE.NeedDelay();
-		cTileTools.TerraformLevelTiles(position,fromtile+(j*forwardTileOf));
+		PutSign(fromtile+(j*forwardTileOf),"."); 
+		cTileTools.TerraformLevelTiles(position,fromtile+(j*forwardTileOf)); INSTANCE.NeedDelay();
 		success=INSTANCE.builder.DropRailHere(rail, fromtile+(j*forwardTileOf));
 		if (success)	sweeper.AddItem(fromtile+(j*forwardTileOf),0);
 		if (INSTANCE.builder.IsCriticalError())
@@ -767,40 +770,64 @@ if ((se_IN == -1 && useEntry) || (sx_IN == -1 && !useEntry) && !closeIt)
 			INSTANCE.builder.CriticalError=false;
 			break;
 			}
-		DInfo("Building IN point signal",1,"RailStationGrow");
+		DInfo("Building "+in_str+" point signal",1,"RailStationGrow");
 		success=AIRail.BuildSignal(fromtile+(j*forwardTileOf), fromtile+((j-1)*forwardTileOf), AIRail.SIGNALTYPE_NORMAL_TWOWAY);
 		if (success)	{
-					if (useEntry)	{ se_IN=fromtile+(j*forwardTileOf); }
-							else	{ sx_IN=fromtile+(j*forwardTileOf); }
+					local entry_str="Entry";
+					local pointview=0;
+					if (taker)
+						{
+						if (useEntry)
+							{
+							se_IN=fromtile+(j*forwardTileOf);
+							thatstation.locations.SetValue(1,se_IN);
+							thatstation.locations.SetValue(11, se_IN+forwardTileOf); // link
+							if (!AITile.DemolishTile(se_IN+forwardTileOf))	closeIt=true;
+							pointview=se_IN;
+							}
+						else	{
+							sx_IN=fromtile+(j*forwardTileOf);
+							thatstation.locations.SetValue(3,sx_IN);
+							thatstation.locations.SetValue(13, sx_IN+forwardTileOf); // link
+							if (!AITile.DemolishTile(sx_IN+forwardTileOf))	closeIt=true;
+							pointview=sx_IN; entry_str="Exit";
+							}
+						}
+					else	{
+						if (useEntry)
+							{
+							se_OUT=fromtile+(j*forwardTileOf);
+							thatstation.locations.SetValue(2,se_OUT);
+							thatstation.locations.SetValue(12, se_OUT+forwardTileOf); // link
+							if (!AITile.DemolishTile(se_OUT+forwardTileOf))	closeIt=true;
+							pointview=se_OUT;
+							if (!cBuilder.RailConnectorSolver(se_OUT, crossing+leftTileOf,true))	closeIt=true;
+							}
+						else	{
+							sx_OUT=fromtile+(j*forwardTileOf);
+							thatstation.locations.SetValue(4,sx_OUT);
+							thatstation.locations.SetValue(14, sx_OUT+forwardTileOf); // link
+							if (!AITile.DemolishTile(sx_OUT+forwardTileOf))	closeIt=true;
+							pointview=sx_OUT; entry_str="Exit";
+							if (!cBuilder.RailConnectorSolver(se_OUT, crossing+leftTileOf,true))	closeIt=true;
+							}
+						}
 					sweeper.AddItem(fromtile+(j*forwardTileOf),0);
+					DInfo(in_str+" "+entry_str+" point set to "+pointview,1,"RailStationGrow");
+					PutSign(pointview,in_str);
 					}
 		j++;
 		INSTANCE.NeedDelay(100);
 		} while (j < 4 && !success);
-	if (success)
-		{
-		if (useEntry)	{
-					thatstation.locations.SetValue(1,se_IN);
-					thatstation.locations.SetValue(11, se_IN+forwardTileOf); // link
-					DInfo("IN Entry point set to "+se_IN,1,"RailStationGrow");
-					if (!AITile.DemolishTile(se_IN+forwardTileOf))	closeIt=true;
-					}
-				else	{
-					thatstation.locations.SetValue(3,sx_IN);
-					thatstation.locations.SetValue(13, sx_IN+forwardTileOf); // link
-					DInfo("IN Exit point set to "+sx_IN,1,"RailStationGrow");
-					if (!AITile.DemolishTile(sx_IN+forwardTileOf))	closeIt=true;
-					}
-		}
-		else closeIt=true;
+		if (!success)	closeIt=true;
 	// now finish by connecting station to the crossing point
 	endconnector+=backwardTileOf;
-	while (!AIRail.IsRailStationTile(endconnector))
+	/*while (!AIRail.IsRailStationTile(endconnector))
 		{
 		success=INSTANCE.builder.DropRailHere(rail, endconnector);
 		if (success)	sweeper.AddItem(endconnector,0);
 		endconnector+=backwardTileOf;
-		}
+		}*/
 	endconnector+=forwardTileOf;
 	if (!cBuilder.RoadRunner(endconnector, fromtile, AIVehicle.VT_RAIL))	closeIt=true;
 	}
@@ -808,7 +835,7 @@ if ((se_IN == -1 && useEntry) || (sx_IN == -1 && !useEntry) && !closeIt)
 // build station entrance point to crossing point
 
 
-// build depot for it, tweaky
+// build depot for it,
 // in order to build cleaner rail we build the depot where the OUT line should goes, reserving space for it
 // if this cannot be done, we build it next to the IN line, and we just swap lines (OUT<>IN)
 local tile_OUT=null;
@@ -832,9 +859,11 @@ if (depot_checker==-1 && !closeIt)
 	local depotlocations=[leftTileOf+forwardTileOf, rightTileOf+forwardTileOf, leftTileOf+backwardTileOf, rightTileOf+backwardTileOf, leftTileOf, rightTileOf];
 	local depotfront=[leftTileOf, rightTileOf, leftTileOf, rightTileOf, 0, 0];
 	DInfo("Building station depot",1,"RailStationGrow");
+	//if (!taker)	crossing+=rightTileOf;
 	for (local h=0; h < depotlocations.len(); h++)
 		{
 		cTileTools.TerraformLevelTiles(crossing,crossing+depotlocations[h]);
+		PutSign(crossing+depotlocations[h],"D");
 		removedepot=AIRail.BuildRailDepot(crossing+depotlocations[h], crossing+depotfront[h]);
 		local depotFront=AIRail.GetRailDepotFrontTile(crossing+depotlocations[h]);
 		if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(crossing+depotlocations[h],depotFront,true);
@@ -846,12 +875,13 @@ if (depot_checker==-1 && !closeIt)
 							else	thatstation.locations[15]=crossing+depotlocations[h];
 					// assume we can't fail here, as the crossing must be already valid
 					INSTANCE.builder.DropRailHere(railCross, crossing, true);
-					if (depotFront!=crossing)	cBuilder.RailConnectorSolver(depotFront,crossing);
+					//cBuilder.RailConnectorSolver(depotFront,crossing);
+					cBuilder.RailConnectorSolver(crossing,depotFront);
 					break;
 					}
 				else	{
 					// clean depot position
-					closeIt=true;
+					//closeIt=true;
 					}
 		}
 	}
@@ -1066,7 +1096,7 @@ trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE
 trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE
 trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW
 trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE
-
+PutSign(tilefront,"X");
 // dirValid is [VV,II] VV=valid to go, II=invalid when no 90 turn is allow
 // and for each direction we're going in order SE, NW, SW, NE
 local dirValid=[
