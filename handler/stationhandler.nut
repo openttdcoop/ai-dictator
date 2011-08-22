@@ -63,8 +63,8 @@ static	function GetStationObject(stationID)
 	lastUpdate		= null;	// record last date we update infos for the station
 	moneyUpgrade	= null;	// money we need for upgrading the station
 	name			= null;	// station name
-	platform_entry	= null;	// railstation platforms AIList, item=fronttileplaformentry, value: 1=useable 0=closed
-	platform_exit	= null;	// railstation platforms AIList, item=fronttileplaformexit, value: 1=useable 0=closed
+	platforms		= null;	// railstation platforms AIList, item=fronttileplaformentry, value: 1=useable 0=closed
+//	platform_exit	= null;	// railstation platforms AIList, item=fronttileplaformexit, value: 1=useable 0=closed
 // station size = (tte)+(tde / 2)+(ttx)+(tdx/2)
 // station size >=3 + connect all front & back tiles
 // station size =2
@@ -111,8 +111,8 @@ crossing       = tile location where rails cross each other to connect parrallel
 		lastUpdate		= 0;
 		moneyUpgrade	= 0;
 		name			= null;
-		platform_entry	= AIList();
-		platform_exit	= AIList();
+		platforms		= AIList(); // item= platform location, value=bit0 for entry, bit1 for exit on/off
+	//	platform_exit	= AIList();
 		}
 }
 
@@ -491,11 +491,13 @@ local scanner=entrypos;
 while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; PutSign(scanner,"."); INSTANCE.NeedDelay(10); }
 exitpos=scanner+frontTile;
 PutSign(exitpos,"End");
-DInfo("Rail station depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1,"cStation::GetRailStationMiscInfo");
+thatstation.GetName();
+DInfo("Station "+thatstation.name+" depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1,"cStation::GetRailStationMiscInfo");
 thatstation.locations.SetValue(16,entrypos);
 thatstation.locations.SetValue(17,exitpos);
 thatstation.locations.SetValue(18,direction);
 thatstation.locations.SetValue(19,stalenght);
+thatstation.DefinePlatform();
 ClearSignsALL();
 }
 
@@ -628,33 +630,6 @@ if (thatstation.name == null)	thatstation.name=AIStation.GetName(thatstation.sta
 return thatstation.name;
 }
 
-function cStation::PlatformGetNumberOpen(useEntry, stationID=null)
-// return the number of platforms that station have with useable entries (they are working & connected)
-{
-local counter=0;
-local whatPlatform=null;
-local thatstation=null;
-if (stationID==null)	thatstation=this;
-		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	return "BAD STATIONID";
-if (useEntry)	whatPlatform=thatstation.platform_entry;
-		else	whatPlatform=thatstation.platform_exit;
-foreach (platform, status in whatPlatform)	if (status==1)	counter++;
-return counter;
-}
-
-function cStation::PlatformIsOpen(useEntry, platform)
-// return the status of a platform
-{
-local thatstation=null;
-local stationID=AIStation.GetStationID(platform);
-local whatPlatform=null;
-thatstation=cStation.GetStationObject(stationID);
-if (useEntry)	whatPlatform=thatstation.platform_entry;
-		else	whatPlatform=thatstation.platform_exit;
-return (whatPlatform.GetValue(platform)==1);
-}
-
 function cStation::GetRailDepot(stationID=null)
 // Return a valid rail depot for that stationID
 {
@@ -666,3 +641,213 @@ if (cStation.IsDepot(thatstation.depot))	return thatstation.depot;
 if (cStation.IsDepot(thatstation.locations.GetValue(15)))	return thatstation.locations.GetValue(15);
 return -1;
 }
+
+function cStation::DefinePlatform(stationID=null)
+// look out a train station and add every platforms we found
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return "BAD STATIONID";
+local frontTile, backTile, leftTile, rightTile= null;
+local direction=thatstation.GetRailStationDirection();
+local staloc=thatstation.GetLocation();
+if (direction == AIRail.RAILTRACK_NW_SE)
+	{
+	frontTile=AIMap.GetTileIndex(0,-1);
+	backTile=AIMap.GetTileIndex(0,1);
+	leftTile=AIMap.GetTileIndex(1,0);
+	rightTile=AIMap.GetTileIndex(-1,0);
+	}
+else	{ // NE_SW
+	frontTile=AIMap.GetTileIndex(-1,0);
+	backTile=AIMap.GetTileIndex(1,0);
+	leftTile=AIMap.GetTileIndex(0,-1);
+	rightTile=AIMap.GetTileIndex(0,1);
+	}
+local isEntryClear, isExitClear=null;
+local lookup=0;
+local start=thatstation.GetLocation();
+local end=thatstation.locations.GetValue(17);
+PutSign(start,"SS");
+PutSign(end,"SE");
+PutSign(start+frontTile,"cs");
+PutSign(end+backTile,"ce");
+// search up
+while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
+	{
+	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
+	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
+		{
+		local value=thatstation.platforms.GetValue(lookup+start);
+		if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
+									else	value=value ^ 1;
+		if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
+									else	value=value ^ 2;
+		thatstation.platforms.SetValue(lookup+start,value);
+		}
+	lookup+=leftTile;
+	}
+// search down
+lookup=rightTile;
+while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
+	{
+	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
+	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
+		{
+		local value=thatstation.platforms.GetValue(lookup+start);
+		if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
+									else	value=value ^ 1;
+		if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
+									else	value=value ^ 2;
+		thatstation.platforms.SetValue(lookup+start,value);
+		}
+	lookup+=rightTile;
+	}
+DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms",2,"cStation::DefinePlatforms");
+thatstation.size=thatstation.platforms.Count();
+}
+
+function cStation::GetPlatformFrontTile(platform, useEntry)
+// return the front tile of the platform
+// useEntry : true to return front tile of the platform entry, false to return one for exit
+{
+local platindex=cStation.GetPlatformIndex(platform, useEntry);
+if (platindex==-1)	return -1;
+local stationID=AIStation.GetStationID(platform);
+local front=cStation.GetRelativeTileForward(stationID, useEntry);
+return platindex+front;
+}
+
+function cStation::GetPlatformIndex(platform, useEntry=true)
+// return the platform reference (it's the station platform start location)
+// useEntry: true return the real reference in our .platforms, false = return the location of the exit for that platform
+// the useEntry=false query shouldn't be use as index as only the start is record, you will fail to find the platform with that index
+// -> it mean don't use it when trying to find a platform in cStation.platforms list
+// on error return -1
+{
+local stationID=AIStation.GetStationID(platform);
+local thatstation=cStation.GetStationObject(stationID);
+if (thatstation==null)	{ DError("Invalid platform",1,"cStation::GetPlatformIndex"); return -1; }
+if (thatstation.stationType!=AIStation.STATION_TRAIN)	{ DError("Not a rail station",1,"cStation::GetPlatformIndex"); return -1; }
+local platX=AIMap.GetTileX(platform);
+local platY=AIMap.GetTileY(platform);
+local staX=0;
+local staY=0;
+if (useEntry)
+	{
+	staX=AIMap.GetTileX(thatstation.locations.GetValue(16)); // X=SW->NE
+	staY=AIMap.GetTileY(thatstation.locations.GetValue(16)); // Y=SE->NW
+	}
+else	{
+	staX=AIMap.GetTileX(thatstation.locations.GetValue(17));
+	staY=AIMap.GetTileY(thatstation.locations.GetValue(17));
+	}
+if (thatstation.GetRailStationDirection()==AIRail.RAILTRACK_NE_SW)
+	{ staY=platY; }
+else	{ staX=platX; }// NW_SE
+return AIMap.GetTileIndex(staX, staY);
+}
+
+function cStation::GetRelativeDirection(stationID, dirswitch)
+// return a tile index relative to station direction and its entry/exit
+// stationID: the station to get relative direction
+// dirswitch: 0- left, 1-right, 2-forward, 3=backward : add 10 to get exit relative direction
+// return -1 on error
+{
+local loc=AIStation.GetLocation(stationID);
+if (!AIRail.IsRailStationTile(loc))	{ DError("Not a rail station tile",1,"cStation::GetRelativeDirection"); return -1; }
+local dir=AIRail.GetRailStationDirection(loc);
+local left, right, forward, backward = null;
+if (dir==AIRail.RAILTRACK_NW_SE)
+	{
+	left=AIMap.GetTileIndex(1,0);
+	right=AIMap.GetTileIndex(-1,0);
+	forward=AIMap.GetTileIndex(0,-1);
+	backward=AIMap.GetTileIndex(0,1);
+	if (dirswitch >= 10) // SE->NW
+		{
+		left=AIMap.GetTileIndex(-1,0);
+		right=AIMap.GetTileIndex(1,0);
+		forward=AIMap.GetTileIndex(0,1);
+		backward=AIMap.GetTileIndex(0,-1);
+		}
+	}
+else	{ // NE->SW
+	left=AIMap.GetTileIndex(0,-1);
+	right=AIMap.GetTileIndex(0,1);
+	forward=AIMap.GetTileIndex(-1,0);
+	backward=AIMap.GetTileIndex(1,0);
+	if (dirswitch >= 10) // SW->NE
+		{
+		left=AIMap.GetTileIndex(0,1);
+		right=AIMap.GetTileIndex(0,-1);
+		forward=AIMap.GetTileIndex(1,0);
+		backward=AIMap.GetTileIndex(-1,0);
+		}
+	}
+if (dirswitch >=10)	dirswitch-=10;
+switch (dirswitch)
+	{
+	case 0:
+		return left;
+	case 1:
+		return right;
+	case 2:
+		return forward;
+	case 3:
+		return backward;
+	}
+return -1;
+}
+
+function cStation::GetRelativeTileLeft(stationID, useEntry)
+{
+local value=0;
+if (!useEntry) value+=10;
+return cStation.GetRelativeDirection(stationID, value);
+}
+
+function cStation::GetRelativeTileRight(stationID, useEntry)
+{
+local value=1;
+if (!useEntry) value+=10;
+return cStation.GetRelativeDirection(stationID, value);
+}
+
+function cStation::GetRelativeTileForward(stationID, useEntry)
+{
+local value=2;
+if (!useEntry) value+=10;
+return cStation.GetRelativeDirection(stationID, value);
+}
+
+function cStation::GetRelativeTileBackward(stationID, useEntry)
+{
+local value=3;
+if (!useEntry) value+=10;
+return cStation.GetRelativeDirection(stationID, value);
+}
+
+function cStation::GetRelativeCrossingPoint(platform, useEntry)
+// return crossing point relative to the platform, that's the point where front of station X axe meet crossing Y axe
+// platform: the platform to find the relative crossing point
+// useEntry: true to get crossing entry point, false for exit crossing point
+{
+local frontTile=cStation.GetPlatformFrontTile(platform, useEntry);
+if (frontTile==-1)	return -1;
+local stationID=AIStation.GetStationID(platform);
+local thatstation=cStation.GetStationObject(stationID);
+local crossing=0;
+local direction=thatstation.GetRailStationDirection();
+if (useEntry)	crossing=thatstation.locations.GetValue(5);
+		else	crossing=thatstation.locations.GetValue(6);
+if (crossing < 0)	{ DError("Crossing isn't define yet",1,"cBuilder::PlatformConnectors"); return -1; }
+local goalTile=0;
+if (direction==AIRail.RAILTRACK_NE_SW)
+		goalTile=AIMap.GetTileIndex(AIMap.GetTileX(crossing),AIMap.GetTileY(frontTile));
+	else	goalTile=AIMap.GetTileIndex(AIMap.GetTileX(frontTile),AIMap.GetTileY(crossing));
+return goalTile;
+}
+
+

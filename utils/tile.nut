@@ -69,7 +69,7 @@ function cTileTools::GetTilesAroundPlace(place)
 local tiles = AITileList();
 local distedge = AIMap.DistanceFromEdge(place);
 local offset = null;
-if (distedge > 120) distedge=120; // limit to 120 around
+if (distedge > 200) distedge=200; // limit to 120 around
 offset = AIMap.GetTileIndex(distedge - 1, distedge -1);
 tiles.AddRectangle(place - offset, place + offset);
 return tiles;
@@ -470,17 +470,32 @@ function cTileTools::SeduceTown(townID, needRating)
 {
 local towntiles=cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID));
 local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
+towntiles.Valuate(AITile.IsWithinTownInfluence,townID);
+towntiles.KeepValue(1);
 towntiles.Valuate(AITile.IsBuildable);
 towntiles.KeepValue(1);
+local savetiles=AIList();
+savetiles.AddList(towntiles);
 local good=true;
 local money=AIAccounting();
 towntiles.Valuate(AITile.GetDistanceManhattanToTile,AITown.GetLocation(townID));
 towntiles.Sort(AIList.SORT_BY_VALUE, true);
-towntiles.KeepBelowValue(60);
+savetiles.Valuate(AITile.HasTreeOnTile);
+savetiles.KeepValue(0);
 //foreach (tile, dummy in towntiles)	PutSign(tile,"R");
 // 1 -> 2 = 293 trees
 // 2 -> 3 = 417 trees
-DInfo("SeduceTown-> Town: "+AITown.GetName(townID)+" rating: "+AITown.GetRating(townID, AICompany.COMPANY_SELF),2);
+DInfo("SeduceTown-> Town: "+AITown.GetName(townID)+" rating: "+curRating+" free tiles="+savetiles.Count(),2,"cTileTools::SeduceTown");
+if (curRating < AITown.TOWN_RATING_VERY_POOR && savetiles.Count()< 45)
+	{ // we need clean some area to get space for our trees
+	local treeon=AIList();
+	treeon.AddList(towntiles);
+	treeon.Valuate(AITile.HasTreeOnTile);
+	treeon.KeepValue(1);
+	savetiles.AddList(treeon); // this way we add tiles that have trees on it, but keep tiles without tiles too
+	savetiles.KeepTop(45);
+	foreach (tile, dummy in savetiles) AITile.DemolishTile(tile); // if we lack money to remove the tree we will fail anyway
+	}
 local totalTree=0;
 local totalspent=0;
 foreach (tile, dummy in towntiles)
@@ -490,13 +505,69 @@ foreach (tile, dummy in towntiles)
 		good=AITile.PlantTree(tile);
 		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
 		INSTANCE.bank.RaiseFundsTo(12000);
-		DInfo("Plants tree -> "+good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2);
+		DInfo(good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
+		PutSign(tile,"T");
 		AIController.Sleep(1);
-		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000));
+		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000) && (totalspent < 100000));
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
 	}
 local endop="Success !";
 if (!good && curRating < needRating)	endop="Failure.";
-DInfo("SeduceTown-> "+endop+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1);
+DInfo("SeduceTown-> "+endop+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1,"cTileTools::SeduceTown");
 return (curRating >= needRating);
 }
+
+function cTileTools::IsRemovable(tile)
+// return true/false if the tile could be remove
+{
+local test=false;
+if (cTileTools.IsBuildable(tile))	return true;
+local testmode=AITestMode();
+test=cTileTools.DemolishTile(tile);
+testmode=null;
+return test;
+}
+
+// This function comes from AdmiralAI, version 22, written by Yexo
+// taken from SuperLib, this will becomes the most re-use function :D
+function cTileTools::YexoCallFunction(func, args)
+{
+	switch (args.len()) {
+		case 0: return func();
+		case 1: return func(args[0]);
+		case 2: return func(args[0], args[1]);
+		case 3: return func(args[0], args[1], args[2]);
+		case 4: return func(args[0], args[1], args[2], args[3]);
+		case 5: return func(args[0], args[1], args[2], args[3], args[4]);
+		case 6: return func(args[0], args[1], args[2], args[3], args[4], args[5]);
+		case 7: return func(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
+		case 8: return func(args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]);
+		default: throw "Too many arguments to CallFunction";
+	}
+}
+
+// This function comes from AdmiralAI, version 22, written by Yexo
+// taken from SuperLib, this will becomes the most re-use function :D
+function cTileTools::YexoValuate(list, valuator, ...)
+{
+	assert(typeof(list) == "instance");
+	assert(typeof(valuator) == "function");
+
+	local args = [null];
+
+	for(local c = 0; c < vargc; c++) {
+		args.append(vargv[c]);
+	}
+
+	foreach(item, _ in list) {
+		args[0] = item;
+		local value = cTileTools.YexoCallFunction(valuator, args);
+		if (typeof(value) == "bool") {
+			value = value ? 1 : 0;
+		} else if (typeof(value) != "integer") {
+			throw("Invalid return type from valuator");
+		}
+		list.SetValue(item, value);
+	}
+}
+
