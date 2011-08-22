@@ -469,7 +469,7 @@ INSTANCE.bank.RaiseFundsTo(money);
 if (!AIRail.BuildRailStation(tilepos, direction, 4, 5, link))
 	{
 	DInfo("Rail station couldn't be built: "+AIError.GetLastErrorString(),1,"cBuilder::CreateAndBuildTrainStation");
-	PutSign(tilepos,"!"); INSTANCE.NeedDelay(100);
+	PutSign(tilepos,"!"); INSTANCE.NeedDelay(10);
 	return false;
 	}
 return true;
@@ -696,8 +696,8 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 		} while (j < 4 && !success);
 	if (success)
 		{
-		INSTANCE.builder.DropRailHere(railFront, crossing);
-		INSTANCE.builder.DropRailHere(railCross, crossing);
+		//INSTANCE.builder.DropRailHere(railFront, crossing);
+		//INSTANCE.builder.DropRailHere(railCross, crossing);
 		sweeper.AddItem(crossing,0);
 		if (useEntry)
 				{
@@ -795,16 +795,6 @@ if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry &&
 		INSTANCE.NeedDelay(100);
 		} while (j < 4 && !success);
 		if (!success)	closeIt=true;
-	// now finish by connecting station to the crossing point
-//	endconnector+=backwardTileOf;
-	/*while (!AIRail.IsRailStationTile(endconnector))
-		{
-		success=INSTANCE.builder.DropRailHere(rail, endconnector);
-		if (success)	sweeper.AddItem(endconnector,0);
-		endconnector+=backwardTileOf;
-		}
-	endconnector+=forwardTileOf;
-	if (!cBuilder.RoadRunner(endconnector, fromtile, AIVehicle.VT_RAIL))	closeIt=true;*/
 	}
 
 // build station entrance point to crossing point
@@ -824,12 +814,16 @@ if (!closeIt)
 		}
 	thatstation.DefinePlatform();  // rescan the station platforms for their status
 	local endConnector=AIList();
+	local topLeftPlatform=thatstation.locations.GetValue(20);
+	local topRightPlatform=thatstation.locations.GetValue(21);
+	PutSign(topLeftPlatform,"TopL"); PutSign(topRightPlatform,"TopR");
+print("topL="+topLeftPlatform+" topR="+topRightPlatform);
 	endConnector.AddList(thatstation.platforms);
 	endConnector.Valuate(AIMap.DistanceManhattan,thatstation.GetLocation());
 	endConnector.Sort(AIList.SORT_BY_VALUE, true); // just because we will then process each platform from main one to farer ones
 	local platformsweeper=AIList();
 	local endhelper=0;
-	INSTANCE.NeedDelay(50); ClearSignsALL();
+	INSTANCE.NeedDelay(150); ClearSignsALL();
 	foreach (platform, dummy in endConnector)
 		{
 		if (thatstation.platforms.GetValue(platform)==1)
@@ -891,8 +885,8 @@ if (depot_checker==-1 && !closeIt)
 							else	thatstation.locations[15]=crossing+depotlocations[h];
 					// assume we can't fail here, as the crossing must be already valid
 					cBuilder.RailConnectorSolver(depotFront,crossing);
-					INSTANCE.builder.DropRailHere(railCross, crossing, true); // remove previous track built to define crossing point
-					INSTANCE.builder.DropRailHere(railFront, crossing, true); // 2nd track
+					//INSTANCE.builder.DropRailHere(railCross, crossing, true); // remove previous track built to define crossing point
+					//INSTANCE.builder.DropRailHere(railFront, crossing, true); // 2nd track
 					success=true;
 					break;
 					}

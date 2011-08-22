@@ -52,6 +52,8 @@ static	function GetStationObject(stationID)
 						// 17: endpoint : when created, tile where the end of station is
 						// 18: direction: when created, the direction of the station return by AIRail.GetRailStationDirection
 						// 19: depth: when created, the lenght (depth) the station is, for its width, "cstation.size" keep that info
+						// 20: most left platform position
+						// 21: most right platform position
 	depot			= null;	// depot position and id are the same
 	cargo_produce	= null;	// cargos ID produce at station, value = amount waiting
 	cargo_accept	= null;	// cargos ID accept at station, value = cargo rating
@@ -422,7 +424,7 @@ function cStation::InitNewStation()
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 			this.locations=AIList();
-			for (local zz=0; zz < 20; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
+			for (local zz=0; zz < 22; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
 			for (local zz=7; zz < 11; zz++)	this.locations.SetValue(zz,0);
 			this.locations.SetValue(0,1+2); // enable IN && OUT for the new station
 			this.GetRailStationMiscInfo();
@@ -669,6 +671,8 @@ local isEntryClear, isExitClear=null;
 local lookup=0;
 local start=thatstation.GetLocation();
 local end=thatstation.locations.GetValue(17);
+local topLeftPlatform=start;
+local topRightPlatform=start;
 PutSign(start,"SS");
 PutSign(end,"SE");
 PutSign(start+frontTile,"cs");
@@ -676,6 +680,7 @@ PutSign(end+backTile,"ce");
 // search up
 while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
 	{
+	topLeftPlatform=lookup+start;
 	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
 	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
@@ -692,6 +697,7 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 lookup=rightTile;
 while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
 	{
+	topRightPlatform=lookup+start;
 	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
 	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
@@ -706,6 +712,8 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 	}
 DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms",2,"cStation::DefinePlatforms");
 thatstation.size=thatstation.platforms.Count();
+thatstation.locations.SetValue(20,topLeftPlatform);
+thatstation.locations.SetValue(21,topRightPlatform);
 }
 
 function cStation::GetPlatformFrontTile(platform, useEntry)
