@@ -819,19 +819,45 @@ if (!closeIt)
 	PutSign(topLeftPlatform,"TopL"); PutSign(topRightPlatform,"TopR");
 INSTANCE.NeedDelay(); ClearSignsALL();
 print("topL="+topLeftPlatform+" topR="+topRightPlatform);
-	local cstart=cStation.GetPlatformFrontTile(topLeftPlatform, useEntry);
-	local cend=cStation.GetPlatformFrontTile(topRightPlatform, useEntry);
+	local cstart=cStation.GetRelativeCrossingPoint(topLeftPlatform, useEntry);
+	local cend=cStation.GetRelativeCrossingPoint(topRightPlatform, useEntry);
 print("cstart="+cstart+" cend="+cend);
 PutSign(cstart,"cstart"); PutSign(cend,"cend");
 INSTANCE.NeedDelay(150);
 	ClearSignsALL();
-	for (local i=cstart; i < cend; i+=rightTileOf)
+	if (cstart==cend) INSTANCE.Builder.DropRailHere(railFront,cstart);
+	local mi=cstart;
+	local ma=cstart;
+	if (cstart > cend)	mi=cend;
+				else	ma=cend;
+	for (local i=mi; i < ma; i+=rightTileOf)
 		{
-		PutSign(cStation.GetRelativeCrossingPoint(),"A");
-		if (i==cstart)	{ INSTANCE.builder.DropRailHere(railLeft, i); }
-				else	{ INSTANCE.builder.DropRailHere(railCross, i); }
-		INSTANCE.NeedDelay();
+		PutSign(i,"A");
+		local dir=cBuilder.GetDirection(i,ma);
+	print("dir="+dir);
+		if (i==ma)	break; // ignore end
+		switch (dir)
+			{
+			case	0: // SE-NW
+				rail=railRight;
+				break;
+			case	1: // NW-SE
+				rail=railLeft;
+				break;
+			case	2: // SW-NE
+				rail=railLeft;
+				break;
+			case	3: // NE-SW exit-nwse, 
+				rail=railRight;
+				break;
+			case	0:
+				break;
+			}
+
+		INSTANCE.builder.DropRailHere(rail, i);
+		INSTANCE.NeedDelay(50);
 		}
+INSTANCE.NeedDelay(200);
 	endConnector.AddList(thatstation.platforms);
 	endConnector.Valuate(AIMap.DistanceManhattan,thatstation.GetLocation());
 	endConnector.Sort(AIList.SORT_BY_VALUE, true); // just because we will then process each platform from main one to farer ones
