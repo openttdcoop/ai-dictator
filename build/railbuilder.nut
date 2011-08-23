@@ -672,11 +672,11 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 			}
 		else	success=false; // not all removable
 		if (success)	foreach (tile, dummy in towncheck)	cTileTools.DemolishTile(tile);
-				else	DInfo("Giving up, some tiles aren't removable",1,"RailStationGrow");
+				else	{ DInfo("Giving up, some tiles aren't removable",1,"RailStationGrow"); closeIt=true; }
 		}
 	else	DInfo("No troubles so far to build the entry/exit",1,"RailStationGrow");
 	}
-if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
+if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !closeIt )
 	{
 	// We first try to build the crossing area from worktile+1 upto worktile+3 to find where one is doable
 	// Because a rail can cross a road, we try build a track that will fail to cross a road to be sure it's a valid spot for crossing
@@ -817,7 +817,21 @@ if (!closeIt)
 	local topLeftPlatform=thatstation.locations.GetValue(20);
 	local topRightPlatform=thatstation.locations.GetValue(21);
 	PutSign(topLeftPlatform,"TopL"); PutSign(topRightPlatform,"TopR");
+INSTANCE.NeedDelay(); ClearSignsALL();
 print("topL="+topLeftPlatform+" topR="+topRightPlatform);
+	local cstart=cStation.GetPlatformFrontTile(topLeftPlatform, useEntry);
+	local cend=cStation.GetPlatformFrontTile(topRightPlatform, useEntry);
+print("cstart="+cstart+" cend="+cend);
+PutSign(cstart,"cstart"); PutSign(cend,"cend");
+INSTANCE.NeedDelay(150);
+	ClearSignsALL();
+	for (local i=cstart; i < cend; i+=rightTileOf)
+		{
+		PutSign(cStation.GetRelativeCrossingPoint(),"A");
+		if (i==cstart)	{ INSTANCE.builder.DropRailHere(railLeft, i); }
+				else	{ INSTANCE.builder.DropRailHere(railCross, i); }
+		INSTANCE.NeedDelay();
+		}
 	endConnector.AddList(thatstation.platforms);
 	endConnector.Valuate(AIMap.DistanceManhattan,thatstation.GetLocation());
 	endConnector.Sort(AIList.SORT_BY_VALUE, true); // just because we will then process each platform from main one to farer ones
