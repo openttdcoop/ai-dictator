@@ -582,29 +582,33 @@ thatstation.locations.SetValue(0, exit);
 DInfo("Closing the exit of station "+thatstation.GetName(),1,"RailStationCloseExit");
 }
 
+
 function cStation::GetRailStationIN(getEntry, stationID=null)
 // Return the tile where the station IN point is
 // getEntry = true to return the entry IN, false to return exit IN
-// If the IN point doesn't exist, return the virtual position where the station IN would be (default=fronttile of station)
 {
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	return -1;
-return thatstation.GetRailStationFrontTile(getEntry,thatstation.GetLocation());
+local entryIN=thatstation.locations.GetValue(1);
+local exitIN=thatstation.locations.GetValue(3);
+if (getEntry)	return entryIN;
+		else	return exitIN;
 }
 
 function cStation::GetRailStationOUT(getEntry, stationID=null)
 // Return the tile where the station OUT point is
 // getEntry = true to return the entry OUT, false to return exit OUT
-// If the OUT point doesn't exist, return the virtual position where the station OUT would be (default= left fronttile of station)
 {
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation.GetRailStationDirection()==AIRail.RAILTRACK_NE_SW)
-	return (thatstation.GetRailStationIN(getEntry)+AIMap.GetTileIndex(0,-1));
-else	return (thatstation.GetRailStationIN(getEntry)+AIMap.GetTileIndex(-1,0));
+if (thatstation==null)	return -1;
+local entryOUT=thatstation.locations.GetValue(2);
+local exitOUT=thatstation.locations.GetValue(4);
+if (getEntry)	return entryOUT;
+		else	return exitOUT;
 }
 
 function cStation::GetRailStationDirection()	{ return this.locations.GetValue(18); }
@@ -642,6 +646,19 @@ if (thatstation == null)	return "BAD STATIONID";
 if (cStation.IsDepot(thatstation.depot))	return thatstation.depot;
 if (cStation.IsDepot(thatstation.locations.GetValue(15)))	return thatstation.locations.GetValue(15);
 return -1;
+}
+
+function cStation::IsPlatformOpen(platformID, useEntry)
+// check if a platform entry or exit is usable
+{
+local platindex=cStation.GetPlatformFrontTile(platformID, useEntry);
+if (platindex==-1)	{ DError("Bad platform index",1,"IsPlatformOpen"); return false; }
+local stationID=AIStation.GetStationID(platformID);
+local thatstation=cStation.GetStationObject(stationID);
+local statusbit=thatstation.platforms.GetValue(platindex);
+print("statusbit="+statusbit);
+if (useEntry)	return ((statusbit & 1) ==1);
+		else	return ((statusbit & 2) ==2);
 }
 
 function cStation::DefinePlatform(stationID=null)
@@ -686,10 +703,12 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 		{
 		local value=thatstation.platforms.GetValue(lookup+start);
 		if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
-									else	value=value ^ 1;
+									else	value=value & ~1;
 		if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
-									else	value=value ^ 2;
+									else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
+		print(lookup+start+" -> new value="+value);
+		PutSign(lookup+start+frontTile,value);
 		}
 	lookup+=leftTile;
 	}
@@ -703,10 +722,12 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 		{
 		local value=thatstation.platforms.GetValue(lookup+start);
 		if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
-									else	value=value ^ 1;
+									else	value=value & ~1;
 		if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
-									else	value=value ^ 2;
+									else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
+		PutSign(lookup+start+frontTile,value);
+		print(lookup+start+" -> new value="+value);
 		}
 	lookup+=rightTile;
 	}
