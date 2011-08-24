@@ -886,7 +886,7 @@ print("topL="+topLeftPlatform+" topR="+topRightPlatform);
 							else	rail=railRight;
 					break;
 				}
-			print("platform open ? "+cStation.IsPlatformOpen(platf, stationside));
+			print("platform open ? "+platf+" : "+cStation.IsPlatformOpen(platf, stationside));
 			if (cStation.IsPlatformOpen(platf, stationside))	INSTANCE.builder.DropRailHere(rail, wpoint);
 			if (runthru)	INSTANCE.builder.DropRailHere(railCross, wpoint);
 			INSTANCE.NeedDelay(50);

@@ -651,12 +651,12 @@ return -1;
 function cStation::IsPlatformOpen(platformID, useEntry)
 // check if a platform entry or exit is usable
 {
-local platindex=cStation.GetPlatformFrontTile(platformID, useEntry);
+local platindex=cStation.GetPlatformIndex(platformID);
 if (platindex==-1)	{ DError("Bad platform index",1,"IsPlatformOpen"); return false; }
 local stationID=AIStation.GetStationID(platformID);
 local thatstation=cStation.GetStationObject(stationID);
 local statusbit=thatstation.platforms.GetValue(platindex);
-print("statusbit="+statusbit);
+print("platindex= "+platindex+" statusbit="+statusbit+" exist ? "+thatstation.platforms.HasItem(platindex));
 if (useEntry)	return ((statusbit & 1) ==1);
 		else	return ((statusbit & 2) ==2);
 }
