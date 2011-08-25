@@ -783,6 +783,8 @@ if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry &&
 					else	{
 						if (useEntry)
 							{
+							INSTANCE.builder.DropRailHere(railUpLeft, fromtile);
+							INSTANCE.NeedDelay(150);
 							se_OUT=fromtile+(j*forwardTileOf);
 							thatstation.locations.SetValue(2,se_OUT);
 							thatstation.locations.SetValue(12, se_OUT+forwardTileOf); // link
@@ -791,6 +793,8 @@ if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry &&
 							if (!cBuilder.RailConnectorSolver(se_OUT, crossing+rightTileOf,true))	closeIt=true;
 							}
 						else	{
+							INSTANCE.builder.DropRailHere(railUpLeft, fromtile);
+							INSTANCE.NeedDelay(150);
 							sx_OUT=fromtile+(j*forwardTileOf);
 							thatstation.locations.SetValue(4,sx_OUT);
 							thatstation.locations.SetValue(14, sx_OUT+forwardTileOf); // link
@@ -814,7 +818,6 @@ local entry_build=false;
 local exit_build=false;
 if (!closeIt)
 	{
-//	thatstation.DefinePlatform(); // scan the station platforms for their status
 	foreach (platform, status in thatstation.platforms)
 		{
 		if (se_IN!=-1 || se_OUT!=-1) // entry is build
@@ -828,7 +831,7 @@ if (!closeIt)
 			exit_build=true;
 			}
 		}
-	thatstation.DefinePlatform();  // rescan the station platforms for their status
+	thatstation.DefinePlatform();  // scan the station platforms for their status
 	local endConnector=AIList();
 	local topLeftPlatform=thatstation.locations.GetValue(20);
 	local topRightPlatform=thatstation.locations.GetValue(21);
@@ -837,12 +840,6 @@ INSTANCE.NeedDelay(50);
 	PutSign(topLeftPlatform,"TopL"); PutSign(topRightPlatform,"TopR");
 //INSTANCE.NeedDelay(); ClearSignsALL();
 print("topL="+topLeftPlatform+" topR="+topRightPlatform);
-//	local cstart=cStation.GetRelativeCrossingPoint(topLeftPlatform, useEntry);
-//	local cend=cStation.GetRelativeCrossingPoint(topRightPlatform, useEntry);
-//print("cstart="+cstart+" cend="+cend);
-//PutSign(cstart,"cstart"); PutSign(cend,"cend");
-//INSTANCE.NeedDelay(150);
-	//ClearSignsALL();
 	local doittwice=0;
 	local stationside=true;
 	for (local hh=0; hh < 3; hh++)
@@ -897,7 +894,7 @@ print("topL="+topLeftPlatform+" topR="+topRightPlatform);
 			{
 			local platfront=cStation.GetRelativeCrossingPoint(platf, stationside);
 			if (!cBuilder.RailConnectorSolver(platfront+backwardTileOf, platfront, true))
-				{ platformsweeper.AddItem(cStation.GetPlatformFrontTile(platfront),0); }
+				{ platformsweeper.AddItem(cStation.GetPlatformFrontTile(platfront, stationside),0); }
 			INSTANCE.NeedDelay(50);
 			}
 		if (!platformsweeper.IsEmpty())	cBuilder.RailCleaner(platformsweeper);
@@ -906,68 +903,8 @@ print("topL="+topLeftPlatform+" topR="+topRightPlatform);
 		} // hh loop
 	thatstation.DefinePlatform();
 	}
-
-/*	if (cstart==cend) INSTANCE.Builder.DropRailHere(railFront,cstart);
-	local mi=cstart;
-	local ma=cstart;
-	if (cstart > cend)	mi=cend;
-				else	ma=cend;
-	for (local i=mi; i < ma; i+=rightTileOf)
-		{
-		PutSign(i,"A");
-		local dir=cBuilder.GetDirection(i,ma);
-	print("dir="+dir);
-		if (i==ma)	break; // ignore end
-		switch (dir)
-			{
-			case	0: // SE-NW
-				rail=railRight;
-				break;
-			case	1: // NW-SE
-				rail=railLeft;
-				break;
-			case	2: // SW-NE
-				rail=railLeft;
-				break;
-			case	3: // NE-SW exit-nwse, 
-				rail=railRight;
-				break;
-			case	0:
-				break;
-			}
-
-		INSTANCE.builder.DropRailHere(rail, i);
-		INSTANCE.NeedDelay(50);
-		}*/
 INSTANCE.NeedDelay(100);
-/*
-	endConnector.AddList(thatstation.platforms);
-	endConnector.Valuate(AIMap.DistanceManhattan,thatstation.GetLocation());
-	endConnector.Sort(AIList.SORT_BY_VALUE, true); // just because we will then process each platform from main one to farer ones
-	local platformsweeper=AIList();
-	local endhelper=0;
-	INSTANCE.NeedDelay(150); ClearSignsALL();
-	foreach (platform, dummy in endConnector)
-		{
-		if (thatstation.platforms.GetValue(platform)==1)
-			{
-			endhelper=thatstation.GetRelativeCrossingPoint(platform, true);
-			INSTANCE.builder.DropRailHere(railCross, endhelper);
-			if (!cBuilder.RailConnectorSolver(endhelper+backwardTileOf, endhelper, true))
-				{
-				platformsweeper.AddItem(cStation.GetPlatformFrontTile(platform, true),0);
-				}
-			endhelper=thatstation.GetRelativeCrossingPoint(platform, false);
-			INSTANCE.builder.DropRailHere(railCross, endhelper);
-			if (!cBuilder.RailConnectorSolver(endhelper+backwardTileOf, endhelper, true))
-				{
-				platformsweeper.AddItem(cStation.GetPlatformFro		ntTile(platform, false),0);
-				}
-			}
-		}
-	if (!platformsweeper.IsEmpty())	{ cBuilder.RailCleaner(platformsweeper); thatstation.DefinePlatform(); }
-	}
-*/
+
 // build depot for it,
 // in order to build cleaner rail we build the depot where the OUT line should goes, reserving space for it
 // if this cannot be done, we build it next to the IN line, and we just swap lines (OUT<>IN)
@@ -989,27 +926,28 @@ else	{
 if (!AIRail.IsRailDepotTile(depot_checker))	depot_checker=-1;
 if (depot_checker==-1 && !closeIt)
 	{
-	local depotlocations=[forwardTileOf, rightTileOf+forwardTileOf, leftTileOf+backwardTileOf, rightTileOf+backwardTileOf, leftTileOf, rightTileOf];
-	local depotfront=[0, rightTileOf, leftTileOf, rightTileOf, 0, 0];
+	local topLeftPlatform=thatstation.locations.GetValue(20);
+	local topRightPlatform=thatstation.locations.GetValue(21);
+//	local depotlocations=[forwardTileOf, rightTileOf+forwardTileOf, leftTileOf+backwardTileOf, rightTileOf+backwardTileOf, leftTileOf, rightTileOf];
+	local topRL=cStation.GetRelativeCrossingPoint(topLeftPlatform, useEntry);
+	local topRR=cStation.GetRelativeCrossingPoint(topRightPlatform, useEntry);
+	local depotlocations=[topRL+rightTileOf, topRL+leftTileOf, topRR+rightTileOf, topRR+leftTileOf];
+	local depotfront=[topRL, topRL, topRR, topRR];
 	DInfo("Building station depot",1,"RailStationGrow");
 	//if (!taker)	crossing+=rightTileOf;
 	for (local h=0; h < depotlocations.len(); h++)
 		{
-		cTileTools.TerraformLevelTiles(crossing,crossing+depotlocations[h]);
-		PutSign(crossing+depotlocations[h],"D");
-		removedepot=AIRail.BuildRailDepot(crossing+depotlocations[h], crossing+depotfront[h]);
-		local depotFront=AIRail.GetRailDepotFrontTile(crossing+depotlocations[h]);
-		if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(crossing+depotlocations[h],depotFront,true);
-		sweeper.AddItem(crossing+depotlocations[h],0);
+		cTileTools.TerraformLevelTiles(crossing,depotlocations[h]);
+		PutSign(depotlocations[h],"D");
+		removedepot=AIRail.BuildRailDepot(depotlocations[h], depotfront[h]);
+		local depotFront=AIRail.GetRailDepotFrontTile(depotlocations[h]);
+		if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(depotlocations[h],depotFront,true);
+		sweeper.AddItem(depotlocations[h],0);
 		sweeper.AddItem(depotFront,0);
 		if (success)	{
-					if (!AIRail.IsRailDepotTile(crossing+depotlocations[h]) || AITile.GetOwner(crossing+depotlocations[h]) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
-					if (useEntry)	thatstation.depot=crossing+depotlocations[h];
-							else	thatstation.locations[15]=crossing+depotlocations[h];
-					// assume we can't fail here, as the crossing must be already valid
-					cBuilder.RailConnectorSolver(depotFront,crossing);
-					//INSTANCE.builder.DropRailHere(railCross, crossing, true); // remove previous track built to define crossing point
-					//INSTANCE.builder.DropRailHere(railFront, crossing, true); // 2nd track
+					if (!AIRail.IsRailDepotTile(depotlocations[h]) || AITile.GetOwner(depotlocations[h]) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
+					if (useEntry)	thatstation.depot=depotlocations[h];
+							else	thatstation.locations[15]=depotlocations[h];
 					success=true;
 					break;
 					}
@@ -1068,15 +1006,13 @@ local error=false;
 if (direction==AIRail.RAILTRACK_NE_SW)
 		goal=AIMap.GetTileIndex(AIMap.GetTileX(crossing),AIMap.GetTileY(frontTile));
 	else	{ goal=AIMap.GetTileIndex(AIMap.GetTileX(frontTile),AIMap.GetTileY(crossing)); rail=AIRail.RAILTRACK_NW_SE; }
-//PutSign(goal,"goal");
-//PutSign(frontTile,"front");
 print("tileX goal:"+AIMap.GetTileX(crossing)+" Y:"+AIMap.GetTileY(crossing));
 INSTANCE.NeedDelay(50);
 cTileTools.TerraformLevelTiles(goal,frontTile);
 local i=frontTile;
 while (i != goal)
 	{
-	PutSign(i,"c");
+	PutSign(i,"c"); // TODO: go forward and drop fire sooner
 	if (cBuilder.DropRailHere(rail, i))
 		sweeper.AddItem(i,0);
 	else	{ error=true; break; }
