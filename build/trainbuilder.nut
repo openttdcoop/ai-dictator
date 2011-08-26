@@ -90,7 +90,7 @@ if (road==null)	return false;
 DInfo("Append orders to "+AIVehicle.GetName(trainID),2,"cCarrier::TrainSetOrder");
 local firstorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 local secondorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-if (!road.source.isTown)	firstorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+if (!road.source_istown)	firstorder+=AIOrder.AIOF_FULL_LOAD_ANY;
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), firstorder))
 	{ DError(AIVehicle.GetName(trainID)+" refuse first order",2,"cCarrier::TrainSetOrder"); return false; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), secondorder))

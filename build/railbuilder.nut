@@ -449,6 +449,12 @@ do	{
 			if (dstUseEntry)	{ dstpos=dstStation.locations.GetValue(2); dstlink=dstStation.locations.GetValue(12); }
 					else	{ dstpos=dstStation.locations.GetValue(4); dstlink=dstStation.locations.GetValue(14); }
 			ClearSignsALL();
+			print("testing stations**********");
+			INSTANCE.builder.RailStationGrow(fromObj, true, true); // TODO: remove force grow
+			INSTANCE.builder.RailStationGrow(toObj, true, true);
+			INSTANCE.builder.RailStationGrow(fromObj, false, false); // TODO: remove force grow
+			INSTANCE.builder.RailStationGrow(toObj, false, false);
+			ClearSignsALL();
 			DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"CreateStationConnection");
 			PutSign(dstpos,"D");
 			PutSign(dstlink,"d");
@@ -544,7 +550,12 @@ else	{
 	if (taker)	trainExitTaker++;
 		else	trainExitDropper++;
 	}
-local newStationSize=trainEntryTaker+trainExitTaker+(trainEntryDropper / 2)+(trainExitDropper / 2);
+local tED=trainEntryDropper / 2;
+if (trainEntryDropper > 0 && tED==0)	tED++;
+local tXD=trainExitDropper / 2;
+if (trainExitDropper > 0 && tXD==0)	tXD++;
+local newStationSize=trainEntryTaker+trainExitTaker+tED+tXD;
+print("new size="+newStationSize+" tED="+tED+" tXD="+tXD);
 local position=thatstation.GetLocation();
 local direction=thatstation.GetRailStationDirection();
 INSTANCE.builder.SetRailType(thatstation.specialType);
@@ -596,7 +607,7 @@ PutSign(workTile,"W");
 INSTANCE.NeedDelay(50);
 local displace=0;
 // need grow the station ?
-newStationSize=thatstation.size+1;
+//newStationSize=thatstation.size+1;
 if (newStationSize > thatstation.size)
 	{
 	DInfo("Upgrading "+thatstation.GetName()+" to "+newStationSize+" platforms",0,"RailStationGrow");

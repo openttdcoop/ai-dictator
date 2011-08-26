@@ -34,20 +34,6 @@ if (AIStation.HasStationType(stationid, stationtype))	return stationtype;
 return -1;
 }
 
-function cBuilder::GetStationID(idx, start)
-// this function return the real station id
-{
-local obj=INSTANCE.chemin.RListGetItem(idx);
-local objStation=obj.ROUTE.dst_station;
-local realID=-1;
-if (start)	{ objStation=obj.ROUTE.src_station; }
-if (objStation == -1) return -1;
-local Station=INSTANCE.chemin.GListGetItem(objStation);
-realID=Station.STATION.station_id;
-if (AIStation.IsValidStation(realID))	return realID;
-return -1;
-}
-
 function cBuilder::GetDepotID(idx, start)
 // this function return the depot id
 // no longer reroute to another depot_id if fail to find one, but mark route as damage
