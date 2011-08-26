@@ -16,23 +16,30 @@
 
 class cCargo
 	{
+static	primaryCargo=[null,null]; // 0 for passenger, 1 for mail
 	constructor()	{ }
 	}
 
 function cCargo::GetMailCargo()
 // Return the cargo ID for mail
 	{
+	if (cCargo.primaryCargo[1] != null)	return cCargo.primaryCargo[1];
 	local cargolist = AICargoList();
-	foreach (cargo, dummy in cargolist)	if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL) return cargo;
-	return null;
+	foreach (cargo, dummy in cargolist)	if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL) { cCargo.primaryCargo[1]=cargo; break; }
+	if (cCargo.primaryCargo[1] == null)	DError("Cannot find mail cargo",1,"cCargo::GetMailCargo");
+						else	DInfo("Mail cargo set to "+cCargo.primaryCargo[1]+"-"+AICargo.GetCargoLabel(cCargo.primaryCargo[1]),0,"cCargo::GetMailCargo");
+	return cCargo.primaryCargo[1];
 	}
 
 function cCargo::GetPassengerCargo()
 // Return the cargo ID for passenger
 	{
+	if (cCargo.primaryCargo[0] != null)	return cCargo.primaryCargo[0];
 	local cargolist = AICargoList();
-	foreach (cargo, dummy in cargolist)	if (AICargo.GetTownEffect(cargo) == AICargo.TE_PASSENGERS) return cargo;
-	return null;
+	foreach (cargo, dummy in cargolist)	if (AICargo.GetTownEffect(cargo) == AICargo.TE_PASSENGERS) { cCargo.primaryCargo[0]=cargo; break; }
+	if (cCargo.primaryCargo[0] == null)	DError("Cannot find passenger cargo",1,"cCargo::GetPassengerCargo");
+						else	DInfo("Passenger cargo set to "+cCargo.primaryCargo[0]+"-"+AICargo.GetCargoLabel(cCargo.primaryCargo[0]),0,"cCargo::GetPassengerCargo");
+	return cCargo.primaryCargo[0];
 	}
 
 
