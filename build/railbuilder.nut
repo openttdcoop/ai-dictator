@@ -637,7 +637,7 @@ if (newStationSize > thatstation.size)
 	success=CreateAndBuildTrainStation(cStation.GetPlatformIndex(idxLeftPlatform,true)+rightTileOf, direction, thatstation.stationID);
 	if (!success) print("right side fail");
 	INSTANCE.NeedDelay(150);
-	if (success)	foreach (tile, dummy in areaclean)	thatstation.RailStationClaimTile(tile, thatstation.stationID);
+	if (success)	foreach (tile, dummy in areaclean)	thatstation.StationClaimTile(tile, thatstation.stationID);
 	if (!success)
 		{
 		INSTANCE.builder.IsCriticalError();
@@ -651,7 +651,7 @@ if (newStationSize > thatstation.size)
 			foreach (ctile, cdummy in areaclean)	cTileTools.DemolishTile(ctile);
 		cTileTools.TerraformLevelTiles(idxRightPlatform, displace+(backwardTileOf*(station_depth-1)));
 		success=CreateAndBuildTrainStation(cStation.GetPlatformIndex(idxRightPlatform,true)+leftTileOf, direction, thatstation.stationID);
-		if (success)	foreach (tile, dummy in areaclean)	thatstation.RailStationClaimTile(tile, thatstation.stationID);
+		if (success)	foreach (tile, dummy in areaclean)	thatstation.StationClaimTile(tile, thatstation.stationID);
 		if (!success)	
 			{
 			INSTANCE.builder.IsCriticalError();
