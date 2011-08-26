@@ -32,8 +32,10 @@ if (exist)
 	local vehcheck=AIVehicleList_Station(stationid);
 	if (!vehcheck.IsEmpty())
 		{
-		DWarn("Still have "+vehcheck.Count()+" vehicle using station "+AIStation.GetName(stationid),1);
+		DWarn("Still have "+vehcheck.Count()+" vehicles using station "+AIStation.GetName(stationid),1);
 		}
+	if (!temp.station_tiles.IsEmpty())
+		foreach (tile, dummy in temp.station_tiles)	AITile.DemolishTile(tile);
 	}
 local wasnamed=AIStation.GetName(stationid);
 local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
@@ -56,3 +58,4 @@ function cBuilder::DeleteDepot(tile)
 local isDepot=cStation.IsDepot(tile);
 if (isDepot)	return cTileTools.DemolishTile(tile);
 }
+

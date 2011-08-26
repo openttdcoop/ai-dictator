@@ -66,6 +66,7 @@ static	function GetStationObject(stationID)
 	moneyUpgrade	= null;	// money we need for upgrading the station
 	name			= null;	// station name
 	platforms		= null;	// railstation platforms AIList, item=fronttileplaformentry, value: 1=useable 0=closed
+	station_tiles	= null;	// railstation tiles own by the station, value=1 entry or 0 exit
 //	platform_exit	= null;	// railstation platforms AIList, item=fronttileplaformexit, value: 1=useable 0=closed
 // station size = (tte)+(tde / 2)+(ttx)+(tdx/2)
 // station size >=3 + connect all front & back tiles
@@ -115,6 +116,7 @@ crossing       = tile location where rails cross each other to connect parrallel
 		name			= null;
 		platforms		= AIList(); // item= platform location, value=bit0 for entry, bit1 for exit on/off
 	//	platform_exit	= AIList();
+		station_tiles	= AIList();
 		}
 }
 
@@ -416,6 +418,7 @@ function cStation::InitNewStation()
 	this.stationType = cStation.FindStationType(this.stationID);
 	local loc=AIStation.GetLocation(this.stationID);
 	this.locations=cTileTools.FindStationTiles(loc);
+	foreach (tile, dummy in this.locations)	this.StationClaimTile(tile, this.stationID);
 	if (this.stationType != AIStation.STATION_AIRPORT)	this.radius=AIStation.GetCoverageRadius(this.stationType);
 	// avoid getting the warning message for coverage of airport with that function
 	switch	(this.stationType)
@@ -428,7 +431,7 @@ function cStation::InitNewStation()
 			for (local zz=7; zz < 11; zz++)	this.locations.SetValue(zz,0);
 			this.locations.SetValue(0,1+2); // enable IN && OUT for the new station
 			this.GetRailStationMiscInfo();
-			this.maxsize=1; // TODO: remove the upgrade blocker
+			//this.maxsize=1; // TODO: remove the upgrade blocker
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do it
 			this.maxsize=1; this.size=1;
@@ -642,7 +645,7 @@ function cStation::GetRailDepot(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	return "BAD STATIONID";
+if (thatstation == null)	return -1;
 if (cStation.IsDepot(thatstation.depot))	return thatstation.depot;
 if (cStation.IsDepot(thatstation.locations.GetValue(15)))	return thatstation.locations.GetValue(15);
 return -1;
@@ -667,7 +670,7 @@ function cStation::DefinePlatform(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	return "BAD STATIONID";
+if (thatstation == null)	return -1;
 local frontTile, backTile, leftTile, rightTile= null;
 local direction=thatstation.GetRailStationDirection();
 local staloc=thatstation.GetLocation();
@@ -702,10 +705,12 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
 		local value=thatstation.platforms.GetValue(lookup+start);
-		if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
-									else	value=value & ~1;
-		if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
-									else	value=value & ~2;
+		if (cTileTools.CanUseTile(lookup+start+frontTile,thatstation.stationID))
+			if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
+										else	value=value & ~1;
+		if (cTileTools.CanUseTile(lookup+end+backTile,thatstation.stationID))
+			if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
+										else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
 		print(lookup+start+" -> new value="+value);
 		PutSign(lookup+start+frontTile,value);
@@ -721,10 +726,12 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
 		local value=thatstation.platforms.GetValue(lookup+start);
-		if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
-									else	value=value & ~1;
-		if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
-									else	value=value & ~2;
+		if (cTileTools.CanUseTile(lookup+start+frontTile,thatstation.stationID))
+			if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
+										else	value=value & ~1;
+		if (cTileTools.CanUseTile(lookup+end+backTile,thatstation.stationID))
+			if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
+										else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
 		PutSign(lookup+start+frontTile,value);
 		print(lookup+start+" -> new value="+value);
@@ -735,6 +742,8 @@ DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platf
 thatstation.size=thatstation.platforms.Count();
 thatstation.locations.SetValue(20,topLeftPlatform);
 thatstation.locations.SetValue(21,topRightPlatform);
+PutSign(topLeftPlatform,"NL");
+PutSign(topRightPlatform,"NR");
 }
 
 function cStation::GetPlatformFrontTile(platform, useEntry)
@@ -757,7 +766,7 @@ function cStation::GetPlatformIndex(platform, useEntry=true)
 {
 local stationID=AIStation.GetStationID(platform);
 local thatstation=cStation.GetStationObject(stationID);
-if (thatstation==null)	{ DError("Invalid platform",1,"cStation::GetPlatformIndex"); return -1; }
+if (thatstation==null)	{ DError("Invalid platform : "+platform,1,"cStation::GetPlatformIndex"); return -1; }
 if (thatstation.stationType!=AIStation.STATION_TRAIN)	{ DError("Not a rail station",1,"cStation::GetPlatformIndex"); return -1; }
 local platX=AIMap.GetTileX(platform);
 local platY=AIMap.GetTileY(platform);
@@ -879,4 +888,40 @@ if (direction==AIRail.RAILTRACK_NE_SW)
 return goalTile;
 }
 
+function cStation::StationClaimTile(tile, stationID)
+// Add a tile as own by stationID
+{
+cTileTools.BlackListTile(tile, stationID);
+}
+
+function cStation::RailStationClaimTile(tile, useEntry, stationID=null)
+// Add a tile as own by the stationID
+// useEntry: true to make it own by station entry, false to define as an exit tile
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	{ DError("Invalid stationID:"+stationID,1,"cStation::RailStationClaimTile"); return -1; }
+local value=0;
+if (useEntry)	value=1;
+thatstation.station_tiles.AddItem(tile,value);
+thatstation.StationClaimTile(tile, thatstation.stationID);
+}
+
+function cStation::RailStationDeleteEntrance(useEntry, stationID=null)
+// Remove all tiles own by the station at its entry/exit
+// useEntry: true to remove tiles for its entry, false for its exit
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return -1;
+local removelist=AIList();
+removelist.AddList(thatstation.station_tiles);
+local value=0;
+if (useEntry)	value=1;
+removelist.KeepValue(value);
+DInfo("Removing "+removelist.Count()+" tiles own by "+thatstation.name,2,"RailStationDeleteEntrance");
+foreach (tile, dummy in removelist)	{ AITile.DemolishTile(tile); thatstation.station_tiles.RemoveItem(tile); }
+}
 

@@ -15,6 +15,72 @@
 class cTileTools
 {
 static	terraformCost = AIList();
+static	TilesBlackList = AIList(); // item=tile, value=stationID that own the tile
+}
+
+function cTileTools::IsTileBlackList(tile)
+{
+return cTileTools.TilesBlackList.HasItem(tile);
+}
+
+function cTileTools::GetTileOwner(tile)
+// return station that own the tile
+{
+if (cTileTools.TilesBlackList.HasItem(tile))	return cTileTools.TilesBlackList.GetValue(tile);
+return -1;
+}
+
+function cTileTools::CanUseTile(tile, owner)
+// Answer if we can use that tile
+{
+local ot=cTileTools.GetTileOwner(tile);
+if (ot == owner)	return true;
+if (ot == -1)	return true;
+if (ot == -100)	return true;
+return false;
+}
+
+function cTileTools::CanUseTileForStationCreation(tile)
+{
+local owner=cTileTools.GetTileOwner(tile);
+return (owner == -1);
+}
+
+function cTileTools::BlackListTile(tile, stationID=-255)
+{
+// we store the stationID for a blacklisted tile or a negative value that tell us why it was blacklist
+// -255 not usable at all, we can't use it
+// -100 don't use that tile when building a station, it's a valid tile, but a bad spot
+if (AIMap.IsValidTile(tile))
+	{
+	local owner=cTileTools.GetTileOwner(tile);
+	if (owner == -1)	cTileTools.TilesBlackList.AddItem(tile, stationID);
+	if (stationID == -255)	cTileTools.TileBlackList.SetValue(tile, -255);
+	}
+}
+
+function cTileTools::BlackListTileSpot(tile)
+// blacklist that tile for possible station spot creation
+{
+cTileTools.BlackListTile(tile, -100);
+}
+
+function cTileTools::UnBlackListTile(tile)
+{
+if (cTileTools.IsTileBlackList(tile))	cTileTools.TilesBlackList.RemoveItem(tile);
+}
+
+function cTileTools::PurgeBlackListTiles(alist, creation=false)
+// remove all tiles that are blacklist from an AIList and return it
+// if creation is false, don't remove tiles that cannot be use for station creation
+{
+local purgelist=AIList();
+purgelist.AddList(alist);
+purgelist.Valuate(cTileTools.GetTileOwner);
+purgelist.RemoveValue(-1); // keep only ones that are own by someone
+if (!creation)	purgelist.RemoveValue(-100); // but not own because of bad spot
+foreach (tile, dummy in purgelist)	alist.RemoveItem(tile);
+return alist;
 }
 
 function cTileTools::GetTilesAroundTown(town_id)
@@ -84,6 +150,7 @@ if (AIMarine.IsBuoyTile(tile))	return false;
 if (AIMarine.IsCanalTile(tile))	return false;
 if (AIMarine.IsLockTile(tile))	return false;
 if (!AITile.IsWaterTile(tile))	return AITile.IsBuildable(tile);
+					else	return INSTANCE.terraform; // if no terraform is allow, water tile cannot be use
 return true;
 }
 
@@ -142,7 +209,7 @@ foreach (itile, idummy in ignoreList)
 	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
 	}
 tilelist.KeepValue(1);
-if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"1");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"1");
 after=tilelist.Count();
 if (after==before)	return returntile;
 // tile is @ topright of the rectangle
@@ -158,7 +225,7 @@ foreach (itile, idummy in ignoreList)
 	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
 	}
 tilelist.KeepValue(1);
-if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"2");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"2");
 after=tilelist.Count();
 if (after==before)	return returntile;
 // tile is @ lowerleft of the rectangle
@@ -174,7 +241,7 @@ foreach (itile, idummy in ignoreList)
 	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
 	}
 tilelist.KeepValue(1);
-if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"3");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"3");
 after=tilelist.Count();
 if (after==before)	return returntile;
 // tile is @ lowerright of the rectangle
@@ -190,15 +257,10 @@ foreach (itile, idummy in ignoreList)
 	}
 tilelist.KeepValue(1);
 after=tilelist.Count();
-if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"4");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"4");
 if (after==before)	return returntile;
 
 return -1;
-}
-
-function cTileTools::ClearTile(tile)
-{
-return AITile.DemolishTile(tile);
 }
 
 function cTileTools::ShapeTile(tile, wantedHeight, evaluateOnly)
@@ -240,7 +302,7 @@ do	{
 		if (evaluateOnly)	return false;
 		}
 	DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2,"ShapeTile");
-	PutSign(tile,"!");
+	//PutSign(tile,"!");
 	INSTANCE.Sleep(1);
 	if ((srcH < wantedHeight || srcL < wantedHeight) && !generror)
 		{
@@ -293,7 +355,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 local tlist=AITileList();
 tlist.AddRectangle(tileFrom, tileTo);
 if (tlist.IsEmpty())	DInfo("No tiles to work with !",1,"TerraformLevelTiles");
-if (INSTANCE.debug)	foreach (tile, dummy in tlist)	PutSign(tile,"T");
+//if (INSTANCE.debug)	foreach (tile, dummy in tlist)	PutSign(tile,"T");
 local Solve=cTileTools.TerraformHeightSolver(tlist);
 Solve.RemoveValue(0); // discard failures
 local bestOrder=AIList();
@@ -305,7 +367,7 @@ foreach (level, prize in bestOrder)
 	}
 bestOrder.Sort(AIList.SORT_BY_VALUE, true);
 local money=-1;
-foreach (solution, prize in bestOrder)	DInfo("sol: "+solution+" prize: "+prize,2,"TerraformLevelTiles");
+foreach (solution, prize in bestOrder)	DInfo("solve: "+solution+" prize: "+prize,2,"TerraformLevelTiles");
 if (!Solve.IsEmpty())
 	{
 	foreach (solution, prize in bestOrder)
@@ -482,10 +544,11 @@ towntiles.Valuate(AITile.GetDistanceManhattanToTile,AITown.GetLocation(townID));
 towntiles.Sort(AIList.SORT_BY_VALUE, true);
 savetiles.Valuate(AITile.HasTreeOnTile);
 savetiles.KeepValue(0);
+local town_name=AITown.GetName(townID);
 //foreach (tile, dummy in towntiles)	PutSign(tile,"R");
 // 1 -> 2 = 293 trees
 // 2 -> 3 = 417 trees
-DInfo("Town: "+AITown.GetName(townID)+" rating: "+curRating+" free tiles="+savetiles.Count(),2,"cTileTools::SeduceTown");
+DInfo("Town: "+town_name+" rating: "+curRating+" free tiles="+savetiles.Count(),2,"cTileTools::SeduceTown");
 //if (curRating < AITown.TOWN_RATING_VERY_POOR && savetiles.Count()< 45)
 // 1 -> 4 rate = 
 local needclean=0;
@@ -512,8 +575,7 @@ foreach (tile, dummy in towntiles)
 		good=AITile.PlantTree(tile);
 		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
 		INSTANCE.bank.RaiseFundsTo(12000);
-		DInfo(good+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
-		PutSign(tile,"T");
+		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
 		AIController.Sleep(1);
 		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000));
 	AIController.Sleep(10);
@@ -521,7 +583,7 @@ foreach (tile, dummy in towntiles)
 	}
 local endop="Success !";
 if (!good && curRating < needRating)	endop="Failure.";
-DInfo(endop+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1,"cTileTools::SeduceTown");
+DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1,"cTileTools::SeduceTown");
 print("trees: "+totalTree+" tiledone="+tiledone);
 return (curRating >= needRating);
 }
@@ -535,6 +597,27 @@ local testmode=AITestMode();
 test=cTileTools.DemolishTile(tile);
 testmode=null;
 return test;
+}
+
+function cTileTools::IsAreaRemovable(area)
+// return true/false is all tiles could be remove in area AIList
+{
+local worklist=AIList();
+worklist.AddList(area); // protect area list values
+cTileTools.YexoValuate(worklist, cTileTools.IsRemovable);
+worklist.RemoveValue(1);
+return (worklist.IsEmpty());
+}
+
+function cTileTools::IsAreaBuildable(area, owner)
+// return true if owner might build in the area
+{
+local owncheck=AIList();
+owncheck.AddList(area);
+owncheck.Valuate(cTileTools.CanUseTile, owner);
+owncheck.KeepValue(0); // keep only non useable tiles
+if (!owncheck.IsEmpty())	return false;
+return cTileTools.IsAreaRemovable(area);
 }
 
 // This function comes from AdmiralAI, version 22, written by Yexo

@@ -260,6 +260,7 @@ function DictatorAI::Start()
 		bank.CashFlow();
 		eventManager.HandleEvents();
 		builder.QuickTasks();
+		builder.ShowBlackList();
 		AIController.Sleep(60);
 		builder.WeeklyChecks();
 		builder.MonthlyChecks();

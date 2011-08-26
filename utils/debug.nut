@@ -24,9 +24,9 @@ function ClearSignsALL()
 // this just clear any signs we can
 {
 if (!INSTANCE.debug)	return;
-AIController.Sleep(50);
 local sweeper=AISignList();
 DInfo("Removing Signs ! "+sweeper.Count(),2,"ClearSignsALL");
+AIController.Sleep(80);
 foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
 }
 
@@ -99,6 +99,11 @@ if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	local outpos=stations.locations.Begin();
 	PutSign(outpos,outtxt);
 	}
+}
+
+function cBuilder::ShowBlackList()
+{
+foreach (tile, value in cTileTools.TilesBlackList)	PutSign(tile,"BL:"+value);
 }
 
 function cBuilder::ShowPlatformStatus(stationID)

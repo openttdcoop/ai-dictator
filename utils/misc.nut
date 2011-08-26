@@ -63,6 +63,7 @@ function DError(putMsg,debugValue=1,func="unkown")
 // just output AILog message depending on debug level
 {
 local debugState = DictatorAI.GetSetting("debug");
+debugValue=1; // force error message to always appears when debug is on
 if (debugState > 0)	func+="-> ";
 			else	func="";
 if (debugValue <= debugState )
