@@ -540,8 +540,8 @@ local savetiles=AIList();
 savetiles.AddList(towntiles);
 local good=true;
 local money=AIAccounting();
-towntiles.Valuate(AITile.GetDistanceManhattanToTile,AITown.GetLocation(townID));
-towntiles.Sort(AIList.SORT_BY_VALUE, true);
+//towntiles.Valuate(AITile.GetDistanceManhattanToTile,AITown.GetLocation(townID));
+//towntiles.Sort(AIList.SORT_BY_VALUE, true);
 savetiles.Valuate(AITile.HasTreeOnTile);
 savetiles.KeepValue(0);
 local town_name=AITown.GetName(townID);
@@ -576,9 +576,9 @@ foreach (tile, dummy in towntiles)
 		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
 		INSTANCE.bank.RaiseFundsTo(12000);
 		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
-		AIController.Sleep(1);
+		//AIController.Sleep(1);
 		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000));
-	AIController.Sleep(10);
+	AIController.Sleep(2);
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
 	}
 local endop="Success !";
