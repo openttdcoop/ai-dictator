@@ -608,6 +608,7 @@ INSTANCE.NeedDelay(50);
 local displace=0;
 // need grow the station ?
 //newStationSize=thatstation.size+1;
+print("phase1: grow"); INSTANCE.NeedDelay(50);
 if (newStationSize > thatstation.size)
 	{
 	DInfo("Upgrading "+thatstation.GetName()+" to "+newStationSize+" platforms",0,"RailStationGrow");
@@ -691,6 +692,7 @@ sx_crossing=thatstation.locations.GetValue(6);
 local rail=null;
 local success=false;
 local crossing=null;
+print("phase2: define entry/exit point"); INSTANCE.NeedDelay(50);
 // find if we can use that entry/exit if none is define yet
 if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	{ // look if we're going too much inside a town, making big damages to it, and mostly sure failure to use that direction to build rails
@@ -735,6 +737,7 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	}
 
 // define & build crossing point if none exist yet
+print("phase3: define crossing point"); INSTANCE.NeedDelay(50);
 if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !closeIt )
 	{
 	// We first try to build the crossing area from worktile+1 upto worktile+3 to find where one is doable
@@ -781,6 +784,7 @@ if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !close
 		}
 	}
 
+print("phase4: build entry&exit IN/OUT"); INSTANCE.NeedDelay(50);
 // build entry/exit IN and OUT, if anyone use entry or exit, we need it built
 if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry && taker) || (se_OUT==-1 && useEntry && !taker) || (sx_OUT==-1 && !useEntry && !taker) ))
 	{
@@ -842,9 +846,9 @@ if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry &&
 							thatstation.locations.SetValue(12, se_OUT+forwardTileOf); // link
 							if (!cTileTools.DemolishTile(se_OUT+forwardTileOf))	closeIt=true;
 							pointview=se_OUT;
-							if (!cBuilder.RailConnectorSolver(se_OUT, crossing+rightTileOf,true))
+							if (!cBuilder.RailConnectorSolver(se_OUT, fromtile+rightTileOf,true))
 								closeIt=true;
-							else	thatstation.RailStationClaimTile(crossing+rightTileOf, useEntry);
+							else	thatstation.RailStationClaimTile(fromtile+rightTileOf, useEntry);
 							}
 						else	{
 							if (cTileTools.CanUseTile(fromtile,staID))
@@ -855,9 +859,9 @@ if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry &&
 							thatstation.locations.SetValue(14, sx_OUT+forwardTileOf); // link
 							if (!cTileTools.DemolishTile(sx_OUT+forwardTileOf))	closeIt=true;
 							pointview=sx_OUT; entry_str="Exit";
-							if (!cBuilder.RailConnectorSolver(se_OUT, crossing+rightTileOf,true))
+							if (!cBuilder.RailConnectorSolver(se_OUT, fromtile+rightTileOf,true))
 								closeIt=true;
-							else	thatstation.RailStationClaimTile(crossing+rightTileOf, useEntry);
+							else	thatstation.RailStationClaimTile(fromtile+rightTileOf, useEntry);
 							}
 						}
 					DInfo(in_str+" "+entry_str+" point set to "+pointview,1,"RailStationGrow");
@@ -870,6 +874,7 @@ if (!closeIt && ( (se_IN==-1 && useEntry && taker) || (sx_IN==-1 && !useEntry &&
 	}
 
 // build station entrance point to crossing point
+print("phase5: build & connect station entrance"); INSTANCE.NeedDelay(50);
 local entry_build=false;
 local exit_build=false;
 if (!closeIt)
@@ -891,20 +896,47 @@ if (!closeIt)
 	local endConnector=AIList();
 	local topLeftPlatform=thatstation.locations.GetValue(20);
 	local topRightPlatform=thatstation.locations.GetValue(21);
-	local doittwice=0;
+	//local doittwice=0;
 	local stationside=true;
-	for (local hh=0; hh < 3; hh++)
+	for (local hh=0; hh < 2; hh++)
 		{
 		stationside=(hh==0);
 		if (stationside && !entry_build)	continue;
-		if (!stationside && !exit_build)	continue;
+		if (!stationside && !exit_build)	continue;/*
+		local RL, RR, RC = null; // local Rails define to be use here
+		if (direction == AIRail.RAILTRACK_NW_SE) // must redefine rails as use of entry or exit change according to stationside
+			{
+			RC=AIRail.RAILTRACK_NE_SW;
+			if (stationside)	{ // going NW->SE
+						RL=AIRail.RAILTRACK_SW_SE;
+						RR=AIRail.RAILTRACK_NE_SE;
+						}
+					else	{ // going SE->NW
+						RL=AIRail.RAILTRACK_NW_NE;
+						RR=AIRail.RAILTRACK_NW_SW;
+						}
+			}
+		else	{ // NE_SW
+			RC=AIRail.RAILTRACK_NW_SE;
+			if (useEntry)	{ // going NE->SW
+						RL=AIRail.RAILTRACK_NW_SW;
+						RR=AIRail.RAILTRACK_SW_SE;
+						}
+					else	{ // going SW->NE
+						RL=AIRail.RAILTRACK_NE_SE;
+						RR=AIRail.RAILTRACK_NW_NE;
+						}
+			}
+*/
+print("stationside="+stationside+" entry_build="+entry_build+" exit_build="+exit_build);
 		local platformsweeper=AIList();
 		foreach (platf, openclose in thatstation.platforms)
 			{
 			local platid=cStation.GetPlatformIndex(platf, true);
 			local wpoint=cStation.GetRelativeCrossingPoint(platf, stationside);
+			//PutSign(wpoint, "X");
 			local refpoint=cStation.GetRelativeCrossingPoint(topLeftPlatform, stationside);
-			PutSign(refpoint,"R");
+			//PutSign(refpoint,"R");
 			local dir=cBuilder.GetDirection(wpoint, refpoint);
 			//print("wpoint="+wpoint+" dir="+dir+" left="+topLeftPlatform+" platid="+platid+" stationside="+stationside);
 			local runthru=true;
@@ -914,28 +946,28 @@ if (!closeIt)
 				runthru=false;
 				}
 			if (platid == topRightPlatform)	runthru=false;
-			PutSign(wpoint,dir); 
+			PutSign(wpoint,"!"+dir); 
 			switch (dir)
 				{
 				case	0: // SE-NW
 					if (stationside)	rail=railLeft;
-							else	rail=railRight;
+							else	rail=railUpLeft;
 					break;
 				case	1: // NW-SE
 					if (stationside)	rail=railRight;
-							else	rail=railLeft;
+							else	rail=railUpRight;
 					break;
 				case	2: // SW-NE
 					if (stationside)	rail=railRight;
-							else	rail=railLeft;
+							else	rail=railUpRight;
 					break;
 				case	3: // NE-SW
 					if (stationside)	rail=railLeft;
-							else	rail=railRight;
+							else	rail=railUpLeft;
 					break;
 				}
-			//print("platform open ? "+platf+" : "+cStation.IsPlatformOpen(platf, stationside));
-			if (cStation.IsPlatformOpen(platf, stationside) && cTileTools.CanUseTile(wpoint,staID))
+			print("stationside="+stationside+"platform open ? "+platf+" : "+cStation.IsPlatformOpen(platf, stationside)); INSTANCE.NeedDelay(50);
+			if (cStation.IsPlatformOpen(platf, stationside) && cTileTools.CanUseTile(wpoint,staID) && topLeftPlatform!=topRightPlatform)
 				if (INSTANCE.builder.DropRailHere(rail, wpoint))	thatstation.RailStationClaimTile(wpoint, stationside);
 			if (runthru && cTileTools.CanUseTile(wpoint,staID))
 				if (INSTANCE.builder.DropRailHere(railCross, wpoint))	thatstation.RailStationClaimTile(wpoint, stationside);
@@ -943,17 +975,19 @@ if (!closeIt)
 			}
 		foreach (platf, openclose in thatstation.platforms)
 			{
+			print("Connector solver for front of station*****************"); INSTANCE.NeedDelay(30);
 			local platfront=cStation.GetRelativeCrossingPoint(platf, stationside);
 			cBuilder.RailConnectorSolver(platfront+backwardTileOf, platfront, true);
 			thatstation.RailStationClaimTile(platfront,staID);
+			INSTANCE.NeedDelay(100);
 			}
-		doittwice++;
+//		doittwice++;
 		ClearSignsALL();									
 		} // hh loop
 	thatstation.DefinePlatform();
 	}
-INSTANCE.NeedDelay(100);
 
+print("phase6: build depot"); INSTANCE.NeedDelay(50);
 // build depot for it,
 // in order to build cleaner rail we build the depot where the OUT line should goes, reserving space for it
 // if this cannot be done, we build it next to the IN line, and we just swap lines (OUT<>IN)
@@ -1080,7 +1114,7 @@ while (i != goal)
 	else	{ error=true; break; }
 	i+=forwardTileOf;
 	}
-if (!error)	{ cTileTools.DemolishTile(goal); }
+if (!error)	{ cTileTools.DemolishTile(goal); } // rails are protected
 if (error)	{ cBuilder.RailCleaner(sweeper); }
 return 0;
 }
