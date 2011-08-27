@@ -643,11 +643,9 @@ if (newStationSize > thatstation.size)
 			}
 	print("2nd try only ctile size="+areaclean.Count()); INSTANCE.NeedDelay(50);
 	if (canDestroy)	foreach (ctile in areaclean)	cTileTools.DemolishTile(ctile);
- INSTANCE.NeedDelay(90);
+ INSTANCE.NeedDelay(20);
 	cTileTools.TerraformLevelTiles(idxLeftPlatform, displace+(backwardTileOf*(station_depth-1)));
 	success=CreateAndBuildTrainStation(cStation.GetPlatformIndex(idxLeftPlatform,true)+rightTileOf, direction, thatstation.stationID);
-	if (!success) print("right side fail");
-	INSTANCE.NeedDelay(150);
 	if (success)	foreach (tile, dummy in areaclean)	thatstation.StationClaimTile(tile, thatstation.stationID);
 	if (!success)
 		{
