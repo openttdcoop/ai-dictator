@@ -284,7 +284,7 @@ INSTANCE.carrier.VehicleSell(veh,false);
 switch (vehtype)
 	{
 	case AIVehicle.VT_RAIL:
-		AIRail.SetCurrentRailType(railtype);
+		AIRail.SetCurrentRailType(road.source.specialType);
 		engine = INSTANCE.carrier.ChooseTrainEngine();
 		wagon = INSTANCE.carrier.ChooseWagon(road.cargoID);
 		newveh=AIVehicle.BuildVehicle(homedepot,engine);
