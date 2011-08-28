@@ -69,6 +69,9 @@ local saveList=AIList();
 saveList.AddList(tilelist);
 //DInfo("isneartown="+isneartown+" istown="+istown,2,"BuildTrainStation");
 local buildmode=0;
+local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
+DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate()),2,"BuildTrainStation");
+INSTANCE.bank.RaiseFundsBy(cost);
 do
 	{
 /* 5 build mode:

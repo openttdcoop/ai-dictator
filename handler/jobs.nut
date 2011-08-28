@@ -379,7 +379,7 @@ function cJobs::EstimateCost()
 			daystransit=6;
 		break;
 		}
-	this.moneyToBuild=money;
+	this.moneyToBuild=money; //*cBanker.GetInflationRate();
 	this.cargoValue=AICargo.GetCargoIncome(this.cargoID, this.distance, daystransit);
 	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+this.cargoValue,2,"EstimateCost");
 	}

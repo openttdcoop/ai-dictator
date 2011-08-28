@@ -24,12 +24,15 @@ function cCarrier::ChooseRailWagon(cargo, rtype=null)
 		}
 	wagonlist.Valuate(AIEngine.IsWagon);
 	wagonlist.KeepValue(1);
-	wagonlist.Valuate(AIEngine.GetCargoType);
-	wagonlist.KeepValue(cargo);
+//	wagonlist.Valuate(AIEngine.GetCargoType);
+//	wagonlist.KeepValue(cargo);
+	wagonlist.Valuate(AIEngine.CanRefitCargo, cargo);
+	wagonlist.KeepValue(1);
 	wagonlist.Valuate(AIEngine.GetCapacity);
 	wagonlist.Sort(AIList.SORT_BY_VALUE,false);
 	if (wagonlist.IsEmpty()) 
 		{ DError("No wagons can transport that cargo.",1,"ChooseWagon"); return null; }
+	//DInfo("Selected wagon : "+cEngine.GetName(wagonlist.Begin())+" Capacity for "+AICargo.GetCargoLabel(cargo)+" : "+AIEngine.GetCapacity(wagonlist.Begin()),2,"cCarrier::ChooseRailWagon");
 	return wagonlist.Begin();
 }
 
@@ -115,7 +118,7 @@ function cCarrier::CreateTrainsEngine(engineID, depot, cargoID)
 if (!AIEngine.IsValidEngine(engineID))	return -1;
 local price=AIEngine.GetPrice(engineID);
 INSTANCE.bank.RaiseFundsBy(price);
-if (!INSTANCE.bank.CanBuyThat(price))	DInfo("We lack money to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateTrainsEngine");
+if (!INSTANCE.bank.CanBuyThat(price))	DInfo("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1,"cCarrier::CreateTrainsEngine");
 local vehID=AIVehicle.BuildVehicle(depot, engineID);
 if (!AIVehicle.IsValidVehicle(vehID))	{ DInfo("Failure to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateTrainsEngine"); return -1; }
 cEngine.Update(vehID);

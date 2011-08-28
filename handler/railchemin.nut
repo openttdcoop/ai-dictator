@@ -63,7 +63,7 @@ DInfo("Capacity ="+capacity+" wait="+cargowait+" remain="+remain+" needbycapacit
 if (vehneed >= vehonroute) vehneed-=vehonroute;
 //	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 && vehonroute < 4)	vehneed++;
 if (firstveh)	vehneed=3; // build 2 wagons for a start
-DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+" firstveh="+firstveh,2,"DutyOnRails");
+DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+" firstveh="+firstveh,2,"DutyOnRailsRoute");
 
 if (!INSTANCE.carrier.AddWagon(uid,vehneed))	INSTANCE.bank.busyRoute=true;
 }
