@@ -659,7 +659,7 @@ if (platindex==-1)	{ DError("Bad platform index",1,"IsPlatformOpen"); return fal
 local stationID=AIStation.GetStationID(platformID);
 local thatstation=cStation.GetStationObject(stationID);
 local statusbit=thatstation.platforms.GetValue(platindex);
-print("platindex= "+platindex+" statusbit="+statusbit+" exist ? "+thatstation.platforms.HasItem(platindex));
+//print("platindex= "+platindex+" statusbit="+statusbit+" exist ? "+thatstation.platforms.HasItem(platindex));
 if (useEntry)	return ((statusbit & 1) ==1);
 		else	return ((statusbit & 2) ==2);
 }
@@ -712,7 +712,7 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 			if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
 										else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
-		print(lookup+start+" -> new value="+value);
+		//print(lookup+start+" -> new value="+value);
 		PutSign(lookup+start+frontTile,value);
 		}
 	lookup+=leftTile;
@@ -734,7 +734,7 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 										else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
 		PutSign(lookup+start+frontTile,value);
-		print(lookup+start+" -> new value="+value);
+		//print(lookup+start+" -> new value="+value);
 		}
 	lookup+=rightTile;
 	}
@@ -766,7 +766,7 @@ function cStation::GetPlatformIndex(platform, useEntry=true)
 {
 local stationID=AIStation.GetStationID(platform);
 local thatstation=cStation.GetStationObject(stationID);
-if (thatstation==null)	{ DError("Invalid platform : "+platform,1,"cStation::GetPlatformIndex"); return -1; }
+if (thatstation==null)	{ DError("Invalid platform : "+platform,2,"cStation::GetPlatformIndex"); return -1; }
 if (thatstation.stationType!=AIStation.STATION_TRAIN)	{ DError("Not a rail station",1,"cStation::GetPlatformIndex"); return -1; }
 local platX=AIMap.GetTileX(platform);
 local platY=AIMap.GetTileY(platform);
@@ -794,7 +794,7 @@ function cStation::GetRelativeDirection(stationID, dirswitch)
 // return -1 on error
 {
 local loc=AIStation.GetLocation(stationID);
-if (!AIRail.IsRailStationTile(loc))	{ DError("Not a rail station tile",1,"cStation::GetRelativeDirection"); return -1; }
+if (!AIRail.IsRailStationTile(loc))	{ DError("Not a rail station tile",2,"cStation::GetRelativeDirection"); return -1; }
 local dir=AIRail.GetRailStationDirection(loc);
 local left, right, forward, backward = null;
 if (dir==AIRail.RAILTRACK_NW_SE)
@@ -880,7 +880,7 @@ local crossing=0;
 local direction=thatstation.GetRailStationDirection();
 if (useEntry)	crossing=thatstation.locations.GetValue(5);
 		else	crossing=thatstation.locations.GetValue(6);
-if (crossing < 0)	{ DError("Crossing isn't define yet",1,"cBuilder::PlatformConnectors"); return -1; }
+if (crossing < 0)	{ DError("Crossing isn't define yet",2,"cBuilder::PlatformConnectors"); return -1; }
 local goalTile=0;
 if (direction==AIRail.RAILTRACK_NE_SW)
 		goalTile=AIMap.GetTileIndex(AIMap.GetTileX(crossing),AIMap.GetTileY(frontTile));
@@ -901,7 +901,7 @@ function cStation::RailStationClaimTile(tile, useEntry, stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	{ DError("Invalid stationID:"+stationID,1,"cStation::RailStationClaimTile"); return -1; }
+if (thatstation == null)	{ DError("Invalid stationID:"+stationID,2,"cStation::RailStationClaimTile"); return -1; }
 local value=0;
 if (useEntry)	value=1;
 thatstation.station_tiles.AddItem(tile,value);
@@ -922,6 +922,7 @@ local value=0;
 if (useEntry)	value=1;
 removelist.KeepValue(value);
 DInfo("Removing "+removelist.Count()+" tiles own by "+thatstation.name,2,"RailStationDeleteEntrance");
-foreach (tile, dummy in removelist)	{ AITile.DemolishTile(tile); thatstation.station_tiles.RemoveItem(tile); }
+foreach (tile, dummy in removelist)
+	{ AITile.DemolishTile(tile); thatstation.station_tiles.RemoveItem(tile); cTileTools.UnBlackListTile(tile) }
 }
 
