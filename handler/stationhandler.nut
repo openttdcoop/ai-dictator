@@ -544,8 +544,8 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 local entry=thatstation.locations.GetValue(0);
-if ((entry & 1) == 1)	{ DInfo("station "+stationID+" entry is open",2,"cStation::IsRailStationEntryOpen"); return true; }
-DInfo("station "+stationID+" entry is CLOSE",2,"cStation::IsRailStationEntryOpen");
+if ((entry & 1) == 1)	{ DInfo("Station "+thatstation.GetName()+" entry is open",2,"cStation::IsRailStationEntryOpen"); return true; }
+DInfo("Station "+thatstation.GetName()+" entry is CLOSE",2,"cStation::IsRailStationEntryOpen");
 return false;
 }
 
@@ -556,8 +556,8 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 local exit=thatstation.locations.GetValue(0);
-if ((exit & 2) == 2)	{ DInfo("station "+stationID+" exit is open",2,"cStation::IsRailStationExitOpen"); return true; }
-DInfo("station "+stationID+" exit is CLOSE",2,"cStation::IsRailStationExitOpen");
+if ((exit & 2) == 2)	{ DInfo("Station "+thatstation.GetName()+" exit is open",2,"cStation::IsRailStationExitOpen"); return true; }
+DInfo("Station "+thatstation.GetName()+" exit is CLOSE",2,"cStation::IsRailStationExitOpen");
 return false;
 }
 

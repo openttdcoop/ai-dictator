@@ -137,6 +137,14 @@ if (cash >= money)	return true;
 			else	return false;
 }
 
+function cBanker::GetMaxMoneyAmount()
+// return the max amount of cash we could raise
+{
+local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
+local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
+return cash;
+}
+
 function cBanker::SaveMoney()
 // lower loan max to save money
 {

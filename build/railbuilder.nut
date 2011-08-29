@@ -567,7 +567,7 @@ if (!cStation.IsRailStationExitOpen(staID))	maxX_total=thatstation.size *2;
 DInfo(thatstation.name+" entry throughput : "+(trainEntryDropper+trainEntryTaker)+"/"+maxE_total+" trains",1,"cBuilder::StationGrow");
 DInfo(thatstation.name+" exit throughput : "+(trainExitDropper+trainExitTaker)+"/"+maxX_total+" trains",1,"cBuilder::StationGrow");
 if (!cStation.IsRailStationEntryOpen(staID) && useEntry)	{ DWarn(thatstation.name+" entry is CLOSE",1,"cBuilder::StationGrow"); return false }
-if (!cStation.IsRailStationExitOpen(staID) && useEntry)	{ DWarn(thatstation.name+" exit is CLOSE",1,"cBuilder::StationGrow"); return false }
+if (!cStation.IsRailStationExitOpen(staID) && !useEntry)	{ DWarn(thatstation.name+" exit is CLOSE",1,"cBuilder::StationGrow"); return false }
 
 local position=thatstation.GetLocation();
 local direction=thatstation.GetRailStationDirection();
