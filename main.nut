@@ -28,7 +28,8 @@ enum DepotAction {
 	SELL,
 	UPGRADE,
 	REPLACE,
-	CRAZY
+	CRAZY,
+	ADDWAGON
 }
 
 

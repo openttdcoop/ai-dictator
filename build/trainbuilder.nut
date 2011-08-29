@@ -16,6 +16,8 @@ function cCarrier::ChooseRailWagon(cargo, rtype, compengine)
 // pickup a wagon that could be use to carry "cargo", on railtype "rtype"
 {
 	local wagonlist = AIEngineList(AIVehicle.VT_RAIL);
+	wagonlist.Valuate(AIEngine.IsBuildable);
+	wagonlist.KeepValue(1);
 	if (rtype!=null)	
 		{
 		wagonlist.Valuate(AIEngine.CanRunOnRail, rtype);
@@ -48,7 +50,7 @@ function cCarrier::ChooseRailCouple(cargo, rtype=null)
 // AIList() on error
 {
 local couple=AIList();
-local engine=ChooseRailEngine(rtype);
+local engine=ChooseRailEngine(rtype, cargo);
 if (rtype==null)	rtype=cCarrier.GetRailTypeNeedForEngine(engine);
 if (engine==null || rtype==-1)	return couple;
 local wagon=cCarrier.ChooseRailWagon(cargo, rtype, engine);
@@ -71,18 +73,20 @@ function cCarrier::ChooseRailEngine(rtype=null, cargoID=null)
 // return fastest+powerfulest engine
 {
 local vehlist = AIEngineList(AIVehicle.VT_RAIL);
+vehlist.Valuate(AIEngine.IsBuildable);
+vehlist.KeepValue(1);
 if (rtype != null)
 	{
 	vehlist.Valuate(AIEngine.HasPowerOnRail, rtype);
 	vehlist.KeepValue(1);
 	}
+vehlist.Valuate(AIEngine.IsWagon);
+vehlist.KeepValue(0);
 if (cargoID!=null)
 	{
 	vehlist.Valuate(cEngine.CanPullCargo, cargoID);
 	vehlist.KeepValue(1);
 	}
-vehlist.Valuate(AIEngine.IsWagon);
-vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.GetMaxSpeed);
 vehlist.Sort(AIList.SORT_BY_VALUE,false);
 vehlist.KeepValue(vehlist.GetValue(vehlist.Begin()));
@@ -91,6 +95,7 @@ vehlist.Sort(AIList.SORT_BY_VALUE,false);
 local veh = null;
 if (vehlist.IsEmpty())	DInfo("Cannot find a train engine for that rail type",1,"cCarrier::ChooseRailEngine");
 			else	veh=vehlist.Begin();
+print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
 return veh;
 }
 
@@ -112,15 +117,51 @@ if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), 
 return true;
 }
 
+function cCarrier::GetNumberOfWagons(vehID)
+// Count only part that are wagons, and not engine locomotive
+{
+if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID : "+vehID,2,"cCarrier::GetNumberOfWagons"); return 0; }
+local numwagon=0;
+local numpart=AIVehicle.GetNumWagons(vehID);
+for (local i=0; i < numpart; i++)
+	if (AIEngine.IsWagon(AIVehicle.GetWagonEngineType(vehID, i)))	numwagon++;
+return numwagon;
+}
+
+function cCarrier::GetNumberOfLoco(vehID)
+// Count how many locomotives are in vehicle
+{
+local numwagon=cCarrier.GetNumberOfWagons(vehID);
+return AIVehicle.GetNumWagons(vehID)-numwagon;
+}
+
+function cCarrier::GetWagonFromVehicle(vehID)
+// pickup a wagon from the vehicle and return its place in the vehicle
+{
+if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID : "+vehID,2,"cCarrier::GetAWagonFromVehicle"); return -1; }
+local numengine=AIVehicle.GetNumWagons(vehID);
+for (local z=0; z < numengine; z++)
+	if (AIEngine.IsWagon(AIVehicle.GetWagonEngineType(vehID,z)))	return z;
+}
+
 function cCarrier::GetWagonsInGroup(groupID)
 // return number of wagons present in the group
 {
 local vehlist=AIVehicleList_Group(groupID);
-vehlist.Valuate(AIEngine.IsWagon);
-vehlist.KeepValue(1);
 local total=0;
-foreach (veh, dummy in vehlist)	total+=AIVehicle.GetNumWagons(veh);
+foreach (veh, dummy in vehlist)	total+=cCarrier.GetNumberOfWagons(veh);
 return total;
+}
+
+function cCarrier::CanAddThatLength(vehID, wagonID)
+// return true if we could add another wagonID to vehID
+{
+if (!AIVehicle.IsValidVehicle(vehID) || !AIVehicle.IsValidVehicle(wagonID))
+		{ DError("Invalid vehicleID : "+vehID+" & "+wagonID,2,"cCarrier::GetTrainLength"); return 0; }
+local maxlength=16*5; // TODO: not hardcode a train length
+local vehicleL=AIVehicle.GetLength(vehID);
+local wagonL=AIVehicle.GetLength(vehID);
+return ((wagonL+vehicleL) <= maxlength);
 }
 
 function cCarrier::CreateTrainsEngine(engineID, depot, cargoID)
@@ -141,31 +182,33 @@ if (!AIVehicle.RefitVehicle(vehID, cargoID))
 	}
 else	{
 	local refitprice=testRefit.GetCosts();
-	cEngine.SetRefitCost(engineID, cargoID, refitprice);
+	cEngine.SetRefitCost(engineID, cargoID, refitprice, AIVehicle.GetLength(vehID));
 	}
 testRefit=null;
 return vehID;
 }
 
-function cCarrier::AddNewTrain(uid, wagonNeed)
+function cCarrier::AddNewTrain(uid, wagonNeed, depot)
 // Called when creating a route, as no train is there no need to worry that much
 {
 local road=cRoute.GetRouteObject(uid);
-if (road==null)	return false;
+if (road==null)	return -1;
 local locotype=INSTANCE.carrier.ChooseRailEngine(road.source.specialType, road.cargoID);
-if (locotype==null)	return false;
+if (locotype==null)	return -1;
 local wagontype=INSTANCE.carrier.ChooseRailWagon(road.cargoID, road.source.specialType, locotype);
-if (wagontype==null)	return false;
+if (wagontype==null)	return -1;
 local confirm=false;
-local depot=road.source.GetRailDepot();
+//local depot=road.source.GetRailDepot();
 local wagonID=null;
-if (depot==-1)	{ DInfo("Station "+road.source.name+" doesn't have a valid depot",1,"cCarrier::AddNewTrain"); return false; }
+//if (depot==-1)	{ DError("Station "+road.source.name+" doesn't have a valid depot",1,"cCarrier::AddNewTrain"); return -1; }
 local pullerID=INSTANCE.carrier.CreateTrainsEngine(locotype, depot, road.cargoID);
-if (pullerID==-1)	{ DError("Cannot create the train engine "+AIEngine.GetName(locotype),1,"cCarrier::AddNewTrain"); return false; }
+if (pullerID==-1)	{ DError("Cannot create the train engine "+AIEngine.GetName(locotype),1,"cCarrier::AddNewTrain"); return -1; }
 local another=null; // use to get a new wagonID, but this one doesn't need to be buy
 PutSign(depot,"Depot");
 print("BREAKPOINT");
 local wagonlist = AIEngineList(AIVehicle.VT_RAIL);
+wagonlist.Valuate(AIEngine.IsBuildable);
+wagonlist.KeepValue(1);
 wagonlist.Valuate(AIEngine.IsWagon);
 wagonlist.KeepValue(1);
 wagonlist.Valuate(AIEngine.CanRunOnRail, road.source.specialType);
@@ -174,17 +217,12 @@ wagonlist.Valuate(AIEngine.CanRefitCargo, road.cargoID);
 wagonlist.KeepValue(1);
 local wagonTestList=AIList();
 local ourMoney=INSTANCE.bank.GetMaxMoneyAmount();
-//wagonlist.Valuate(AIEngine.IsCompatible, compengine);
-//wagonlist.KeepValue(1);
-//wagonlist.Valuate(AIEngine.GetCapacity);
-//wagonlist.Sort(AIList.SORT_BY_VALUE,false);
 local lackMoney=false;
 while (!confirm)
 	{
 	lackMoney=!cBanker.CanBuyThat(cEngine.GetPrice(wagontype, road.cargoID));
 	wagonTestList.Clear();
 	wagonTestList.AddList(wagonlist);
-	//wagonTestList.RemoveItem(wagontype); // don't retake the same engine
 	if (lackMoney)
 		{
 		DError("We don't have enought money to buy "+cEngine.GetName(wagontype),2,"cCarrier::AddNewTrain");
@@ -201,8 +239,6 @@ while (!confirm)
 	wagonTestList.Valuate(cEngine.GetCapacity, road.cargoID);
 	wagonTestList.Sort(AIList.SORT_BY_VALUE,false);
 	wagonTestList.KeepValue(cEngine.GetCapacity(wagonTestList.Begin(),road.cargoID)); // keep wagons == to that top capacity
-//	wagonTestList.Valuate(cEngine.GetPrice, road.cargoID);
-//	wagonTestList.KeepBelowValue(ourMoney);
 	wagonTestList.Sort(AIList.SORT_BY_VALUE, true); // and put cheapest one first
 	if (wagonTestList.IsEmpty())	another=null;
 					else	another=wagonTestList.Begin();
@@ -218,20 +254,19 @@ while (!confirm)
 			}
 		}
 	else	wagontype=another;
-	INSTANCE.NeedDelay(100);
+	INSTANCE.NeedDelay(20);
 	if (wagonID!=-1)	AIVehicle.SellVehicle(wagonID); // and finally sell the test wagon
 	if (another==null)
 		{
 		if (lackMoney)	DError("Find some wagons that might work with that train engine "+cEngine.GetName(locotype)+", but cannot try them as we lack money",2,"cCarrier::AddNewTrain");
 				else	DError("Can't find any wagons usable with that train engine "+cEngine.GetName(locotype),2,"cCarrier::AddNewTrain");
-		return false;
+		if (pullerID!=null)	AIVehicle.SellVehicle(pullerID);
+		if (lackMoney)	return -2;
+				else	return -3;
 		}
 	AIController.Sleep(1); // we should rush that, but it might be too hard without a pause
 	}
-
-//if (engines.IsEmpty())	return false;
-print("BREAKPOINT OUT");
-local deletetrain=false;
+//local deletetrain=false;
 for (local i=0; i < wagonNeed; i++)
 	{
 	wagonID=INSTANCE.carrier.CreateTrainsEngine(wagontype, depot, road.cargoID);
@@ -241,32 +276,57 @@ for (local i=0; i < wagonNeed; i++)
 			DError("Wagon "+AIEngine.GetName(wagontype)+" cannot be attach to "+AIEngine.GetName(locotype),2,"cCarrier::AddNewTrain");
 			}
 	}
-if (AIVehicle.GetNumWagons(pullerID)<2)	{ DInfo("Train doesn't have any wagons attach to it",1,"cCarrier::AddNewTrain"); deletetrain=true; }
-print("num wagons="+AIVehicle.GetNumWagons(pullerID)); // lookout why getnumwagons say 3
 AIGroup.MoveVehicle(road.groupID, pullerID);
 if (INSTANCE.carrier.TrainSetOrders(pullerID))	AIVehicle.StartStopVehicle(pullerID);
 							else	deletetrain=true;
-if (deletetrain)	{ AIVehicle.SellVehicle(pullerID); DInfo("Selling train engine as the train isn't working",1,"cCarrier::AddNewTrain"); }
 
 INSTANCE.NeedDelay(200);
-//local test=cEngine.GetPrice(engines.Begin()); print("test="+test);
-return true;
+return pullerID;
 }
 
 function cCarrier::AddWagon(uid, wagonNeed)
 // Add wagons to route uid, handle the train engine by buying it if need
 {
 // TODO: handle getting all trains to depot before doing buys
-return true;
 local road=cRoute.GetRouteObject(uid);
 if (road==null)	return false;
-local numWagons=cCarrier.GetWagonsInGroup(road.groupID);
-local vehlist=AIVehicleList_Group(groupID);
+local totalWagons=cCarrier.GetWagonsInGroup(road.groupID)+wagonNeed;
+local vehlist=AIVehicleList_Group(road.groupID);
 local numTrains=vehlist.Count();
-if (numTrains==0)	{ return; }
-local balancing=0;
-local trainNeed=(numWagons+wagonNeed) / INSTANCE.carrier.train_length;
-if (numtrains >0)	balancing=(numWagons+wagonNeed)/numTrains;
-DWarn("WE REACH A DEAD END, NEED TO FINISH CODE",1,"cCarrier::AddWagons");
+local stationLen=road.source.locations.GetValue(19)*16; // station depth is @19
+local result=null;
+print("number of trains on road ="+numTrains);
+if (numTrains == 0)
+	{
+	local stop=false;
+	while (!stop)
+		{
+		result=INSTANCE.carrier.AddNewTrain(uid, totalWagons, road.source.GetRailDepot());
+		stop=true;
+		if (result == -3)	stop=false;
+		if (AIVehicle.IsValidVehicle(result))	stop=true;
+		}
+	if (AIVehicle.IsValidVehicle(result))
+		{
+		if (cCarrier.GetNumberOfWagons(result)==0 || cCarrier.GetNumberOfLoco(result)==0)
+			{
+			DInfo("Deleting train as it lack wagons or an engine",2,"cCarrier::AddWagon");
+			AIVehicle.SellVehicle(result);
+			return false;
+			}
+		while (AIVehicle.GetLength(result) > stationLen)
+			{
+			DInfo("Selling a wagon to met station length restrictions of "+stationLen,2,"cCarrier::AddWagon");
+			local wagondelete=cCarrier.GetWagonFromVehicle(result);
+			if (!AIVehicle.SellWagon(result, wagondelete))
+				{
+				DInfo("Hmmm cannot delete that wagon : "+wagondelete,2,"cCarrier::AddWagon");
+				return false;
+				}
+			}
+		DInfo("Adding a new train to "+road.name,0,"cCarrier::AddWagon");
+		}
+	}
+return true;
 }
 

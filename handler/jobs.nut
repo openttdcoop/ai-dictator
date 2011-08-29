@@ -397,6 +397,12 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 //	if (cargo_id == cCargo.GetMailCargo() && road_type != AIVehicle.VT_ROAD) return;
 	if (cargo_id == cCargo.GetMailCargo()) return; // disable mail for anyone it sucks to do mail
 	// only do mail with trucks
+	if (!src_istown && AIIndustry.IsBuiltOnWater(srcID))
+		{
+		if (road_type!=AIVehicle.VT_AIR && road_type!=AIVehicle.VT_WATER) return;
+		// only aircraft & boat to do platforms
+		}
+
 	newjob.target_istown = cCargo.IsCargoForTown(cargo_id);
 	if (newjob.source_istown)	newjob.source_location=AITown.GetLocation(srcID);
 			else		newjob.source_location=AIIndustry.GetLocation(srcID);

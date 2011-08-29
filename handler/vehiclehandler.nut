@@ -15,6 +15,15 @@
 
 // main class is in vehiculebuilder
 
+function cCarrier::GetCurrentCargoType(vehID)
+// return the cargoID in use by this vehicle
+{
+local cargoList=AICargoList();
+foreach (cargoID, dummy in cargoList)
+	if (AIVehicle.GetCapacity(vehID, cargoID) > 0)	return cargoID;
+return -1;
+}
+
 function cCarrier::GetGroupLoadCapacity(groupID)
 // return the total capacity a group of vehicle can handle
 {
@@ -206,6 +215,8 @@ local understood=false;
 understood=AIVehicle.SendVehicleToDepot(veh);
 if (!understood) { DInfo(INSTANCE.carrier.VehicleGetFormatString(veh)+" refuse to go to depot",1); }
 local rr="";
+local wagonnum=0;
+if (reason > 1000)	{ wagonnum=reason-1000-DepotAction.ADDWAGON; reason=DepotAction.ADDWAGON; }
 switch (reason)
 	{
 	case	DepotAction.SELL:
@@ -219,6 +230,10 @@ switch (reason)
 	break;
 	case	DepotAction.CRAZY:
 		rr="for a crazy action.";
+	break;
+	case	DepotAction.ADDWAGON:
+		rr="to add "+wagonum+" new wagons.";
+		reason+=1000+wagonnum;
 	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0);
@@ -352,7 +367,8 @@ switch (AIVehicle.GetVehicleType(veh))
 		top = INSTANCE.carrier.ChooseRoadVeh(cargo);
 	break;
 	case AIVehicle.VT_RAIL:
-		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, 100);
+		return -1; // disable upgrade for train
+		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, 1000);
 		if (INSTANCE.carrier.TopEngineList.HasItem(uniqID))	return -1;
 		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 		top = INSTANCE.carrier.ChooseRailEngine();
@@ -565,6 +581,9 @@ foreach (i, dummy in tlist)
 			INSTANCE.carrier.VehicleSell(i,false);
 		break;
 		case	DepotAction.CRAZY:
+			INSTANCE.carrier.VehicleSell(i,false);
+		break;
+		case	DepotAction.ADDWAGON:
 			INSTANCE.carrier.VehicleSell(i,false);
 		break;
 		}

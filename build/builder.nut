@@ -450,7 +450,7 @@ if (INSTANCE.route.status==6)
 	INSTANCE.builddelay=true;
 	INSTANCE.builder.building_route=-1; // Allow us to work on a new route now
 	if (INSTANCE.safeStart >0 && INSTANCE.route.route_type == RouteType.ROAD)	INSTANCE.safeStart--;
-	if (INSTANCE.route.route_type==RouteType.RAIL)	INSTANCE.carrier.AddNewTrain(INSTANCE.route.UID, 2);
+	if (INSTANCE.route.route_type==RouteType.RAIL)	INSTANCE.route.DutyOnRailsRoute(INSTANCE.route.UID);
 								else	INSTANCE.route.DutyOnRoute();
 	}
 return success;
