@@ -52,11 +52,21 @@
 
 	AddSetting({
 		name = "use_train",
-		description = "Use trains - NOT FUNCTIONAL",
+		description = "Use trains",
 		easy_value = 0,
 		medium_value = 0,
 		hard_value = 0,
 		custom_value = 0,
+		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+	});
+
+	AddSetting({
+		name = "use_nicetrain",
+		description = "Enable AI to use trains for anything (better for economy) OR AI will respect newGRF authors choices (better for aesthetics)",
+		easy_value = 0,
+		medium_value = 1,
+		hard_value = 1,
+		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
 
@@ -78,7 +88,7 @@
 		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
-
+/*
 	AddSetting({
 		name = "use_boat",
 		description = "Use boat vehicles - NOT FUNCTIONAL",
@@ -87,7 +97,7 @@
 		hard_value = 0,
 		custom_value = 0,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
-	});
+	});*/
 
 	AddSetting({
 		name = "use_terraform",

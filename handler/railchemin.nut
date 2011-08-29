@@ -21,7 +21,7 @@ local road=cRoute.GetRouteObject(uid);
 local maxveh=0;
 local cargoid=road.cargoID;
 local railtype=road.source.specialType;
-local futur_engine=INSTANCE.carrier.ChooseRailWagon(cargoid, railtype);
+local futur_engine=INSTANCE.carrier.ChooseRailWagon(cargoid, railtype, null);
 local futur_engine_capacity=1;
 if (futur_engine != null)	futur_engine_capacity=cEngine.GetCapacity(futur_engine);
 				else	return;

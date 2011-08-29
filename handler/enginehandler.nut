@@ -22,7 +22,7 @@ static	function GetEngineObject(engineID)
 	engineID		= null;	// id of industry/town
 	name			= null;	// name
 	length		= null;	// size of the engine
-	price			= null;	// As AIEngine.GetPrice, but may add the refit cost to the price
+	//price			= null;	// As AIEngine.GetPrice, but may add the refit cost to the price
 	cargo_list		= null;	// cargo_list item=cargoID, value=capacity when refit
 	cargo_price		= null;	// price to refit item=cargoID, value=refit cost
 	isKnown		= null;	// true if we know it already
@@ -33,7 +33,7 @@ static	function GetEngineObject(engineID)
 		engineID		= null;
 		name			= "unknow";
 		length		= 14; // max size i saw for a wagon
-		price			= 0;
+		//price			= 0;
 		cargo_list		= AIList();
 		cargo_price		= AIList();
 		isKnown		= false;
@@ -49,16 +49,18 @@ function cEngine::Save()
 	local crglist=AICargoList();
 	foreach (crg, dummy in crglist)
 		{
-		this.cargo_price.AddItem(crg,-1); // so we knows if we ever met that cargo refit price yet (see SetRefitCost)
+		this.cargo_price.AddItem(crg,-1);
+// 2 reasons: make the engine appears cheaper by 1 vs an already test one & allow us to know if we met it already (see SetRefitCost)
 		if (AIEngine.CanRefitCargo(this.engineID, crg))
 				this.cargo_list.AddItem(crg,255);
-				// 255 so it will appears to be a top carrier if not test yet
+// 255 so it will appears to be a better carrier vs an already test engine
+// This two properties set as-is will force the AI to think a non-test engine is better to use than an already test one
 			else	this.cargo_list.AddItem(crg,0);
 		}
 	local crgtype=AIEngine.GetCargoType(this.engineID);
 	this.cargo_list.SetValue(crgtype, AIEngine.GetCapacity(this.engineID));
 	this.name=AIEngine.GetName(this.engineID);
-	this.price=AIEngine.GetPrice(this.engineID);
+	//this.price=AIEngine.GetPrice(this.engineID);
 	cEngine.enginedatabase[this.engineID] <- this;
 	DInfo("Adding "+this.name+" to cEngine database",2,"cEngine:Save");
 	DInfo("List of known vehicles : "+(cEngine.enginedatabase.len()),1,"cEngine::Save");
@@ -85,7 +87,7 @@ function cEngine::Update(vehID)
 	local engObj=cEngine.Load(new_engine);
 	//print("new_engine="+new_engine+" know="+engObj.isKnown);
 	if (engObj.isKnown)	return;
-	DInfo("Grabbing vehicle properties for "+engObj.name,1,"cEngine::Update");
+	DInfo("Grabbing vehicle properties for "+engObj.name,2,"cEngine::Update");
 	engObj.length=AIVehicle.GetLength(vehID);
 	local crgList=AICargoList();
 	foreach (cargoID, dummy in crgList)
@@ -108,13 +110,13 @@ function cEngine::GetCapacity(eID, cargoID=null)
 function cEngine::Incompatible(eng1, eng2)
 // mark eng1 incompatible with eng2 (one must be a wagon, other must not)
 {
-if ( !(AIEngine.IsWagon(eng1) && AIEngine.IsWagon(eng2)) || (!AIEngine.IsWagon(eng1) && AIEngine.IsWagon(eng2)) )
+if ( (!AIEngine.IsWagon(eng1) && !AIEngine.IsWagon(eng2)) || (AIEngine.IsWagon(eng1) && AIEngine.IsWagon(eng2)) )
 	{ DError("One engine must be a wagon and the other must not",1,"cEngine::Incompatible"); return false; }
 local eng1O=cEngine.Load(eng1);
 local eng2O=cEngine.Load(eng2);
-eng1O.incompatible.AddItem(eng2);
-eng2O.incompatible.AddItem(eng1);
-DInfo("Setting "+eng1O.name" incompatible with "+eng2O.name,2,"cEngine::Incompatible");
+eng1O.incompatible.AddItem(eng2,eng1);
+eng2O.incompatible.AddItem(eng1,eng2);
+DInfo("Setting "+eng1O.name+" incompatible with "+eng2O.name,2,"cEngine::Incompatible");
 }
 
 function cEngine::SetRefitCost(engine, cargo, cost)
@@ -122,10 +124,18 @@ function cEngine::SetRefitCost(engine, cargo, cost)
 // per default, assume all refit costs will be == for all cargos
 {
 local eng=cEngine.Load(engine);
+local update=false;
 if (eng.cargo_price.GetValue(cargo) == -1) // this test prove we never met a refitprice for that engine
+	{
 	foreach (crg, refitprice in eng.cargo_price)	if (refitprice == -1)	eng.cargo_price.SetValue(crg, cost);
-eng.cargo_price.SetValue(cargo, cost);
-DInfo("Setting refit cost to "+cost+" to handle "+AICargo.GetCargoLabel(cargo)+" for "+eng.name,2,"cEngine::SetRefitCost");
+	update=true;
+	}
+if (eng.cargo_price.GetValue(cargo) != cost)	update=true;
+if (update)
+	{
+	eng.cargo_price.SetValue(cargo, cost);
+	DInfo("Setting refit cost to "+cost+" to handle "+AICargo.GetCargoLabel(cargo)+" for "+eng.name,2,"cEngine::SetRefitCost");
+	}
 }
 
 function cEngine::IsCompatible(engine, compareengine)
@@ -141,9 +151,32 @@ function cEngine::GetPrice(engine, cargo=null)
 // can be use as valuator
 {
 local eng=cEngine.Load(engine);
-if (cargo==null)	return eng.price;
+if (cargo==null)	return AIEngine.GetPrice(engine);
 local refitcost=0;
 if (eng.cargo_price.HasItem(cargo))	refitcost=eng.cargo_price.GetValue(cargo);
-return eng.price+refitcost;
+return (AIEngine.GetPrice(engine)+refitcost);
+}
+
+function cEngine::CanPullCargo(engineID, cargoID)
+// try to really answer if an engine can be use to pull a wagon of a cargo type
+// if NicePlay is true we return the AIEngine.CanPullCargo version
+// else we return real usable wagons list for a train
+{
+local NicePlay=DictatorAI.GetSetting("use_nicetrain");
+print("eng "+engineID+" "+AIEngine.IsValidEngine(engineID));
+print("cargo "+cargoID+" "+AICargo.IsValidCargo(cargoID));
+print(" wagon "+AIEngine.IsWagon(engineID));
+if (!AIEngine.IsValidEngine(engineID) || !AICargo.IsValidCargo(cargoID) || AIEngine.IsWagon(engineID))
+	{ DError("Preconditions fail",2,"cEngine.CanPullCargo"); return false; }
+if (NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
+local engine=cEngine.Load(engineID);
+local wagonlist=AIEngineList();
+wagonlist.Valuate(AIEngine.IsWagon);
+wagonlist.KeepValue(1);
+wagonlist.Valuate(cEngine.IsCompatible, engineID);
+wagonlist.KeepValue(1);
+wagonlist.Valuate(AIEngine.CanRefitCargo, cargoID);
+wagonlist.KeepValue(1);
+return (!wagonlist.IsEmpty());
 }
 
