@@ -251,13 +251,13 @@ switch (road.route_type)
 	}
 }
 
-function cCarrier::GetEngineEfficiency(engine)
+function cCarrier::GetEngineEfficiency(engine, cargoID=null)
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
 // simple formula it's (price+(age*runningcost)) / (cargoamount*speed)
 {
-local price=AIEngine.GetPrice(engine);
-local capacity=AIEngine.GetCapacity(engine);
+local price=cEngine.GetPrice(engine, cargoID);
+local capacity=cEngine.GetCapacity(engine, cargoID);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);

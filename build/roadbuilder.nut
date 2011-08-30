@@ -412,21 +412,25 @@ pathfinder._cost_tunnel_per_tile = 80;
 pathfinder._max_bridge_length = 20;
 pathfinder.InitializePath([head1], [head2]);
 local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+local pfInfo=null;
 INSTANCE.bank.SaveMoney(); // thinking long time, don't waste money
+pfInfo=AISign.BuildSign(head1,"Pathfinding...");
 DInfo("Road Pathfinding...",1);
 local path = false;
 local counter=0;
-while (path == false && counter < 150)
+while (path == false && counter < 250)
 	{
-	path = pathfinder.FindPath(100);
+	path = pathfinder.FindPath(250);
 	counter++;
+	AISign.SetName(pfInfo,"Pathfinding... "+counter);
 	AIController.Sleep(1);
 	}
 // restore our money
 INSTANCE.bank.RaiseFundsTo(savemoney);
 if (path != null && path != false)
 	{
-	DInfo("Path found. (" + counter + ")",1);
+	DInfo("Path found. (" + counter + ")",0,"BuildRoadROAD");
+	AISign.RemoveSign(pfInfo);
 	return path;
 	}
 else	{

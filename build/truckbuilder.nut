@@ -21,6 +21,30 @@ local veh = INSTANCE.carrier.ChooseRoadVeh(road.cargoID);
 return veh;
 }
 
+function cCarrier::CreateRoadEngine(engineID, depot, cargoID)
+// Create road vehicle engineID at depot
+{
+if (!AIEngine.IsValidEngine(engineID))	return -1;
+local price=cEngine.GetPrice(engineID);
+INSTANCE.bank.RaiseFundsBy(price);
+if (!INSTANCE.bank.CanBuyThat(price))	DInfo("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1,"cCarrier::CreateRoadEngine");
+local vehID=AIVehicle.BuildVehicle(depot, engineID);
+if (!AIVehicle.IsValidVehicle(vehID))	{ DInfo("Failure to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateRoadEngine"); return -1; }
+cEngine.Update(vehID);
+// get & set refit cost
+local testRefit=AIAccounting();
+if (!AIVehicle.RefitVehicle(vehID, cargoID))
+	{
+	DError("We fail to refit the engine, maybe we run out of money ?",1,"cCarrier::CreateRoadEngine");
+	}
+else	{
+	local refitprice=testRefit.GetCosts();
+	cEngine.SetRefitCost(engineID, cargoID, refitprice, AIVehicle.GetLength(vehID));
+	}
+testRefit=null;
+return vehID;
+}
+
 function cCarrier::CreateRoadVehicle(roadidx)
 // Build a road vehicle for route roadidx
 {
@@ -28,28 +52,60 @@ local road=cRoute.GetRouteObject(roadidx);
 local srcplace = road.source.locations.Begin();
 local dstplace = road.target.locations.Begin();
 local cargoid= road.cargoID;
-local veh = INSTANCE.carrier.ChooseRoadVeh(cargoid);
+local engineID = INSTANCE.carrier.ChooseRoadVeh(cargoid);
 local homedepot = road.GetRouteDepot();
-local price = AIEngine.GetPrice(veh);
 local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0 && road.cargoID == cCargo.GetPassengerCargo());
 if (altplace && road.target.depot != null)	homedepot = road.target.depot;
-if (!cStation.IsDepot(homedepot))	
+if (!cStation.IsDepot(homedepot))
 	{
 	INSTANCE.builder.RouteIsDamage(roadidx);
-	DInfo("Route "+road.name+" depot isn't valid, adding route to repair task.",1);
+	DError("Route "+road.name+" depot is not valid, adding route to repair task.",1,"cCarrier::CreateRoadVehicle");
 	return false;
 	}
-if (veh == null)
-	{ DError("Fail to pickup a vehicle",1); return false; }
-INSTANCE.bank.RaiseFundsBy(price);
-local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
-if (!AIVehicle.IsValidVehicle(firstveh))
+
+local vehID=null;
+local lackMoney=false;
+local confirm=false;
+local another=false;
+print("BREAKPOINT");
+while (!confirm)
 	{
-	DWarn("Cannot buy the road vehicle : "+price+" - "+AIError.GetLastErrorString(),1);
-	return false;
+	local price=cEngine.GetPrice(engineID, road.cargoID);
+	INSTANCE.bank.RaiseFundsBy(price);
+	lackMoney=!cBanker.CanBuyThat(price);
+	if (lackMoney)
+		{
+		DError("We don't have enought money to buy "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
+		vehID==-1;
+		}
+	else	vehID=INSTANCE.carrier.CreateRoadEngine(engineID, homedepot, cargoid);
+	if (vehID==-1)
+		DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
+	else	{
+		DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(vehID),0,"cCarrier::CreateRoadVehicle");
+		cEngine.Update(vehID);
+		if (AIEngine.GetCargoType(vehID) != cargoid)
+			{
+			local testRefit=AIAccounting();
+			if (!AIVehicle.RefitVehicle(vehID, cargoid))
+				{
+				DWarn("We fail to refit the engine, maybe we run out of money ?",1,"cCarrier::CreateRoadVehicle");
+				}
+			else	{
+				local refitprice=testRefit.GetCosts();
+				cEngine.SetRefitCost(engineID, cargoid, refitprice, AIVehicle.GetLength(engineID));
+				}
+			testRefit=null;
+			}
+		}
+	another=INSTANCE.carrier.ChooseRoadVeh(cargoid);
+	if (another==engineID && another!=null)
+		confirm=true;
+	else	vehengine=another;
+	if (another==null && lackMoney)	{ DError("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(vehengine),2,"cCarrier::CreateRoadVehicle"); return -2; }
+	AIController.Sleep(1);
 	}
-else	{ DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(firstveh),0); }
-if (AIEngine.GetCargoType(veh) != cargoid) AIVehicle.RefitVehicle(firstveh, cargoid);
+
 local firstorderflag = null;
 local secondorderflag = null;
 if (AICargo.GetTownEffect(cargoid) == AICargo.TE_PASSENGERS || AICargo.GetTownEffect(cargoid) == AICargo.TE_MAIL)
@@ -61,12 +117,11 @@ else	{
 	firstorderflag = AIOrder.AIOF_FULL_LOAD_ANY + AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 	}
-AIGroup.MoveVehicle(road.groupID, firstveh);
-AIOrder.AppendOrder(firstveh, srcplace, firstorderflag);
-AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
-if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(firstveh);
-if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
-//if (!altplace)	INSTANCE.Sleep(74);
+AIGroup.MoveVehicle(road.groupID, vehID);
+AIOrder.AppendOrder(vehID, srcplace, firstorderflag);
+AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
+if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(vehID);
+if (!AIVehicle.StartStopVehicle(vehID)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateRoadVehicle"); }
 return true;
 }
 
@@ -79,11 +134,13 @@ function cCarrier::ChooseRoadVeh(cargoid)
 local vehlist = AIEngineList(AIVehicle.VT_ROAD);
 vehlist.Valuate(AIEngine.GetRoadType);
 vehlist.KeepValue(AIRoad.ROADTYPE_ROAD);
+vehlist.Valuate(AIEngine.IsBuildable);
+vehlist.KeepValue(1);
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 vehlist.KeepValue(1);
-vehlist.Valuate(cCarrier.GetEngineEfficiency);
+vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
 return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }

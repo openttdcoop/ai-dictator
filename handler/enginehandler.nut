@@ -60,7 +60,7 @@ function cEngine::Save()
 	this.cargo_capacity.SetValue(crgtype, AIEngine.GetCapacity(this.engineID));
 	this.name=AIEngine.GetName(this.engineID);
 	cEngine.enginedatabase[this.engineID] <- this;
-	DInfo("Adding "+this.name+" to cEngine database",2,"cEngine:Save");
+	DInfo("Adding "+this.name+" to cEngine database",2,"cEngine::Save");
 	DInfo("List of known vehicles : "+(cEngine.enginedatabase.len()),1,"cEngine::Save");
 	}
 
@@ -103,7 +103,8 @@ function cEngine::GetCapacity(eID, cargoID=null)
 // can be use as valuator
 	{
 	local engObj=cEngine.Load(eID);
-	if (cargoID==null)	cargoID=AIEngine.GetCapacity(eID); // return current capacity
+	if (cargoID==null)	cargoID=AIEngine.GetCargoType(eID);
+	//DInfo(engObj.name+" have a capacity of "+engObj.cargo_capacity.GetValue(cargoID)+" for "+AICargo.GetCargoLabel(cargoID),2,"cEngine::GetCapacity");
 	return engObj.cargo_capacity.GetValue(cargoID);
 	}
 
@@ -171,7 +172,7 @@ function cEngine::CanPullCargo(engineID, cargoID)
 local NicePlay=DictatorAI.GetSetting("use_nicetrain");
 if (!AIEngine.IsValidEngine(engineID) || !AICargo.IsValidCargo(cargoID) || AIEngine.IsWagon(engineID))
 	{ DError("Preconditions fail engineID="+engineID+" cargoID="+cargoID,2,"cEngine.CanPullCargo"); return false; }
-if (NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
+if (!NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
 local engine=cEngine.Load(engineID);
 local wagonlist=AIEngineList(AIVehicle.VT_RAIL);
 wagonlist.Valuate(AIEngine.IsWagon);

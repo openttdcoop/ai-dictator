@@ -95,7 +95,7 @@ vehlist.Sort(AIList.SORT_BY_VALUE,false);
 local veh = null;
 if (vehlist.IsEmpty())	DInfo("Cannot find a train engine for that rail type",1,"cCarrier::ChooseRailEngine");
 			else	veh=vehlist.Begin();
-print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
+//print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
 return veh;
 }
 
@@ -168,7 +168,7 @@ function cCarrier::CreateTrainsEngine(engineID, depot, cargoID)
 // Create vehicle engineID at depot
 {
 if (!AIEngine.IsValidEngine(engineID))	return -1;
-local price=AIEngine.GetPrice(engineID);
+local price=cEngine.GetPrice(engineID);
 INSTANCE.bank.RaiseFundsBy(price);
 if (!INSTANCE.bank.CanBuyThat(price))	DInfo("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1,"cCarrier::CreateTrainsEngine");
 local vehID=AIVehicle.BuildVehicle(depot, engineID);

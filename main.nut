@@ -474,10 +474,10 @@ if (INSTANCE.safeStart >0)
 	use_train=false;
 	use_air=false;
 	}
-INSTANCE.safeStart=0;
-use_train=true;
-use_road=false;
-use_air=false;
+//INSTANCE.safeStart=0;
+//use_train=true;
+//use_road=false;
+//use_air=false;
 }
 
 function DictatorAI::ListToArray(list)
