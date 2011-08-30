@@ -342,10 +342,14 @@ function cTileTools::CheckLandForConstruction(tile, width, height, ignoreList=AI
 PutSign(tile,"?");
 local newTile=cTileTools.IsBuildableRectangle(tile, width, height, ignoreList);
 if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
+//function cTileTools::IsBuildableRectangleFlat(tile, width, height)
+if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))	return newTile;
 local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
-if (cTileTools.TerraformLevelTiles(newTile, tileTo))
-		return newTile;
-	else	return -1;
+print("before terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
+cTileTools.TerraformLevelTiles(newTile, tileTo);
+print("after terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
+if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))		return newTile;
+											else	return -1;
 }
 
 function cTileTools::TerraformLevelTiles(tileFrom, tileTo)

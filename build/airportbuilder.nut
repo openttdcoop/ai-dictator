@@ -174,6 +174,7 @@ else	{
 	else	{
 		// we should never have a platform as destination station !!!
 		DError("BUG !!! We have select a platform for our destination station for route #"+road.UID+" Please report that error with a savegame if you can",0);
+		AIController.Sleep(500);
 		helipadonly=true;
 		return false;
 		}
