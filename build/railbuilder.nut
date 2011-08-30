@@ -167,6 +167,7 @@ do
 					break;
 					}
 				else	{ // see why we fail
+					cTileTools.BlackListTileSpot(stafile);
 					INSTANCE.builder.IsCriticalError();
 					if (INSTANCE.builder.CriticalError)	{ break; }
 					if (AIError.GetLastError()==AIError.ERR_LOCAL_AUTHORITY_REFUSES)	{ break; }

@@ -14,6 +14,8 @@
 class cEngine extends AIEngine
 {
 static	enginedatabase = {};
+static	engine_cache = [-1, -1, -1, -1, -1];
+		// we cache engineID of last query for an engine type : train, wagon, road, air, water
 static	function GetEngineObject(engineID)
 		{
 		return engineID in cEngine.enginedatabase ? cEngine.enginedatabase[engineID] : null;

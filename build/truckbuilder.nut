@@ -96,8 +96,8 @@ local firstorderflag = null;
 local secondorderflag = null;
 if (AICargo.GetTownEffect(cargoid) == AICargo.TE_PASSENGERS || AICargo.GetTownEffect(cargoid) == AICargo.TE_MAIL)
 	{
-	firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE + AIOrder.AIOF_FULL_LOAD_ANY;
-	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE + AIOrder.AIOF_FULL_LOAD_ANY;
+	firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
+	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 	}
 else	{
 	firstorderflag = AIOrder.AIOF_FULL_LOAD_ANY + AIOrder.AIOF_NON_STOP_INTERMEDIATE;

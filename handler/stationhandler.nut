@@ -67,32 +67,13 @@ static	function GetStationObject(stationID)
 	name			= null;	// station name
 	platforms		= null;	// railstation platforms AIList, item=fronttileplaformentry, value: 1=useable 0=closed
 	station_tiles	= null;	// railstation tiles own by the station, value=1 entry or 0 exit
-//	platform_exit	= null;	// railstation platforms AIList, item=fronttileplaformexit, value: 1=useable 0=closed
-// station size = (tte)+(tde / 2)+(ttx)+(tdx/2)
-// station size >=3 + connect all front & back tiles
-// station size =2
+
 /* train station are made like that:
 station_infos:
 bit0 entry is working on/off
 bit1 exit is working on/off
 bit2 south/west escape line is working on/off
 bit3 north/east escape line is working on/off
-bit4 use semaphore on/off (unuse as i don't know how to get semaphore from api yet)
-
-train_entry_in = tile location of rails we should connect a rail route to use that station entry to go in
-train_entry_out= tile location... to use that station entry to get out of the station
-train_exit_in  = tile location of rails we should connect a rail route to use that station entry to go in
-train_exit_out = tile location... to use that station exit to get out of the station
-crossing       = tile location where rails cross each other to connect parrallel lines, distance from station may vary but always >1 tiles and < XxEe
-
-
- - = rail, S = station, E=entry in, e=entry out, X=exit in, x=exit out, L&l=escape lines, F=a fire
-\/ crossing point, where the rail cross each other
-/\ crossing point can be +2 +5 from S
-	       /-FLLLLLLLLLLF-\
-	-E-F-\/--F-SSSSSSSS-F--\/-F-X--
-	-e-F-/\--F-SSSSSSSS-F--/\-F-x--
-	       \-FllllllllllF-/
 */
 	
 	constructor()
@@ -115,7 +96,6 @@ crossing       = tile location where rails cross each other to connect parrallel
 		moneyUpgrade	= 0;
 		name			= null;
 		platforms		= AIList(); // item= platform location, value=bit0 for entry, bit1 for exit on/off
-	//	platform_exit	= AIList();
 		station_tiles	= AIList();
 		}
 }
@@ -206,7 +186,6 @@ function cStation::StationSave()
 		DInfo("Adding station : "+this.stationID+" to station database",2,"cStation::StationSave");
 		cStation.stationdatabase[this.stationID] <- this;
 		}
-
 	}
 
 function cStation::CanUpgradeStation()
@@ -332,6 +311,7 @@ function cStation::DeleteStation(stationid)
 		if (statprop.owner.Count() == 0) // no more own by anyone
 			{
 			DInfo("Removing station #"+stationid+" from station database",1,"cStation::DeleteStation");
+			foreach (tile, dummy in statprop.station_tiles)	{ cTileTools.UnBlackListTile(tile); }
 			delete cStation.stationdatabase[stationid];
 			cStation.VirtualAirports.RemoveItem(stationid);
 			}

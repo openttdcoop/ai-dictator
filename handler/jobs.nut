@@ -176,7 +176,7 @@ function cJobs::RankThisJob()
 	this.ranking = stationrank * valuerank;
 	}
 
-function cJobs::RefreshValue(jobID)
+function cJobs::RefreshValue(jobID, updateCost=false)
 // refresh the datas from object
 	{
 	::AIController.Sleep(1);
@@ -224,7 +224,7 @@ function cJobs::RefreshValue(jobID)
 		myjob.cargoAmount=AIIndustry.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
 		myjob.foule=cRoute.GetAmountOfCompetitorStationAround(myjob.sourceID);
 		}
-	myjob.EstimateCost();
+	if (updateCost)	myjob.EstimateCost();
 	myjob.RankThisJob();
 	}
 
@@ -242,12 +242,6 @@ function cJobs::IsInfosUpdate(jobID)
 function cJobs::RefreshAllValue()
 // refesh datas of all jobs objects
 	{
-/*
-	local now=AIDate.GetCurrentDate();
-	local last=cJobs.lastRefresh[0];
-	if ( (now - last) < 240)	return false;
-	cJobs.lastRefresh[0]=now;
-*/
 	DInfo("Collecting jobs infos, will take time...",0,"RefreshALLValue");
 	local curr=0;
 	local needRefresh=AIList();
@@ -272,23 +266,13 @@ function cJobs::QuickRefresh()
 // refresh datas on first 5 doable top jobs
 	{
 	local smallList=AIList();
-/*
-	if (!cJobs.RefreshAllValue())
-		{ // if we don't refresh everything, then we refresh the 5 top jobs
-		cJobs.jobDoable.KeepTop(5);
-		foreach (item, value in cJobs.jobDoable)
-			{ // refresh the value & then sort by highest ranking
-			INSTANCE.Sleep(1);
-			cJobs.RefreshValue(item);
-			}
-		}*/
 	smallList.AddList(cJobs.jobIndexer);
 	smallList.Valuate(cJobs.IsInfosUpdate);
 	smallList.KeepValue(0); // keep only ones that need refresh
 	smallList.Valuate(AIBase.RandItem);
 	smallList.Sort(AIList.SORT_BY_VALUE,true);
 	smallList.KeepTop(5);
-	foreach (smallID, dvalue in smallList)	INSTANCE.jobs.RefreshValue(smallID);
+	foreach (smallID, dvalue in smallList)	{ INSTANCE.jobs.RefreshValue(smallID, true); }
 	INSTANCE.jobs.UpdateDoableJobs();
 	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
@@ -379,9 +363,9 @@ function cJobs::EstimateCost()
 			daystransit=6;
 		break;
 		}
-	this.moneyToBuild=money; //*cBanker.GetInflationRate();
+	this.moneyToBuild=money;
 	this.cargoValue=AICargo.GetCargoIncome(this.cargoID, this.distance, daystransit);
-	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+(this.cargoValue*this.distance),2,"EstimateCost");
+	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+this.cargoValue,2,"EstimateCost");
 	}
 
 function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
@@ -411,10 +395,10 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	newjob.distance=AITile.GetDistanceManhattanToTile(newjob.source_location, newjob.target_location);
 	newjob.roadType=road_type;
 	newjob.cargoID=cargo_id;
-	newjob.EstimateCost();
+//	newjob.EstimateCost();
 	newjob.GetUID();
 	newjob.Save();
-	INSTANCE.jobs.RefreshValue(newjob.UID); // update ranking, cargo amount, foule values, must be call after GetUID
+	INSTANCE.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount, foule values, must be call after GetUID
 	}
 
 function cJobs::GetTransportDistance(transport_type, get_min, limited)
@@ -541,6 +525,7 @@ function cJobs::JobIsNotDoable(uid)
 function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
+	print("entering UpdateDoableJobs");
 	INSTANCE.jobs.CheckLimitedStatus();
 	//DInfo("Analysing the job pool",0);
 	local parentListID=AIList();
@@ -562,22 +547,15 @@ function cJobs::UpdateDoableJobs()
 			{
 			case	AIVehicle.VT_AIR:
 				if (!INSTANCE.use_air)	doable=false;
-				if (myjob.source_istown)	vehtest=INSTANCE.carrier.ChooseAircraft(myjob.cargoID, AircraftType.EFFICIENT);
-								else	vehtest=INSTANCE.carrier.ChooseAircraft(myjob.cargoID, AircraftType.CHOPPER);
-				if (vehtest==null)	doable=false;
 			break;
 			case	AIVehicle.VT_ROAD:
 				if (!INSTANCE.use_road)	doable=false;
-				vehtest=INSTANCE.carrier.ChooseRoadVeh(myjob.cargoID);
-				if (vehtest==null)	doable=false;
 			break;
 			case	AIVehicle.VT_WATER:
 				if (!INSTANCE.use_boat)	doable=false;
 			break;
 			case	AIVehicle.VT_RAIL:
 				if (!INSTANCE.use_train)	doable=false;
-				local pickcouple=INSTANCE.carrier.ChooseRailCouple(myjob.cargoID);
-				if (pickcouple.IsEmpty())	doable=false;
 			break;
 			}
 		// not doable if disabled
@@ -592,13 +570,14 @@ function cJobs::UpdateDoableJobs()
 			if (curmax < myjob.distance)	doable=false;
 			}
 		// not doable if any parent is already in use
-		if (parentListID.HasItem(myjob.parentID))
-			{
-			DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs");
-			doable=false;
-			cJobs.DeleteJob(id)
-			continue;
-			}
+		if (doable)
+			if (parentListID.HasItem(myjob.parentID))
+				{
+				DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs");
+				doable=false;
+				cJobs.DeleteJob(id)
+				continue;
+				}
 		if (doable && !myjob.source_istown)
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
 		// not doable if the industry no longer exist
@@ -638,7 +617,6 @@ function cJobs::UpdateDoableJobs()
 					}
 				}
 			//else	myjob.jobIndexer.SetValue(id, 0);
-
 		}
 	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
@@ -703,7 +681,7 @@ function cJobs::RawJobHandling()
 	local stilltodo=jfilter.Count();
 	jfilter.Valuate(AIBase.RandItem); // randomize remain entries
 	jfilter.Sort(AIList.SORT_BY_VALUE,true);
-	jfilter.KeepTop(4);
+	jfilter.KeepTop(2);
 	if (jfilter.IsEmpty())	DInfo("All raw jobs have been process",2,"RawJobHandling");
 				else	foreach (jid, dummyValue in jfilter)
 						{

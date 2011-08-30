@@ -54,8 +54,9 @@ function cTileTools::BlackListTile(tile, stationID=-255)
 if (AIMap.IsValidTile(tile))
 	{
 	local owner=cTileTools.GetTileOwner(tile);
-	if (owner == -1)	cTileTools.TilesBlackList.AddItem(tile, stationID);
+	if (stationID!=-100 && owner == -1)	cTileTools.TilesBlackList.AddItem(tile, stationID);
 	if (stationID == -255)	cTileTools.TileBlackList.SetValue(tile, -255);
+	if (stationID == -100)	cTileTools.TileBlackList.SetValue(tile, -100);
 	}
 }
 
@@ -348,6 +349,7 @@ local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
 print("before terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
 cTileTools.TerraformLevelTiles(newTile, tileTo);
 print("after terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
+INSTANCE.NeedDelay(200);
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))		return newTile;
 											else	return -1;
 }

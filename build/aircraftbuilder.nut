@@ -64,6 +64,8 @@ function cCarrier::ChooseAircraft(cargo,airtype=0)
 // We can endup with 5+ different type of aircrafts running
 {
 local vehlist = AIEngineList(AIVehicle.VT_AIR);
+vehlist.Valuate(AIEngine.IsBuildable);
+vehlist.KeepValue(1);
 vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
 vehlist.KeepValue(1);
 vehlist.Valuate(AIEngine.GetMaxSpeed);
