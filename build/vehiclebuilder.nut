@@ -258,6 +258,7 @@ function cCarrier::GetEngineEfficiency(engine, cargoID=null)
 {
 local price=cEngine.GetPrice(engine, cargoID);
 local capacity=cEngine.GetCapacity(engine, cargoID);
+if (capacity==0) return 0;
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);

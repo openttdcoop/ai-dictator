@@ -53,10 +53,10 @@
 	AddSetting({
 		name = "use_train",
 		description = "Use trains",
-		easy_value = 0,
-		medium_value = 0,
-		hard_value = 0,
-		custom_value = 0,
+		easy_value = 1,
+		medium_value = 1,
+		hard_value = 1,
+		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
 

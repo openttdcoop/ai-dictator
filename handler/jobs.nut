@@ -345,18 +345,18 @@ function cJobs::EstimateCost()
 		break;
 		case	AIVehicle.VT_RAIL:
 			local rtype=AIRail.GetCurrentRailType();
-			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 3 tracks entries and length*rail
+			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 			engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
 			if (engine.IsEmpty())	engineprice=500000000;
 						else	{
 							engineprice+=AIEngine.GetPrice(engine.Begin());
-							engineprice+=AIEngine.GetPrice(engine.GetValue(engine.Begin()));
+							engineprice+=2*AIEngine.GetPrice(engine.GetValue(engine.Begin()));
 							}
 			money+=engineprice;
 			money+=(2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)); // station train 5 length
 			money+=2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT));
 			money+=4*clean;
-			money+=(3+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK));
+			money+=(12+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK));
 			daystransit=4;
 		break;
 		case	AIVehicle.VT_WATER: //TODO: finish it
@@ -381,7 +381,7 @@ function cJobs::EstimateCost()
 		}
 	this.moneyToBuild=money; //*cBanker.GetInflationRate();
 	this.cargoValue=AICargo.GetCargoIncome(this.cargoID, this.distance, daystransit);
-	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+this.cargoValue,2,"EstimateCost");
+	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+(this.cargoValue*this.distance),2,"EstimateCost");
 	}
 
 function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
@@ -549,14 +549,6 @@ function cJobs::UpdateDoableJobs()
 	local toproad=0;
 	local toprail=0;
 	local topwater=0;
-/*
-	foreach (id, value in INSTANCE.jobs.jobIndexer)
-		{
-		local myjob=cJobs.GetJobObject(id);
-		if (myjob.isUse)	parentListID.AddItem(myjob.parentID,1);
-		// build list of parent jobs already done
-		INSTANCE.Sleep(1);
-		}*/
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
 		if (id == 0 || id == 1)	continue;

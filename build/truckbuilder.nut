@@ -27,9 +27,9 @@ function cCarrier::CreateRoadEngine(engineID, depot, cargoID)
 if (!AIEngine.IsValidEngine(engineID))	return -1;
 local price=cEngine.GetPrice(engineID);
 INSTANCE.bank.RaiseFundsBy(price);
-if (!INSTANCE.bank.CanBuyThat(price))	DInfo("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1,"cCarrier::CreateRoadEngine");
+if (!INSTANCE.bank.CanBuyThat(price))	DWarn("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1,"cCarrier::CreateRoadEngine");
 local vehID=AIVehicle.BuildVehicle(depot, engineID);
-if (!AIVehicle.IsValidVehicle(vehID))	{ DInfo("Failure to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateRoadEngine"); return -1; }
+if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Failure to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateRoadEngine"); return -1; }
 cEngine.Update(vehID);
 // get & set refit cost
 local testRefit=AIAccounting();
@@ -81,28 +81,14 @@ while (!confirm)
 	else	vehID=INSTANCE.carrier.CreateRoadEngine(engineID, homedepot, cargoid);
 	if (vehID==-1)
 		DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
-	else	{
-		DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(vehID),0,"cCarrier::CreateRoadVehicle");
-		cEngine.Update(vehID);
-		if (AIEngine.GetCargoType(vehID) != cargoid)
-			{
-			local testRefit=AIAccounting();
-			if (!AIVehicle.RefitVehicle(vehID, cargoid))
-				{
-				DWarn("We fail to refit the engine, maybe we run out of money ?",1,"cCarrier::CreateRoadVehicle");
-				}
-			else	{
-				local refitprice=testRefit.GetCosts();
-				cEngine.SetRefitCost(engineID, cargoid, refitprice, AIVehicle.GetLength(engineID));
-				}
-			testRefit=null;
-			}
-		}
+	else	DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(vehID),0,"cCarrier::CreateRoadVehicle");
 	another=INSTANCE.carrier.ChooseRoadVeh(cargoid);
 	if (another==engineID && another!=null)
 		confirm=true;
-	else	vehengine=another;
-	if (another==null && lackMoney)	{ DError("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(vehengine),2,"cCarrier::CreateRoadVehicle"); return -2; }
+	else	engineID=another;
+	if (another==null && lackMoney)	{ DError("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle"); return -2; }
+	INSTANCE.NeedDelay(60);
+	if (!confirm && vehID!=-1)	AIVehicle.SellVehicle(vehID);
 	AIController.Sleep(1);
 	}
 
@@ -136,6 +122,8 @@ vehlist.Valuate(AIEngine.GetRoadType);
 vehlist.KeepValue(AIRoad.ROADTYPE_ROAD);
 vehlist.Valuate(AIEngine.IsBuildable);
 vehlist.KeepValue(1);
+vehlist.Valuate(AIEngine.GetPrice);
+vehlist.RemoveValue(0); // remove towncars toys
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
