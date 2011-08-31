@@ -86,17 +86,15 @@ function cEngine::Update(vehID)
 	{
 	local new_engine=AIVehicle.GetEngineType(vehID);
 	local engObj=cEngine.Load(new_engine);
-	//print("new_engine="+new_engine+" know="+engObj.isKnown);
 	if (engObj.isKnown)	return;
 	DInfo("Grabbing vehicle properties for "+engObj.name,2,"cEngine::Update");
-	//engObj.length=AIVehicle.GetLength(vehID);
 	local crgList=AICargoList();
 	foreach (cargoID, dummy in crgList)
 		{
 		local testing=AIVehicle.GetRefitCapacity(vehID, cargoID);
 		if (testing < 0)	testing=0;
 		engObj.cargo_capacity.SetValue(cargoID, testing);
-		engObj.cargo_length.SetValue(cargoID, AIVehicle.GetLength(vehID));
+		engObj.cargo_length.SetValue(cargoID, AIVehicle.GetLength(vehID)); // assume all cargo will gave same length
 		}
 	engObj.isKnown=true;
 	}

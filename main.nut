@@ -57,6 +57,7 @@ require("handler/stationhandler.nut");
 require("handler/chemin.nut");
 require("handler/railchemin.nut");
 require("handler/enginehandler.nut");
+require("handler/trainhandler.nut");
 require("utils/banker.nut");
 require("utils/misc.nut");
 require("handler/jobs.nut");

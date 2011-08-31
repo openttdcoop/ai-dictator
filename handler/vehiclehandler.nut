@@ -233,7 +233,6 @@ switch (reason)
 	break;
 	case	DepotAction.ADDWAGON:
 		rr="to add "+wagonum+" new wagons.";
-		reason+=1000+wagonnum;
 	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0);
@@ -484,10 +483,6 @@ foreach (vehicle, dummy in tlist)
 			}
 		}
 	}
-local dlist=AIVehicleList();
-dlist.Valuate(AIVehicle.IsStoppedInDepot);
-dlist.KeepValue(1);
-if (!dlist.IsEmpty())	INSTANCE.carrier.VehicleIsWaitingInDepot();
 }
 
 function cCarrier::CrazySolder(moneytoget)
