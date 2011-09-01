@@ -346,6 +346,7 @@ if (newTile == -1)	return newTile; // area not clear give up, the terraforming w
 //function cTileTools::IsBuildableRectangleFlat(tile, width, height)
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))	return newTile;
 local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
+INSTANCE.bank.RaiseFundsBigTime();
 print("before terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
 cTileTools.TerraformLevelTiles(newTile, tileTo);
 print("after terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
