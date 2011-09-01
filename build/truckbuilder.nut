@@ -53,7 +53,7 @@ local srcplace = road.source.locations.Begin();
 local dstplace = road.target.locations.Begin();
 local cargoid= road.cargoID;
 local engineID = INSTANCE.carrier.ChooseRoadVeh(cargoid);
-local homedepot = road.GetRouteDepot();
+local homedepot = cRoute.GetDepot(roadidx);
 local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0 && road.cargoID == cCargo.GetPassengerCargo());
 if (altplace && road.target.depot != null)	homedepot = road.target.depot;
 if (!cStation.IsDepot(homedepot))

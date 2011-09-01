@@ -56,7 +56,7 @@ function cTrain::Save()
 function cTrain::Load(tID)
 	{
 	local tobj=cTrain();
-	local inbase=(tID in cTrain.vehicledatase);
+	local inbase=(tID in cTrain.vehicledatabase);
 	tobj.vehicleID=tID;
 	if (AIVehicle.IsValidVehicle(tID))
 		{
@@ -102,7 +102,7 @@ function cTrain::IsFull(vehID)
 // return the cTrain.full value
 	{
 	local train=cTrain.Load(vehID);
-	return train.IsFull;
+	return train.full;
 	}
 
 function cTrain::SetFull(vehID, fullv)

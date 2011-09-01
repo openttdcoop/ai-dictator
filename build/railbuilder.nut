@@ -405,9 +405,9 @@ return bestWay;
 }
 
 function cBuilder::CreateStationsConnection(fromObj, toObj)
-// Connect station fromObj to station toObj
-// Pickup entry/exit close to each other
-// Create the connections in front of these stations
+// Connect station fromObj to station toObj by picking entry/exit close to each other and create connections in front of them
+// fromObj, toObj: 2 valid rail stations
+// this also set the INSTANCE.route.* properties
 {
 local srcStation=cStation.GetStationObject(fromObj);
 local dstStation=cStation.GetStationObject(toObj);
@@ -476,6 +476,8 @@ if (srcUseEntry)	srcStation.locations.SetValue(11,dstpos);
 		else	srcStation.locations.SetValue(13,dstpos);
 if (dstUseEntry)	dstStation.locations.SetValue(11,srcpos);
 		else	dstStation.locations.SetValue(13,srcpos);
+INSTANCE.route.source_RailEntry=srcUseEntry;
+INSTANCE.route.target_RailEntry=dstUseEntry;
 return true;
 }
 

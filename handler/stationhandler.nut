@@ -167,6 +167,7 @@ function cStation::UpdateCapacity()
 				if (vehcapacity > 0)
 					{
 					allcargos.SetValue(cargoID, fullcapacity+vehcapacity);
+					DInfo("Station "+this.name+" new total capacity set to "+(fullcapacity+vehcapacity)+" for "+AICargo.GetCargoLabel(cargoID),2,"cStation::UpdateCapacity");
 					break;
 					}
 				INSTANCE.Sleep(1);
@@ -619,7 +620,8 @@ if (thatstation.name == null)	thatstation.name=AIStation.GetName(thatstation.sta
 return thatstation.name;
 }
 
-function cStation::GetRailDepot(stationID=null)
+/*
+function cStation::GetRailDepot(useEntry, stationID=null)
 // Return a valid rail depot for that stationID
 {
 local thatstation=null;
@@ -630,6 +632,7 @@ if (cStation.IsDepot(thatstation.depot))	return thatstation.depot;
 if (cStation.IsDepot(thatstation.locations.GetValue(15)))	return thatstation.locations.GetValue(15);
 return -1;
 }
+*/
 
 function cStation::IsPlatformOpen(platformID, useEntry)
 // check if a platform entry or exit is usable

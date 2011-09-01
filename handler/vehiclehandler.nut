@@ -232,7 +232,7 @@ switch (reason)
 		rr="for a crazy action.";
 	break;
 	case	DepotAction.ADDWAGON:
-		rr="to add "+wagonum+" new wagons.";
+		rr="to add "+wagonnum+" new wagons.";
 	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0);

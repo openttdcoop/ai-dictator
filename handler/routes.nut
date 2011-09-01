@@ -59,6 +59,8 @@ static	function GetRouteObject(UID)
 	cargoID		= null;	// the cargo id
 	date_VehicleDelete= null;	// date of last time we remove a vehicle
 	date_lastCheck	= null;	// date of last time we check route health
+	source_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
+	target_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
 
 	constructor()
 		{
@@ -85,6 +87,8 @@ static	function GetRouteObject(UID)
 		cargoID		= null;
 		date_VehicleDelete= 0;
 		date_lastCheck	= null;
+		source_RailEntry	= null;
+		target_RailEntry	= null;
 		}
 	}
 
@@ -276,15 +280,6 @@ function cRoute::CreateNewRoute(UID)
 	//this.RouteSave();
 	}
 
-function cRoute::GetRouteDepot()
-// Return a depot, try return source depot, if it fail backup to target depot
-// Platform are the kind of route that can make source depot fail
-	{
-	if (this.source_entry && cStation.IsDepot(this.source.depot))	return	this.source.depot;
-	if (this.target_entry && cStation.IsDepot(this.target.depot))	return	this.target.depot;
-	return null;
-	}
-
 function cRoute::VirtualMailCopy()
 // this function copy infos from virtual passenger route to the mail one
 	{
@@ -428,3 +423,34 @@ function cRoute::RouteReleaseStation(stationid)
 	if (INSTANCE.route.RouteDamage.HasItem(this.UID))	INSTANCE.route.RouteDamage.RemoveItem(this.UID);
 	INSTANCE.builddelay=false; INSTANCE.bank.canBuild=true;
 	}
+
+function cRoute::GetDepot(uid)
+// Return a valid depot we could use, this mean we will seek out both side of the route if we cannot find a proper one
+	{
+	local road=cRoute.GetRouteObject(uid);
+	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::GetDepot"); return -1; }
+	if (road.route_type == RouteType.RAIL)
+		{
+		local se=road.source.depot;
+		local sx=road.source.locations.GetValue(15);
+		local de=road.target.depot;
+		local dx=road.target.locations.GetValue(15);
+		local one, two, three, four=null;
+		if (road.source_RailEntry)	{ one=se; three=sx; }
+						else	{ one=sx; three=se; }
+		if (road.target_RailEntry)	{ two=de; four=dx; }
+						else	{ two=dx; four=de; }
+		if (cStation.IsDepot(one))	return one;
+		if (cStation.IsDepot(two))	return two;
+		if (cStation.IsDepot(three))	return three;
+		if (cStation.IsDepot(four))	return four;
+		}
+	else	{
+		if (cStation.IsDepot(road.source.depot))	return road.source.depot;
+		if (cStation.IsDepot(road.target.depot))	return road.target.depot;
+		if (road.route_type == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
+		}
+	DError("Route "+route.name+" doesn't have any valid depot !",2,"cRoute::GetDepot");
+	return -1;
+	}
+

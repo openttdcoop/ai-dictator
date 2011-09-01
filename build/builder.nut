@@ -207,6 +207,7 @@ if (compare == null)	// might happen, we found a dead station
 	}
 if (compare.stationID == INSTANCE.route.source_stationID)	return false;
 if (compare.stationID == INSTANCE.route.target_stationID)	return false;
+if (compare.stationType == AIStation.STATION_TRAIN)	return false; // mark all rail stations incompatible to sharing
 DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
 // find if station will accept our cargo
 local handling=true;
@@ -261,13 +262,6 @@ else	{ // check the station is within our industry
 	}
 
 DInfo("Checking if station can accept more vehicles",1,"cBuilder::FindCompatibleStationExistsForAllCases");
-// TODO: fix that fast !!! We are giving stationID to a function that need routeID
-/*
-if (!INSTANCE.carrier.CanAddNewVehicle(compare.stationID,start,1))
-	{
-	DInfo("Station cannot get more vehicle, even compatible, we need a new one",1);
-	return false;
-	}*/
 return true;
 }
 

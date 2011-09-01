@@ -112,21 +112,18 @@ local dstplace=null;
 switch (road.route_type)
 	{
 	case AIVehicle.VT_ROAD:
-		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE + AIOrder.AIOF_FULL_LOAD_ANY;
-		if (road.target_istown)
-			{ twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE + AIOrder.AIOF_FULL_LOAD_ANY; }
-		else	{ twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE; }
+		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
+		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
+		if (!road.source_istown) oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
 	case AIVehicle.VT_RAIL:
-		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE + AIOrder.AIOF_FULL_LOAD_ANY;
+		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-/*		if (srcStation.STATION.haveEntry)	{ srcplace= srcStation.STATION.e_loc; }
-				else			{ srcplace= srcStation.STATION.s_loc; }
-		if (dstStation.STATION.haveEntry)	{ dstplace= dstStation.STATION.e_loc; }
-				else			{ dstplace= dstStation.STATION.s_loc; }
-*/
+		if (!road.source_istown)	oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+		srcplace = AIStation.GetLocation(road.source.stationID);
+		dstplace = AIStation.GetLocation(road.target.stationID);
 	break;
 	case AIVehicle.VT_AIR:
 		oneorder=AIOrder.AIOF_NONE;
@@ -185,7 +182,7 @@ local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 // One day i should check rogues vehicles running out of control from a route, but this shouldn't happen :p
 local road=cRoute.GetRouteObject(idx);
 local homedepot = null;
-if (road != null)	homedepot=road.GetRouteDepot();
+if (road != null)	homedepot=road.GetDepot(idx);
 if (homedepot == null)
 	{
 	local tile=AIVehicle.GetLocation(veh);
@@ -311,5 +308,24 @@ switch (vehicleType)
 	}
 return true;
 }
+
+function cCarrier::TrainSetOrders(trainID)
+// Set orders for a train
+{
+local uid=INSTANCE.carrier.VehicleFindRouteIndex(trainID);
+if (uid==null)	{ DError("Cannot find uid for that train",1,"cCarrier::TrainSetOrders"); return false; }
+local road=cRoute.GetRouteObject(uid);
+if (road==null)	return false;
+DInfo("Append orders to "+AIVehicle.GetName(trainID),2,"cCarrier::TrainSetOrder");
+local firstorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
+local secondorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
+if (!road.source_istown)	firstorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), firstorder))
+	{ DError(AIVehicle.GetName(trainID)+" refuse first order",2,"cCarrier::TrainSetOrder"); return false; }
+if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), secondorder))
+	{ DError(AIVehicle.GetName(trainID)+" refuse second order",2,"cCarrier::TrainSetOrder"); return false; }
+return true;
+}
+
 
 
