@@ -189,34 +189,34 @@ if (homedepot == null)
 	local isDepot=cStation.IsDepot(tile);
 	if (isDepot)
 		{
-		DInfo("Cannot find depot for "+INSTANCE.carrier.VehicleGetFormatString(veh)+" but it is at a depot :P",0);
+		DInfo("Cannot find depot for "+INSTANCE.carrier.VehicleGetFormatString(veh)+" but it is at a depot :P",0,"cCarrier::VehicleSetDepotOrder");
 		AIVehicle.StartStopVehicle(veh);
-		INSTANCE.Sleep(10);
+		INSTANCE.Sleep(20);
 		tile=AIVehicle.GetLocation(veh);
 		isDepot=cStation.IsDepot(tile);
 		if (!isDepot)	AIVehicle.StartStopVehicle(veh);
 		return;
 		}
 	if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false;
-	DError("DOH! Cannot find any depot to send "+INSTANCE.carrier.VehicleGetFormatString(veh)+" to !",0);
+	DError("DOH! Cannot find any depot to send "+INSTANCE.carrier.VehicleGetFormatString(veh)+" to !",0,"cCarrier::VehicleSetDepotOrder");
 	if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_AIR)
 		{
 		local virtgroup=cRoute.GetVirtualAirPassengerGroup();
 		local ingroup=AIVehicle.GetGroupID(veh);
 		if (ingroup != virtgroup)
 			{
-			DInfo("Moving the aircraft to virtual network as backup",1);
+			DInfo("Moving the aircraft to virtual network as backup",1,"cCarrier::VehicleSetDepotOrder");
 			AIGroup.MoveVehicle(virtgroup, veh);
 			return;
 			}
 		}
 	if (AIVehicle.SendVehicleToDepot(veh)) // it might find a depot near, let's hope
 		{
-		DWarn("Looks like "+INSTANCE.carrier.VehicleGetFormatString(veh)+" found a depot in its way",0);
+		DWarn("Looks like "+INSTANCE.carrier.VehicleGetFormatString(veh)+" found a depot in its way",0,"cCarrier::VehicleSetDepotOrder");
 		INSTANCE.carrier.ToDepotList.AddItem(veh,DepotAction.SELL);
 		}
 	else	{
-		DError("DOH DOH ! We're really in bad situation with "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Trying to move it to some other route as last hope!",0);
+		DError("DOH DOH ! We're really in bad situation with "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Trying to move it to some other route as last hope!",0,"cCarrier::VehicleSetDepotOrder");
 		local veh_in_group = AIVehicle.GetGroupID(veh);
 		local vehList = AIVehicleList();
 		if (vehList.HasItem(veh))	vehList.SetValue(veh,-1); // remove the bad vehicle from the list
@@ -229,12 +229,12 @@ if (homedepot == null)
 		if (!vehList.IsEmpty())
 			{
 			local newgroup=vehList.GetValue(vehList.Begin());
-			DWarn("Found group #"+newgroup+AIGroup.GetName(newgroup)+" that can hold "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Moving it there",0);
+			DWarn("Found group #"+newgroup+AIGroup.GetName(newgroup)+" that can hold "+INSTANCE.carrier.VehicleGetFormatString(veh)+". Moving it there",0,"cCarrier::VehicleSetDepotOrder");
 			if (!AIGroup.MoveVehicle(newgroup, veh))	weird=true;
 									else	weird=false;
 			}
-		else	{ DError("Cannot find a group to hold "+INSTANCE.carrier.VehicleGetFormatString(veh),0); }
-		if (weird)	DError("LOL ! And this fail, can only hope "+INSTANCE.carrier.VehicleGetFormatString(veh)+" get destroy itself now. Shoot it !",0);
+		else	{ DError("Cannot find a group to hold "+INSTANCE.carrier.VehicleGetFormatString(veh),0,"cCarrier::VehicleSetDepotOrder"); }
+		if (weird)	DError("LOL ! And this fail, can only hope "+INSTANCE.carrier.VehicleGetFormatString(veh)+" get destroy itself now. Shoot it !",0,"cCarrier::VehicleSetDepotOrder");
 		}
 	return false;
 	}
@@ -245,23 +245,28 @@ if (road.source_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocatio
 if (road.target_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocation(road.target_stationID), AIOrder.AIOF_NONE);
 local orderindex=AIOrder.GetOrderCount(veh);
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
-	{ DError("Vehicle refuse goto depot order",2); }
+	{ DError("Vehicle refuse goto depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
-	{ DError("Vehicle refuse goto depot order",2); }
+	{ DError("Vehicle refuse goto depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 // And another one day i will kills all vehicles that refuse to go to a depot !!!
 if (road.target_entry)	homedepot=road.target.depot;
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
-	{ DError("Vehicle refuse goto depot order",2); }
+	{ DError("Vehicle refuse goto depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
-	{ DError("Vehicle refuse goto depot order",2); }
+	{ DError("Vehicle refuse goto depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 AIOrder.SkipToOrder(veh, orderindex);
 local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
 INSTANCE.Sleep(5);	// wait it to move a bit
 local newtake=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
-if (newtake > dist)	{ DInfo("Reversing direction of "+INSTANCE.carrier.VehicleGetFormatString(veh),1); AIVehicle.ReverseVehicle(veh); }
+
+if (AIVehicle.GetVehicleType(veh)!=AIVehicle.VT_RAIL && newtake > dist)
+	{
+	DInfo("Reversing direction of "+INSTANCE.carrier.VehicleGetFormatString(veh),1,"cCarrier::VehicleSetDepotOrder");
+	AIVehicle.ReverseVehicle(veh);
+	}
 // twice time, even we get caught by vehicle orders check, it will ask to send the vehicle.... to depot
-DInfo("Setting depot order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2);
+DInfo("Setting depot order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2,"cCarrier::VehicleSetDepotOrder");
 }
 
 function cCarrier::VehicleOrderIsValid(vehicle,orderpos)

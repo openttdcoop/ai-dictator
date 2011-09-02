@@ -108,6 +108,12 @@ AIOrder.AppendOrder(vehID, srcplace, firstorderflag);
 AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(vehID);
 if (!AIVehicle.StartStopVehicle(vehID)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateRoadVehicle"); }
+local topspeed=AIEngine.GetMaxSpeed(AIVehicle.GetEngineType(vehID));
+if (INSTANCE.carrier.speed_MaxRoad < topspeed)
+	{
+	DInfo("Setting maximum speed for road vehicle to "+topspeed,0,"cCarrier::CreateRoadVehicle");
+	INSTANCE.carrier.speed_MaxRoad=topspeed;
+	}
 return true;
 }
 
@@ -126,8 +132,17 @@ vehlist.Valuate(AIEngine.GetPrice);
 vehlist.RemoveValue(0); // remove towncars toys
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
-vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
-vehlist.KeepValue(1);
+if (INSTANCE.safeStart>0)
+	{
+	vehlist.Valuate(AIEngine.GetCargoType);
+	vehlist.KeepValue(cargoid);
+	}
+else	{
+	vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
+	vehlist.KeepValue(1);
+	}
+vehlist.Valuate(cEngine.GetCapacity, cargoid);
+vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
 vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
 return (vehlist.IsEmpty()) ? null : vehlist.Begin();

@@ -14,14 +14,12 @@
 class cEngine extends AIEngine
 {
 static	enginedatabase = {};
-static	engine_cache = [-1, -1, -1, -1, -1];
-		// we cache engineID of last query for an engine type : train, wagon, road, air, water
 static	function GetEngineObject(engineID)
 		{
 		return engineID in cEngine.enginedatabase ? cEngine.enginedatabase[engineID] : null;
 		}
 
-	engineID		= null;	// id of industry/town
+	engineID		= null;	// id of the engine
 	name			= null;	// name
 	cargo_capacity	= null;	// capacity per cargo item=cargoID, value=capacity when refit
 	cargo_price		= null;	// price to refit item=cargoID, value=refit cost
@@ -63,7 +61,7 @@ function cEngine::Save()
 	this.name=AIEngine.GetName(this.engineID);
 	cEngine.enginedatabase[this.engineID] <- this;
 	DInfo("Adding "+this.name+" to cEngine database",2,"cEngine::Save");
-	DInfo("List of known vehicles : "+(cEngine.enginedatabase.len()),1,"cEngine::Save");
+	DInfo("List of known engines : "+(cEngine.enginedatabase.len()),1,"cEngine::Save");
 	}
 
 function cEngine::Load(eID)

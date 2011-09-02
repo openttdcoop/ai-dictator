@@ -35,6 +35,7 @@ enum DepotAction {
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
+require("handler/bridgehandler.nut");
 require("build/builder.nut");
 require("build/stationbuilder.nut");
 require("build/airportbuilder.nut");
@@ -91,6 +92,7 @@ class DictatorAI extends AIController
 	route = null;
 	buildTimer=null;
 	safeStart=null;
+	bridgeInit=null;
 
    constructor()
    	{
@@ -119,6 +121,7 @@ class DictatorAI extends AIController
 	route = cRoute();
 	buildTimer=0;
 	safeStart=0;
+	bridgeInit=cBridge();
 	} 
  }
  
@@ -229,6 +232,15 @@ function DictatorAI::Start()
 		safeStart=3;
 		}
 	bank.Update();
+	print("AIBridge version IsBridgeTile"+cBridge.IsBridgeTile(0x6ac8));
+	//print("cBridge version IsBridgeTile"+cBridge.IsBridgeTile(0x5ecb));
+	print("speed="+cBridge.GetMaxSpeed(0x6ac8));
+	//print("we hack isroad"+cBridge.IsRoadBridge(0x5ecc));
+	//print("we hack israil"+cBridge.IsRailBridge(0x5ecc));
+	//print("we hack bad"+cBridge.IsRailBridge(0x62ca));
+	print("we hack nothing");
+	NeedDelay(50);
+	INSTANCE.builder.BridgeUpgrader();
 	while(true)
 		{
 		this.CheckCurrentSettings();
@@ -262,7 +274,7 @@ function DictatorAI::Start()
 		bank.CashFlow();
 		eventManager.HandleEvents();
 		builder.QuickTasks();
-		builder.ShowBlackList();
+		//builder.ShowBlackList();
 		AIController.Sleep(60);
 		builder.WeeklyChecks();
 		builder.MonthlyChecks();

@@ -104,6 +104,7 @@ foreach (stationID, dummy in stationList)
 	INSTANCE.Sleep(1);
 	cStation.CheckCargoHandleByStation(stationID);
 	}
+cBuilder.BridgeUpgrader();
 }
 
 function cBuilder::RouteIsDamage(idx)
@@ -465,4 +466,60 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 
 	}
 }
+
+function cBuilder::BridgeUpgrader()
+// Upgrade bridge we own and if it's need
+	{
+	local RoadBridgeList=AIList();
+	RoadBridgeList.AddList(cBridge.BridgeList);
+	RoadBridgeList.Valuate(cBridge.GetMaxSpeed);
+	local RailBridgeList=AIList();
+	RailBridgeList.AddList(RoadBridgeList);
+	INSTANCE.carrier.speed_MaxRoad=120;
+	RoadBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxRoad); // Keep only too slow bridges
+	RailBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxTrain);
+	RoadBridgeList.Valuate(cBridge.IsRoadBridge);
+	RoadBridgeList.KeepValue(1);
+	RailBridgeList.Valuate(cBridge.IsRailBridge);
+	RailBridgeList.KeepValue(1);
+	local workBridge=AIList();
+	local twice=false;
+	local neededSpeed=0;
+	local btype=0;
+	local justOne=false;
+	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+	print("we have "+RailBridgeList.Count()+" rail bridges and "+RoadBridgeList.Count()+" road bridge");
+	do	{
+		workBridge.Clear();
+		if (!twice)	{ workBridge.AddList(RoadBridgeList); neededSpeed=INSTANCE.carrier.speed_MaxRoad; btype=AIVehicle.VT_ROAD; }
+			else	{ workBridge.AddList(RailBridgeList); neededSpeed=INSTANCE.carrier.speed_MaxTrain; btype=AIVehicle.VT_RAIL; }
+		foreach (bridgeUID, speed in workBridge)
+			{
+			local thatbridge=cBridge.Load(bridgeUID);
+			if (thatbridge.owner != -1 && thatbridge.owner != weare)	continue;
+			// only upgrade our or town bridge
+			if (thatbridge.owner == -1 && justOne)	continue;
+			// don't upgrade all bridges in one time, we're kind but we're not l'abbé Pierre!
+			local speederBridge=AIBridgeList_Length(thatbridge.length);
+			speederBridge.Valuate(AIBridge.GetMaxSpeed);
+			speederBridge.KeepAboveValue(neededSpeed); // Keep only ones faster
+			speederBridge.Valuate(cBanker.canByThat);
+			local oldbridge=AIBridge.GetName(thatbridge.BridgeID);
+			speederBridge.KeepValue(1);
+			if (!speeder.IsEmpty())
+				{
+				local nbridge=AIBridge.GetName(speederBridge.Begin());
+				local nspeed=AIBridge.GetMaxSpeed(speederBridge.Begin());
+				INSTANCE.bank.RaiseFundsBy(AIBridge.GetPrice(speederBridge.Begin()));
+				if (AIBridge.BuildBridge(btype, speederBridge.Begin(), thatbridge.firstside, thatbridge.otherside))
+					{
+					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0,"cBuilder::BridgeUpgrader");
+					if (thatbridge.owner==-1)	justOne=true;
+					}
+				}
+			INSTANCE.Sleep(1);
+			}
+		twice=!twice;
+		} while (twice);
+	}
 

@@ -213,7 +213,7 @@ if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false;
 INSTANCE.carrier.VehicleSetDepotOrder(veh);
 local understood=false;
 understood=AIVehicle.SendVehicleToDepot(veh);
-if (!understood) { DInfo(INSTANCE.carrier.VehicleGetFormatString(veh)+" refuse to go to depot",1); }
+if (!understood) { DInfo(INSTANCE.carrier.VehicleGetFormatString(veh)+" refuse to go to depot",1,"cCarrier::VehicleSendToDepot"); }
 local rr="";
 local wagonnum=0;
 if (reason > 1000)	{ wagonnum=reason-1000-DepotAction.ADDWAGON; reason=DepotAction.ADDWAGON; }
@@ -235,7 +235,7 @@ switch (reason)
 		rr="to add "+wagonnum+" new wagons.";
 	break;
 	}
-DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0);
+DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0,"cCarrier::VehicleSendToDepot");
 INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
 }
 
@@ -559,10 +559,23 @@ foreach (i, dummy in tlist)
 	{
 	INSTANCE.Sleep(1);
 	local reason=DepotAction.SELL;
+	local numwagon=0;
+	local uid=0;
+	local name=INSTANCE.carrier.VehicleGetFormatString(i);
 	if (INSTANCE.carrier.ToDepotList.HasItem(i))
 		{
 		reason=INSTANCE.carrier.ToDepotList.GetValue(i);
 		INSTANCE.carrier.ToDepotList.RemoveItem(i);
+		if (reason > 1000)
+			{
+			numwagon=reason-1000-DepotAction.ADDWAGON;
+			reason=DepotAction.ADDWAGON;
+			uid=INSTANCE.carrier.VehicleFindRouteIndex(i);
+			if (uid==null)	{
+						DError("Cannot find the route uid for "+name,2,"cCarrier::VehicleIsWaitingInDepot");
+						reason=DepotAction.SELL;
+						}
+			}
 		}
 	switch (reason)
 		{
@@ -579,7 +592,8 @@ foreach (i, dummy in tlist)
 			INSTANCE.carrier.VehicleSell(i,false);
 		break;
 		case	DepotAction.ADDWAGON:
-			INSTANCE.carrier.VehicleSell(i,false);
+			DInfo("Vehicle "+name+" is waiting at depot to get "+numwagon+" wagons",2,"cCarrier::VehicleIsWaitingInDepot");
+			INSTANCE.carrier.AddWagon(uid, numwagon);
 		break;
 		}
 	if (INSTANCE.carrier.ToDepotList.IsEmpty())	INSTANCE.carrier.vehnextprice=0;

@@ -184,7 +184,8 @@ function cStation::StationSave()
 	if (this.stationID in cStation.stationdatabase)
 		{ DInfo("Station #"+this.stationID+" already in database "+cStation.stationdatabase.len(),2,"cStation::StationSave"); }
 	else	{
-		DInfo("Adding station : "+this.stationID+" to station database",2,"cStation::StationSave");
+		this.name=AIStation.GetName(this.stationID)+"(#"+this.stationID+")";
+		DInfo("Adding station : "+this.name+" to station database",2,"cStation::StationSave");
 		cStation.stationdatabase[this.stationID] <- this;
 		}
 	}

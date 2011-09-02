@@ -322,6 +322,9 @@ do	{
 		{ // call that train to depot
 		DInfo("Sending a train to depot to add more wagons",1,"AddWagon");
 		INSTANCE.carrier.VehicleSendToDepot(tID, DepotAction.ADDWAGON+1000+wagonNeed);
+		local wagonID=AIVehicle.GetWagonEngineType(tID,1);
+		if (AIEngine.IsValidEngine(wagonID))
+			INSTANCE.carrier.vehnextprice+=(wagonNeed*AIEngine.GetPrice(wagonID));
 		return;
 		}
 	if (tID==-1)
@@ -333,7 +336,16 @@ do	{
 			stop=true;
 			tID=INSTANCE.carrier.AddNewTrain(uid, null, 0, depotID);
 			if (tID == -3)	stop=false;
-			if (AIVehicle.IsValidVehicle(tID))	stop=true;
+			if (AIVehicle.IsValidVehicle(tID))
+				{
+				stop=true;
+				local topspeed=AIEngine.GetMaxSpeed(AIVehicle.GetEngineType(tID));
+				if (INSTANCE.carrier.speed_MaxTrain < topspeed)
+					{
+					DInfo("Setting maximum speed for trains to "+topspeed,0,"cCarrier::CreateRoadVehicle");
+					INSTANCE.carrier.speed_MaxTrain=topspeed;
+					}
+				}
 			}
 		}
 	if (AIVehicle.IsValidVehicle(tID) && AIVehicle.GetState(tID) == AIVehicle.VS_IN_DEPOT)

@@ -450,7 +450,7 @@ function cRoute::GetDepot(uid)
 		if (cStation.IsDepot(road.target.depot))	return road.target.depot;
 		if (road.route_type == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
 		}
-	DError("Route "+route.name+" doesn't have any valid depot !",2,"cRoute::GetDepot");
+	DError("Route "+road.name+" doesn't have any valid depot !",2,"cRoute::GetDepot");
 	return -1;
 	}
 

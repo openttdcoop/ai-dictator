@@ -42,6 +42,8 @@ static	function GetVehicleObject(vehicleID)
 	do_profit		=null;	// Record each vehicle profits
 	warTreasure		=null;	// total current value of nearly all our road vehicle
 	highcostAircraft	=null;	// the highest cost for an aircraft we need
+	speed_MaxTrain	=null;	// maximum speed a train could do
+	speed_MaxRoad	=null;	// maximum speed a road vehicle could do
 
 	constructor()
 		{
@@ -58,6 +60,8 @@ static	function GetVehicleObject(vehicleID)
 		do_profit		=AIList();
 		warTreasure		=0;
 		highcostAircraft	=0;
+		speed_MaxTrain	=0;
+		speed_MaxRoad	=0;
 		}
 }
 
@@ -262,6 +266,8 @@ if (capacity==0) return 0;
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
+local eff=(price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
+DInfo("Engine "+AIEngine.GetName(engine)+" efficiency with "+AICargo.GetCargoLabel(cargoID)+": "+eff+" - Capacity:  "+capacity,1,"cCarrier::GetEngineEfficiency");
 return (price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
 }
 
