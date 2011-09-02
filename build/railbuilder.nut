@@ -1345,7 +1345,7 @@ for (local kk=0; kk<4; kk++)
 			DInfo("Tunnel found",2,"RailConnectorSolver");
 			trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 			}
-		if (AIBridge.IsBridgeTile(tile))
+		if (cBridge.IsBridgeTile(tile))
 			{
 			test=AIBridge.GetOtherBridgeEnd(tile);
 			testdir=cBuilder.GetDirection(tile, test);

@@ -232,15 +232,6 @@ function DictatorAI::Start()
 		safeStart=3;
 		}
 	bank.Update();
-	print("AIBridge version IsBridgeTile"+cBridge.IsBridgeTile(0x6ac8));
-	//print("cBridge version IsBridgeTile"+cBridge.IsBridgeTile(0x5ecb));
-	print("speed="+cBridge.GetMaxSpeed(0x6ac8));
-	//print("we hack isroad"+cBridge.IsRoadBridge(0x5ecc));
-	//print("we hack israil"+cBridge.IsRailBridge(0x5ecc));
-	//print("we hack bad"+cBridge.IsRailBridge(0x62ca));
-	print("we hack nothing");
-	NeedDelay(50);
-	INSTANCE.builder.BridgeUpgrader();
 	while(true)
 		{
 		this.CheckCurrentSettings();

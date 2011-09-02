@@ -475,7 +475,6 @@ function cBuilder::BridgeUpgrader()
 	RoadBridgeList.Valuate(cBridge.GetMaxSpeed);
 	local RailBridgeList=AIList();
 	RailBridgeList.AddList(RoadBridgeList);
-	INSTANCE.carrier.speed_MaxRoad=120;
 	RoadBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxRoad); // Keep only too slow bridges
 	RailBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxTrain);
 	RoadBridgeList.Valuate(cBridge.IsRoadBridge);
@@ -488,7 +487,7 @@ function cBuilder::BridgeUpgrader()
 	local btype=0;
 	local justOne=false;
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-	print("we have "+RailBridgeList.Count()+" rail bridges and "+RoadBridgeList.Count()+" road bridge");
+	DInfo("We knows "+RailBridgeList.Count()+" rail bridges and "+RoadBridgeList.Count()+" road bridges",0,"cBuilder::BridgeUpgrader");
 	do	{
 		workBridge.Clear();
 		if (!twice)	{ workBridge.AddList(RoadBridgeList); neededSpeed=INSTANCE.carrier.speed_MaxRoad; btype=AIVehicle.VT_ROAD; }
@@ -503,14 +502,14 @@ function cBuilder::BridgeUpgrader()
 			local speederBridge=AIBridgeList_Length(thatbridge.length);
 			speederBridge.Valuate(AIBridge.GetMaxSpeed);
 			speederBridge.KeepAboveValue(neededSpeed); // Keep only ones faster
-			speederBridge.Valuate(cBanker.canByThat);
-			local oldbridge=AIBridge.GetName(thatbridge.BridgeID);
+			speederBridge.Valuate(cBanker.CanBuyThat);
+			local oldbridge=AIBridge.GetName(thatbridge.bridgeID);
 			speederBridge.KeepValue(1);
-			if (!speeder.IsEmpty())
+			if (!speederBridge.IsEmpty())
 				{
 				local nbridge=AIBridge.GetName(speederBridge.Begin());
 				local nspeed=AIBridge.GetMaxSpeed(speederBridge.Begin());
-				INSTANCE.bank.RaiseFundsBy(AIBridge.GetPrice(speederBridge.Begin()));
+				INSTANCE.bank.RaiseFundsBy(AIBridge.GetPrice(speederBridge.Begin(),thatbridge.length));
 				if (AIBridge.BuildBridge(btype, speederBridge.Begin(), thatbridge.firstside, thatbridge.otherside))
 					{
 					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0,"cBuilder::BridgeUpgrader");

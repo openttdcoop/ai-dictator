@@ -145,6 +145,7 @@ vehlist.Valuate(cEngine.GetCapacity, cargoid);
 vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
 vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
+DInfo("Selected bus/truck : "+AIEngine.GetName(vehlist.Begin())+" eff: "+vehlist.GetValue(vehlist.Begin()),1,"cCarrier::ChooseRoadVeh");
 return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }
 

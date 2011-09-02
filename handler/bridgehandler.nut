@@ -55,23 +55,18 @@ function cBridge::GetBridgeUID(tile)
 	local validend=cBridge.IsValidTile(tile);
 	if (!validstart && !validend)
 		{ DError("This is not a bridge",2,"cBridge::GetBridgeUID"); return null; }
-	print("::getbridgeuid too big ? "+tile+" "+AIBridge.GetOtherBridgeEnd(tile));
 	return 0-( (tile+1)*(AIBridge.GetOtherBridgeEnd(tile)+1) );
 	}
 
 function cBridge::Save()
 // Save the bridge in the database
 	{
-	print("::save");
 	this.bridgeUID=cBridge.GetBridgeUID(this.firstside);
 	if (bridgeUID==null)	return; // no bridge found
 	local validstart=cBridge.IsValidTile(this.firstside);
-	print("::save is in data? "+this.bridgeUID+" "+(this.bridgeUID in cBridge.bridgedatabase));
-	print("::save validstart="+validstart);
 	if (validstart)	this.otherside=AIBridge.GetOtherBridgeEnd(this.firstside);
 			else	this.firstside=AIBridge.GetOtherBridgeEnd(this.otherside);
-	if (this.bridgeUID in cBridge.bridgedatabase)	{ print("::save already in data???"); return; }
-	print("::save didn't find it in data");
+	if (this.bridgeUID in cBridge.bridgedatabase)	return;
 	this.length=AIMap.DistanceManhattan(this.firstside, this.otherside) +1;
 	local dir=cBuilder.GetDirection(this.firstside, this.otherside);
 	if (dir == 0 || dir == 1)	this.direction = AIRail.RAILTRACK_NW_SE;
@@ -88,19 +83,14 @@ function cBridge::Load(bUID)
 // Load a bridge object, and detect if we have an UID or a tile gave
 	{
 	local cobj=cBridge();
-	print("::load bUID="+bUID);
 	if (AIMap.IsValidTile(bUID))
 		{
-		print("::load valid tile");
 		cobj.bridgeUID=cBridge.GetBridgeUID(bUID);
-		print("::load getbridgeUID return "+cobj.bridgeUID);
 		if (cobj.bridgeUID!=null)	cobj.firstside=bUID;
-		print("::load firstside="+cobj.firstside);
 		bUID=cobj.bridgeUID;
 		}
 	else	cobj.bridgeUID=bUID;
-	print("::load is in database? "+bUID+" "+(bUID in cBridge.bridgedatabase));
-	if (bUID in cBridge.bridgedatabase)	{ print("::load found in data"); cobj=cBridge.GetBridgeObject(bUID);/* cBridge.CheckBridge(bUID);*/ }
+	if (bUID in cBridge.bridgedatabase)	{ cobj=cBridge.GetBridgeObject(bUID); cBridge.CheckBridge(bUID); }
 						else	cobj.Save(); // we will not save a null bridgeUID
 	return cobj;
 	}
@@ -163,14 +153,12 @@ function cBridge::GetBridgeID(bUID)
 // return the bridgeID
 	{
 	local cobj=cBridge.Load(bUID);
-	print(":: getbridgeid "+bUID+" cobj="+cobj.bridgeUID+" bridgeid="+cobj.bridgeID);
 	return cobj.bridgeID;
 	}
 
 function cBridge::GetMaxSpeed(bUID)
 // return the max speed of a bridge
 	{
-	print(":: getmaxspeed");
 	return AIBridge.GetMaxSpeed(cBridge.GetBridgeID(bUID));
 	}
 
@@ -179,7 +167,6 @@ function cBridge::IsBridgeTile(tile)
 	{
 	if (AIBridge.IsBridgeTile(tile))
 		{
-		//print("hack isBridgeTile enter");
 		local cobj=cBridge();
 		cobj.firstside=tile;
 		cobj.bridgeUID=cBridge.GetBridgeUID(tile);
@@ -193,7 +180,7 @@ function cBridge::IsRoadBridge(tile)
 // return true if that bridge is a road bridge
 	{
 	local cobj=cBridge.Load(tile);
-	if (AIBridge.IsBridgeTile(cobj.firstside) && AITile.HasTransportType(cobj.firstside, AITile.TRANSPORT_ROAD))	return true;
+	if (cBridge.IsBridgeTile(cobj.firstside) && AITile.HasTransportType(cobj.firstside, AITile.TRANSPORT_ROAD))	return true;
 	return false;
 	}
 
@@ -201,6 +188,6 @@ function cBridge::IsRailBridge(bUID)
 // return true if that bridge is a rail bridge
 	{
 	local cobj=cBridge.Load(bUID);
-	if (AIBridge.IsBridgeTile(cobj.firstside) && AITile.HasTransportType(cobj.firstside, AITile.TRANSPORT_RAIL))	return true;
+	if (cBridge.IsBridgeTile(cobj.firstside) && AITile.HasTransportType(cobj.firstside, AITile.TRANSPORT_RAIL))	return true;
 	return false;
 	}

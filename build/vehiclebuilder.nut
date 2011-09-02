@@ -262,12 +262,12 @@ function cCarrier::GetEngineEfficiency(engine, cargoID=null)
 {
 local price=cEngine.GetPrice(engine, cargoID);
 local capacity=cEngine.GetCapacity(engine, cargoID);
-if (capacity==0) return 0;
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
+if (capacity==0)	{ print("Engine "+AIEngine.GetName(engine)+" capacity=0 doesn't handle "+cargoID); return 999999999; }
 local eff=(price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
-DInfo("Engine "+AIEngine.GetName(engine)+" efficiency with "+AICargo.GetCargoLabel(cargoID)+": "+eff+" - Capacity:  "+capacity,1,"cCarrier::GetEngineEfficiency");
+DInfo("Engine "+AIEngine.GetName(engine)+" efficiency with "+cargoID+": "+eff+" - Capacity:  "+capacity,1,"cCarrier::GetEngineEfficiency");
 return (price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
 }
 

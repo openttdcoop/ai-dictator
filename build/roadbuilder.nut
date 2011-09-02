@@ -688,7 +688,7 @@ while (path != null)
 				}
 			}
 	 	else	{
-			if (!AIBridge.IsBridgeTile(path.GetTile()) && !AITunnel.IsTunnelTile(path.GetTile()))
+			if (!cBridge.IsBridgeTile(path.GetTile()) && !AITunnel.IsTunnelTile(path.GetTile()))
 				{
 				if (AIRoad.IsRoadTile(path.GetTile())) cTileTools.DemolishTile(path.GetTile());
 				if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == par.GetTile())
@@ -1076,10 +1076,10 @@ local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetT
 foreach (voisin in directions)
 	{
 	direction=source+voisin;
-	if (AIBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
+	if (cBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
 		{
 		local endat=null;
-		endat=AIBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
+		endat=cBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
 		// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
 		// if we are connect to someone, i reset "source" to be "someone" and continue
 		local guessTile=null;	
