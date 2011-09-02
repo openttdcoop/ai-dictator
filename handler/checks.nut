@@ -502,9 +502,7 @@ function cBuilder::BridgeUpgrader()
 			local speederBridge=AIBridgeList_Length(thatbridge.length);
 			speederBridge.Valuate(AIBridge.GetMaxSpeed);
 			speederBridge.KeepAboveValue(neededSpeed); // Keep only ones faster
-			speederBridge.Valuate(cBanker.CanBuyThat);
 			local oldbridge=AIBridge.GetName(thatbridge.bridgeID);
-			speederBridge.KeepValue(1);
 			if (!speederBridge.IsEmpty())
 				{
 				local nbridge=AIBridge.GetName(speederBridge.Begin());
