@@ -88,7 +88,7 @@ while (!confirm)
 	else	engineID=another;
 	if (another==null && lackMoney)	{ DError("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle"); return -2; }
 	INSTANCE.NeedDelay(60);
-	if (!confirm && vehID!=-1)	AIVehicle.SellVehicle(vehID);
+	if (!confirm && vehID!=-1)	cCarrier.VehicleSell(vehID);
 	AIController.Sleep(1);
 	}
 
@@ -132,15 +132,15 @@ vehlist.Valuate(AIEngine.GetPrice);
 vehlist.RemoveValue(0); // remove towncars toys
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
-if (INSTANCE.safeStart>0)
+/*if (INSTANCE.safeStart>0)
 	{
 	vehlist.Valuate(AIEngine.GetCargoType);
 	vehlist.KeepValue(cargoid);
 	}
-else	{
+else	{*/
 	vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 	vehlist.KeepValue(1);
-	}
+	//}
 vehlist.Valuate(cEngine.GetCapacity, cargoid);
 vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
 vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);

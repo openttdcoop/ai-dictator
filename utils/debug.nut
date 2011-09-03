@@ -25,7 +25,7 @@ function ClearSignsALL()
 {
 if (!INSTANCE.debug)	return;
 local sweeper=AISignList();
-DInfo("Removing Signs ! "+sweeper.Count(),2,"ClearSignsALL");
+//DInfo("Removing Signs ! "+sweeper.Count(),2,"ClearSignsALL");
 AIController.Sleep(80);
 foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
 }

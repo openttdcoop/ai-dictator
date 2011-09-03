@@ -62,7 +62,7 @@
 
 	AddSetting({
 		name = "use_nicetrain",
-		description = "Enable AI to use trains for anything (better for economy) OR AI will respect newGRF authors choices (better for aesthetics)",
+		description = "Allow AI to use trains for anything (better for economy) OR respect newGRF authors choices (better for aesthetics)",
 		easy_value = 0,
 		medium_value = 1,
 		hard_value = 1,
@@ -72,7 +72,7 @@
 
 	AddSetting({
 		name = "use_road",
-		description = "Use road vehicles",
+		description = "Use buses & trucks",
 		easy_value = 1,
 		medium_value = 1,
 		hard_value = 1,
@@ -101,13 +101,24 @@
 
 	AddSetting({
 		name = "use_terraform",
-		description = "Allow the ai to terraform when need, disable in Lazy mode",
+		description = "Allow terraforming, always disable in Lazy mode",
 		easy_value = 0,
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
+
+	AddSetting({
+		name = "upgrade_townbridge",
+		description = "Allow AI to also upgrade town bridges",
+		easy_value = 1,
+		medium_value = 1,
+		hard_value = 1,
+		custom_value = 1,
+		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+	});
+
     	AddSetting({
 	 name = "debug",
 	 description = "Enable debug messages",

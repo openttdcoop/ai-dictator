@@ -29,6 +29,7 @@ static	function GetTrainObject(vehicleID)
 	src_useEntry	= null;	// source station is use by its entry=true, exit=false;
 	dst_useEntry	= null;	// destination station is use by its entry=true, exit=false;
 	full			= null; 	// set to true if train cannot have more wagons attach to it
+	wagonPrice		= null;	// price to buy a new wagon for that train
 	
 	constructor()
 		{
@@ -41,6 +42,7 @@ static	function GetTrainObject(vehicleID)
 		src_useEntry	= null;
 		dst_useEntry	= null;
 		full			= false;
+		wagonPrice		= 0;
 		}
 }
 
@@ -111,3 +113,27 @@ function cTrain::SetFull(vehID, fullv)
 	local train=cTrain.Load(vehID);
 	train.full=fullv;
 	}
+
+function cTrain::SetWagonPrice(vehID, wprice)
+// Set the price for a wagon
+	{
+	local train=cTrain.Load(vehID);
+	train.wagonPrice=wprice;
+	}
+
+function cTrain::GetWagonPrice(vehID)
+// Return the price to buy a new wagon
+	{
+	local train=cTrain.Load(vehID);
+	return train.wagonPrice;
+	}
+
+function cTrain::IsEmpty(vehID)
+// return true if that vehicle have 0 wagons or 0 locos
+	{
+	local train=cTrain.Load(vehID);
+	if (train.numberLocos==0)	return true;
+	if (train.numberWagons==0)	return true;
+	return false;
+	}
+

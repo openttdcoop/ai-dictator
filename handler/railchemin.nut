@@ -66,6 +66,7 @@ DInfo("Capacity ="+capacity+" wait="+cargowait+" remain="+remain+" needbycapacit
 //if (firstveh)	vehneed=3; // build 3 wagons for a start
 DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+" firstveh="+firstveh,2,"DutyOnRailsRoute");
 
-if (!INSTANCE.carrier.AddWagon(uid,vehneed))	INSTANCE.bank.busyRoute=true;
+if (vehneed > 0)
+	if (!INSTANCE.carrier.AddWagon(uid,vehneed))	INSTANCE.bank.busyRoute=true;
 }
 

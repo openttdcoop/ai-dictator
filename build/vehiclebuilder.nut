@@ -271,4 +271,3 @@ DInfo("Engine "+AIEngine.GetName(engine)+" efficiency with "+cargoID+": "+eff+" 
 return (price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
 }
 
-

@@ -14,6 +14,8 @@
 class cEngine extends AIEngine
 {
 static	enginedatabase = {};
+static	engineinuse	= AIList();
+
 static	function GetEngineObject(engineID)
 		{
 		return engineID in cEngine.enginedatabase ? cEngine.enginedatabase[engineID] : null;
@@ -108,77 +110,84 @@ function cEngine::GetCapacity(eID, cargoID=null)
 
 function cEngine::Incompatible(eng1, eng2)
 // mark eng1 incompatible with eng2 (one must be a wagon, other must not)
-{
-if ( (!AIEngine.IsWagon(eng1) && !AIEngine.IsWagon(eng2)) || (AIEngine.IsWagon(eng1) && AIEngine.IsWagon(eng2)) )
-	{ DError("One engine must be a wagon and the other must not",1,"cEngine::Incompatible"); return false; }
-local eng1O=cEngine.Load(eng1);
-local eng2O=cEngine.Load(eng2);
-eng1O.incompatible.AddItem(eng2,eng1);
-eng2O.incompatible.AddItem(eng1,eng2);
-DInfo("Setting "+eng1O.name+" incompatible with "+eng2O.name,2,"cEngine::Incompatible");
-}
+	{
+	if ( (!AIEngine.IsWagon(eng1) && !AIEngine.IsWagon(eng2)) || (AIEngine.IsWagon(eng1) && AIEngine.IsWagon(eng2)) )
+		{ DError("One engine must be a wagon and the other must not",1,"cEngine::Incompatible"); return false; }
+	local eng1O=cEngine.Load(eng1);
+	local eng2O=cEngine.Load(eng2);
+	eng1O.incompatible.AddItem(eng2,eng1);
+	eng2O.incompatible.AddItem(eng1,eng2);
+	DInfo("Setting "+eng1O.name+" incompatible with "+eng2O.name,2,"cEngine::Incompatible");
+	}
 
 function cEngine::SetRefitCost(engine, cargo, cost, vlen)
 // set the refit cost for an engine to use cargo
 // per default, assume all refit costs will be == for all cargos
-{
-local eng=cEngine.Load(engine);
-local update=false;
-if (eng.cargo_price.GetValue(cargo) == -1) // this test prove we never met a refitprice for that engine
 	{
-	foreach (crg, refitprice in eng.cargo_price)	if (refitprice == -1)	eng.cargo_price.SetValue(crg, cost);
-	update=true;
+	local eng=cEngine.Load(engine);
+	local update=false;
+	if (eng.cargo_price.GetValue(cargo) == -1) // this test prove we never met a refitprice for that engine
+		{
+		foreach (crg, refitprice in eng.cargo_price)	if (refitprice == -1)	eng.cargo_price.SetValue(crg, cost);
+		update=true;
+		}
+	if (eng.cargo_length.GetValue(cargo) != vlen)
+		{
+		eng.cargo_length.SetValue(cargo, vlen);
+		DInfo("Setting "+eng.name+" length to "+vlen+" when handling "+AICargo.GetCargoLabel(cargo),2,"cEngine::SetRefitCost");
+		}
+	if (eng.cargo_price.GetValue(cargo) != cost)	update=true;
+	if (update)
+		{
+		eng.cargo_price.SetValue(cargo, cost);
+		DInfo("Setting "+eng.name+" refit costs to "+cost+" when handling "+AICargo.GetCargoLabel(cargo),2,"cEngine::SetRefitCost");
+		}
 	}
-if (eng.cargo_length.GetValue(cargo) != vlen)
-	{
-	eng.cargo_length.SetValue(cargo, vlen);
-	DInfo("Setting "+eng.name+" length to "+vlen+" when handling "+AICargo.GetCargoLabel(cargo),2,"cEngine::SetRefitCost");
-	}
-if (eng.cargo_price.GetValue(cargo) != cost)	update=true;
-if (update)
-	{
-	eng.cargo_price.SetValue(cargo, cost);
-	DInfo("Setting "+eng.name+" refit costs to "+cost+" when handling "+AICargo.GetCargoLabel(cargo),2,"cEngine::SetRefitCost");
-	}
-}
 
 function cEngine::IsCompatible(engine, compareengine)
 // return true/false if both are compatible
 // can be use as valuator
-{
-local engO=cEngine.Load(compareengine);
-return (!engO.incompatible.HasItem(engine));
-}
+	{
+	local engO=cEngine.Load(compareengine);
+	return !(engO.incompatible.HasItem(engine));
+	}
 
 function cEngine::GetPrice(engine, cargo=null)
 // return the price to build an engine, add refit cost when we must refit the vehicle to handle cargo
 // can be use as valuator
-{
-local eng=cEngine.Load(engine);
-if (engine==null)	return 0;
-if (cargo==null)	return AIEngine.GetPrice(engine);
-local refitcost=0;
-if (eng.cargo_price.HasItem(cargo))	refitcost=eng.cargo_price.GetValue(cargo);
-return (AIEngine.GetPrice(engine)+refitcost);
-}
+	{
+	local eng=cEngine.Load(engine);
+	if (engine==null)	return 0;
+	if (cargo==null)	return AIEngine.GetPrice(engine);
+	local refitcost=0;
+	if (eng.cargo_price.HasItem(cargo))	refitcost=eng.cargo_price.GetValue(cargo);
+	return (AIEngine.GetPrice(engine)+refitcost);
+	}
 
 function cEngine::CanPullCargo(engineID, cargoID)
 // try to really answer if an engine can be use to pull a wagon of a cargo type
 // if NicePlay is true we return the AIEngine.CanPullCargo version
 // else we return real usable wagons list for a train
-{
-local NicePlay=DictatorAI.GetSetting("use_nicetrain");
-if (!AIEngine.IsValidEngine(engineID) || !AICargo.IsValidCargo(cargoID) || AIEngine.IsWagon(engineID))
-	{ DError("Preconditions fail engineID="+engineID+" cargoID="+cargoID,2,"cEngine.CanPullCargo"); return false; }
-if (!NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
-local engine=cEngine.Load(engineID);
-local wagonlist=AIEngineList(AIVehicle.VT_RAIL);
-wagonlist.Valuate(AIEngine.IsWagon);
-wagonlist.KeepValue(1);
-wagonlist.Valuate(cEngine.IsCompatible, engineID);
-wagonlist.KeepValue(1);
-wagonlist.Valuate(AIEngine.CanRefitCargo, cargoID);
-wagonlist.KeepValue(1);
-return (!wagonlist.IsEmpty());
-}
+	{
+	local NicePlay=DictatorAI.GetSetting("use_nicetrain");
+	if (!AIEngine.IsValidEngine(engineID) || !AICargo.IsValidCargo(cargoID) || AIEngine.IsWagon(engineID))
+		{ DError("Preconditions fail engineID="+engineID+" cargoID="+cargoID,2,"cEngine.CanPullCargo"); return false; }
+	if (!NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
+	local engine=cEngine.Load(engineID);
+	local wagonlist=AIEngineList(AIVehicle.VT_RAIL);
+	wagonlist.Valuate(AIEngine.IsWagon);
+	wagonlist.KeepValue(1);
+	wagonlist.Valuate(cEngine.IsCompatible, engineID);
+	wagonlist.KeepValue(1);
+	wagonlist.Valuate(AIEngine.CanRefitCargo, cargoID);
+	wagonlist.KeepValue(1);
+	return (!wagonlist.IsEmpty());
+	}
+
+function cEngine::GetName(eID)
+// return the name of the engine
+	{
+	local eng=cEngine.Load(eID);
+	return eng.name;
+	}
 

@@ -479,6 +479,7 @@ function cBuilder::BridgeUpgrader()
 	local neededSpeed=0;
 	local btype=0;
 	local justOne=false;
+	if (!AIController.GetSetting("upgrade_townbridge"))	justOne=true;
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 	DInfo("We knows "+RailBridgeList.Count()+" rail bridges and "+RoadBridgeList.Count()+" road bridges",0,"cBuilder::BridgeUpgrader");
 	do	{

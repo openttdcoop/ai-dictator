@@ -505,7 +505,7 @@ function cCarrier::VehicleSell(veh, recordit)
 // sell the vehicle and update route info
 {
 DInfo("-> Selling Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),0);
-AIVehicle.SellWagonChain(veh, 0);
+cTrain.DeleteVehicle(vehID);
 AIVehicle.SellVehicle(veh);
 local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(uid);
