@@ -25,11 +25,11 @@ enum AircraftType {
 	CHOPPER
 }
 enum DepotAction {
-	SELL,
-	UPGRADE,
-	REPLACE,
-	CRAZY,
-	ADDWAGON
+	SELL=0,
+	UPGRADE=1,
+	REPLACE=2,
+	CRAZY=3,
+	ADDWAGON=1000
 }
 
 
@@ -458,7 +458,7 @@ switch (fairlevel)
 		carrier.road_max_onroute=20;	// upto 12 bus/truck per route
 		carrier.road_max=6;		// upto a 6 size road station
 		carrier.road_upgrade=10;	// upgarde road station every X vehicles. station can handle so a max that*road_max vehicle
-		carrier.rail_max=12; 		// it's our highest train limit, can't build more than 12 trains per station
+		carrier.rail_max=12; 		// it's our highest train limit, can't build more than 12 platforms per station
 		carrier.water_max=60; 		// there's no real limit for boats
 		carrier.air_max=8; 		// 8 aircrafts / route
 		carrier.airnet_max=4;		// 4 aircrafts / airport in the air network, ie: 10 airports = 120 aircrafts

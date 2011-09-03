@@ -70,14 +70,6 @@ if (INSTANCE.buildTimer == 3)
 	INSTANCE.builddelay=false;
 	INSTANCE.buildTimer=0;
 	}
-if (!INSTANCE.carrier.ToDepotList.IsEmpty())
-	{
-	foreach (vehicle, dateinlist in INSTANCE.carrier.ToDepotList)
-		{
-		local today=AIDate.GetCurrentDate();
-		if ((today - dateinlist) > 180)	INSTANCE.carrier.ToDepotList.RemoveItem(vehicle);
-		}
-	}
 INSTANCE.carrier.VehicleMaintenance();
 INSTANCE.route.DutyOnRoute();
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
@@ -104,7 +96,7 @@ foreach (stationID, dummy in stationList)
 	INSTANCE.Sleep(1);
 	cStation.CheckCargoHandleByStation(stationID);
 	}
-cBuilder.BridgeUpgrader();
+if (cCarrier.ToDepotList.IsEmpty())	INSTANCE.carrier.vehnextprice=0; // avoid strange result from vehicle crash...
 }
 
 function cBuilder::RouteIsDamage(idx)
@@ -146,7 +138,8 @@ INSTANCE.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
 INSTANCE.jobs.CheckTownStatue();
 INSTANCE.builder.BoostedBuys();
-INSTANCE.carrier.do_profit.Clear();
+INSTANCE.builder.BridgeUpgrader();
+INSTANCE.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
 }
 

@@ -79,7 +79,7 @@ function cCarrier::VehicleOrdersReset(veh)
 while (AIOrder.GetOrderCount(veh) > 0)
 	{
 	if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, 0)))
-		{ DError("Cannot remove orders ",2); }
+		{ DError("Cannot remove orders ",2); break; }
 	}
 }
 
@@ -93,7 +93,7 @@ vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 vehlist.RemoveValue(AIVehicle.VS_CRASHED);
 foreach (veh, dummy in vehlist)
 	{
-	if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh,-1); }
+	if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh,-1); } // remove ones going to depot
 						else		{ vehlist.SetValue(veh, 1); }
 	}
 vehlist.RemoveValue(-1);

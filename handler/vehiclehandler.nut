@@ -186,11 +186,7 @@ foreach (ownID, dummy in station.owner)
 		vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 		vehlist.RemoveValue(AIVehicle.VS_CRASHED);
 		foreach (veh, dummy in vehlist)
-			{
-			if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh,-1); }
-								else		{ vehlist.SetValue(veh, 1); }
-			}
-		vehlist.RemoveValue(-1);
+			if (cCarrier.ToDepotList.HasItem(veh))	vehlist.RemoveItem(veh); // remove vehicle on their way to depot
 		if (vehlist.IsEmpty()) return false;
 		veh=vehlist.Begin();
 		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
@@ -209,14 +205,14 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 // send a vehicle to depot
 {
 if (!AIVehicle.IsValidVehicle(veh))	return false;
-if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false;
+if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false; // ignore ones going to depot already
 INSTANCE.carrier.VehicleSetDepotOrder(veh);
 local understood=false;
 understood=AIVehicle.SendVehicleToDepot(veh);
 if (!understood) { DInfo(INSTANCE.carrier.VehicleGetFormatString(veh)+" refuse to go to depot",1,"cCarrier::VehicleSendToDepot"); }
 local rr="";
 local wagonnum=0;
-if (reason > 1000)	{ wagonnum=reason-1000-DepotAction.ADDWAGON; reason=DepotAction.ADDWAGON; }
+if (reason >= DepotAction.ADDWAGON)	{ wagonnum=reason-DepotAction.ADDWAGON; reason=DepotAction.ADDWAGON; }
 switch (reason)
 	{
 	case	DepotAction.SELL:
@@ -233,6 +229,7 @@ switch (reason)
 	break;
 	case	DepotAction.ADDWAGON:
 		rr="to add "+wagonnum+" new wagons.";
+		reason=wagonnum+DepotAction.ADDWAGON;
 	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0,"cCarrier::VehicleSendToDepot");
@@ -566,9 +563,10 @@ foreach (i, dummy in tlist)
 		{
 		reason=INSTANCE.carrier.ToDepotList.GetValue(i);
 		INSTANCE.carrier.ToDepotList.RemoveItem(i);
-		if (reason > 1000)
+		if (reason >= DepotAction.ADDWAGON)
 			{
-			numwagon=reason-1000-DepotAction.ADDWAGON;
+			print("reason="+reason+" numwagon="+(reason-DepotAction.ADDWAGON));
+			numwagon=reason-DepotAction.ADDWAGON;
 			reason=DepotAction.ADDWAGON;
 			uid=INSTANCE.carrier.VehicleFindRouteIndex(i);
 			if (uid==null)	{

@@ -78,9 +78,9 @@ function cTileTools::PurgeBlackListTiles(alist, creation=false)
 local purgelist=AIList();
 purgelist.AddList(alist);
 purgelist.Valuate(cTileTools.GetTileOwner);
-purgelist.RemoveValue(-1); // keep only ones that are own by someone
+purgelist.RemoveValue(-1); // keep only ones that are not own by anyone
 if (!creation)	purgelist.RemoveValue(-100); // but not own because of bad spot
-foreach (tile, dummy in purgelist)	alist.RemoveItem(tile);
+foreach (tile, dummy in purgelist)	{ alist.RemoveItem(tile); INSTANCE.Sleep(1); }
 return alist;
 }
 

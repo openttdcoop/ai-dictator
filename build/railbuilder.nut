@@ -83,6 +83,8 @@ do
 */
 	tilelist.Clear();
 	tilelist.AddList(saveList);
+	tilelist=cTileTools.PurgeBlackListTiles(tilelist, true);
+	// remove known bad spot for creating a station
 	switch (buildmode)
 		{
 		case	0:
@@ -167,7 +169,7 @@ do
 					break;
 					}
 				else	{ // see why we fail
-					cTileTools.BlackListTileSpot(stafile);
+					if (buildmode==4)	cTileTools.BlackListTileSpot(statile);
 					INSTANCE.builder.IsCriticalError();
 					if (INSTANCE.builder.CriticalError)	{ break; }
 					if (AIError.GetLastError()==AIError.ERR_LOCAL_AUTHORITY_REFUSES)	{ break; }
