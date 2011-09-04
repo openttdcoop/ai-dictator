@@ -332,8 +332,7 @@ function cJobs::EstimateCost()
 		case	AIVehicle.VT_RAIL:
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 			local rtype=AIRail.GetCurrentRailType();
-			engine=cEngine.GetEngineByCache(RouteType.CHOPPER+1+rtype, this.cargoID);
-			if (engine==-1)	engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
+			engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
 			if (engine.IsEmpty())	engineprice=500000000;
 						else	{
 							engineprice+=cEngine.GetPrice(engine.Begin());
