@@ -58,7 +58,6 @@ AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 AIGroup.MoveVehicle(road.groupID, firstveh);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(firstveh);
 if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateAirVehicle"); }
-cEngine.VehicleIsTop(firstveh, road.route_type);
 return true;
 }
 

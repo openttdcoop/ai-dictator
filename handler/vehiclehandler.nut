@@ -345,7 +345,7 @@ if (numorders < 2)
 		INSTANCE.carrier.VehicleBuildOrders(groupid);
 		}
 numorders=AIOrder.GetOrderCount(vehID);
-	if (age < 2)
+	if (numorders < 2)
 		{
 		DInfo("-> Vehicle "+name+" have too few orders, sending it to depot",0,"cCarrier::VehicleMaintenance_Orders");
 		INSTANCE.carrier.VehicleSendToDepot(vehID, DepotAction.SELL);
@@ -365,7 +365,7 @@ tlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 tlist.RemoveValue(AIVehicle.VS_CRASHED);
 DInfo("Checking "+tlist.Count()+" vehicles",0);
 local name="";
-local tx, ty, tz=0; // temp variable to use freely
+local tx, ty, price=0; // temp variable to use freely
 INSTANCE.carrier.warTreasure=0;
 local ignore_some=0;
 foreach (vehicle, dummy in tlist)

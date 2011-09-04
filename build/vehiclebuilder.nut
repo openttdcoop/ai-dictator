@@ -281,7 +281,6 @@ function cCarrier::GetEngineRawEfficiency(engine, cargoID)
 local capacity=cEngine.GetCapacity(engine, cargoID);
 local speed=AIEngine.GetMaxSpeed(engine);
 if (capacity<=0)	return 999999999;
-if (price<=0)	return 999999999;
 local eff=100000 / ((capacity*0.9)+speed).tointeger();
 return eff;
 }
@@ -297,7 +296,8 @@ local vehGroup=AIVehicle.GetGroupID(vehID);
 if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
 		else	vehList.AddItem(vehID,0);
 foreach (vehicle, dummy in vehList)
-	if (!vehicle in cCarrier.MaintenancePool)	cCarrier.MaintenancePool.push(vehicle);
+	if (vehicle in cCarrier.MaintenancePool)	{}
+							else	cCarrier.MaintenancePool.push(vehicle);
 }
 
 function cCarrier::CheckOneVehicleOfGroup(doGroup)
