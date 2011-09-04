@@ -179,7 +179,6 @@ function cJobs::RankThisJob()
 function cJobs::RefreshValue(jobID, updateCost=false)
 // refresh the datas from object
 	{
-	::AIController.Sleep(1);
 	if (cJobs.IsInfosUpdate(jobID))	{ DInfo("JobID: "+jobID+" infos are fresh",2,"RefreshValue"); return null; }
 						else	{ DInfo("JobID: "+jobID+" refreshing infos",2,"RefreshValue"); }
 	cJobs.jobIndexer.SetValue(jobID,AIDate.GetCurrentDate());
@@ -204,6 +203,8 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		local deadroute=cRoute.GetRouteObject(myjob.UID);
 		if (deadroute != null)	deadroute.RouteIsNotDoable();
 		}
+	if (myjob.isUse)	return;	// no need to refresh an already done job
+	::AIController.Sleep(1);
 	// foule, moneyGains, ranking & cargoAmount
 	if (myjob.source_istown)
 		{
@@ -224,9 +225,9 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		myjob.cargoAmount=AIIndustry.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
 		myjob.foule=cRoute.GetAmountOfCompetitorStationAround(myjob.sourceID);
 		}
-	::AIController.Sleep(1);
 	if (updateCost)	myjob.EstimateCost();
 	myjob.RankThisJob();
+	::AIController.Sleep(1);
 	}
 
 function cJobs::IsInfosUpdate(jobID)
@@ -679,7 +680,7 @@ function cJobs::RawJobHandling()
 	local stilltodo=jfilter.Count();
 	jfilter.Valuate(AIBase.RandItem); // randomize remain entries
 	jfilter.Sort(AIList.SORT_BY_VALUE,true);
-	jfilter.KeepTop(2);
+	jfilter.KeepTop(1); //make one only
 	if (jfilter.IsEmpty())	DInfo("All raw jobs have been process",2,"RawJobHandling");
 				else	foreach (jid, dummyValue in jfilter)
 						{

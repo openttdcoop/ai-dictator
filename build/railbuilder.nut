@@ -227,6 +227,7 @@ else	{
 	DInfo("Pathfinding failed.",1);
 	INSTANCE.builder.CriticalError=true;
 	INSTANCE.bank.RaiseFundsTo(savemoney);
+	AISign.RemoveSign(pfInfo);
 	return false;
 	}
 	INSTANCE.bank.RaiseFundsBigTime();
@@ -247,7 +248,8 @@ else	{
 					}
 				} else {
 					local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
-					bridgelist.Valuate(AIBridge.GetMaxSpeed);
+					bridgelist.Valuate(AIBridge.GetPrice,AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
+					bridgelist.Sort(AIList.SORT_BY_VALUE,true);
 					if (!AIBridge.BuildBridge(AIVehicle.VT_RAIL, bridgelist.Begin(), prev, path.GetTile())) {
 						DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
 						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH) {
@@ -576,7 +578,7 @@ if (!cStation.IsRailStationExitOpen(staID) && !useEntry)	{ DWarn(thatstation.nam
 
 local position=thatstation.GetLocation();
 local direction=thatstation.GetRailStationDirection();
-INSTANCE.builder.SetRailType(thatstation.specialType);
+INSTANCE.builder.SetRailType(thatstation.specialType); // not to forget
 local leftTileOf, rightTileOf, forwardTileOf, backwardTileOf =null;
 local workTile=null; // the station front tile, but depend on entry or exit
 local railFront, railCross, railLeft, railRight, railUpLeft, railUpRight, fire = null;

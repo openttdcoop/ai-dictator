@@ -228,7 +228,7 @@ function DictatorAI::Start()
 		//use_boat=true;
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
-		for (local i=0; i < 3; i++)	jobs.RawJobHandling();
+		for (local i=0; i < 10; i++)	jobs.RawJobHandling();
 		// feed the ai with some jobs to start play with
 		safeStart=3;
 		}

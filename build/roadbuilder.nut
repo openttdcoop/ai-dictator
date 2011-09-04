@@ -427,10 +427,10 @@ while (path == false && counter < 250)
 	}
 // restore our money
 INSTANCE.bank.RaiseFundsTo(savemoney);
+AISign.RemoveSign(pfInfo);
 if (path != null && path != false)
 	{
 	DInfo("Path found. (" + counter + ")",0,"BuildRoadROAD");
-	AISign.RemoveSign(pfInfo);
 	return path;
 	}
 else	{
@@ -714,7 +714,8 @@ while (path != null)
 					}
 			 	else	{
 					local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
-					bridgelist.Valuate(AIBridge.GetMaxSpeed);
+					bridgelist.Valuate(AIBridge.GetPrice,AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1 );
+					bridgelist.Sort(AIList.SORT_BY_VALUE,true);
 					if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgelist.Begin(), path.GetTile(), par.GetTile()))
 						{
 						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);

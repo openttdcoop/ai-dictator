@@ -363,6 +363,7 @@ tlist.Valuate(AIVehicle.GetState);
 tlist.RemoveValue(AIVehicle.VS_STOPPED);
 tlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 tlist.RemoveValue(AIVehicle.VS_CRASHED);
+tlist.RemoveValue(AIVehicle.VS_INVALID);
 DInfo("Checking "+tlist.Count()+" vehicles",0);
 local name="";
 local tx, ty, price=0; // temp variable to use freely
