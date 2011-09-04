@@ -224,6 +224,7 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		myjob.cargoAmount=AIIndustry.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
 		myjob.foule=cRoute.GetAmountOfCompetitorStationAround(myjob.sourceID);
 		}
+	::AIController.Sleep(1);
 	if (updateCost)	myjob.EstimateCost();
 	myjob.RankThisJob();
 	}
@@ -317,8 +318,9 @@ function cJobs::EstimateCost()
 		{
 		case	AIVehicle.VT_ROAD:
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
-			engine=INSTANCE.carrier.ChooseRoadVeh(this.cargoID);
-			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
+			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
+			if (engine==-1)	engine=INSTANCE.carrier.ChooseRoadVeh(this.cargoID);
+			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
@@ -328,13 +330,14 @@ function cJobs::EstimateCost()
 			daystransit=16;
 		break;
 		case	AIVehicle.VT_RAIL:
-			local rtype=AIRail.GetCurrentRailType();
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
-			engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
+			local rtype=AIRail.GetCurrentRailType();
+			engine=cEngine.GetEngineByCache(RouteType.CHOPPER+1+rtype, this.cargoID);
+			if (engine==-1)	engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
 			if (engine.IsEmpty())	engineprice=500000000;
 						else	{
-							engineprice+=AIEngine.GetPrice(engine.Begin());
-							engineprice+=2*AIEngine.GetPrice(engine.GetValue(engine.Begin()));
+							engineprice+=cEngine.GetPrice(engine.Begin());
+							engineprice+=2*cEngine.GetPrice(engine.GetValue(engine.Begin()));
 							}
 			money+=engineprice;
 			money+=(2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)); // station train 5 length
@@ -345,8 +348,9 @@ function cJobs::EstimateCost()
 		break;
 		case	AIVehicle.VT_WATER: //TODO: finish it
 			// 2 vehicle + 2 stations + 2 depot
+//			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
 			engine=null;
-			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
+			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK));
@@ -355,8 +359,9 @@ function cJobs::EstimateCost()
 		break;
 		case	AIVehicle.VT_AIR:
 			// 2 vehicle + 2 airports
-			engine=INSTANCE.carrier.ChooseAircraft(this.cargoID,AircraftType.EFFICIENT);
-			if (engine != null)	engineprice=AIEngine.GetPrice(engine);
+			engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIRNET);
+			if (engine==-1)	engine=INSTANCE.carrier.ChooseAircraft(this.cargoID,AircraftType.EFFICIENT);
+			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
 			money+=2*(AIAirport.GetPrice(INSTANCE.builder.GetAirportType()));
@@ -378,7 +383,6 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	// filters unwanted jobs, don't let aircraft do something other than pass
 	if (road_type == AIVehicle.VT_AIR && cargo_id != cCargo.GetPassengerCargo()) return;
 	// only pass for aircraft, we will randomize if pass or mail later
-//	if (cargo_id == cCargo.GetMailCargo() && road_type != AIVehicle.VT_ROAD) return;
 	if (cargo_id == cCargo.GetMailCargo()) return; // disable mail for anyone it sucks to do mail
 	// only do mail with trucks
 	if (!src_istown && AIIndustry.IsBuiltOnWater(srcID))
@@ -395,7 +399,6 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	newjob.distance=AITile.GetDistanceManhattanToTile(newjob.source_location, newjob.target_location);
 	newjob.roadType=road_type;
 	newjob.cargoID=cargo_id;
-//	newjob.EstimateCost();
 	newjob.GetUID();
 	newjob.Save();
 	INSTANCE.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount, foule values, must be call after GetUID
@@ -525,9 +528,8 @@ function cJobs::JobIsNotDoable(uid)
 function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
-	print("entering UpdateDoableJobs");
 	INSTANCE.jobs.CheckLimitedStatus();
-	//DInfo("Analysing the job pool",0);
+	DInfo("Analysing the job pool",0,"cJobs::UpdateDoableJobs");
 	local parentListID=AIList();
 	INSTANCE.jobs.jobDoable.Clear();
 	local topair=0;
@@ -537,7 +539,6 @@ function cJobs::UpdateDoableJobs()
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
 		if (id == 0 || id == 1)	continue;
-//		INSTANCE.builder.DumpJobs(id);
 		local doable=1;
 		local myjob=cJobs.GetJobObject(id);
 		doable=myjob.isdoable;
@@ -582,7 +583,6 @@ function cJobs::UpdateDoableJobs()
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
 		// not doable if the industry no longer exist
 		if (doable)	{
-				//myjob.jobIndexer.SetValue(id, myjob.ranking);
 				myjob.jobDoable.AddItem(id, myjob.ranking);
 				switch (myjob.roadType)
 					{
@@ -616,7 +616,6 @@ function cJobs::UpdateDoableJobs()
 					break;
 					}
 				}
-			//else	myjob.jobIndexer.SetValue(id, 0);
 		}
 	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
@@ -632,7 +631,6 @@ function cJobs::UpdateDoableJobs()
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
 	DInfo(INSTANCE.jobs.jobIndexer.Count()+" jobs found",2,"UpdateDoableJobs");
 	DInfo(INSTANCE.jobs.jobDoable.Count()+" jobs doable",2,"UpdateDoableJobs");
-	//foreach (id, value in jobDoable)	{ DInfo("After update: "+id+" - "+value,2); }
 	}
 
 function cJobs::AddNewIndustryOrTown(industryID, istown)
@@ -654,6 +652,7 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 				{
 				this.UID=null;
 				cJobs.CreateNewJob(industryID, destination, istown, cargoid, transtype);
+				::AIController.Sleep(1);
 				}
 			}
 		::AIController.Sleep(1);

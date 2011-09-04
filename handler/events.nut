@@ -46,7 +46,6 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.AI_ET_INDUSTRY_OPEN:
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();
-			//INSTANCE.jobs.AddNewIndustryOrTown(industry, false);
 			cJobs.RawJobAdd(industry,false);
 			DInfo("New industry "+AIIndustry.GetName(industry),0);
 		break;
@@ -66,20 +65,18 @@ while (AIEventController.IsEventWaiting())
 			if (event.AcceptPreview()) 
 				{
 				DInfo("New engine available for preview: " + event.GetName(),0);
-				INSTANCE.carrier.TopEngineList.Clear(); // reset top vehicle list
 				}
 		break;
 		case AIEvent.AI_ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
-			DInfo("New engine available: " + AIEngine.GetName(engine),0);
-			INSTANCE.carrier.TopEngineList.Clear(); // reset top vehicle list
+			DInfo("New engine available: " + cEngine.GetName(engine),0);
 		break;
 		case AIEvent.AI_ET_VEHICLE_CRASHED:
 			local vehicle = null;
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
-			DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" has crashed. I suspect everyone ! Some heads will fall !!!",0);
+			DInfo("Vehicle "+INSTANCE.carrier.VehicleName(vehicle)+" has crashed!!!",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo("Vehicle state: " + AIVehicle.GetState(vehicle),1);
 			INSTANCE.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
@@ -90,8 +87,8 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.AI_ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(AIVehicle.GetName(vehicle) + " is lost, I don't know what to do with that ! Sending it to depot");
-			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+			DInfo(AIVehicle.GetName(vehicle) + " is lost, I don't know what to do with that !");
+			INSTANCE.carrier.VehicleMaintenance_Orders(vehicle);
 		break;
 		case AIEvent.AI_ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
@@ -108,22 +105,7 @@ while (AIEventController.IsEventWaiting())
 			local isme=AICompany.IsMine(company);
 			if (isme)	info="My company";
 				else	info=AICompany.GetName(company);
-			info+=" is in trouble. ";
-			switch (INSTANCE.fairlevel)
-				{
-				case	0:
-					if (isme)	action="I'm sure someone will give me some money";
-						else	action="Oh no, it's so sad !";
-				break;
-				case	1:
-					if (isme)	action="I will call Bernard Madoff for more hints.";
-						else	action="Sell his actions now !";
-				break;
-				case	2:
-					if (isme)	action="Fools rebels, you will never win !";
-						else	action="They have refuse to put my son as director, now pay !";
-				break;
-				}
+			info+=" is in trouble. I'll take action";
 			DInfo(info+action);
 			if (isme)
 				{

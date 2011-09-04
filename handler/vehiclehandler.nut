@@ -132,7 +132,7 @@ vehicles.RemoveValue(AIVehicle.VS_INVALID);
 return vehicles;
 }
 
-function cCarrier::VehicleGetFormatString(veh)
+function cCarrier::VehicleName(veh)
 // return a vehicle string with the vehicle infos
 {
 if (!AIVehicle.IsValidVehicle(veh))	return "<Invalid vehicle>";
@@ -194,7 +194,7 @@ foreach (ownID, dummy in station.owner)
 			{
 			DInfo("Re-routing traffic on route "+road.name+" to ignore "+AIStation.GetName(stationID),0);
 			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
-				{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),2); }
+				{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleName(veh),2); }
 			}
 		}
 	else	{ INSTANCE.carrier.VehicleBuildOrders(road.groupID); }
@@ -209,7 +209,7 @@ if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false; // ignore ones goin
 INSTANCE.carrier.VehicleSetDepotOrder(veh);
 local understood=false;
 understood=AIVehicle.SendVehicleToDepot(veh);
-if (!understood) { DInfo(INSTANCE.carrier.VehicleGetFormatString(veh)+" refuse to go to depot",1,"cCarrier::VehicleSendToDepot"); }
+if (!understood) { DInfo(INSTANCE.carrier.VehicleName(veh)+" refuse to go to depot",1,"cCarrier::VehicleSendToDepot"); }
 local rr="";
 local wagonnum=0;
 if (reason >= DepotAction.ADDWAGON)	{ wagonnum=reason-DepotAction.ADDWAGON; reason=DepotAction.ADDWAGON; }
@@ -232,7 +232,7 @@ switch (reason)
 		reason=wagonnum+DepotAction.ADDWAGON;
 	break;
 	}
-DInfo("Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is going to depot "+rr,0,"cCarrier::VehicleSendToDepot");
+DInfo("Vehicle "+INSTANCE.carrier.VehicleName(veh)+" is going to depot "+rr,0,"cCarrier::VehicleSendToDepot");
 INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
 }
 
@@ -265,185 +265,144 @@ if (cRoute.GroupIndexer.HasItem(group))		return cRoute.GroupIndexer.GetValue(gro
 return null;
 }
 
-function cCarrier::VehicleUpgradeEngineAndWagons(veh)
+function cCarrier::VehicleUpgradeEngine(vehID)
 // we will try to upgrade engine and wagons for vehicle veh
 {
-local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
+local idx=INSTANCE.carrier.VehicleFindRouteIndex(vehID);
 if (idx == null)
 	{
-	DError("This vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh)+" is not use by any route !!!",1);
-	INSTANCE.carrier.VehicleSell(veh,true);
+	DWarn("This vehicle "+INSTANCE.carrier.VehicleName(vehID)+" is not use by any route !!!",1,"cCarrier::VehicleUpgradeEngine");
+	INSTANCE.carrier.VehicleSell(vehID,true);
 	INSTANCE.carrier.vehnextprice=0;
 	return false;
 	}
+local betterEngine=cEngine.IsVehicleAtTop(vehID);
+if (betterEngine==-1)
+	{
+	DWarn("That vehicle have it's engine already at top, but we sell it anyway",1,"cCarrier::VehicleUpgradeEngine");
+	INSTANCE.carrier.VehicleSell(vehID, false);
+	return false;
+	}
+local vehtype=AIVehicle.GetVehicleType(vehID);
+local new_vehID=null;
+local homedepot=AIVehicle.GetLocation(vehID);
 local road=INSTANCE.route.GetRouteObject(idx);
 if (road == null)	return;
-local group = AIVehicle.GetGroupID(veh);
-local engine = null;
-local wagon = null;
-local numwagon=AIVehicle.GetNumWagons(veh);
-local railtype = null;
-local newveh=null;
-local homedepot=AIVehicle.GetLocation(veh);
-DInfo("Upgrading using depot at "+homedepot,2);
+//local group = AIVehicle.GetGroupID(vehID);
+DInfo("Upgrading using depot at "+homedepot,2,"cCarrier::VehicleUpgradeEngine");
 PutSign(homedepot,"D");
 local money=0;
-local vehtype=AIVehicle.GetVehicleType(veh);
-// if it fail, still we sell the vehicle and don't care
-local oldenginename=INSTANCE.carrier.VehicleGetFormatString(veh);
-INSTANCE.carrier.VehicleSell(veh,false);
+local oldenginename=INSTANCE.carrier.VehicleName(vehID);
 switch (vehtype)
 	{
 	case AIVehicle.VT_RAIL:
-		AIRail.SetCurrentRailType(road.source.specialType);
-		engine = INSTANCE.carrier.ChooseTrainEngine();
-		wagon = INSTANCE.carrier.ChooseWagon(road.cargoID);
-		newveh=AIVehicle.BuildVehicle(homedepot,engine);
-		AIVehicle.RefitVehicle(newveh, road.cargoID);
-		local first=null;
-		first=AIVehicle.BuildVehicle(homedepot, wagon); 
-		for (local i=1; i < numwagon; i++)
-			{ AIVehicle.BuildVehicle(homedepot, wagon); }
-		AIVehicle.MoveWagonChain(first, 0, newveh, AIVehicle.GetNumWagons(veh) - 1);
+		/*
+		TODO: upgrade for trains
+		*/
 	break;
 	case AIVehicle.VT_ROAD:
-		engine = INSTANCE.carrier.GetVehicle(idx);
-		INSTANCE.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
-		newveh=AIVehicle.BuildVehicle(homedepot,engine);
-		AIVehicle.RefitVehicle(newveh, road.cargoID);
+		INSTANCE.carrier.VehicleSell(vehID,false);
+		new_vehID = INSTANCE.carrier.CreateRoadEngine(betterEngine, homedepot, road.cargoID);
 	break;
 	case AIVehicle.VT_AIR:
-		local modele=AircraftType.EFFICIENT;
-		if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST; // top speed/capacity for network
-		if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER;
-		engine = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
-		INSTANCE.bank.RaiseFundsBy(AIEngine.GetPrice(engine));
-		newveh = AIVehicle.BuildVehicle(homedepot,engine);
+		INSTANCE.carrier.VehicleSell(vehID,false);
+		new_vehID = INSTANCE.carrier.CreateAircraftEngine(betterEngine, homedepot);
 	break;
 	case AIVehicle.VT_WATER:
+		INSTANCE.carrier.VehicleSell(vehID,false);
 	return;
 	break;
 	}
-INSTANCE.builder.IsCriticalError();
-INSTANCE.builder.CriticalError=false;
-if (newveh != null && AIVehicle.IsValidVehicle(newveh))
+if (AIVehicle.IsValidVehicle(new_vehID))
 	{
-	local newenginename=INSTANCE.carrier.VehicleGetFormatString(newveh);
-	AIGroup.MoveVehicle(group,newveh);
-	DInfo("-> Vehicle "+oldenginename+" replace with "+newenginename,0);
-	AIVehicle.StartStopVehicle(newveh); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
-	INSTANCE.carrier.VehicleBuildOrders(group); // need to build it orders
-	INSTANCE.carrier.vehnextprice-=AIEngine.GetPrice(engine);
+	local newenginename=INSTANCE.carrier.VehicleName(new_vehID);
+	AIGroup.MoveVehicle(road.groupID,new_vehID);
+	DInfo("Vehicle "+oldenginename+" replace with "+newenginename,0,"cCarrier::VehicleUpgradeEngine");
+	AIVehicle.StartStopVehicle(new_vehID); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
+	INSTANCE.carrier.VehicleBuildOrders(road.groupID); // need to build its orders
+	INSTANCE.carrier.vehnextprice-=cEngine.GetPrice(betterEngine);
 	}
 if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
 }
 
-function cCarrier::VehicleIsTop_GetUniqID(engine, cargo)
-// return a uniqID for a vehicle engine type + cargo, as we can't have dup in a AIList()
+function cCarrier::VehicleMaintenance_Orders(vehID)
+// try to repair orders for a vehicle, else send it to depot
 {
-return (engine+1)*2048+cargo;
-}
-
-function cCarrier::VehicleIsTop(veh)
-// return engine modele if the vehicle can be upgrade
-{
-if (!AIVehicle.IsValidVehicle(veh)) return -1;
-local cargo=null;
-local uniqID=null;
-local idx=null;
-local road=null;
-local top=null;
-local ourEngine=AIVehicle.GetEngineType(veh);
-switch (AIVehicle.GetVehicleType(veh))
-	{
-	case AIVehicle.VT_ROAD:
-		cargo=INSTANCE.carrier.VehicleGetCargoType(veh);
-		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, cargo);
-		if (INSTANCE.carrier.TopEngineList.HasItem(uniqID))	return -1; // we know that engine is at top already
-		top = INSTANCE.carrier.ChooseRoadVeh(cargo);
-	break;
-	case AIVehicle.VT_RAIL:
-		return -1; // disable upgrade for train
-		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, 1000);
-		if (INSTANCE.carrier.TopEngineList.HasItem(uniqID))	return -1;
-		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
-		top = INSTANCE.carrier.ChooseRailEngine();
-	break;
-	case AIVehicle.VT_WATER:
-	return;
-	break;
-	case AIVehicle.VT_AIR:
-		idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
-		road=cRoute.GetRouteObject(idx);
-		if (road == null) return -1;		
-		local modele=AircraftType.EFFICIENT;
-		if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST;
-		if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER;
-		uniqID=INSTANCE.carrier.VehicleIsTop_GetUniqID(ourEngine, (modele*40)+road.cargoID);
-		if (INSTANCE.carrier.TopEngineList.HasItem(uniqID))	return -1;
-		top = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
-	break;
-	}
-if (top == null)	top = -1;
-if (ourEngine == top)	{
-			DInfo("Adding engine "+AIEngine.GetName(ourEngine)+" to vehicle top list",1);
-			INSTANCE.carrier.TopEngineList.AddItem(uniqID, ourEngine);
-			return -1;
+local numorders=AIOrder.GetOrderCount(vehID);
+local name=cCarrier.VehicleName(vehID);
+for (local z=AIOrder.GetOrderCount(vehID)-1; z >=0; z--)
+		{ // I check backward to prevent z index gone wrong if an order is remove
+		if (!INSTANCE.carrier.VehicleOrderIsValid(vehID, z))
+			{
+			DInfo("-> Vehicle "+name+" have invalid order, removing orders "+z,0,"cCarrier::VehicleMaintenance_Orders");
+			AIOrder.RemoveOrder(vehID, z);
 			}
-		else	return top;
+		}
+if (numorders < 2)
+		{
+		local groupid=AIVehicle.GetGroupID(vehID);
+		DInfo("-> Vehicle "+name+" have too few orders, trying to correct it",0,"cCarrier::VehicleMaintenance_Orders");
+		INSTANCE.carrier.VehicleBuildOrders(groupid);
+		}
+numorders=AIOrder.GetOrderCount(vehID);
+	if (age < 2)
+		{
+		DInfo("-> Vehicle "+name+" have too few orders, sending it to depot",0,"cCarrier::VehicleMaintenance_Orders");
+		INSTANCE.carrier.VehicleSendToDepot(vehID, DepotAction.SELL);
+		cCarrier.CheckOneVehicleOrGroup(vehID,true); // push all vehicles to get a check
+		}
 }
 
 function cCarrier::VehicleMaintenance()
 // lookout our vehicles for troubles
 {
-local tlist=AIVehicleList();
+local tlist=AIList();
+while (cCarrier.MaintenancePool.len()>0)	tlist.AddItem(cCarrier.MaintenancePool.pop(),0);
+// Get the work and clean the mainteance list
 tlist.Valuate(AIVehicle.GetState);
 tlist.RemoveValue(AIVehicle.VS_STOPPED);
 tlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 tlist.RemoveValue(AIVehicle.VS_CRASHED);
 DInfo("Checking "+tlist.Count()+" vehicles",0);
-local age=0;
 local name="";
-local price=0;
+local tx, ty, tz=0; // temp variable to use freely
 INSTANCE.carrier.warTreasure=0;
 local ignore_some=0;
 foreach (vehicle, dummy in tlist)
 	{
-	INSTANCE.Sleep(1);
-	if (ignore_some >6 && AIVehicle.GetVehicleType(vehicle) == AIVehicle.VT_ROAD)	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
+	local vehtype=AIVehicle.GetVehicleType(vehicle);
+	if (ignore_some >6 && vehtype == AIVehicle.VT_ROAD)	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 	ignore_some++;
-	age=AIVehicle.GetAgeLeft(vehicle);
-	local topengine=INSTANCE.carrier.VehicleIsTop(vehicle);
-	if (topengine != -1)	price=AIEngine.GetPrice(topengine);
-				else	price=AIEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
+	local topengine=cEngine.IsVehicleAtTop(vehicle); // new here
+	if (topengine != -1)	price=cEngine.GetPrice(topengine);
+				else	price=cEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	price+=(0.5*price);
 	// add a 50% to price to avoid try changing an engine and running low on money because of fluctuating money
-	name=INSTANCE.carrier.VehicleGetFormatString(vehicle);
-	local groupid=AIVehicle.GetGroupID(vehicle);
-	local vehgroup=AIVehicleList_Group(groupid);
-	if (age < cCarrier.OldVehicle)
+	name=INSTANCE.carrier.VehicleName(vehicle);
+	tx=AIVehicle.GetAgeLeft(vehicle);
+	if (tx < cCarrier.OldVehicle)
 		{
-		if (vehgroup.Count()==1)	continue; // don't touch last vehicle of the group
-		if (!INSTANCE.bank.CanBuyThat(price+INSTANCE.carrier.vehnextprice)) continue;
-		DInfo("-> Vehicle "+name+" is getting old ("+AIVehicle.GetAge(vehicle)+" days left), replacing it",0);
+		if (!cBanker.CanBuyThat(price+INSTANCE.carrier.vehnextprice)) continue;
+		DInfo("-> Vehicle "+name+" is getting old ("+tx+" days left), replacing it",0,"cCarrier::VehicleMaintenance");
 		INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.REPLACE);
-		//INSTANCE.bank.busyRoute=true;
+		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 		continue;
 		}
-	price=INSTANCE.carrier.VehicleGetProfit(vehicle);
-	age=AIVehicle.GetAge(vehicle);
-	if (age > 240 && price < 0 && INSTANCE.OneMonth > 6) // (6 months after new year)
+	tx=INSTANCE.carrier.VehicleGetProfit(vehicle);
+	ty=AIVehicle.GetAge(vehicle);
+	if (ty > 240 && tx < 0 && INSTANCE.OneMonth > 6) // (6 months after new year)
 		{
-		age=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
-		INSTANCE.builder.RouteIsDamage(age);
+		ty=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
+		INSTANCE.builder.RouteIsDamage(ty);
 		}
-	age=AIVehicle.GetReliability(vehicle);
-	if (age < 30)
+	tx=AIVehicle.GetReliability(vehicle);
+	if (tx < 30)
 		{
-		DInfo("-> Vehicle "+name+" reliability is low ("+age+"%), sending it for servicing at depot",0);
+		DInfo("-> Vehicle "+name+" reliability is low ("+tx+"%), sending it for servicing at depot",0,"cCarrier::VehicleMaintenance");
 		AIVehicle.SendVehicleToDepotForServicing(vehicle);
 		local idx=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 		INSTANCE.builder.RouteIsDamage(idx);
+		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 		continue;
 		}
 	if (topengine != -1)
@@ -451,34 +410,14 @@ foreach (vehicle, dummy in tlist)
 		// reserving money for the upgrade
 		DInfo("Upgrade engine ! "+INSTANCE.bank.CanBuyThat(INSTANCE.carrier.vehnextprice+price)+" price: "+price+" vehnextprice="+vehnextprice,1);
 		if (!INSTANCE.bank.CanBuyThat(INSTANCE.carrier.vehnextprice+price))	continue; // no way, we lack funds for it
-		
 		INSTANCE.carrier.vehnextprice+=price;
-		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
+		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0,"cCarrier::VehicleMaintenance");
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
-		//INSTANCE.bank.busyRoute=true;
+		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 		continue;
 		}
-	age=AIOrder.GetOrderCount(vehicle);
-	if (age < 2)
-		{
-		local groupid=AIVehicle.GetGroupID(vehicle);
-		DInfo("-> Vehicle "+name+" have too few orders, trying to correct it",0);
-		INSTANCE.carrier.VehicleBuildOrders(groupid);
-		}
-	age=AIOrder.GetOrderCount(vehicle);
-	if (age < 2)
-		{
-		DInfo("-> Vehicle "+name+" have too few orders, sending it to depot",0);
-		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
-		}
-	for (local z=AIOrder.GetOrderCount(vehicle)-1; z >=0; z--)
-		{ // I check backward to prevent z index gone wrong if an order is remove
-		if (!INSTANCE.carrier.VehicleOrderIsValid(vehicle, z))
-			{
-			DInfo("-> Vehicle "+name+" have invalid order, removing orders "+z,0);
-			AIOrder.RemoveOrder(vehicle, z);
-			}
-		}
+	cCarrier.VehicleMaintenance_Orders(vehicle);
+	AIController.Sleep(1);
 	}
 }
 
@@ -504,8 +443,8 @@ foreach (vehicle, dummy in allvehicle)
 function cCarrier::VehicleSell(veh, recordit)
 // sell the vehicle and update route info
 {
-DInfo("-> Selling Vehicle "+INSTANCE.carrier.VehicleGetFormatString(veh),0);
-cTrain.DeleteVehicle(vehID);
+DInfo("-> Selling Vehicle "+INSTANCE.carrier.VehicleName(veh),0);
+cTrain.DeleteVehicle(veh);
 AIVehicle.SellVehicle(veh);
 local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(uid);
@@ -523,7 +462,7 @@ local vehlist=null;
 if (road.groupID != null)
 	{
 	vehlist=AIVehicleList_Group(road.groupID);
-	DInfo("Remove a group of vehicle : "+vehlist.Count(),1);
+	DInfo("Removing a group of vehicle : "+vehlist.Count(),1);
 	foreach (vehicle, dummy in vehlist)
 		{
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
@@ -558,14 +497,13 @@ foreach (i, dummy in tlist)
 	local reason=DepotAction.SELL;
 	local numwagon=0;
 	local uid=0;
-	local name=INSTANCE.carrier.VehicleGetFormatString(i);
+	local name=INSTANCE.carrier.VehicleName(i);
 	if (INSTANCE.carrier.ToDepotList.HasItem(i))
 		{
 		reason=INSTANCE.carrier.ToDepotList.GetValue(i);
 		INSTANCE.carrier.ToDepotList.RemoveItem(i);
 		if (reason >= DepotAction.ADDWAGON)
 			{
-			print("reason="+reason+" numwagon="+(reason-DepotAction.ADDWAGON));
 			numwagon=reason-DepotAction.ADDWAGON;
 			reason=DepotAction.ADDWAGON;
 			uid=INSTANCE.carrier.VehicleFindRouteIndex(i);
@@ -581,7 +519,7 @@ foreach (i, dummy in tlist)
 			INSTANCE.carrier.VehicleSell(i,true);
 		break;
 		case	DepotAction.UPGRADE:
-			INSTANCE.carrier.VehicleUpgradeEngineAndWagons(i);
+			INSTANCE.carrier.VehicleUpgradeEngine(i);
 		break;
 		case	DepotAction.REPLACE:
 			INSTANCE.carrier.VehicleSell(i,false);

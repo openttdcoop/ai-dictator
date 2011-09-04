@@ -12,6 +12,20 @@
  *
 **/
 
+function cCarrier::CreateAircraftEngine(engineID, depot)
+// Really create the engine and return it's ID if success
+// return -1 on error
+{
+local price=cEngine.GetPrice(engineID);
+INSTANCE.bank.RaiseFundsBy(price);
+local vehID=AIVehicle.BuildVehicle(depot, engineID);
+if (AIVehicle.IsValidVehicle(vehID))	return vehID;
+						else	{
+							DError("Cannot create the air vehicle ",2,"cCarrier::CreateAircraftEngine");
+							return -1;
+							}
+}
+
 function cCarrier::CreateAirVehicle(routeidx)
 // Build first vehicule of an air route
 {
@@ -23,18 +37,17 @@ local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0);
 if (road.route_type == RouteType.CHOPPER)	altplace=true; // chopper don't have a source airport, but a platform
 if (altplace)	homedepot = road.target.depot;
 local cargoid = road.cargoID;
-DInfo("srcplace="+srcplace+" dstplace="+dstplace,2);
-PutSign(srcplace,"Route "+routeidx+" Source Airport ");
-PutSign(dstplace,"Route "+routeidx+" Destination Airport");
+//DInfo("srcplace="+srcplace+" dstplace="+dstplace,2);
+//PutSign(srcplace,"Route "+routeidx+" Source Airport ");
+//PutSign(dstplace,"Route "+routeidx+" Destination Airport");
 local veh = INSTANCE.carrier.GetAirVehicle(routeidx);
 if (veh == null)
-	{ DError("Cannot pickup an aircraft",1); return false; }
+	{ DError("Cannot pickup an aircraft",1,"cCarrier::CreateAirVehicle"); return false; }
 local price = AIEngine.GetPrice(veh);
 INSTANCE.bank.RaiseFundsBy(price);
-local firstveh = AIVehicle.BuildVehicle(homedepot, veh);
-if (!AIVehicle.IsValidVehicle(firstveh))
-	{ DWarn("Cannot buy the aircraft : "+price,1); return false; }
-else	{ DInfo("Just brought a new aircraft: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),0); }
+local firstveh = cCarrier.CreateAircraftEngine(veh, homedepot);
+if (firstveh == -1)	{ DError("Cannot create the vehicle "+veh,2,"cCarrier::CreateAirVehicle"); return false; }
+			else	{ DInfo("Just brought a new aircraft: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),0,"cCarrier::CreateAirVehicle"); }
 // no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
 // as thir engine is the fastest always
 local firstorderflag = null;
@@ -44,7 +57,8 @@ AIOrder.AppendOrder(firstveh, srcplace, secondorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 AIGroup.MoveVehicle(road.groupID, firstveh);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(firstveh);
-if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",1); }
+if (!AIVehicle.StartStopVehicle(firstveh)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateAirVehicle"); }
+cEngine.VehicleIsTop(firstveh, road.route_type);
 return true;
 }
 
@@ -66,10 +80,12 @@ function cCarrier::ChooseAircraft(cargo,airtype=0)
 local vehlist = AIEngineList(AIVehicle.VT_AIR);
 vehlist.Valuate(AIEngine.IsBuildable);
 vehlist.KeepValue(1);
-vehlist.Valuate(AIEngine.CanRefitCargo, cargo);
+local passCargo=cCargo.GetPassengerCargo();
+vehlist.Valuate(AIEngine.CanRefitCargo, passCargo);
 vehlist.KeepValue(1);
 vehlist.Valuate(AIEngine.GetMaxSpeed);
 vehlist.KeepAboveValue(45); // some newgrf use weird unplayable aircrafts (for our distance usage)
+local special=0;
 local limitsmall=false;
 if (airtype >= 20)
 	{
@@ -85,13 +101,14 @@ switch (airtype)
 			vehlist.Valuate(AIEngine.GetPlaneType);
 			vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
 			}
-		vehlist.Valuate(cCarrier.GetEngineEfficiency);
+		vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
 		vehlist.Sort(AIList.SORT_BY_VALUE,true);
 		if (AICargo.GetTownEffect(cargo) == cCargo.GetMailCargo())
 			{
 			vehlist.Valuate(AIEngine.GetMaxSpeed);
 			vehlist.Sort(AIList.SORT_BY_VALUE,false);
 			}
+		special=RouteType.AIR;
 	break;
 	case	AircraftType.BEST:
 		if (limitsmall)
@@ -108,17 +125,20 @@ switch (airtype)
 			vehlist.KeepValue(first);
 			if (airtype == AircraftType.EFFICIENT)
 				{
-				vehlist.Valuate(cCarrier.GetEngineEfficiency);
+				vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
 				vehlist.Sort(AIList.SORT_BY_VALUE,true);
 				}
+		special=RouteType.AIRNET;
 	break;
 	case	AircraftType.CHOPPER: // top efficient chopper
 		vehlist.Valuate(AIEngine.GetPlaneType);
 		vehlist.KeepValue(AIAirport.PT_HELICOPTER);
-		vehlist.Valuate(cCarrier.GetEngineEfficiency);
+		vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
 		vehlist.Sort(AIList.SORT_BY_VALUE,true);
+		special=RouteType.CHOPPER;
 	break;
 	}
+if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), special, true); // set top engine for aircraft
 return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }
 

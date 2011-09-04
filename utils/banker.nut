@@ -70,8 +70,8 @@ local success=true;
 if (curr > money) success=true;
 		else	success=AICompany.SetMinimumLoanAmount(toloan);
 if (!success)	{ // can't get what we need, raising to what we could do so
-			DInfo("Cannot raise money to "+money+" Raising money to max we can",2,"cBanker::RaiseFundsTo");
-			toloan=AICompany.GetMaxLoanAmount()-(toloan-money);
+			DInfo("Cannot raise money to "+money+". Raising money to max we can",2,"cBanker::RaiseFundsTo");
+			toloan=AICompany.GetMaxLoanAmount();
 			success=AICompany.SetMinimumLoanAmount(toloan);
 			}
 return success;

@@ -97,7 +97,7 @@ function cTrain::SetStation(vehID, stationID, isSource, useEntry)
 function cTrain::DeleteVehicle(vehID)
 // delete a vehicle from the database
 	{
-	if (vehID in cTrain.vehicledatase)	delete cTrain.vehicledatase[vehID];
+	if (vehID in cTrain.vehicledatabase)	delete cTrain.vehicledatase[vehID];
 	}
 
 function cTrain::IsFull(vehID)

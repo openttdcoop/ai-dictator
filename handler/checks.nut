@@ -70,6 +70,7 @@ if (INSTANCE.buildTimer == 3)
 	INSTANCE.builddelay=false;
 	INSTANCE.buildTimer=0;
 	}
+INSTANCE.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
 INSTANCE.carrier.VehicleMaintenance();
 INSTANCE.route.DutyOnRoute();
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
@@ -136,11 +137,12 @@ function cBuilder::YearlyChecks()
 {
 INSTANCE.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
-INSTANCE.jobs.CheckTownStatue();
 INSTANCE.builder.BoostedBuys();
+INSTANCE.jobs.CheckTownStatue();
 INSTANCE.builder.BridgeUpgrader();
 INSTANCE.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
+INSTANCE.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
 }
 
 function cBuilder::AirportStationsBalancing()
@@ -259,7 +261,7 @@ foreach (stations, dummy in busstation)
 		if (produce == 0) // bus are waiting and station have 0 passengers
 			{
 			local vehicle=vehlist.Begin();
-			DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
+			DInfo("Selling vehicle "+INSTANCE.carrier.VehicleName(vehicle)+" to balance station",1);
 			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 			AIVehicle.ReverseVehicle(vehicle);
 			}
@@ -386,7 +388,7 @@ foreach (stations, dummy in truckstation)
 				if (AIVehicle.GetCapacity(vehicle, stacargo)==0)	continue; // not a vehicle using that cargo
 				if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
 				if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
-				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetFormatString(vehicle)+" to balance station",1);
+				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleName(vehicle)+" to balance station",1);
 				INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 				AIVehicle.ReverseVehicle(vehicle);
 				}

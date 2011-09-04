@@ -134,6 +134,7 @@ function DictatorAI::Start()
 	builder.SetRailType();
 	DInfo("DicatorAI started.",0,"main");
 	AICompany.SetAutoRenewStatus(false);
+	cEngine.EngineCacheInit();
 	if (loadedgame) 
 		{
 		bank.SaveMoney();

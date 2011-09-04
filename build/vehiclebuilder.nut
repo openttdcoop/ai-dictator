@@ -19,11 +19,12 @@ class cCarrier
 static	AirportTypeLimit=[6, 10, 2, 16, 30, 5, 6, 60, 8]; // limit per airport type
 static	IDX_HELPER = 512;			// use to create an uniq ID (also use to set handicap value)
 static	AIR_NET_CONNECTOR=2500;		// town is add to air network when it reach that value population
-static	TopEngineList=AIList();		// the list of engine ID we know if it can be upgrade or not
+//static	TopEngineList=AIList();		// the list of engine ID we know if it can be upgrade or not
 static	ToDepotList=AIList();		// list vehicle going to depot, value=DepotAction for trains we also add wagons need
 static	vehicle_database={};		// database for vehicles
 static	VirtualAirRoute=[];		// the air network destinations list
 static 	OldVehicle=1095;			// age left we consider a vehicle is old
+static	MaintenancePool=[];		// list of vehicles that need maintenance
 static	function GetVehicleObject(vehicleID)
 		{
 		return vehicleID in cCarrier.vehicle_database ? cCarrier.vehicle_database[vehicleID] : null;
@@ -255,19 +256,60 @@ switch (road.route_type)
 	}
 }
 
-function cCarrier::GetEngineEfficiency(engine, cargoID=null)
+function cCarrier::GetEngineEfficiency(engine, cargoID)
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
-// simple formula it's (price+(age*runningcost)) / (cargoamount*speed)
+// simple formula it's (price+(age*runningcost)) / (capacity*0.9+speed)
 {
 local price=cEngine.GetPrice(engine, cargoID);
 local capacity=cEngine.GetCapacity(engine, cargoID);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
-if (capacity==0)	{ print("Engine "+AIEngine.GetName(engine)+" capacity=0 doesn't handle "+cargoID); return 999999999; }
-local eff=(price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
-DInfo("Engine "+AIEngine.GetName(engine)+" efficiency with "+cargoID+": "+eff+" - Capacity:  "+capacity,1,"cCarrier::GetEngineEfficiency");
-return (price+(lifetime*runningcost))/((capacity*0.9)*speed).tointeger();
+if (capacity==0)	return 999999999;
+if (price<=0)	return 999999999;
+local eff=(100000+ (price+(lifetime*runningcost))) / ((capacity*0.9)+speed).tointeger();
+return eff;
+}
+
+function cCarrier::GetEngineRawEfficiency(engine, cargoID)
+// only consider the raw capacity/speed ratio
+// engine = enginetype to check
+// return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
+// simple formula is speed/capacity
+{
+local capacity=cEngine.GetCapacity(engine, cargoID);
+local speed=AIEngine.GetMaxSpeed(engine);
+if (capacity<=0)	return 999999999;
+if (price<=0)	return 999999999;
+local eff=100000 / ((capacity*0.9)+speed).tointeger();
+return eff;
+}
+
+function cCarrier::CheckOneVehicleOrGroup(vehID, doGroup)
+// Add a vehicle to the maintenance pool
+// vehID: the vehicleID to check
+// doGroup: if true, we will add all the vehicles that belong to the vehicleID group
+{
+if (!AIVehicle.IsValidVehicle(vehID))	return false;
+local vehList=AIList();
+local vehGroup=AIVehicle.GetGroupID(vehID);
+if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
+		else	vehList.AddItem(vehID,0);
+foreach (vehicle, dummy in vehList)
+	if (!vehicle in cCarrier.MaintenancePool)	cCarrier.MaintenancePool.push(vehicle);
+}
+
+function cCarrier::CheckOneVehicleOfGroup(doGroup)
+// Add one vehicle of each vehicle groups we own to maintenance check
+// doGroup: true to also do the whole group add, this mean all vehicles we own
+{
+local allgroup=AIGroupList();
+foreach (groupID, dummy in allgroup)
+	{
+	local vehlist=AIVehicleList_Group(groupID);
+	if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(),doGroup);
+	AIController.Sleep(1);
+	}
 }
 

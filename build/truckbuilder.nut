@@ -23,6 +23,7 @@ return veh;
 
 function cCarrier::CreateRoadEngine(engineID, depot, cargoID)
 // Create road vehicle engineID at depot
+// return -1 on errors, the vehicleID created on success
 {
 if (!AIEngine.IsValidEngine(engineID))	return -1;
 local price=cEngine.GetPrice(engineID);
@@ -53,6 +54,7 @@ local srcplace = road.source.locations.Begin();
 local dstplace = road.target.locations.Begin();
 local cargoid= road.cargoID;
 local engineID = INSTANCE.carrier.ChooseRoadVeh(cargoid);
+if (engineID==null)	{ DWarn("Cannot find any vehicle to transport that cargo",1,"cCarrier::CreateRoadVehicle"); return -2; }
 local homedepot = cRoute.GetDepot(roadidx);
 local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0 && road.cargoID == cCargo.GetPassengerCargo());
 if (altplace && road.target.depot != null)	homedepot = road.target.depot;
@@ -62,33 +64,29 @@ if (!cStation.IsDepot(homedepot))
 	DError("Route "+road.name+" depot is not valid, adding route to repair task.",1,"cCarrier::CreateRoadVehicle");
 	return false;
 	}
-
 local vehID=null;
 local lackMoney=false;
 local confirm=false;
 local another=false;
-print("BREAKPOINT");
 while (!confirm)
 	{
-	local price=cEngine.GetPrice(engineID, road.cargoID);
-	INSTANCE.bank.RaiseFundsBy(price);
-	lackMoney=!cBanker.CanBuyThat(price);
+	vehID=INSTANCE.carrier.CreateRoadEngine(engineID, homedepot, cargoid);
+	if (AIVehicle.IsValidVehicle(vehID))
+		DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(vehID),0,"cCarrier::CreateRoadVehicle");
+	else	{
+		DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
+		lackMoney=(vehID==-2);
+		}
+	another=INSTANCE.carrier.ChooseRoadVeh(cargoid);
+	if (another==engineID)	confirm=true;
+				else	engineID=another;
 	if (lackMoney)
 		{
-		DError("We don't have enought money to buy "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
-		vehID==-1;
+		DWarn("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(engineID),1,"cCarrier::CreateRoadVehicle");
+		return -2;
 		}
-	else	vehID=INSTANCE.carrier.CreateRoadEngine(engineID, homedepot, cargoid);
-	if (vehID==-1)
-		DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
-	else	DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(vehID),0,"cCarrier::CreateRoadVehicle");
-	another=INSTANCE.carrier.ChooseRoadVeh(cargoid);
-	if (another==engineID && another!=null)
-		confirm=true;
-	else	engineID=another;
-	if (another==null && lackMoney)	{ DError("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle"); return -2; }
 	INSTANCE.NeedDelay(60);
-	if (!confirm && vehID!=-1)	cCarrier.VehicleSell(vehID);
+	if (!confirm && AIVehicle.IsValidVehicle(vehID))	cCarrier.VehicleSell(vehID,false);
 	AIController.Sleep(1);
 	}
 
@@ -132,20 +130,15 @@ vehlist.Valuate(AIEngine.GetPrice);
 vehlist.RemoveValue(0); // remove towncars toys
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
-/*if (INSTANCE.safeStart>0)
-	{
-	vehlist.Valuate(AIEngine.GetCargoType);
-	vehlist.KeepValue(cargoid);
-	}
-else	{*/
-	vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
-	vehlist.KeepValue(1);
-	//}
+vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
+vehlist.KeepValue(1);
 vehlist.Valuate(cEngine.GetCapacity, cargoid);
 vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
-vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
+if (INSTANCE.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, cargoid);
+					else	vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
-DInfo("Selected bus/truck : "+AIEngine.GetName(vehlist.Begin())+" eff: "+vehlist.GetValue(vehlist.Begin()),1,"cCarrier::ChooseRoadVeh");
+//DInfo("Selected bus/truck : "+AIEngine.GetName(vehlist.Begin())+" eff: "+vehlist.GetValue(vehlist.Begin()),1,"cCarrier::ChooseRoadVeh");
+if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), cargoid, true); // set top engine for trucks
 return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }
 
