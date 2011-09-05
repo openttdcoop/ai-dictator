@@ -133,6 +133,10 @@ function DictatorAI::Start()
 	CheckCurrentSettings();
 	builder.SetRailType();
 	DInfo("DicatorAI started.",0,"main");
+local t=AIList();
+t.AddItem(4,3);
+print("countn="+t.Count());
+t.RemoveItem(0);
 	AICompany.SetAutoRenewStatus(false);
 	cEngine.EngineCacheInit();
 	if (loadedgame) 

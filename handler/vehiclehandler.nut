@@ -296,9 +296,10 @@ local oldenginename=INSTANCE.carrier.VehicleName(vehID);
 switch (vehtype)
 	{
 	case AIVehicle.VT_RAIL:
-		/*
-		TODO: upgrade for trains
-		*/
+/* Upgrading the loco engine is doable, but it might get too complexe for nothing, so i will destroy the train, and tell the AddWagon function we need X more wagons, as the train is now removed, the function will have no choice then build another one. This new one (if it's doable) will be an upgraded version of loco and wagons. Problem solve. */
+		local numwagon=cCarrier.GetNumberOfWagons(vehID);
+		INSTANCE.carrier.VehicleSell(vehID,false);
+		INSTANCE.carrier.AddWagon(idx, numwagon);
 	break;
 	case AIVehicle.VT_ROAD:
 		INSTANCE.carrier.VehicleSell(vehID,false);
