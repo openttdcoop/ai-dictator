@@ -61,6 +61,7 @@ static	function GetRouteObject(UID)
 	date_lastCheck	= null;	// date of last time we check route health
 	source_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
 	target_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
+	twoway		= null;	// if source station and target station accept but also produce, it's a twoway route
 
 	constructor()
 		{
@@ -89,6 +90,7 @@ static	function GetRouteObject(UID)
 		date_lastCheck	= null;
 		source_RailEntry	= null;
 		target_RailEntry	= null;
+		twoway		= false; // per default force source full load/target non full
 		}
 	}
 
@@ -454,3 +456,33 @@ function cRoute::GetDepot(uid)
 	return -1;
 	}
 
+function cRoute::AddTrain(uid, vehID)
+// Add a train to that route, callback cTrain to inform it too
+// uid : the route UID
+// vehID: the train ID to add
+	{
+	local road=cRoute.GetRouteObject(uid);
+	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID: "+vehID,2,"cRoute::AddTrain"); return -1; }
+	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::AddTrain"); return -1; }
+	cTrain.SetStation(vehID, road.source_stationID, true, road.source_RailEntry);
+	cTrain.SetStation(vehID, road.target_stationID, false, road.target_RailEntry);
+	// hmmm, choices: a two way route == 2 taker that are also dropper train
+	// we could then tell stations we have 2 taker == each train will have a platform
+	// or 2 dropper == station will have just 1 platform and trains must wait on the line
+	// for now i choose saying they are both taker
+	road.source.NewTrain(true, road.source_RailEntry);
+	road.target.NewTrain(false, road.target_RailEntry);
+	}
+
+function cRoute::CanAddTrainToStation(uid)
+// return true if we can add another train to that rail station
+// return false when the station cannot handle it
+	{
+	local road=cRoute.GetRouteObject(uid);
+	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrain"); return -1; }
+	local canAdd=true;
+print("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry);
+	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
+	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
+	return canAdd;
+	}

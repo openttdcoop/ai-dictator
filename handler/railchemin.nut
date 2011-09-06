@@ -61,7 +61,7 @@ local remain = cargowait - capacity;
 if (remain < 0)	vehneed=0;
 		else	vehneed = (cargowait / capacity)+1;
 DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+" firstveh="+firstveh,2,"DutyOnRailsRoute");
-
+if (firstveh)	vehneed=1;
 if (vehneed > 0)
 	if (!INSTANCE.carrier.AddWagon(uid,vehneed))	INSTANCE.bank.busyRoute=true;
 }

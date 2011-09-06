@@ -30,6 +30,7 @@ static	function GetTrainObject(vehicleID)
 	dst_useEntry	= null;	// destination station is use by its entry=true, exit=false;
 	full			= null; 	// set to true if train cannot have more wagons attach to it
 	wagonPrice		= null;	// price to buy a new wagon for that train
+	lastdepotvisit	= null;	// record last time that train was in a depot
 	
 	constructor()
 		{
@@ -43,6 +44,7 @@ static	function GetTrainObject(vehicleID)
 		dst_useEntry	= null;
 		full			= false;
 		wagonPrice		= 0;
+		lastdepotvisit	= 0;
 		}
 }
 
@@ -97,7 +99,7 @@ function cTrain::SetStation(vehID, stationID, isSource, useEntry)
 function cTrain::DeleteVehicle(vehID)
 // delete a vehicle from the database
 	{
-	if (vehID in cTrain.vehicledatabase)	delete cTrain.vehicledatase[vehID];
+	if (vehID in cTrain.vehicledatabase)	delete cTrain.vehicledatabase[vehID];
 	}
 
 function cTrain::IsFull(vehID)
@@ -135,5 +137,20 @@ function cTrain::IsEmpty(vehID)
 	if (train.numberLocos==0)	return true;
 	if (train.numberWagons==0)	return true;
 	return false;
+	}
+
+function cTrain::CanModifyTrain(vehID)
+// return true if we can call that vehicle to modify it, else false
+	{
+	local train=cTrain.Load(vehID);
+	local now=AIDate.GetCurrentDate();
+	return (now-train.lastdepotvisit>30);
+	}
+
+function cTrain::SetDepotVisit(vehID)
+// set the last time a train was in a depot
+	{
+	local train=cTrain.Load(vehID);
+	train.lastdepotvisit=AIDate.GetCurrentDate();
 	}
 

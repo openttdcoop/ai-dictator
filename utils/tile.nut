@@ -18,7 +18,7 @@ static	terraformCost = AIList();
 static	TilesBlackList = AIList(); // item=tile, value=stationID that own the tile
 }
 
-function cTileTools::IsTileBlackList(tile)
+function cTileTools::IsTilesBlackList(tile)
 {
 return cTileTools.TilesBlackList.HasItem(tile);
 }
@@ -54,9 +54,10 @@ function cTileTools::BlackListTile(tile, stationID=-255)
 if (AIMap.IsValidTile(tile))
 	{
 	local owner=cTileTools.GetTileOwner(tile);
-	if (stationID!=-100 && owner == -1)	cTileTools.TilesBlackList.AddItem(tile, stationID);
-	if (stationID == -255)	cTileTools.TileBlackList.SetValue(tile, -255);
-	if (stationID == -100)	cTileTools.TileBlackList.SetValue(tile, -100);
+	cTileTools.TilesBlackList.AddItem(tile, -1);
+	if (stationID!=-100 && owner == -1)	cTileTools.TilesBlackList.SetValue(tile, stationID);
+	if (stationID == -255)	cTileTools.TilesBlackList.SetValue(tile, -255);
+	if (stationID == -100)	cTileTools.TilesBlackList.SetValue(tile, -100);
 	}
 }
 
@@ -68,7 +69,7 @@ cTileTools.BlackListTile(tile, -100);
 
 function cTileTools::UnBlackListTile(tile)
 {
-if (cTileTools.IsTileBlackList(tile))	cTileTools.TilesBlackList.RemoveItem(tile);
+if (cTileTools.IsTilesBlackList(tile))	cTileTools.TilesBlackList.RemoveItem(tile);
 }
 
 function cTileTools::PurgeBlackListTiles(alist, creation=false)

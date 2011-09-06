@@ -441,11 +441,24 @@ if (INSTANCE.route.status==6)
 	{
 	INSTANCE.route.RouteDone();
 	DInfo("Route contruction complete ! "+INSTANCE.route.name,0,"TryBuildThatRoute");
+	local srcprod=INSTANCE.route.source.cargo_produce.HasItem(INSTANCE.route.cargoID);
+	local srcacc=INSTANCE.route.source.cargo_accept.HasItem(INSTANCE.route.cargoID);
+	local dstprod=INSTANCE.route.target.cargo_produce.HasItem(INSTANCE.route.cargoID);
+	local dstacc=INSTANCE.route.target.cargo_accept.HasItem(INSTANCE.route.cargoID);
+	if (srcprod && srcacc && dstprod && dstacc)
+		{
+		DInfo("Route mark as a twoway route",1,"TryBuildThatRoute");
+		INSTANCE.route.twoway=true;
+		}
+	else	{
+		DInfo("Route mark as a oneway route",1,"TryBuildThatRoute");
+		INSTANCE.route.twoway=false;
+		}
 	INSTANCE.builddelay=true;
 	INSTANCE.builder.building_route=-1; // Allow us to work on a new route now
 	if (INSTANCE.safeStart >0 && INSTANCE.route.route_type == RouteType.ROAD)	INSTANCE.safeStart--;
-	if (INSTANCE.route.route_type==RouteType.RAIL)	INSTANCE.route.DutyOnRailsRoute(INSTANCE.route.UID);
-								else	INSTANCE.route.DutyOnRoute();
+	//if (INSTANCE.route.route_type==RouteType.RAIL)	INSTANCE.route.DutyOnRailsRoute(INSTANCE.route.UID);
+	//							else	INSTANCE.route.DutyOnRoute();
 	}
 return success;
 }

@@ -201,8 +201,8 @@ function cStation::CanUpgradeStation()
 			return false;
 		break;
 		case	AIStation.STATION_TRAIN:
-			this.vehicle_max=this.size;
 			if (this.size >= this.maxsize)	return false;
+			return true;
 		break;
 		case	AIStation.STATION_AIRPORT:
 			local newairport = cBuilder.GetAirportType();
@@ -910,3 +910,31 @@ foreach (tile, dummy in removelist)
 	{ AITile.DemolishTile(tile); thatstation.station_tiles.RemoveItem(tile); cTileTools.UnBlackListTile(tile) }
 }
 
+function cStation::NewTrain(taker, useEntry, stationID=null)
+// Add a train to that station train counter
+// stationID: the station ID
+// taker: true if train is a taker, false if it's a dropper
+// useEntry: true to use station entry, false for its exit
+{
+local thatstation=null;
+if (stationID==null)	thatstation=this;
+		else		thatstation=cStation.GetStationObject(stationID);
+if (thatstation == null)	return -1;
+local ted=thatstation.locations.GetValue(7);
+local txd=thatstation.locations.GetValue(8);
+local tet=thatstation.locations.GetValue(9);
+local txt=thatstation.locations.GetValue(10);
+if (taker)
+	{
+	if (useEntry)	tet+=1;
+			else	txt+=1;
+	}
+else	{
+	if (useEntry)	ted+=1;
+			else	txd+=1;
+	}
+thatstation.locations.SetValue(7, ted);
+thatstation.locations.SetValue(8, txd);
+thatstation.locations.SetValue(9, tet);
+thatstation.locations.SetValue(10, txt);
+}

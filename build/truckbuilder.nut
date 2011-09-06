@@ -90,17 +90,9 @@ while (!confirm)
 	AIController.Sleep(1);
 	}
 
-local firstorderflag = null;
-local secondorderflag = null;
-if (AICargo.GetTownEffect(cargoid) == AICargo.TE_PASSENGERS || AICargo.GetTownEffect(cargoid) == AICargo.TE_MAIL)
-	{
-	firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	}
-else	{
-	firstorderflag = AIOrder.AIOF_FULL_LOAD_ANY + AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	secondorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-	}
+local firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
+local secondorderflag = firstorderflag;
+if (road.twoway)	firstorderflag+=AIOrder.AIOF_FULL_LOAD_ANY;
 AIGroup.MoveVehicle(road.groupID, vehID);
 AIOrder.AppendOrder(vehID, srcplace, firstorderflag);
 AIOrder.AppendOrder(vehID, dstplace, secondorderflag);

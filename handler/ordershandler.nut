@@ -114,14 +114,14 @@ switch (road.route_type)
 	case AIVehicle.VT_ROAD:
 		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		if (!road.source_istown) oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+		if (!road.twoway) oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
 	case AIVehicle.VT_RAIL:
 		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		if (!road.source_istown)	oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+		if (!road.twoway)	oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
 		srcplace = AIStation.GetLocation(road.source.stationID);
 		dstplace = AIStation.GetLocation(road.target.stationID);
 	break;
@@ -324,7 +324,7 @@ if (road==null)	return false;
 DInfo("Append orders to "+AIVehicle.GetName(trainID),2,"cCarrier::TrainSetOrder");
 local firstorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 local secondorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-if (!road.source_istown)	firstorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+if (!road.twoway)	firstorder+=AIOrder.AIOF_FULL_LOAD_ANY;
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), firstorder))
 	{ DError(AIVehicle.GetName(trainID)+" refuse first order",2,"cCarrier::TrainSetOrder"); return false; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), secondorder))

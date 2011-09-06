@@ -1096,10 +1096,11 @@ if (closeIt)
 // 9: number of train taker using entry
 // 10: number of train taker using exit
 // If we reach this line, it means everything upper was succesful (and i hope this will be !)
-thatstation.locations.SetValue(9,trainEntryTaker);
+//thatstation.NewTrain(taker, useEntry);
+/*thatstation.locations.SetValue(9,trainEntryTaker);
 thatstation.locations.SetValue(10,trainExitTaker);
 thatstation.locations.SetValue(7,trainEntryDropper);
-thatstation.locations.SetValue(8,trainExitDropper);
+thatstation.locations.SetValue(8,trainExitDropper);*/
 DInfo("Station "+AIStation.GetName(thatstation.stationID)+" have "+(trainEntryTaker+trainEntryDropper)+" trains using its entry and "+(trainExitTaker+trainExitDropper)+" using its exit",1,"RailStationGrow");
 return true;
 }
