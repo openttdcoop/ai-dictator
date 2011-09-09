@@ -1019,7 +1019,54 @@ for (local hh=0; hh < 2; hh++)
 thatstation.DefinePlatform();
 
 
-DInfo("Phase6: build depot",1,"RailStationGrow");
+DInfo("Phase6: building alternate track & signals",1,"RailStationGrow");
+// first look if we need some more work
+if (needIN) // only work when needIN is built as we only work on target station for that part
+	{
+	local dowork=false;
+	if (thatstation.owner.IsEmpty())
+		{
+		DError("Nobody claim that station yet",1,"RailStationGrow");
+		dowork=false;
+		}
+	local uidowner=thatstation.owner.Begin();
+	local road=cRoute.GetRouteObject(uidowner);
+	if (road==null)
+		{
+		DError("Our owner route "+uidowner+" is invalid",1,"RailStationGrow");
+		dowork=false;
+		}
+	if (dowork)
+		{
+		if (road.secondary_RailLink==false)	dowork=true; // only work if we haven't build the connection yet
+		if (road.source_stationID != staID)	dowork=false;// but only if we are the target station
+		}
+	if (dowork)
+		{
+		local srcpos, srclink, dstpos, dstlink= null;
+		if (road.source_RailEntry)
+			{ srcpos=road.source.locations.GetValue(2); srclink=road.source.locations.GetValue(12); }
+		else	{ srcpos=road.source.locations.GetValue(4); srclink=road.source.locations.GetValue(14); }
+		if (road.target_RailEntry)
+			{ dstpos=road.target.locations.GetValue(1); dstlink=road.source.locations.GetValue(11); }
+		else	{ dstpos=road.target.locations.GetValue(3); dstlink=road.source.locations.GetValue(13); }
+		DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"RailStationGrow");
+		PutSign(dstpos,"D");
+		PutSign(dstlink,"d");
+		PutSign(srcpos,"S");
+		PutSign(srclink,"s");
+		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]))
+			{
+			DError("Fail to build alternate track",1,"RailStationGrow");
+			return false;
+			}
+		else	{ road.secondary_RailLink=true; }
+		}
+	}
+
+DInfo("Phase7: building signals",1,"RailStationGrow");
+
+DInfo("Phase8: build depot",1,"RailStationGrow");
 // build depot for it,
 // in order to build cleaner rail we build the depot where the OUT line should goes, reserving space for it
 // if this cannot be done, we build it next to the IN line, and we just swap lines (OUT<>IN)

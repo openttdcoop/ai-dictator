@@ -61,6 +61,8 @@ static	function GetRouteObject(UID)
 	date_lastCheck	= null;	// date of last time we check route health
 	source_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
 	target_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
+	primary_RailLink	= null;	// true if we have build the main connecting rails from source to target station
+	secondary_RailLink= null;	// true if we also buld the alternate path from source to target
 	twoway		= null;	// if source station and target station accept but also produce, it's a twoway route
 
 	constructor()
@@ -90,6 +92,8 @@ static	function GetRouteObject(UID)
 		date_lastCheck	= null;
 		source_RailEntry	= null;
 		target_RailEntry	= null;
+		primary_RailLink	= false;
+		secondary_RailLink= false;
 		twoway		= false; // per default force source full load/target non full
 		}
 	}
@@ -481,8 +485,8 @@ function cRoute::CanAddTrainToStation(uid)
 	local road=cRoute.GetRouteObject(uid);
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrain"); return -1; }
 	local canAdd=true;
-print("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry);
-	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
-	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
+print("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry); INSTANCE.NeedDelay(100);
+	canAdd=cBuilder.RailStationGrow(road.source_stationID, true, road.source_RailEntry);
+	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, false, road.target_RailEntry);
 	return canAdd;
 	}

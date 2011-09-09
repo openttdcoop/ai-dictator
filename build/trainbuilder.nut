@@ -325,6 +325,8 @@ local stationLen=road.source.locations.GetValue(19)*16; // station depth is @19
 local processTrains=[];
 local tID=null;
 local depotID=cRoute.GetDepot(uid);
+print("depotID to create train="+depotID);
+PutSign(depotID,"Depot Builder");
 local giveup=false;
 vehlist.Valuate(AIVehicle.GetState);
 vehlist.RemoveValue(AIVehicle.VS_INVALID);
