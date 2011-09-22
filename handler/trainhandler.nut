@@ -82,7 +82,7 @@ function cTrain::Update(vehID)
 	}
 
 function cTrain::SetStation(vehID, stationID, isSource, useEntry)
-// set the station proprieties of a train
+// set the station properties of a train
 	{
 	local train=cTrain.Load(vehID);
 	if (isSource)

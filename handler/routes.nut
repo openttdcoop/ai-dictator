@@ -486,7 +486,7 @@ function cRoute::CanAddTrainToStation(uid)
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrain"); return -1; }
 	local canAdd=true;
 print("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry); INSTANCE.NeedDelay(100);
-	canAdd=cBuilder.RailStationGrow(road.source_stationID, true, road.source_RailEntry);
-	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, false, road.target_RailEntry);
+	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
+	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
 	return canAdd;
 	}

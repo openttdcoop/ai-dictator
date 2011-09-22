@@ -313,7 +313,7 @@ return pullerID;
 
 function cCarrier::AddWagon(uid, wagonNeed)
 // Add wagons to route uid, handle the train engine by buying it if need
-// If need we send a train to depot to get add wagons, and we will get called back by the in depot event
+// If need we send a train to depot to get more wagons, and we will be called back by the in depot event
 {
 if (wagonNeed==0)	DWarn("We are query to build 0 wagons !!!",1,"cCarrier::AddWagon");
 local road=cRoute.GetRouteObject(uid);
@@ -425,9 +425,6 @@ do	{
 				}
 			cTrain.Update(tID);
 			}
-/* disable until station can grow
-		if (!giveup && wagonNeed>0 && processTrains.len()==0) // we have no more trains that could get the remain wagons
-			processTrains.push(-1);*/
 		}
 	} while (processTrains.len()!=0 && !giveup);
 road.RouteUpdateVehicle();

@@ -452,18 +452,26 @@ do	{
 			// need to grab the real locations first, as they might have change while building entrances of station
 			local srclink=0;
 			local dstlink=0;
-			if (srcUseEntry)	{ srcpos=srcStation.locations.GetValue(1); srclink=srcStation.locations.GetValue(11); }
-					else	{ srcpos=srcStation.locations.GetValue(3); srclink=srcStation.locations.GetValue(13); }
-			if (dstUseEntry)	{ dstpos=dstStation.locations.GetValue(2); dstlink=dstStation.locations.GetValue(12); }
-					else	{ dstpos=dstStation.locations.GetValue(4); dstlink=dstStation.locations.GetValue(14); }
+			if (srcUseEntry)	srclink=srcStation.locations.GetValue(11);
+					else	srclink=srcStation.locations.GetValue(13);
+			if (dstUseEntry)	dstlink=dstStation.locations.GetValue(12);
+					else	dstlink=dstStation.locations.GetValue(14);
+			srcpos=srclink+cStation.GetRelativeTileBackward(srcStation.stationID, srcUseEntry);
+			dstpos=dstlink+cStation.GetRelativeTileBackward(dstStation.stationID, dstUseEntry);
 			ClearSignsALL();
+
 /*			print("testing stations**********");
+			INSTANCE.builder.RailStationGrow(fromObj, true, false);
+			cStation.NewTrain(true, false, fromObj);
+			INSTANCE.builder.RailStationGrow(fromObj, true, false);
+			cStation.NewTrain(true, false, fromObj);
 			INSTANCE.builder.RailStationGrow(fromObj, true, false);
 			INSTANCE.builder.RailStationGrow(fromObj, true, true); // TODO: remove force grow
 			INSTANCE.builder.RailStationGrow(toObj, true, true);
 			INSTANCE.builder.RailStationGrow(fromObj, false, false); // TODO: remove force grow
 			INSTANCE.builder.RailStationGrow(toObj, false, false);
 			ClearSignsALL();*/
+
 			DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"CreateStationConnection");
 			PutSign(dstpos,"D");
 			PutSign(dstlink,"d");
@@ -482,6 +490,7 @@ if (dstUseEntry)	dstStation.locations.SetValue(11,srcpos);
 		else	dstStation.locations.SetValue(13,srcpos);
 INSTANCE.route.source_RailEntry=srcUseEntry;
 INSTANCE.route.target_RailEntry=dstUseEntry;
+INSTANCE.route.primary_RailLink=true;
 return true;
 }
 
@@ -550,6 +559,8 @@ local trainExitTaker=thatstation.locations.GetValue(10);
 local trainEntryDropper=thatstation.locations.GetValue(7);
 local trainExitDropper=thatstation.locations.GetValue(8);
 local station_depth=thatstation.locations.GetValue(19);
+print("raw**: trainEntryTaker="+trainExitTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
+
 local success=false;
 local closeIt=false;
 if (useEntry)
@@ -583,6 +594,20 @@ local leftTileOf, rightTileOf, forwardTileOf, backwardTileOf =null;
 local workTile=null; // the station front tile, but depend on entry or exit
 local railFront, railCross, railLeft, railRight, railUpLeft, railUpRight, fire = null;
 workTile=thatstation.GetRailStationFrontTile(useEntry,position);
+// find route that use the station
+local road=null;
+if (thatstation.owner.IsEmpty())
+	{
+	DWarn("Nobody claim that station yet",1,"RailStationGrow");
+	}
+else	{
+	local uidowner=thatstation.owner.Begin();
+	road=cRoute.GetRouteObject(uidowner);
+	if (road==null)
+		{
+		DWarn("The route owner ID "+uidowner+" is invalid",1,"RailStationGrow");
+		}
+	}
 local temptile=0;
 if (direction == AIRail.RAILTRACK_NW_SE)
 	{
@@ -643,9 +668,18 @@ if (newStationSize > thatstation.size)
 	local topRightPlatform=thatstation.locations.GetValue(21);
 	local idxRightPlatform=cStation.GetPlatformIndex(topRightPlatform, useEntry);
 	local idxLeftPlatform=cStation.GetPlatformIndex(topLeftPlatform, useEntry);
-	local pside=rightTileOf;
-	if (useEntry)	pside=leftTileOf;
-	displace=idxLeftPlatform+pside;
+	local plat_main=idxLeftPlatform;
+	local plat_alt=idxRightPlatform;
+	local pside=leftTileOf;
+	if (useEntry)
+		{
+		pside=rightTileOf; // try build to right side when using entry first, else try left side
+		plat_main=idxRightPlatform;
+		plat_alt=idxLeftPlatform;
+		}
+/*	local pside=rightTileOf;
+	if (useEntry)	pside=leftTileOf;*/
+	displace=plat_main+pside;
 	local areaclean=AITileList();
 	areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
 	areaclean.Valuate(AITile.IsBuildable);
@@ -654,24 +688,26 @@ if (newStationSize > thatstation.size)
 	if (canDestroy)
 		foreach (ctile, cdummy in areaclean)
 			{ !cTileTools.DemolishTile(ctile);	}
-	cTileTools.TerraformLevelTiles(idxLeftPlatform, displace+(backwardTileOf*(station_depth-1)));
-	success=CreateAndBuildTrainStation(cStation.GetPlatformIndex(idxLeftPlatform,true)+pside, direction, thatstation.stationID);
+	cTileTools.TerraformLevelTiles(plat_main, displace+(backwardTileOf*(station_depth-1)));
+	success=INSTANCE.builder.CreateAndBuildTrainStation(cStation.GetPlatformIndex(plat_main,true)+pside, direction, thatstation.stationID);
 	if (success)	foreach (tile, dummy in areaclean)	thatstation.StationClaimTile(tile, thatstation.stationID);
 	if (!success)
 		{
 		INSTANCE.builder.IsCriticalError();
 		allfail=INSTANCE.builder.CriticalError;
 		INSTANCE.builder.CriticalError=false;
-		pside=leftTileOf;
-		if (useEntry)	pside=rightTileOf;
-		displace=idxRightPlatform+pside;
+		/*pside=leftTileOf;
+		if (useEntry)	pside=rightTileOf;*/
+		pside=rightTileOf;
+		if (useEntry)	pside=leftTileOf;
+		displace=plat_alt+pside;
 		local areaclean=AITileList();
 		areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
 		showLogic(areaclean);
 		if (cTileTools.IsAreaBuildable(areaclean,staID))
 			foreach (ctile, cdummy in areaclean)	cTileTools.DemolishTile(ctile);
-		cTileTools.TerraformLevelTiles(idxRightPlatform, displace+(backwardTileOf*(station_depth-1)));
-		success=CreateAndBuildTrainStation(cStation.GetPlatformIndex(idxRightPlatform,true)+pside, direction, thatstation.stationID);
+		cTileTools.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
+		success=INSTANCE.builder.CreateAndBuildTrainStation(cStation.GetPlatformIndex(plat_alt,true)+pside, direction, thatstation.stationID);
 		if (success)	foreach (tile, dummy in areaclean)	thatstation.StationClaimTile(tile, thatstation.stationID);
 		if (!success)	
 			{
@@ -819,7 +855,9 @@ if (!closeIt)
 	if ( (sx_IN==-1 || sx_OUT==-1) && (trainExitTaker+trainExitDropper > 1) ) { needIN++; needOUT++; }
 	// more than 1 trains use the exit
 	}
-if (needIN > 0 || needOUT > 0);
+print("traindump: trainEntryTaker="+trainEntryTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
+print("needIN="+needIN+" needOUT="+needOUT);
+if (needIN > 0 || needOUT > 0)
 	{
 	local tmptaker=taker;
 	local in_str="";
@@ -845,6 +883,9 @@ if (needIN > 0 || needOUT > 0);
 		}
 	DInfo("Building "+in_str+" point",1,"RailStationGrow");
 	local endconnector=fromtile;
+	local building_maintrack=true;
+	if (road==null)	building_maintrack=true;
+			else	if (road.primary_RailLink)	building_maintrack=false;
 	do	{
 		temptile=fromtile+(j*forwardTileOf);
 		cTileTools.TerraformLevelTiles(position,temptile);
@@ -858,9 +899,25 @@ if (needIN > 0 || needOUT > 0);
 			INSTANCE.builder.CriticalError=false;
 			break;
 			}
-		DInfo("Building "+in_str+" point signal",1,"RailStationGrow");
+		if (building_maintrack) // we're building IN/OUT point for the primary track
+			{
+print("break");
+			PutSign(temptile+(1*forwardTileOf),"R1");
+			PutSign(temptile+(2*forwardTileOf),"R2");
+
+			cTileTools.TerraformLevelTiles(position,temptile+(3*forwardTileOf));
+			if (cTileTools.CanUseTile(temptile+(1*forwardTileOf), staID))
+				success=INSTANCE.builder.DropRailHere(rail, temptile+(1*forwardTileOf));
+			else	{ INSTANCE.builder.CriticalError=true; success=false; }
+			if (success) thatstation.RailStationClaimTile(temptile+(1*forwardTileOf),useEntry);
+			if (cTileTools.CanUseTile(temptile+(2*forwardTileOf), staID))
+				success=INSTANCE.builder.DropRailHere(rail, temptile+(2*forwardTileOf));
+			else	{ INSTANCE.builder.CriticalError=true; success=false; }
+			if (success) thatstation.RailStationClaimTile(temptile+(2*forwardTileOf),useEntry);
+			}
 		if (tmptaker)	sigdir=fromtile+((j+1)*forwardTileOf);
 				else	sigdir=fromtile+((j-1)*forwardTileOf);
+		DInfo("Building "+in_str+" point signal",1,"RailStationGrow");
 		success=AIRail.BuildSignal(temptile, sigdir, sigtype);
 		if (success)	{
 					local entry_str="Entry";
@@ -872,41 +929,42 @@ if (needIN > 0 || needOUT > 0);
 							{
 							se_IN=temptile;
 							thatstation.locations.SetValue(1,se_IN);
-							thatstation.locations.SetValue(11, se_IN+forwardTileOf); // link
-							if (!cTileTools.DemolishTile(se_IN+forwardTileOf))	closeIt=true;
+							if (building_maintrack)	thatstation.locations.SetValue(11, se_IN+(3*forwardTileOf)); // link
+										else	thatstation.locations.SetValue(11, se_IN+forwardTileOf);
+							if (!cTileTools.DemolishTile(thatstation.locations.GetValue(11)))	closeIt=true;
 							pointview=se_IN;
 							}
 						else	{
 							sx_IN=fromtile+(j*forwardTileOf);
 							thatstation.locations.SetValue(3,sx_IN);
-							thatstation.locations.SetValue(13, sx_IN+forwardTileOf); // link
-							if (!cTileTools.DemolishTile(sx_IN+forwardTileOf))	closeIt=true;
+							if (building_maintrack)	thatstation.locations.SetValue(13, sx_IN+(3*forwardTileOf)); // link
+										else	thatstation.locations.SetValue(13, sx_IN+forwardTileOf);
+							if (!cTileTools.DemolishTile(thatstation.locations.GetValue(13)))	closeIt=true;
 							pointview=sx_IN; entry_str="Exit";
 							}
 						}
 					else	{
+						if (cTileTools.CanUseTile(fromtile,staID)) // it's crossing+rightTileOf
+							if (INSTANCE.builder.DropRailHere(railUpLeft, fromtile))
+								thatstation.RailStationClaimTile(fromtile, useEntry);
 						if (useEntry)
 							{
-							if (cTileTools.CanUseTile(fromtile,staID)) // it's crossing+rightTileOf
-								if (INSTANCE.builder.DropRailHere(railUpLeft, fromtile))
-									thatstation.RailStationClaimTile(fromtile, useEntry);
 							se_OUT=temptile;
 							thatstation.locations.SetValue(2,se_OUT);
-							thatstation.locations.SetValue(12, se_OUT+forwardTileOf); // link
-							if (!cTileTools.DemolishTile(se_OUT+forwardTileOf))	closeIt=true;
+							if (building_maintrack)	thatstation.locations.SetValue(12, se_OUT+(3*forwardTileOf)); // link
+										else	thatstation.locations.SetValue(12, se_OUT+(1*forwardTileOf));
+							if (!cTileTools.DemolishTile(thatstation.locations.GetValue(12)))	closeIt=true;
 							pointview=se_OUT;
 							if (!cBuilder.RailConnectorSolver(fromtile+forwardTileOf, fromtile, true))
 								closeIt=true; // this build rails at crossing point connecting to 1st rail of se_OUT
 							else	thatstation.RailStationClaimTile(fromtile+forwardTileOf, useEntry);
 							}
 						else	{
-							if (cTileTools.CanUseTile(fromtile,staID)) 
-								if (INSTANCE.builder.DropRailHere(railUpLeft, fromtile))
-									thatstation.RailStationClaimTile(fromtile, useEntry);
 							sx_OUT=temptile;
 							thatstation.locations.SetValue(4,sx_OUT);
-							thatstation.locations.SetValue(14, sx_OUT+forwardTileOf); // link
-							if (!cTileTools.DemolishTile(sx_OUT+forwardTileOf))	closeIt=true;
+							if (building_maintrack)	thatstation.locations.SetValue(14, sx_OUT+(3*forwardTileOf)); // link
+										else	thatstation.locations.SetValue(14, sx_OUT+(1*forwardTileOf));
+							if (!cTileTools.DemolishTile(thatstation.locations.GetValue(14)))	closeIt=true;
 							pointview=sx_OUT; entry_str="Exit";
 							if (!cBuilder.RailConnectorSolver(fromtile, fromtile+forwardTileOf ,true))
 								closeIt=true;
@@ -1019,42 +1077,53 @@ for (local hh=0; hh < 2; hh++)
 thatstation.DefinePlatform();
 
 
-DInfo("Phase6: building alternate track & signals",1,"RailStationGrow");
+DInfo("Phase6: building alternate track",1,"RailStationGrow");
 // first look if we need some more work
-if (needIN) // only work when needIN is built as we only work on target station for that part
+print("needIN="+needIN);
+if (needIN>0) // only work when needIN is built as we only work on target station for that part
 	{
-	local dowork=false;
-	if (thatstation.owner.IsEmpty())
-		{
-		DError("Nobody claim that station yet",1,"RailStationGrow");
-		dowork=false;
-		}
-	local uidowner=thatstation.owner.Begin();
-	local road=cRoute.GetRouteObject(uidowner);
+	local dowork=true;
 	if (road==null)
 		{
-		DError("Our owner route "+uidowner+" is invalid",1,"RailStationGrow");
+		DWarn("Our owner route is not yet valid",1,"RailStationGrow");
 		dowork=false;
 		}
-	if (dowork)
-		{
+	else	{
 		if (road.secondary_RailLink==false)	dowork=true; // only work if we haven't build the connection yet
-		if (road.source_stationID != staID)	dowork=false;// but only if we are the target station
+		if (road.source_stationID == staID)	dowork=false;// but only if we are the target station
+print("source station ID = "+road.source_stationID+" staID="+staID);
 		}
+print("dowork="+dowork);
 	if (dowork)
 		{
 		local srcpos, srclink, dstpos, dstlink= null;
-		if (road.source_RailEntry)
+/*		if (road.source_RailEntry)
 			{ srcpos=road.source.locations.GetValue(2); srclink=road.source.locations.GetValue(12); }
 		else	{ srcpos=road.source.locations.GetValue(4); srclink=road.source.locations.GetValue(14); }
 		if (road.target_RailEntry)
 			{ dstpos=road.target.locations.GetValue(1); dstlink=road.source.locations.GetValue(11); }
 		else	{ dstpos=road.target.locations.GetValue(3); dstlink=road.source.locations.GetValue(13); }
+			if (srcUseEntry)	srclink=srcStation.locations.GetValue(11);
+					else	srclink=srcStation.locations.GetValue(13);
+			if (dstUseEntry)	dstlink=dstStation.locations.GetValue(12);
+					else	dstlink=dstStation.locations.GetValue(14);
+			srcpos=srclink+cStation.GetRelativeTileBackward(srcStation.stationID, srcUseEntry);
+			dstpos=dstlink+cStation.GetRelativeTileBackward(dstStation.stationID, dstUseEntry);
+*/
+		if (road.source_RailEntry)
+			srclink=road.source.locations.GetValue(12);
+		else	srclink=road.source.locations.GetValue(14);
+		if (road.target_RailEntry)
+			dstlink=road.target.locations.GetValue(11);
+		else	dstlink=road.target.locations.GetValue(13);
+		srcpos=srclink+cStation.GetRelativeTileBackward(road.source.stationID, road.source_RailEntry);
+		dstpos=dstlink+cStation.GetRelativeTileBackward(road.target.stationID, road.target_RailEntry);
 		DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"RailStationGrow");
 		PutSign(dstpos,"D");
 		PutSign(dstlink,"d");
 		PutSign(srcpos,"S");
 		PutSign(srclink,"s");
+print("break");
 		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]))
 			{
 			DError("Fail to build alternate track",1,"RailStationGrow");
@@ -1138,16 +1207,6 @@ if (closeIt)
 	INSTANCE.builder.CriticalError=false; // let's get another chance to build exit/entry when fail
 	return false;
 	}
-// 7: number of train dropper using entry
-// 8: number of train dropper using exit
-// 9: number of train taker using entry
-// 10: number of train taker using exit
-// If we reach this line, it means everything upper was succesful (and i hope this will be !)
-//thatstation.NewTrain(taker, useEntry);
-/*thatstation.locations.SetValue(9,trainEntryTaker);
-thatstation.locations.SetValue(10,trainExitTaker);
-thatstation.locations.SetValue(7,trainEntryDropper);
-thatstation.locations.SetValue(8,trainExitDropper);*/
 DInfo("Station "+AIStation.GetName(thatstation.stationID)+" have "+(trainEntryTaker+trainEntryDropper)+" trains using its entry and "+(trainExitTaker+trainExitDropper)+" using its exit",1,"RailStationGrow");
 return true;
 }

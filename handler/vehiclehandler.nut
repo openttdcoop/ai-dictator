@@ -279,7 +279,7 @@ if (idx == null)
 local betterEngine=cEngine.IsVehicleAtTop(vehID);
 if (betterEngine==-1)
 	{
-	DWarn("That vehicle have it's engine already at top, but we sell it anyway",1,"cCarrier::VehicleUpgradeEngine");
+	DWarn("That vehicle have its engine already at top, but we sell it anyway",1,"cCarrier::VehicleUpgradeEngine");
 	INSTANCE.carrier.VehicleSell(vehID, false);
 	return false;
 	}
@@ -300,6 +300,8 @@ switch (vehtype)
 		local numwagon=cCarrier.GetNumberOfWagons(vehID);
 		INSTANCE.carrier.VehicleSell(vehID,false);
 		INSTANCE.carrier.AddWagon(idx, numwagon);
+		DInfo("Train vehicle "+oldenginename+" replace",0,"cCarrier::VehicleUpgradeEngine");
+		return; // for now cannot do more than that
 	break;
 	case AIVehicle.VT_ROAD:
 		INSTANCE.carrier.VehicleSell(vehID,false);
@@ -452,7 +454,7 @@ local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(uid);
 if (road == null) return;
 road.RouteUpdateVehicle();
-if (recordit)	road.dateVehicleDelete=AIDate.GetCurrentDate();
+if (recordit)	road.date_VehicleDelete=AIDate.GetCurrentDate();
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
