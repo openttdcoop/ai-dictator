@@ -484,7 +484,7 @@ if (INSTANCE.safeStart >0)
 	use_air=false;
 	}
 //INSTANCE.safeStart=0;
-//use_train=true;
+use_train=false;
 //use_road=false;
 //use_air=false;
 }

@@ -74,6 +74,8 @@ bit0 entry is working on/off
 bit1 exit is working on/off
 bit2 south/west escape line is working on/off
 bit3 north/east escape line is working on/off
+bit4 main train line fire done
+bit5 alt train line fire done
 */
 	
 	constructor()

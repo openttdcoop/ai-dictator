@@ -201,6 +201,9 @@ pathfinder._cost_bridge_per_tile = 90;
 pathfinder._cost_tunnel_per_tile = 75;
 pathfinder._max_bridge_length = 20;
 pathfinder._max_tunnel_length = 20;
+//pathfinder.cost.max_cost = AIMap.DistanceManhattan(head1[0],head2[0]) * 1.5 * pathfinder.cost.slope;
+DInfo("Pathfinder max_cost set to "+pathfinder._max_cost+" "+pathfinder.cost.max_cost);
+
 pathfinder.InitializePath([head1], [head2]);
 local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 local pfInfo=null;
@@ -559,7 +562,7 @@ local trainExitTaker=thatstation.locations.GetValue(10);
 local trainEntryDropper=thatstation.locations.GetValue(7);
 local trainExitDropper=thatstation.locations.GetValue(8);
 local station_depth=thatstation.locations.GetValue(19);
-print("raw**: trainEntryTaker="+trainExitTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
+//print("raw**: trainEntryTaker="+trainExitTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
 
 local success=false;
 local closeIt=false;
@@ -855,8 +858,8 @@ if (!closeIt)
 	if ( (sx_IN==-1 || sx_OUT==-1) && (trainExitTaker+trainExitDropper > 1) ) { needIN++; needOUT++; }
 	// more than 1 trains use the exit
 	}
-print("traindump: trainEntryTaker="+trainEntryTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
-print("needIN="+needIN+" needOUT="+needOUT);
+//print("traindump: trainEntryTaker="+trainEntryTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
+//print("needIN="+needIN+" needOUT="+needOUT);
 if (needIN > 0 || needOUT > 0)
 	{
 	local tmptaker=taker;
@@ -901,7 +904,6 @@ if (needIN > 0 || needOUT > 0)
 			}
 		if (building_maintrack) // we're building IN/OUT point for the primary track
 			{
-print("break");
 			PutSign(temptile+(1*forwardTileOf),"R1");
 			PutSign(temptile+(2*forwardTileOf),"R2");
 
@@ -1079,7 +1081,7 @@ thatstation.DefinePlatform();
 
 DInfo("Phase6: building alternate track",1,"RailStationGrow");
 // first look if we need some more work
-print("needIN="+needIN);
+//print("needIN="+needIN);
 if (needIN>0) // only work when needIN is built as we only work on target station for that part
 	{
 	local dowork=true;
@@ -1091,9 +1093,9 @@ if (needIN>0) // only work when needIN is built as we only work on target statio
 	else	{
 		if (road.secondary_RailLink==false)	dowork=true; // only work if we haven't build the connection yet
 		if (road.source_stationID == staID)	dowork=false;// but only if we are the target station
-print("source station ID = "+road.source_stationID+" staID="+staID);
+//print("source station ID = "+road.source_stationID+" staID="+staID);
 		}
-print("dowork="+dowork);
+//print("dowork="+dowork);
 	if (dowork)
 		{
 		local srcpos, srclink, dstpos, dstlink= null;
@@ -1123,7 +1125,7 @@ print("dowork="+dowork);
 		PutSign(dstlink,"d");
 		PutSign(srcpos,"S");
 		PutSign(srclink,"s");
-print("break");
+//print("break");
 		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]))
 			{
 			DError("Fail to build alternate track",1,"RailStationGrow");
@@ -1134,6 +1136,20 @@ print("break");
 	}
 
 DInfo("Phase7: building signals",1,"RailStationGrow");
+if (road!=null && road.secondary_RailLink)
+	{
+	local srcpos, srclink, dstpos, dstlink= null;
+	if (road.source_RailEntry)
+		srclink=road.source.locations.GetValue(12);
+	else	srclink=road.source.locations.GetValue(14);
+	if (road.target_RailEntry)
+		dstlink=road.target.locations.GetValue(11);
+	else	dstlink=road.target.locations.GetValue(13);
+	srcpos=srclink+cStation.GetRelativeTileBackward(road.source.stationID, road.source_RailEntry);
+	dstpos=dstlink+cStation.GetRelativeTileBackward(road.target.stationID, road.target_RailEntry);
+	cBuilder.SignalBuilder(srcpos, srclink);
+	cBuilder.SignalBuilder(dstpos, dstlink);
+	}
 
 DInfo("Phase8: build depot",1,"RailStationGrow");
 // build depot for it,
@@ -1378,7 +1394,6 @@ switch (direction)
 		tileto_need=SW;
 		break;
 	}
-AIController.Sleep(10);
 if ( (tilefrom_mask & tilefrom_need)==tilefrom_need && (tileto_mask & tileto_need)==tileto_need)	return true;
 return false;
 }
@@ -1511,3 +1526,73 @@ if (connections.len()>1 && fullconnect && startposValid)
 return true;
 }
 
+
+function cBuilder::SignalBuilder(source, buildstart)
+// Follow all directions to walk through the path starting at source, ending at target
+// return true if we build all signals
+{
+local max_signals_distance=8;
+local spacecounter=0;
+local signdir=0;
+local railpath=AIList();
+local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
+//local dir=cBuilder.GetDirection(source, buildstart);
+local dir=null;
+if (AIRail.GetSignalType(source, buildstart)!=AIRail.SIGNALTYPE_NONE)	dir=cBuilder.GetDirection(source, buildstart);
+if (AIRail.GetSignalType(buildstart, source)!=AIRail.SIGNALTYPE_NONE)	dir=cBuilder.GetDirection(buildstart, source);
+DInfo("Signal direction = "+dir,1,"cBuilder::SignalBuilder");
+if (dir==null)	{ DInfo("Cannot find any signal at "+source",1,"cBuilder::SignalBuilder); return false; }
+
+railpath.AddItem(source,0);
+local current=buildstart;
+local giveup=false;
+do	{ // building the rail path
+	foreach (voisin in directions)
+		{
+		PutSign(current+voisin,"?");
+		if (railpath.HasItem(current+voisin))	continue;
+		if (cBuilder.AreRailTilesConnected(current, current+voisin))
+			{
+			PutSign(current,"-");
+			railpath.AddItem(current);
+			current+=voisin;
+			}
+		}
+	} while (!giveup);
+}
+
+/*
+foreach (voisin in directions)
+	{
+	direction=source+voisin;
+	if (cBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
+		{
+		local endat=null;
+		endat=cBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
+		// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
+		// if we are connect to someone, i reset "source" to be "someone" and continue
+		local guessTile=null;	
+		foreach (where in directions)
+			{
+			if (road_type == AIVehicle.VT_RAIL)
+				if (cBuilder.AreRailTilesConnected(endat, endat+where))	{ guessTile=endat+where; }
+			}
+		if (guessTile != null)
+			{
+			source=guessTile;
+			direction=source+voisin;
+			}
+		}
+	if (road_type==AIVehicle.VT_RAIL)	valid=cBuilder.AreRailTilesConnected(source, direction);
+	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
+	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
+	if (walkedtiles.HasItem(direction))	{ valid=false; } 
+	if (valid)	walkedtiles.AddItem(direction,0);
+	if (valid && INSTANCE.debug)	PutSign(direction,"*");
+	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
+	if (!found && valid)	found=INSTANCE.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
+	if (found) return found;
+	}
+return found;
+}
+*/

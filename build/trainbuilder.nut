@@ -200,7 +200,7 @@ testRefit=null;
 return vehID;
 }
 
-function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot)
+function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
 // Add a train or add wagons to an existing train
 {
 local road=cRoute.GetRouteObject(uid);
@@ -292,7 +292,7 @@ while (!confirm)
 		}
 	AIController.Sleep(1); // we should rush that, but it might be too hard without a pause
 	}
-if (wagonNeed>10)	wagonNeed=10; // block to buy only 10 wagons max
+//if (wagonNeed>10)	wagonNeed=10; // block to buy only 10 wagons max
 INSTANCE.NeedDelay(100);
 for (local i=0; i < wagonNeed; i++)
 	{
@@ -303,6 +303,13 @@ for (local i=0; i < wagonNeed; i++)
 		if (!AIVehicle.MoveWagonChain(nwagonID, 0, pullerID, AIVehicle.GetNumWagons(pullerID)-1))
 			{
 			DError("Wagon "+AIEngine.GetName(wagontype)+" cannot be attach to "+AIEngine.GetName(locotype),2,"cCarrier::AddNewTrain");
+			}
+		else	{
+			if (AIVehicle.GetLength(pullerID) > maxLength)
+				{ // prevent building too much wagons for nothing and prevent failure that let wagons remain in the depot forever
+				DInfo("Stopping adding wagons to train as its length is already too big",2,"cCarrier::AddNewTrain");
+				break;
+				}
 			}
 		}
 	}
@@ -325,7 +332,7 @@ local stationLen=road.source.locations.GetValue(19)*16; // station depth is @19
 local processTrains=[];
 local tID=null;
 local depotID=cRoute.GetDepot(uid);
-print("depotID to create train="+depotID);
+//print("depotID to create train="+depotID);
 PutSign(depotID,"Depot Builder");
 local giveup=false;
 vehlist.Valuate(AIVehicle.GetState);
@@ -383,7 +390,7 @@ do	{
 		while (!stop)
 			{
 			stop=true;
-			tID=INSTANCE.carrier.AddNewTrain(uid, null, 0, depotID);
+			tID=INSTANCE.carrier.AddNewTrain(uid, null, 0, depotID, stationLen);
 			if (AIVehicle.IsValidVehicle(tID))
 				{
 				AIGroup.MoveVehicle(road.groupID, tID);
@@ -404,7 +411,7 @@ do	{
 		local beforesize=cCarrier.GetNumberOfWagons(tID);
 		cCarrier.VehicleOrdersReset(tID); // maybe we call that train to come to the depot
 		INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
-		tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID);
+		tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen);
 		if (AIVehicle.IsValidVehicle(tID))
 			{
 			local newwagon=cCarrier.GetNumberOfWagons(tID)-beforesize;
