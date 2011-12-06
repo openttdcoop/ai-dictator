@@ -178,7 +178,7 @@ return INSTANCE.builder.BuildRoadStationOrDepotAtTile(tile, direction, stationty
 function cBuilder::BuildRoadDepotAtTile(tile)
 // Try to build a road depot at tile and nearer
 {
-local reusedepot=cTileTools.GetTilesAroundPlace(tile);
+local reusedepot=cTileTools.GetTilesAroundPlace(tile,24);
 reusedepot.Valuate(AITile.GetDistanceManhattanToTile,tile);
 reusedepot.Sort(AIList.SORT_BY_VALUE, true);
 reusedepot.RemoveAboveValue(8);
@@ -773,7 +773,7 @@ function cBuilder::RoadFindCompatibleDepot(tile)
 * @return -1 on failure, depot location on success
 */
 {
-local reusedepot=cTileTools.GetTilesAroundPlace(tile);
+local reusedepot=cTileTools.GetTilesAroundPlace(tile,24);
 reusedepot.Valuate(AIRoad.IsRoadDepotTile);
 reusedepot.KeepValue(1);
 reusedepot.Valuate(AITile.GetOwner);

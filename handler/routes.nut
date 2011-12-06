@@ -173,6 +173,10 @@ function cRoute::RouteDone()
 	this.vehicle_count=0;
 	this.status=100;
 	this.isWorking=true;
+	this.source.cargo_produce.AddItem(this.cargoID,0);
+	this.target.cargo_accept.AddItem(this.cargoID,0);
+	this.source.cargo_accept.AddItem(this.cargoID,0); // that's not true, both next lines could be false, but CheckCangoHandleByStation will clean them if need
+	this.target.cargo_produce.AddItem(this.cargoID,0);
 	this.RouteSave();
 	}
 
@@ -283,7 +287,6 @@ function cRoute::CreateNewRoute(UID)
 	if (target_istown)	target_location=AITown.GetLocation(targetID);
 			else	target_location=AIIndustry.GetLocation(targetID);
 	this.CheckEntry();
-	//this.RouteSave();
 	}
 
 function cRoute::VirtualMailCopy()
@@ -485,7 +488,7 @@ function cRoute::CanAddTrainToStation(uid)
 	local road=cRoute.GetRouteObject(uid);
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrain"); return -1; }
 	local canAdd=true;
-print("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry); INSTANCE.NeedDelay(100);
+	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1,"CanAddTrainToStation"); INSTANCE.NeedDelay(100);
 	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
 	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
 	return canAdd;

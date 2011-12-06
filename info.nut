@@ -19,7 +19,7 @@
    function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
-   function GetVersion()       { return 150; }
+   function GetVersion()       { return 151; }
    function MinVersionToLoad() { return 4; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
@@ -62,7 +62,7 @@
 
 	AddSetting({
 		name = "use_nicetrain",
-		description = "Allow AI to use trains for anything (better for economy) OR respect newGRF authors choices (better for aesthetics)",
+		description = "Use trains for anything (better for economy) / Respect newGRF authors choices (better for aesthetics)",
 		easy_value = 0,
 		medium_value = 1,
 		hard_value = 1,
@@ -111,7 +111,7 @@
 
 	AddSetting({
 		name = "upgrade_townbridge",
-		description = "Allow AI to also upgrade town bridges",
+		description = "Upgrade AI & towns bridges (better for aesthetics & opponents) / Upgrade only AI bridges, (better for economy)",
 		easy_value = 1,
 		medium_value = 1,
 		hard_value = 1,

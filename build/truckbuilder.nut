@@ -25,6 +25,7 @@ function cCarrier::CreateRoadEngine(engineID, depot, cargoID)
 // Create road vehicle engineID at depot
 // return -1 on errors, the vehicleID created on success
 {
+if (engineID == null)	return -1;
 if (!AIEngine.IsValidEngine(engineID))	return -1;
 local price=cEngine.GetPrice(engineID);
 INSTANCE.bank.RaiseFundsBy(price);
@@ -92,7 +93,7 @@ while (!confirm)
 
 local firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 local secondorderflag = firstorderflag;
-if (road.twoway)	firstorderflag+=AIOrder.AIOF_FULL_LOAD_ANY;
+if (!road.twoway)	firstorderflag+=AIOrder.AIOF_FULL_LOAD_ANY;
 AIGroup.MoveVehicle(road.groupID, vehID);
 AIOrder.AppendOrder(vehID, srcplace, firstorderflag);
 AIOrder.AppendOrder(vehID, dstplace, secondorderflag);

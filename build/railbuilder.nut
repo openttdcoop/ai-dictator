@@ -455,6 +455,7 @@ do	{
 			// need to grab the real locations first, as they might have change while building entrances of station
 			local srclink=0;
 			local dstlink=0;
+			local mainowner=srcStation.locations.GetValue(22);
 			if (srcUseEntry)	srclink=srcStation.locations.GetValue(11);
 					else	srclink=srcStation.locations.GetValue(13);
 			if (dstUseEntry)	dstlink=dstStation.locations.GetValue(12);
@@ -474,19 +475,24 @@ do	{
 			INSTANCE.builder.RailStationGrow(fromObj, false, false); // TODO: remove force grow
 			INSTANCE.builder.RailStationGrow(toObj, false, false);
 			ClearSignsALL();*/
-
-			DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"CreateStationConnection");
-			PutSign(dstpos,"D");
-			PutSign(dstlink,"d");
-			PutSign(srcpos,"S");
-			PutSign(srclink,"s");
-			if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]))
-					return false;
-				else	retry=false;
+			if (mainowner==-1)
+				{
+				DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"CreateStationConnection");
+				PutSign(dstpos,"D");
+				PutSign(dstlink,"d");
+				PutSign(srcpos,"S");
+				PutSign(srclink,"s");
+				if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]))
+						return false;
+					else	retry=false;
+				dstStation.locations.SetValue(22,INSTANCE.route.UID);
+				srcStation.locations.SetValue(22,INSTANCE.route.UID);
+				}
+			else	retry=false;
 			}
 		}
 	} while (retry);
-// pfff here, all connections were made, and rail built
+// pfff here, all connections were made, and rails built
 if (srcUseEntry)	srcStation.locations.SetValue(11,dstpos);
 		else	srcStation.locations.SetValue(13,dstpos);
 if (dstUseEntry)	dstStation.locations.SetValue(11,srcpos);
@@ -508,7 +514,7 @@ if (!cBanker.CanBuyThat(money))	DInfo("We lack money to buy the station",1,"cBui
 INSTANCE.bank.RaiseFundsTo(money);
 if (!AIRail.BuildRailStation(tilepos, direction, 1, 5, link))
 	{
-	DInfo("Rail station couldn't be built: "+AIError.GetLastErrorString(),1,"cBuilder::CreateAndBuildTrainStation");
+	DInfo("Rail station couldn't be built, link="+link+" err: "+AIError.GetLastErrorString(),1,"cBuilder::CreateAndBuildTrainStation");
 	PutSign(tilepos,"!"); INSTANCE.NeedDelay(10);
 	return false;
 	}
@@ -599,18 +605,23 @@ local railFront, railCross, railLeft, railRight, railUpLeft, railUpRight, fire =
 workTile=thatstation.GetRailStationFrontTile(useEntry,position);
 // find route that use the station
 local road=null;
+
 if (thatstation.owner.IsEmpty())
 	{
 	DWarn("Nobody claim that station yet",1,"RailStationGrow");
 	}
 else	{
-	local uidowner=thatstation.owner.Begin();
+	local uidowner=thatstation.locations[22];
 	road=cRoute.GetRouteObject(uidowner);
 	if (road==null)
 		{
 		DWarn("The route owner ID "+uidowner+" is invalid",1,"RailStationGrow");
 		}
+	else	DWarn("Station main owner "+uidowner,1,"RailStationGrow");
 	}
+//DWarn("Real main owner : "+thatstation.locations[22],1,"RailStationGrow");
+
+
 local temptile=0;
 if (direction == AIRail.RAILTRACK_NW_SE)
 	{
@@ -1078,7 +1089,6 @@ for (local hh=0; hh < 2; hh++)
 	} // hh loop
 thatstation.DefinePlatform();
 
-
 DInfo("Phase6: building alternate track",1,"RailStationGrow");
 // first look if we need some more work
 //print("needIN="+needIN);
@@ -1099,19 +1109,6 @@ if (needIN>0) // only work when needIN is built as we only work on target statio
 	if (dowork)
 		{
 		local srcpos, srclink, dstpos, dstlink= null;
-/*		if (road.source_RailEntry)
-			{ srcpos=road.source.locations.GetValue(2); srclink=road.source.locations.GetValue(12); }
-		else	{ srcpos=road.source.locations.GetValue(4); srclink=road.source.locations.GetValue(14); }
-		if (road.target_RailEntry)
-			{ dstpos=road.target.locations.GetValue(1); dstlink=road.source.locations.GetValue(11); }
-		else	{ dstpos=road.target.locations.GetValue(3); dstlink=road.source.locations.GetValue(13); }
-			if (srcUseEntry)	srclink=srcStation.locations.GetValue(11);
-					else	srclink=srcStation.locations.GetValue(13);
-			if (dstUseEntry)	dstlink=dstStation.locations.GetValue(12);
-					else	dstlink=dstStation.locations.GetValue(14);
-			srcpos=srclink+cStation.GetRelativeTileBackward(srcStation.stationID, srcUseEntry);
-			dstpos=dstlink+cStation.GetRelativeTileBackward(dstStation.stationID, dstUseEntry);
-*/
 		if (road.source_RailEntry)
 			srclink=road.source.locations.GetValue(12);
 		else	srclink=road.source.locations.GetValue(14);
@@ -1147,8 +1144,9 @@ if (road!=null && road.secondary_RailLink)
 	else	dstlink=road.target.locations.GetValue(13);
 	srcpos=srclink+cStation.GetRelativeTileBackward(road.source.stationID, road.source_RailEntry);
 	dstpos=dstlink+cStation.GetRelativeTileBackward(road.target.stationID, road.target_RailEntry);
-	cBuilder.SignalBuilder(srcpos, srclink);
-	cBuilder.SignalBuilder(dstpos, dstlink);
+//	cBuilder.SignalBuilder(srcpos, srclink);
+//	cBuilder.SignalBuilder(dstpos, dstlink);
+DError("SignalBuilder all",0,"RailStationGrow");
 	}
 
 DInfo("Phase8: build depot",1,"RailStationGrow");
@@ -1206,7 +1204,6 @@ for (local hh=0; hh < 2; hh++)
 					}
 		}
 	}
-// TODO: check at least 1 depot exist, and that both side can use it
 
 if (closeIt)
 	{ // something went wrong, the station entry or exit is now dead

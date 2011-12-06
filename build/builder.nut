@@ -207,7 +207,7 @@ if (compare == null)	// might happen, we found a dead station
 	}
 if (compare.stationID == INSTANCE.route.source_stationID)	return false;
 if (compare.stationID == INSTANCE.route.target_stationID)	return false;
-if (compare.stationType == AIStation.STATION_TRAIN)	return false; // mark all rail stations incompatible to sharing
+//if (compare.stationType == AIStation.STATION_TRAIN)	return false; // mark all rail stations incompatible to sharing
 DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
 // find if station will accept our cargo
 local handling=true;
@@ -251,7 +251,8 @@ else	{ // check the station is within our industry
 		else	tilecheck=AITileList_IndustryAccepting(goal, compare.radius);
 	// if the station location is in that list, the station touch the industry, nice
 	local touching = false;
-	foreach (position, dummy in compare.locations)
+	local stationtiles=cTileTools.FindStationTiles(AIStation.GetLocation(compare.stationID));
+	foreach (position, dummy in stationtiles)
 		{	if (tilecheck.HasItem(position))	touching = true; }
 	if (touching)
 		{ DInfo("Station is within our industry radius",2,"cBuilder::FindCompatibleStationExistsForAllCases"); }
@@ -300,6 +301,22 @@ if (!sList.IsEmpty())
 			}
 		}
 	}
+local allnew=false;
+if (INSTANCE.route.station_type == AIStation.STATION_TRAIN) // the train special case
+	{
+	if (source_success && target_success)
+		{
+		local chk_src=cStation.GetStationObject(INSTANCE.route.source_stationID);
+		local chk_dst=cStation.GetStationObject(INSTANCE.route.target_stationID);
+		local chk_valid=false;
+		foreach (owns, dummy in chk_src.owner)
+			if (chk_dst.owner.HasItem(owns))	chk_valid=true;
+		allnew=!chk_valid;
+		}
+	else	allnew=true;
+	}
+if (allnew)	{ INSTANCE.route.source_stationID=null; INSTANCE.route.target_stationID=null; source_success=false; target_success=false; } // make sure we create new ones
+
 if (!source_success)	DInfo("Failure, creating a new station for our source station.",1,"cBuilder::FindCompatibleStationExists");
 if (!target_success)	DInfo("Failure, creating a new station for our destination station.",1,"cBuilder::FindCompatibleStationExists");
 }
@@ -441,10 +458,15 @@ if (INSTANCE.route.status==6)
 	{
 	INSTANCE.route.RouteDone();
 	DInfo("Route contruction complete ! "+INSTANCE.route.name,0,"TryBuildThatRoute");
-	local srcprod=INSTANCE.route.source.cargo_produce.HasItem(INSTANCE.route.cargoID);
+/*	local srcprod=INSTANCE.route.source.cargo_produce.HasItem(INSTANCE.route.cargoID);
 	local srcacc=INSTANCE.route.source.cargo_accept.HasItem(INSTANCE.route.cargoID);
 	local dstprod=INSTANCE.route.target.cargo_produce.HasItem(INSTANCE.route.cargoID);
 	local dstacc=INSTANCE.route.target.cargo_accept.HasItem(INSTANCE.route.cargoID);
+*/
+	local srcprod=INSTANCE.route.source.IsCargoProduce(INSTANCE.route.cargoID);
+	local srcacc=INSTANCE.route.source.IsCargoAccept(INSTANCE.route.cargoID);
+	local dstprod=INSTANCE.route.target.IsCargoProduce(INSTANCE.route.cargoID);
+	local dstacc=INSTANCE.route.target.IsCargoAccept(INSTANCE.route.cargoID);
 	if (srcprod && srcacc && dstprod && dstacc)
 		{
 		DInfo("Route mark as a twoway route",1,"TryBuildThatRoute");

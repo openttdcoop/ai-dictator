@@ -90,7 +90,7 @@ function cTileTools::GetTilesAroundTown(town_id)
 {
 local tiles = AITileList();
 local townplace = AITown.GetLocation(town_id);
-tiles=cTileTools.GetTilesAroundPlace(townplace);
+tiles=cTileTools.GetTilesAroundPlace(townplace,200);
 tiles.Valuate(AITile.IsWithinTownInfluence, town_id);
 tiles.KeepValue(1);
 return tiles;
@@ -101,7 +101,7 @@ function cTileTools::FindStationTiles(tile)
 {
 local stationid=AIStation.GetStationID(tile);
 if (!AIStation.IsValidStation(stationid))	return AIList();
-local tilelist=cTileTools.GetTilesAroundPlace(tile);
+local tilelist=cTileTools.GetTilesAroundPlace(tile,24);
 tilelist.Valuate(AITile.GetDistanceManhattanToTile,tile);
 tilelist.KeepBelowValue(12);
 tilelist.Valuate(AIStation.GetStationID);
@@ -131,13 +131,13 @@ if (!res)
 return res;
 }
 
-function cTileTools::GetTilesAroundPlace(place)
+function cTileTools::GetTilesAroundPlace(place,maxsize)
 // Get tiles around a place
 {
 local tiles = AITileList();
 local distedge = AIMap.DistanceFromEdge(place);
 local offset = null;
-if (distedge > 200) distedge=200; // limit to 120 around
+if (distedge > maxsize) distedge=maxsize; // limit to maxsize around
 offset = AIMap.GetTileIndex(distedge - 1, distedge -1);
 tiles.AddRectangle(place - offset, place + offset);
 return tiles;
@@ -538,7 +538,7 @@ function cTileTools::SeduceTown(townID, needRating)
 // needRating : rating we must reach
 // return true if we reach needRating level with that town
 {
-local towntiles=cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID));
+local towntiles=cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID),200);
 local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 towntiles.Valuate(AITile.IsWithinTownInfluence,townID);
 towntiles.KeepValue(1);

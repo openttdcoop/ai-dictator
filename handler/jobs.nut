@@ -380,7 +380,9 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	newjob.sourceID = srcID;
 	newjob.targetID = tgtID;
 	newjob.source_istown = src_istown;
-	// filters unwanted jobs, don't let aircraft do something other than pass
+	// filters unwanted jobs
+	if (road_type==AIVehicle.VT_WATER)	return;
+	// disable any boat jobs
 	if (road_type == AIVehicle.VT_AIR && cargo_id != cCargo.GetPassengerCargo()) return;
 	// only pass for aircraft, we will randomize if pass or mail later
 	if (cargo_id == cCargo.GetMailCargo()) return; // disable mail for anyone it sucks to do mail
@@ -727,7 +729,7 @@ foreach (ID, dummy in indjobs)
 	{
 	cJobs.RawJobAdd(ID,false);
 	curr++;
-	if (curr % 4 == 0)
+	if (curr % 6 == 0)
 		{
 		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Industry");
 		INSTANCE.Sleep(1);
@@ -735,9 +737,9 @@ foreach (ID, dummy in indjobs)
 	}
 foreach (ID, dummy in townjobs)
 	{
-	cJobs.RawJobAdd(ID,true);
+	//cJobs.RawJobAdd(ID,true);
 	curr++;
-	if (curr % 4 == 0)
+	if (curr % 6 == 0)
 		{
 		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Town");
 		INSTANCE.Sleep(1);

@@ -54,6 +54,7 @@ static	function GetStationObject(stationID)
 						// 19: depth: when created, the lenght (depth) the station is, for its width, "cstation.size" keep that info
 						// 20: most left platform position
 						// 21: most right platform position
+						// 22: main route owner
 	depot			= null;	// depot position and id are the same
 	cargo_produce	= null;	// cargos ID produce at station, value = amount waiting
 	cargo_accept	= null;	// cargos ID accept at station, value = cargo rating
@@ -142,6 +143,7 @@ function cStation::UpdateCargos(stationID=null)
 function cStation::UpdateCapacity()
 // Update the capacity of vehicles using the station
 	{
+/*
 	local temp=AIVehicleList_Station(this.stationID);
 	if (temp.IsEmpty())	return;
 	local allveh=AIList();	// keep compatibility with 1.0.4, 1.0.5
@@ -177,7 +179,25 @@ function cStation::UpdateCapacity()
 			}
 		}
 	this.vehicle_capacity.Clear();
-	this.vehicle_capacity.AddList(allcargos);
+	this.vehicle_capacity.AddList(allcargos);*/
+	if (this.stationID==null)	return;
+	local vehlist=AIVehicleList_Station(this.stationID);
+	local allcargos=AICargoList();
+	foreach (cargoID, dummy in allcargos)
+		{
+		vehlist.Valuate(AIVehicle.GetCapacity,cargoID);
+		vehlist.RemoveValue(0);
+		if (vehlist.IsEmpty())	continue;
+		local newcap=0;
+		foreach (veh, cap in vehlist)	newcap+=cap;
+		if (newcap > 0)
+			{
+			allcargos.SetValue(cargoID, newcap);
+			DInfo("Station "+this.name+" new total capacity set to "+newcap+" for "+AICargo.GetCargoLabel(cargoID),2,"cStation::UpdateCapacity");
+			}
+		INSTANCE.Sleep(1);
+		}
+	
 	}
 
 function cStation::StationSave()
@@ -242,66 +262,76 @@ function cStation::FindStationType(stationid)
 	return -1;
 	}
 
-function cStation::IsCargoProduce(cargoID, stationID=null)
-// Check if a cargo is produce at that station
+function cStation::IsCargoProduceAccept(cargoID, produce_query, stationID=null)
+// Warper to anwer to cStation::IsCargoProduce and IsCargoAccept
+// produce_query to true to answer produce, false to answer accept
 	{
 	local thatstation=null;
 	if (stationID == null)	thatstation=this;
-				else	thatstation=cStation.GetStationObject(stationID);
+				else	thatstaiton=cStation.GetStationObject(stationID);
 	if (thatstation == null)	return;
-	return thatstation.cargo_produce.HasItem(cargoID);
+	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(thatstation.stationID));
+	foreach (tiles, sdummy in staloc)
+		{
+		local success=false;
+		local value=0;
+		if (produce_query)
+			{
+			value=AITile.GetCargoProduction(tiles, cargoID, 1, 1, thatstation.radius);
+			success=(value > 0);
+			}
+		else	{
+			value=AITile.GetCargoAcceptance(tiles, cargoID, 1, 1, thatstation.radius);
+			success=(value > 7);
+			}
+		if (success)	return true;
+		}
+	return false;
+	}
+
+function cStation::IsCargoProduce(cargoID, stationID=null)
+// Check if a cargo is produce at that station
+	{
+	return cStation.IsCargoProduceAccept(cargoID, true, stationID);
 	}
 
 function cStation::IsCargoAccept(cargoID, stationID=null)
 // Check if a cargo is accept at that station
 	{
-	local thatstation=null;
-	if (stationID == null)	thatstation=this;
-				else	thatstation=cStation.GetStationObject(stationID);
-	if (thatstation == null)	return;
-	return thatstation.cargo_accept.HasItem(cargoID);
+	return cStation.IsCargoProduceAccept(cargoID, false, stationID);
 	}
 
 function cStation::CheckCargoHandleByStation(stationID=null)
 // Check what cargo is accept or produce at station
+// This doesn't really check if the cargo is produce/accept, but only if the station know that cargo should be accept/produce
+// This so, doesn't include unknown cargos that the station might handle but is not aware of
+// Use cStation::IsCargoProduceAccept for a real answer
+// That function is there to faster checks, not to gave true answer
 	{
 	local thatstation=null;
 	if (stationID == null)	thatstation=this;
 				else	thatstation=cStation.GetStationObject(stationID);
 	if (thatstation == null)	return;
-	thatstation.cargo_produce.Clear();
-	thatstation.cargo_accept.Clear();
-	local cargolist=AICargoList();
+	local cargolist=AIList();
+	cargolist.AddList(thatstation.cargo_accept);
+	cargolist.AddList(thatstation.cargo_produce);
+	local cargomail=cCargo.GetMailCargo();
+	local cargopass=cCargo.GetPassengerCargo();
 	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(thatstation.stationID));
 	foreach (cargo_id, cdummy in cargolist)
 		{
+		local valid_produce=false;
+		local valid_accept=false;
 		foreach (tiles, sdummy in staloc)
 			{
-			if (thatstation.cargo_accept.HasItem(cargo_id) || thatstation.cargo_produce.HasItem(cargo_id))	break;
-			local valid=true;
-			switch (thatstation.stationType)
-				{
-				case AIStation.STATION_BUS_STOP:
-					if (cargo_id != cCargo.GetPassengerCargo())	valid=false;
-					break;
-				case AIStation.STATION_TRUCK_STOP:
-					if (cargo_id == cCargo.GetPassengerCargo())	valid=false;
-					break;
-				case AIStation.STATION_AIRPORT:
-					if (cargo_id != cCargo.GetPassengerCargo() && cargo_id != cCargo.GetMailCargo()) valid=false;
-					break;
-				case AIStation.STATION_TRAIN:
-					break;
-				case AIStation.STATION_DOCK:
-					break;
-				}
-			if (!valid)	break;
+			if (valid_accept || valid_produce)	break;
 			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.radius);
 			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.radius);
-			if (accept > 7 && valid)	thatstation.cargo_accept.AddItem(cargo_id, accept);
-			if (produce > 0 && valid)	thatstation.cargo_produce.AddItem(cargo_id, produce);
-			INSTANCE.Sleep(1);
+			if (!valid_produce && produce > 0)	valid_produce=true;
+			if (!valid_accept && accept > 7)	valid_accept=true;
 			}
+		if (!valid_produce && thatstation.cargo_produce.HasItem(cargo_id))	{ DInfo("Station "+thatstation.name+" no longer produce "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation"); thatstation.cargo_produce.RemoveItem(cargo_id); }
+		if (!valid_accept && thatstation.cargo_accept.HasItem(cargo_id))	{ DInfo("Station "+thatstation.name+" no longer accept "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation");thatstation.cargo_accept.RemoveItem(cargo_id); }
 		INSTANCE.Sleep(1);
 		}
 	}
@@ -411,13 +441,12 @@ function cStation::InitNewStation()
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
 			this.locations=AIList();
-			for (local zz=0; zz < 22; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
+			for (local zz=0; zz < 23; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
 			for (local zz=7; zz < 11; zz++)	this.locations.SetValue(zz,0);
 			this.locations.SetValue(0,1+2); // enable IN && OUT for the new station
 			this.GetRailStationMiscInfo();
-			//this.maxsize=1; // TODO: remove the upgrade blocker
 		break;
-		case	AIStation.STATION_DOCK:		// TODO: do it
+		case	AIStation.STATION_DOCK:		// TODO: do boat
 			this.maxsize=1; this.size=1;
 		break;
 		case	AIStation.STATION_BUS_STOP:
@@ -438,11 +467,9 @@ function cStation::InitNewStation()
 			DInfo("Airport size: "+this.locations.Count(),2,"InitNewStation");
 		break;
 		}
-	// for everyone, the cargos
 	this.vehicle_count=0;
 	this.StationSave();
 	local dummy=this.CanUpgradeStation(); // just to set max_vehicle
-	this.CheckCargoHandleByStation();
 	this.UpdateStationInfos();
 	}
 

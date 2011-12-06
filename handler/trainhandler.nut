@@ -144,7 +144,7 @@ function cTrain::CanModifyTrain(vehID)
 	{
 	local train=cTrain.Load(vehID);
 	local now=AIDate.GetCurrentDate();
-	return (now-train.lastdepotvisit>30);
+	return (now-train.lastdepotvisit>60);
 	}
 
 function cTrain::SetDepotVisit(vehID)

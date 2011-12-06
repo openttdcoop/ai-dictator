@@ -148,6 +148,7 @@ t.RemoveItem(0);
 		local all_stations=bank.unleash_road;
 		DInfo("Restoring stations",0,"main");
 		local iter=0;
+		local allcargos=AICargoList();
 		for (local i=0; i < all_stations.len(); i++)
 			{
 			local obj=cStation();
@@ -168,8 +169,10 @@ t.RemoveItem(0);
 			for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
 			i=nextitem+counter;
 			iter++;
-			cStation.stationdatabase[obj.stationID] <- obj;
-			// add checks for dead stations or tigger that
+			//cStation.stationdatabase[obj.stationID] <- obj;
+			//obj.cargo_produce.AddList(allcargos);
+			//obj.cargo_accept.AddList(allcargos);
+			obj.StationSave();
 			}
 		DInfo(iter+" stations found.",0,"main");
 		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1,"main");
@@ -198,6 +201,11 @@ t.RemoveItem(0);
 			iter++;
 			cRoute.database[obj.UID] <- obj;
 			obj.RouteUpdate(); // re-enable the link to stations
+			print("route source station name="+obj.source.name);
+			obj.source.cargo_produce.AddItem(obj.cargoID,0);
+			obj.source.cargo_accept.AddItem(obj.cargoID,0);
+			obj.target.cargo_produce.AddItem(obj.cargoID,0);
+			obj.target.cargo_accept.AddItem(obj.cargoID,0);
 			cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
 			if (obj.UID == 0)	cRoute.VirtualAirGroup[0]=obj.groupID;
 			if (obj.UID == 1)	cRoute.VirtualAirGroup[1]=obj.groupID;
@@ -216,7 +224,6 @@ t.RemoveItem(0);
 			local regjob=cJobs.GetJobObject(item.UID);
 			if (regjob == null)	continue;
 			regjob.isUse=true;
-			INSTANCE.Sleep(1);
 			}
 		local stationList=AIList();	// check for no more working station if cargo disapears...
 		stationList.AddList(AIStationList(AIStation.STATION_ANY));
@@ -225,6 +232,7 @@ t.RemoveItem(0);
 			cStation.CheckCargoHandleByStation(stationID);
 			}
 		INSTANCE.route.VirtualAirNetworkUpdate();
+		DInfo("...Loading game end",0,"Main");
 		}
 	 else {
 		AIInit();
@@ -484,7 +492,7 @@ if (INSTANCE.safeStart >0)
 	use_air=false;
 	}
 //INSTANCE.safeStart=0;
-use_train=false;
+//use_train=false;
 //use_road=false;
 //use_air=false;
 }

@@ -57,7 +57,7 @@ function cCarrier::VehicleListBusyAtAirport(stationID)
 // return the list of vehicles that are waiting at the station
 {
 local vehicles=AIVehicleList_Station(stationID);
-local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID)); // grab tiles around the station
+local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID),24); // grab tiles around the station
 tilelist.Valuate(AIStation.GetStationID); // look all station ID there
 tilelist.KeepValue(stationID); // and keep only tiles with our stationID
 vehicles.Valuate(AIVehicle.GetLocation);
@@ -107,7 +107,7 @@ function cCarrier::VehicleNearStation(stationID)
 */
 {
 local vehicles=AIVehicleList_Station(stationID);
-local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID));
+local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID),24);
 tilelist.Valuate(AIStation.GetStationID);
 tilelist.KeepValue(stationID); // now tilelist = only the tiles of the station we were looking for
 local check_tiles=AITileList();
