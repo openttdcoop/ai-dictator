@@ -111,16 +111,16 @@ local airportmode="(classic)";
 local shared=false;
 if (thatstation.owner.Count() > 1)	{ shared=true; airportmode="(shared)"; }
 if (virtualized)	airportmode="(network)";
-local airname=AIStation.GetName(thatstation.stationID)+"-> ";
+local airname=cStation.StationGetName(thatstation.stationID)+"-> ";
 switch (chem.route_type)
 	{
 	case AIVehicle.VT_ROAD:
-		DInfo("Road station "+AIStation.GetName(thatstation.stationID)+" limit "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
+		DInfo("Road station "+cStation.StationGetName(thatstation.stationID)+" limit "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (thatstation.CanUpgradeStation())
 			{ // can still upgrade
 			if (chem.vehicle_count+max_allow > INSTANCE.carrier.road_max_onroute)	max_allow=(INSTANCE.carrier.road_max_onroute-chem.vehicle_count);
 			// limit by number of vehicle per route
-			if (!INSTANCE.use_road)	max_allow=0;
+			if (!INSTANCE.use_road)	return 0;
 			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 //			if (thatstation.vehicle_count+1 > thatstation.size)
 			if ( (thatstation.vehicle_count+max_allow) > thatstation.vehicle_max)
@@ -136,8 +136,6 @@ switch (chem.route_type)
 			// limit by the max the station could handle
 			if (chem.vehicle_count+max_allow > INSTANCE.carrier.road_max_onroute)	max_allow=INSTANCE.carrier.road_max_onroute-chem.vehicle_count;
 			// limit by number of vehicle per route
-			if (!INSTANCE.use_road)	return max_allow=0;
-			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 			}
 	break;
 	case AIVehicle.VT_RAIL:
@@ -259,7 +257,6 @@ switch (road.route_type)
 function cCarrier::GetEngineEfficiency(engine, cargoID)
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
-// simple formula it's (price+(age*runningcost)) / (capacity*0.9+speed)
 {
 local price=cEngine.GetPrice(engine, cargoID);
 local capacity=cEngine.GetCapacity(engine, cargoID);
@@ -276,7 +273,6 @@ function cCarrier::GetEngineRawEfficiency(engine, cargoID)
 // only consider the raw capacity/speed ratio
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
-// simple formula is speed/capacity
 {
 local capacity=cEngine.GetCapacity(engine, cargoID);
 local speed=AIEngine.GetMaxSpeed(engine);
@@ -296,8 +292,7 @@ local vehGroup=AIVehicle.GetGroupID(vehID);
 if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
 		else	vehList.AddItem(vehID,0);
 foreach (vehicle, dummy in vehList)
-	if (vehicle in cCarrier.MaintenancePool)	{}
-							else	cCarrier.MaintenancePool.push(vehicle);
+cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
 }
 
 function cCarrier::CheckOneVehicleOfGroup(doGroup)
@@ -308,6 +303,8 @@ local allgroup=AIGroupList();
 foreach (groupID, dummy in allgroup)
 	{
 	local vehlist=AIVehicleList_Group(groupID);
+	vehlist.Valuate(AIBase.RandItem);
+	vehlist.Sort(AIList.SORT_BY_VALUE,true);
 	if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(),doGroup);
 	AIController.Sleep(1);
 	}

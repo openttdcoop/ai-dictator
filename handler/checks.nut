@@ -155,13 +155,13 @@ foreach (i, dummy in airID)
 //	if (cStation.VirtualAirports.HasItem(i))	continue; // don't balance airport from the network
 	local vehlist=INSTANCE.carrier.VehicleListBusyAtAirport(i);
 	local count=vehlist.Count();
-	//DInfo("Airport "+AIStation.GetName(i)+" is busy with "+vehlist.Count(),2);
+	//DInfo("Airport "+cStation.StationGetName(i)+" is busy with "+vehlist.Count(),2);
 	if (vehlist.Count() < 2)	continue;
 	local passcargo=cCargo.GetPassengerCargo(); // i don't care mail
 	local cargowaiting=AIStation.GetCargoWaiting(i,passcargo);
 	if (cargowaiting > 100)
 		{
-		DInfo("Airport "+AIStation.GetName(i)+" is busy but can handle it : "+cargowaiting,2); 
+		DInfo("Airport "+cStation.StationGetName(i)+" is busy but can handle it : "+cargowaiting,2); 
 		continue;
 		}
 	foreach (i, dummy in vehlist)
@@ -171,7 +171,7 @@ foreach (i, dummy in airID)
 		if (percent > 4 && percent < 90)
 			{ // we have a vehicle with more than 20% cargo in it
 			INSTANCE.carrier.VehicleOrderSkipCurrent(i);
-			DInfo("Forcing vehicle "+AIVehicle.GetName(i)+" to get out of the station with "+i+" load",1);
+			DInfo("Forcing vehicle "+cCarrier.VehicleGetName(i)+" to get out of the station with "+i+" load",1);
 			break;
 			}
 		}
@@ -230,7 +230,7 @@ foreach (stationID, dummy in allstations)
 			{
 			if (!stobj.cargo_produce.HasItem(road.cargoID))
 				{
-				DWarn("Station "+AIStation.GetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0);
+				DWarn("Station "+cStation.StationGetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0);
 				// road.RouteReleaseStation(stationID);
 				road.RouteIsNotDoable();
 				continue;
@@ -240,7 +240,7 @@ foreach (stationID, dummy in allstations)
 			{
 			if (!stobj.cargo_accept.HasItem(road.cargoID))
 				{
-				DWarn("Station "+AIStation.GetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0);
+				DWarn("Station "+cStation.StationGetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0);
 				road.RouteReleaseStation(stationID)
 				}
 			}
@@ -250,7 +250,7 @@ foreach (stationID, dummy in allstations)
 foreach (stations, dummy in busstation)
 	{
 	INSTANCE.Sleep(1);
-	DInfo("BUS - Station check #"+stations+" "+AIStation.GetName(stations),1);
+	DInfo("BUS - Station check #"+stations+" "+cStation.StationGetName(stations),1);
 	local vehlist=cCarrier.VehicleNearStation(stations);
 	vehlist=cCarrier.VehicleList_KeepStuckVehicle(vehlist);
 	vehlist.Valuate(AIVehicle.GetAge);
@@ -261,7 +261,7 @@ foreach (stations, dummy in busstation)
 		if (produce == 0) // bus are waiting and station have 0 passengers
 			{
 			local vehicle=vehlist.Begin();
-			DInfo("Selling vehicle "+INSTANCE.carrier.VehicleName(vehicle)+" to balance station",1);
+			DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" to balance station",1);
 			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 			AIVehicle.ReverseVehicle(vehicle);
 			}
@@ -273,7 +273,7 @@ if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
 	{
 	INSTANCE.Sleep(1);
-	DInfo("TRUCK - Station check #"+stations+" "+AIStation.GetName(stations),1);
+	DInfo("TRUCK - Station check #"+stations+" "+cStation.StationGetName(stations),1);
 	local truck_atstation=cCarrier.VehicleNearStation(stations);
 	if (truck_atstation.Count() < 2)	continue;
 	local truck_loading=AIList();
@@ -361,7 +361,7 @@ foreach (stations, dummy in truckstation)
 	local numload=truck_getter_loading.Count();
 	local numunload=truck_dropper_loading.Count();
 	local numdrop=truck_dropper_loading.Count();
-	DInfo("         Station "+AIStation.GetName(stations)+" have "+numload+" vehicle loading, "+numunload+" vehicle unloading, "+truck_getter_waiting.Count()+" vehicle waiting to load, "+truck_dropper_waiting.Count()+" waiting to unload",1);
+	DInfo("         Station "+cStation.StationGetName(stations)+" have "+numload+" vehicle loading, "+numunload+" vehicle unloading, "+truck_getter_waiting.Count()+" vehicle waiting to load, "+truck_dropper_waiting.Count()+" waiting to unload",1);
 	if (truck_getter_loading.Count() > 0)
 		{
 		if (truck_dropper_waiting.Count() > 0)
@@ -370,7 +370,7 @@ foreach (stations, dummy in truckstation)
 				{
 				if (load == 0)
 					{ // don't push the vehicle that is loading, TODO: might fail if 2 vehicles with a bit of cargo enter the station, better found a way to test station. But it's a rare case
-					DInfo("Pushing vehicle "+vehicle+"-"+AIVehicle.GetName(vehicle)+" out of the station to free space for unloaders",1);
+					DInfo("Pushing vehicle "+vehicle+"-"+cCarrier.VehicleGetName(vehicle)+" out of the station to free space for unloaders",1);
 					AIVehicle.ReverseVehicle(vehicle);
 					AIVehicle.SendVehicleToDepotForServicing(vehicle);
 					return; // stop checks as droppers are waiting because station is busy with getters
@@ -382,13 +382,13 @@ foreach (stations, dummy in truckstation)
 		foreach (stacargo, dummy in station_produce_cargo)
 			{
 			local amount_wait=AIStation.GetCargoWaiting(stations, stacargo);
-			DInfo("Station "+AIStation.GetName(stations)+" produce "+AICargo.GetCargoLabel(stacargo)+" with "+amount_wait+" units waiting",1);
+			DInfo("Station "+cStation.StationGetName(stations)+" produce "+AICargo.GetCargoLabel(stacargo)+" with "+amount_wait+" units waiting",1);
 			foreach (vehicle, vehcargo in truck_getter_waiting)
 				{
 				if (AIVehicle.GetCapacity(vehicle, stacargo)==0)	continue; // not a vehicle using that cargo
 				if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
 				if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
-				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleName(vehicle)+" to balance station",1);
+				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" to balance station",1);
 				INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 				AIVehicle.ReverseVehicle(vehicle);
 				}

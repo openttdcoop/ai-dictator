@@ -678,10 +678,10 @@ function cJobs::RawJobHandling()
 	{
 	local jfilter=AIList();
 	jfilter.AddList(cJobs.rawJobs);
-	jfilter.RemoveValue(1); // keep only one not done yet
+	jfilter.RemoveValue(0); // keep only one not done yet
 	local stilltodo=jfilter.Count();
-	jfilter.Valuate(AIBase.RandItem); // randomize remain entries
-	jfilter.Sort(AIList.SORT_BY_VALUE,true);
+	//jfilter.Valuate(AIBase.RandItem); // randomize remain entries
+	//jfilter.Sort(AIList.SORT_BY_VALUE,true);
 	jfilter.KeepTop(1); //make one only
 	if (jfilter.IsEmpty())	DInfo("All raw jobs have been process",2,"RawJobHandling");
 				else	foreach (jid, dummyValue in jfilter)
@@ -690,7 +690,7 @@ function cJobs::RawJobHandling()
 						local isTown=(realID >= 10000) ? true : false;
 						if (isTown)	realID-=10000;
 						cJobs.AddNewIndustryOrTown(realID,isTown);
-						cJobs.rawJobs.SetValue(jid,1); // mark it done
+						cJobs.rawJobs.SetValue(jid,0); // mark it done
 						}
 	DInfo("rawJobs to do: "+stilltodo+" / "+cJobs.rawJobs.Count(),1,"RawJobHandling");
 	}
@@ -704,15 +704,27 @@ function cJobs::RawJobDelete(ID, isTown)
 	if (cJobs.rawJobs.HasItem(seekID))
 		{
 		cJobs.rawJobs.RemoveItem(seekID);
-		DInfo("Removing industry from rawJob database "+seekID,1,"RawJobDelete");
+		DInfo("Removing industry from rawJob database "+seekID,1,"cJobs::RawJobDelete");
 		}
 	}
 
 function cJobs::RawJobAdd(ID, isTown)
 // Add industry or town to rawJob database
 	{
+	local value=1;
 	if (isTown)	ID+=10000;
-	if (!cJobs.rawJobs.HasItem(ID))	cJobs.rawJobs.AddItem(ID,0);
+	if (cJobs.rawJobs.HasItem(ID))	value=cJobs.rawJobs.GetValue(ID);
+						else	cJobs.rawJobs.AddItem(ID,1);
+	if (isTown)	value=AITown.GetLastMonthProduction(ID-10000,cCargo.GetPassengerCargo());
+		else	{
+			local cargolist=AICargoList();
+			foreach (crg, dummy in cargolist)
+				{
+				local amount=AIIndustry.GetLastMonthProduction(ID, crg);
+				if (amount > value)	value=amount;
+				}
+			}
+	cJobs.rawJobs.SetValue(ID, value);
 	}
 
 function cJobs::PopulateJobs()
@@ -720,16 +732,13 @@ function cJobs::PopulateJobs()
 {
 local indjobs=AIIndustryList();
 local townjobs=AITownList();
-townjobs.Valuate(AITown.GetPopulation);
-townjobs.Sort(AIList.SORT_BY_VALUE,false);
-cJobs.statueTown.AddList(townjobs);
 local curr=0;
 DInfo("Finding all industries & towns jobs...",0,"PopulateJobs");
 foreach (ID, dummy in indjobs)
 	{
 	cJobs.RawJobAdd(ID,false);
 	curr++;
-	if (curr % 6 == 0)
+	if (curr % 18 == 0)
 		{
 		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Industry");
 		INSTANCE.Sleep(1);
@@ -737,9 +746,9 @@ foreach (ID, dummy in indjobs)
 	}
 foreach (ID, dummy in townjobs)
 	{
-	//cJobs.RawJobAdd(ID,true);
+	cJobs.RawJobAdd(ID,true);
 	curr++;
-	if (curr % 6 == 0)
+	if (curr % 18 == 0)
 		{
 		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Town");
 		INSTANCE.Sleep(1);
@@ -760,7 +769,7 @@ function cJobs::CheckTownStatue()
 			AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BUILD_STATUE);
 			if (AITown.HasStatue(townID))
 				{
-				DInfo("Build a statue at "+AITown.GetName(townID),0,"CheckTownStatue");
+				DInfo("Built a statue at "+AITown.GetName(townID),0,"CheckTownStatue");
 				cJobs.statueTown.RemoveItem(townID);
 				}
 			}

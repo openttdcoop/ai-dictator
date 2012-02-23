@@ -19,8 +19,8 @@
    function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
-   function GetVersion()       { return 151; }
-   function MinVersionToLoad() { return 4; }
+   function GetVersion()       { return 152; }
+   function MinVersionToLoad() { return 100; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
    function GetShortName()     { return "DCTR"; }

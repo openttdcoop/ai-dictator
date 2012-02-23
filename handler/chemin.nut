@@ -282,7 +282,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		break;
 		}
 	road.source.UpdateStationInfos();
-	DInfo("After station update",2);
+	DInfo("After station update",2,"DutyOnRoute");
 	local vehneed=0;
 	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
 	local vehonroute=road.vehicle_count;
@@ -311,12 +311,12 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 						else	cargowait=dst_wait;
 		if (src_capacity < dst_capacity)	capacity=dst_capacity; // but keep the highest capacity we have
 							else	capacity=src_capacity;
-		DInfo("Source capacity="+src_capacity+" wait="+src_wait+" --- Target capacity="+dst_capacity+" wait="+dst_wait,2);
+		DInfo("Source capacity="+src_capacity+" wait="+src_wait+" --- Target capacity="+dst_capacity+" wait="+dst_wait,2,"DutyOnRoute");
 		}
 	local remain = cargowait - capacity;
-	if (remain < 0)	vehneed=0;
+	if (remain < 1)	vehneed=0;
 			else	vehneed = (cargowait / capacity)+1;
-	DInfo("Capacity ="+capacity+" wait="+cargowait+" remain="+remain+" needbycapacity="+vehneed,2);
+	DInfo("Capacity ="+capacity+" wait="+cargowait+" remain="+remain+" needbycapacity="+vehneed,2,"DutyOnRoute");
 	if (vehneed >= vehonroute) vehneed-=vehonroute;
 	if (vehneed+vehonroute > maxveh) vehneed=maxveh-vehonroute;
 	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 && vehonroute < 4)	vehneed++;
@@ -330,10 +330,10 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		if (vehneed > 4)	vehneed=4; // max 4 at a time
 		}
 	vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, true, vehneed);
-	DInfo("CanAddNewVehicle for source station says "+vehneed,2);
+	DInfo("CanAddNewVehicle for source station says "+vehneed,2,"DutyOnRoute");
 	vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, false, vehneed);
-	DInfo("CanAddNewVehicle for destination station says "+vehneed,2);
-	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
+	DInfo("CanAddNewVehicle for destination station says "+vehneed,2,"DutyOnRoute");
+	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2,"DutyOnRoute");
 	// adding vehicle
 	if (vehneed > 0)
 		{
@@ -348,7 +348,6 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 local allneed=0;
 local allbuy=0;
 INSTANCE.bank.busyRoute=false;
-DInfo("Priority list size : "+priority.Count(),2);
 if (priority.IsEmpty())	return;
 local priosave=AIList();
 priosave.AddList(priority);
@@ -370,11 +369,11 @@ local vehneed=0;
 local vehvalue=0;
 local topvalue=0;
 INSTANCE.carrier.highcostAircraft=0;
-DInfo("Priority list="+priority.Count()+" Saved list="+priosave.Count(),1);
+DInfo("Priority list="+priority.Count()+" Saved list="+priosave.Count(),1,"DutyOnRoute");
 foreach (groupid, ratio in priority)
 	{
-	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicle",1); allneed+=vehneed; }
-						else	{ vehneed=0; DWarn("Group #"+groupid++" "+AIGroup.GetName(groupid)+" not found in priority list!",1); }
+	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicle",1,"DutyOnRoute"); allneed+=vehneed; }
+						else	{ vehneed=0; DWarn("Group #"+groupid++" "+AIGroup.GetName(groupid)+" not found in priority list!",1,"DutyOnRoute"); }
 	if (vehneed == 0) continue;
 	local uid=cRoute.GroupIndexer.GetValue(groupid);
 	local rtype=AIGroup.GetVehicleType(groupid);
@@ -392,7 +391,7 @@ foreach (groupid, ratio in priority)
 				if (INSTANCE.carrier.BuildAndStartVehicle(uid))
 					{
 					local rinfo=cRoute.GetRouteObject(uid);
-					DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0);
+					DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0,"DutyOnRoute");
 					allbuy++;
 					INSTANCE.carrier.vehnextprice=0; INSTANCE.carrier.highcostAircraft=0;
 					}

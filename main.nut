@@ -35,6 +35,7 @@ enum DepotAction {
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
+//require("pathfinder/prail/main.nut");
 require("handler/bridgehandler.nut");
 require("build/builder.nut");
 require("build/stationbuilder.nut");
@@ -64,6 +65,7 @@ require("utils/misc.nut");
 require("handler/jobs.nut");
 require("utils/debug.nut");
 require("utils/tile.nut");
+require("utils/railfollower.nut");
 
 class DictatorAI extends AIController
  {
@@ -133,98 +135,13 @@ function DictatorAI::Start()
 	CheckCurrentSettings();
 	builder.SetRailType();
 	DInfo("DicatorAI started.",0,"main");
-local t=AIList();
-t.AddItem(4,3);
-print("countn="+t.Count());
-t.RemoveItem(0);
 	AICompany.SetAutoRenewStatus(false);
 	cEngine.EngineCacheInit();
 	if (loadedgame) 
 		{
 		bank.SaveMoney();
 		jobs.PopulateJobs();
-		// our routes are saved in bank.canBuild & stations in bank.unleash_road
-		// and oneMonth=station database size and oneWeek=routedatabase size when saved
-		local all_stations=bank.unleash_road;
-		DInfo("Restoring stations",0,"main");
-		local iter=0;
-		local allcargos=AICargoList();
-		for (local i=0; i < all_stations.len(); i++)
-			{
-			local obj=cStation();
-			obj.stationID=all_stations[i];
-			obj.stationType=all_stations[i+1];
-			obj.specialType=all_stations[i+2];
-			obj.size=all_stations[i+3];
-			obj.maxsize=all_stations[i+4]; //1000
-			obj.depot=all_stations[i+5];
-			obj.radius=all_stations[i+6];
-			local counter=all_stations[i+7];
-			local nextitem=i+8+counter;
-			local temparray=[];
-			for (local z=0; z < counter; z++)	temparray.push(all_stations[i+8+z]);
-			obj.locations=ArrayToList(temparray);
-			counter=all_stations[nextitem];
-			temparray=[];
-			for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
-			i=nextitem+counter;
-			iter++;
-			//cStation.stationdatabase[obj.stationID] <- obj;
-			//obj.cargo_produce.AddList(allcargos);
-			//obj.cargo_accept.AddList(allcargos);
-			obj.StationSave();
-			}
-		DInfo(iter+" stations found.",0,"main");
-		DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1,"main");
-		DInfo("Restoring routes",0,"main");
-		iter=0;
-		local all_routes=bank.canBuild;
-		for (local i=0; i < all_routes.len(); i++)
-			{
-			local obj=cRoute();
-			obj.UID=all_routes[i];
-			obj.sourceID=all_routes[i+1];
-			obj.source_location=all_routes[i+2];
-			obj.source_istown=all_routes[i+3];
-			obj.targetID=all_routes[i+4];
-			obj.target_location=all_routes[i+5];
-			obj.target_istown=all_routes[i+6];
-			obj.route_type=all_routes[i+7];
-			obj.station_type=all_routes[i+8];
-			obj.isWorking=all_routes[i+9];
-			obj.status=all_routes[i+10];
-			obj.groupID=all_routes[i+11];
-			obj.source_stationID=all_routes[i+12];
-			obj.target_stationID=all_routes[i+13];
-			obj.cargoID=all_routes[i+14];
-			i+=14;
-			iter++;
-			cRoute.database[obj.UID] <- obj;
-			obj.RouteUpdate(); // re-enable the link to stations
-			print("route source station name="+obj.source.name);
-			obj.source.cargo_produce.AddItem(obj.cargoID,0);
-			obj.source.cargo_accept.AddItem(obj.cargoID,0);
-			obj.target.cargo_produce.AddItem(obj.cargoID,0);
-			obj.target.cargo_accept.AddItem(obj.cargoID,0);
-			cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
-			if (obj.UID == 0)	cRoute.VirtualAirGroup[0]=obj.groupID;
-			if (obj.UID == 1)	cRoute.VirtualAirGroup[1]=obj.groupID;
-			}
-		cRoute.RouteRebuildIndex();
-		DInfo(iter+" routes found.",0,"main");
-		DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2,"main");
-		OneWeek=0;
-		OneMonth=0;
-		bank.canBuild=false;
-		bank.unleash_road=false;
-		DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0,"main");
-		DInfo("Registering our routes",0,"main");
-		foreach (item in cRoute.database)
-			{
-			local regjob=cJobs.GetJobObject(item.UID);
-			if (regjob == null)	continue;
-			regjob.isUse=true;
-			}
+		LoadingGame();
 		local stationList=AIList();	// check for no more working station if cargo disapears...
 		stationList.AddList(AIStationList(AIStation.STATION_ANY));
 		foreach (stationID, dummy in stationList)
@@ -232,6 +149,7 @@ t.RemoveItem(0);
 			cStation.CheckCargoHandleByStation(stationID);
 			}
 		INSTANCE.route.VirtualAirNetworkUpdate();
+		INSTANCE.carrier.CheckOneVehicleOfGroup(true); // force a check on all vehicles
 		DInfo("...Loading game end",0,"Main");
 		}
 	 else {
@@ -242,7 +160,8 @@ t.RemoveItem(0);
 		jobs.PopulateJobs();
 		for (local i=0; i < 10; i++)	jobs.RawJobHandling();
 		// feed the ai with some jobs to start play with
-		safeStart=3;
+		if (AICompany.GetMaxLoanAmount() < 200000)	safeStart=3;
+									else	safeStart=0;
 		}
 	bank.Update();
 	while(true)
@@ -258,7 +177,7 @@ t.RemoveItem(0);
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
 				if (builder.building_route != -1)
 					{
-					//builder.DumpTopJobs();
+					builder.DumpTopJobs();
 					jobs_obj=cJobs.GetJobObject(builder.building_route);
 					route=cRoute(); // reset it
 					route.CreateNewRoute(builder.building_route);
@@ -305,16 +224,21 @@ local table =
 	{
 	routes = null,
 	stations = null,
+	vehicle = null,
 	cargo = null,
-	busyroute=null,
-	virtualgroup=null,
-	dbstation=null,
-	dbroute=null,
+	busyroute = null,
+	virtualgroup = null,
+	dbstation = null,
+	dbroute = null,
+	dbvehicle = null,
+	bridgeID = null,
 	}
 
 DInfo("Saving game... "+cRoute.database.len()+" routes, "+cStation.stationdatabase.len()+" stations",0,"Save");
 local all_stations=[];
 local all_routes=[];
+local all_vehicle=[];
+local all_bridge=[];
 local temparray=[];
 
 // routes
@@ -322,10 +246,8 @@ foreach (obj in cRoute.database)
 	{
 	all_routes.push(obj.UID);
 	all_routes.push(obj.sourceID);
-	all_routes.push(obj.source_location);
 	all_routes.push(obj.source_istown);
 	all_routes.push(obj.targetID);
-	all_routes.push(obj.target_location);
 	all_routes.push(obj.target_istown);
 	all_routes.push(obj.route_type);
 	all_routes.push(obj.station_type);
@@ -335,6 +257,9 @@ foreach (obj in cRoute.database)
 	all_routes.push(obj.source_stationID);
 	all_routes.push(obj.target_stationID);
 	all_routes.push(obj.cargoID);
+	all_routes.push(obj.primary_RailLink);
+	all_routes.push(obj.secondary_RailLink);
+	all_routes.push(obj.twoway);
 	}
 // stations
 foreach(obj in cStation.stationdatabase)
@@ -349,31 +274,55 @@ foreach(obj in cStation.stationdatabase)
 	temparray=ListToArray(obj.locations);
 	all_stations.push(temparray.len());
 	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
-	temparray=ListToArray(obj.owner);
+	temparray=ListToArray(obj.platforms);
+	all_stations.push(temparray.len());
+	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
+	temparray=ListToArray(obj.station_tiles);
 	all_stations.push(temparray.len());
 	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
 	}
+// vehicle
+foreach (obj in cTrain.vehicledatabase)
+	{
+	all_vehicle.push(obj.vehicleID);
+	all_vehicle.push(obj.srcStationID);
+	all_vehicle.push(obj.dstStationID);
+	all_vehicle.push(obj.src_useEntry);
+	all_vehicle.push(obj.dst_useEntry);
+	all_vehicle.push(obj.dualusage);
+	all_vehicle.push(obj.full);
+	}
+// bridges
+foreach (bridgeUID, owner in cBridge.BridgeList)	all_bridge.push(cBridge.GetLocation(bridgeUID));
 
+table.bridgeID=all_bridge;
 table.cargo=cargo_favorite;
 table.routes=all_routes;
 table.stations=all_stations;
+table.vehicle=all_vehicle;
 table.busyroute=builder.building_route;
 table.virtualgroup=cRoute.VirtualAirGroup[0];
 table.dbstation=cStation.stationdatabase.len();
 table.dbroute=cRoute.database.len();
+table.dbvehicle=cTrain.vehicledatabase.len();
 DInfo("Saving done...",0,"Save");
 return table;
 }
  
 function DictatorAI::Load(version, data)
 {
-DInfo("Loading a saved game with DictatorAI. ",0,"Load");
+DInfo("Loading a saved game with DictatorAI version "+version,0,"Load");
 if ("cargo" in data) cargo_favorite=data.cargo;
 if ("routes" in data) bank.canBuild=data.routes;
 if ("stations" in data) bank.unleash_road=data.stations;
 if ("busyroute" in data) builder.building_route=data.busyroute;
 if ("dbstation" in data) OneMonth=data.dbstation;
 if ("dbroute" in data) OneWeek=data.dbroute;
+if ("vehicle" in data)	SixMonth=data.vehicle;
+if ("dbvehicle" in data)	TwelveMonth=data.dbvehicle;
+if ("bridgeID" in data)	bank.mincash=data.bridgeID;
+bank.busyRoute=version;
+print("SixMonth="+SixMonth+" TwelveMonth="+TwelveMonth);
 loadedgame = true;
 }
 

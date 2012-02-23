@@ -66,35 +66,35 @@ static	function GetRouteObject(UID)
 	twoway		= null;	// if source station and target station accept but also produce, it's a twoway route
 
 	constructor()
-		{
-		UID			= null;
-		name			= "UNKNOWN";
-		sourceID		= null;
+		{ // * are saved variables
+		UID			= null;		// *
+		name			= "UNKNOWN";	
+		sourceID		= null;		// *
 		source_location	= 0;
-		source_istown	= false;
-		source		= null;
-		targetID		= null;
+		source_istown	= false;		// *
+		source		= null;		
+		targetID		= null;		// *
 		target_location	= 0;
-		target_istown	= false;
+		target_istown	= false;		// *
 		target		= null;
 		vehicle_count	= 0;
-		route_type		= null;
-		station_type	= null;
-		isWorking		= false;
-		status		= 0;
-		groupID		= null;
+		route_type		= null;		// *
+		station_type	= null;		// *
+		isWorking		= false;		// *
+		status		= 0;			// *
+		groupID		= null;		// *
 		source_entry	= false;
 		source_stationID	= null;
 		target_entry	= false;
 		target_stationID	= null;
-		cargoID		= null;
+		cargoID		= null;		// *
 		date_VehicleDelete= 0;
 		date_lastCheck	= null;
 		source_RailEntry	= null;
 		target_RailEntry	= null;
-		primary_RailLink	= false;
-		secondary_RailLink= false;
-		twoway		= false; // per default force source full load/target non full
+		primary_RailLink	= false;		// *
+		secondary_RailLink= false;		// *
+		twoway		= false;		// *
 		}
 	}
 
@@ -115,10 +115,18 @@ function cRoute::CheckEntry()
 	{
 	this.source_entry = (this.source_stationID != null);
 	this.target_entry = (this.target_stationID != null);
-	if (this.source_entry)	{ this.source=cStation.GetStationObject(this.source_stationID); this.source.ClaimOwner(this.UID); }
-				else	this.source=null;
-	if (this.target_entry)	{ this.target=cStation.GetStationObject(this.target_stationID); this.target.ClaimOwner(this.UID); }
-				else	this.target=null;
+	if (this.source_entry)	
+			{
+			this.source=cStation.GetStationObject(this.source_stationID);
+			if (this.source != null) this.source.ClaimOwner(this.UID);
+			}
+		else	this.source=null;
+	if (this.target_entry)
+			{
+			this.target=cStation.GetStationObject(this.target_stationID);
+			if (this.target != null)	this.target.ClaimOwner(this.UID);
+			}
+		else	this.target=null;
 	//DInfo("Route "+this.UID+" source="+this.source+" target="+this.target,1);
 	}
 
@@ -178,6 +186,8 @@ function cRoute::RouteDone()
 	this.source.cargo_accept.AddItem(this.cargoID,0); // that's not true, both next lines could be false, but CheckCangoHandleByStation will clean them if need
 	this.target.cargo_produce.AddItem(this.cargoID,0);
 	this.RouteSave();
+	if (this.source_istown)	cJobs.statueTown.AddItem(this.sourceID,0);
+	if (this.target_istown)	cJobs.statueTown.AddItem(this.targetID,0);
 	}
 
 function cRoute::RouteUpdate()
@@ -233,12 +243,12 @@ function cRoute::RouteGetName()
 		this.name="Virtual Air Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
 		return;
 		}
-	if (source_entry)	src=AIStation.GetName(source_stationID);
+	if (source_entry)	src=cStation.StationGetName(source_stationID);
 			else	{
 				if (source_istown)	src=AITown.GetName(sourceID);
 							else	src=AIIndustry.GetName(sourceID);
 				}
-	if (target_entry)	dst=AIStation.GetName(target_stationID);
+	if (target_entry)	dst=cStation.StationGetName(target_stationID);
 			else	{
 				if (source_istown)	src=AITown.GetName(sourceID);
 						else	src=AIIndustry.GetName(sourceID);
@@ -283,9 +293,9 @@ function cRoute::CreateNewRoute(UID)
 	this.isWorking = false;
 	this.status = 0;
 	if (source_istown)	source_location=AITown.GetLocation(sourceID);
-			else	source_location=AIIndustry.GetLocation(sourceID);
+				else	source_location=AIIndustry.GetLocation(sourceID);
 	if (target_istown)	target_location=AITown.GetLocation(targetID);
-			else	target_location=AIIndustry.GetLocation(targetID);
+				else	target_location=AIIndustry.GetLocation(targetID);
 	this.CheckEntry();
 	}
 
@@ -471,14 +481,14 @@ function cRoute::AddTrain(uid, vehID)
 	local road=cRoute.GetRouteObject(uid);
 	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID: "+vehID,2,"cRoute::AddTrain"); return -1; }
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::AddTrain"); return -1; }
-	cTrain.SetStation(vehID, road.source_stationID, true, road.source_RailEntry);
-	cTrain.SetStation(vehID, road.target_stationID, false, road.target_RailEntry);
+	cTrain.TrainSetStation(vehID, road.source_stationID, true, road.source_RailEntry, road.twoway);
+	cTrain.TrainSetStation(vehID, road.target_stationID, false, road.target_RailEntry, road.twoway);
 	// hmmm, choices: a two way route == 2 taker that are also dropper train
 	// we could then tell stations we have 2 taker == each train will have a platform
 	// or 2 dropper == station will have just 1 platform and trains must wait on the line
 	// for now i choose saying they are both taker
-	road.source.NewTrain(true, road.source_RailEntry);
-	road.target.NewTrain(false, road.target_RailEntry);
+	road.source.StationAddTrain(true, road.source_RailEntry);
+	road.target.StationAddTrain(road.twoway, road.target_RailEntry);
 	}
 
 function cRoute::CanAddTrainToStation(uid)
@@ -486,9 +496,9 @@ function cRoute::CanAddTrainToStation(uid)
 // return false when the station cannot handle it
 	{
 	local road=cRoute.GetRouteObject(uid);
-	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrain"); return -1; }
+	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrainToStation"); return -1; }
 	local canAdd=true;
-	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1,"CanAddTrainToStation"); INSTANCE.NeedDelay(100);
+	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1,"cRoute::CanAddTrainToStation"); INSTANCE.NeedDelay(100);
 	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
 	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
 	return canAdd;

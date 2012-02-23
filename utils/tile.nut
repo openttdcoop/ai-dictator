@@ -348,10 +348,8 @@ if (newTile == -1)	return newTile; // area not clear give up, the terraforming w
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))	return newTile;
 local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
 INSTANCE.bank.RaiseFundsBigTime();
-print("before terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
 cTileTools.TerraformLevelTiles(newTile, tileTo);
-print("after terrraform : "+cTileTools.IsBuildableRectangleFlat(newTile, width, height));
-INSTANCE.NeedDelay(200);
+INSTANCE.NeedDelay(100);
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))		return newTile;
 											else	return -1;
 }
@@ -577,7 +575,7 @@ local totalspent=0;
 local tiledone=0;
 foreach (tile, dummy in towntiles)
 	{
-	if (curRating >= needRating || curRating == AITown.TOWN_RATING_GOOD)	break;
+	if (curRating >= needRating || curRating == AITown.TOWN_RATING_NONE)	break;
 	tiledone++;
 	do	{
 		good=AITile.PlantTree(tile);
@@ -592,7 +590,6 @@ foreach (tile, dummy in towntiles)
 local endop="Success !";
 if (!good && curRating < needRating)	endop="Failure.";
 DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1,"cTileTools::SeduceTown");
-print("trees: "+totalTree+" tiledone="+tiledone);
 return (curRating >= needRating);
 }
 

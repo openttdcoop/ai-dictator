@@ -23,7 +23,7 @@ if (exist)
 	{
 	if (temp.owner.Count() != 0)
 		{
-		DInfo("Can't delete station "+AIStation.GetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",1);
+		DInfo("Can't delete station "+cStation.StationGetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",1);
 		return false;
 		}
 	// didn't find someone else use it
@@ -32,12 +32,12 @@ if (exist)
 	local vehcheck=AIVehicleList_Station(stationid);
 	if (!vehcheck.IsEmpty())
 		{
-		DWarn("Still have "+vehcheck.Count()+" vehicles using station "+AIStation.GetName(stationid),1);
+		DWarn("Still have "+vehcheck.Count()+" vehicles using station "+cStation.StationGetName(stationid),1);
 		}
 	if (!temp.station_tiles.IsEmpty())
 		foreach (tile, dummy in temp.station_tiles)	{ AITile.DemolishTile(tile); cTileTools.UnBlackListTile(tile); }
 	}
-local wasnamed=AIStation.GetName(stationid);
+local wasnamed=cStation.StationGetName(stationid);
 local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
 foreach (tile, dummy in tilelist)
 	{

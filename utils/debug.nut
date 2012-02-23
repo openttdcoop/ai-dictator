@@ -101,6 +101,17 @@ if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	}
 }
 
+function cBuilder::ShowTrainStationDepot()
+{
+local alist=AIStationList(AIStation.STATION_TRAIN);
+foreach (station, dummy in alist)
+	{
+	local thatstation=cStation.GetStationObject(station);
+	AISign.BuildSign(thatstation.depot,cStation.StationGetName(station));
+	}
+print("STADUMP END");
+}
+
 function cBuilder::ShowBlackList()
 {
 foreach (tile, value in cTileTools.TilesBlackList)	PutSign(tile,"BL:"+value);

@@ -208,26 +208,26 @@ if (compare == null)	// might happen, we found a dead station
 if (compare.stationID == INSTANCE.route.source_stationID)	return false;
 if (compare.stationID == INSTANCE.route.target_stationID)	return false;
 //if (compare.stationType == AIStation.STATION_TRAIN)	return false; // mark all rail stations incompatible to sharing
-DInfo("We are comparing with station #"+stationID+" "+AIStation.GetName(stationID),2);
+DInfo("We are comparing with station #"+stationID+" "+cStation.StationGetName(stationID),2);
 // find if station will accept our cargo
 local handling=true;
 if (start)
 	{
 	if (!compare.IsCargoProduce(INSTANCE.route.cargoID))
 		{
-		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't produce "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
+		DInfo("That station "+cStation.StationGetName(compare.stationID)+" doesn't produce "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		handling=false;
 		}
 	}
 else	{
 	if (!compare.IsCargoAccept(INSTANCE.route.cargoID))
 		{
-		DInfo("That station "+AIStation.GetName(compare.stationID)+" doesn't accept "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
+		DInfo("That station "+cStation.StationGetName(compare.stationID)+" doesn't accept "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		handling=false;
 		}
 	}
 if (!handling)	{
-		DInfo("Station "+AIStation.GetName(compare.stationID)+" refuse "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
+		DInfo("Station "+cStation.StationGetName(compare.stationID)+" refuse "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"cBuilder::FindCompatibleStationExistsForAllCases");
 		return false;
 		}
 // here station are compatible, but still do that station is within our original station area ?

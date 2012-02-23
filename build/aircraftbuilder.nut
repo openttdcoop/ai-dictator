@@ -19,11 +19,13 @@ function cCarrier::CreateAircraftEngine(engineID, depot)
 local price=cEngine.GetPrice(engineID);
 INSTANCE.bank.RaiseFundsBy(price);
 local vehID=AIVehicle.BuildVehicle(depot, engineID);
-if (AIVehicle.IsValidVehicle(vehID))	return vehID;
-						else	{
+if (!AIVehicle.IsValidVehicle(vehID))	{
 							DError("Cannot create the air vehicle ",2,"cCarrier::CreateAircraftEngine");
 							return -1;
 							}
+INSTANCE.carrier.vehnextprice-=price;
+if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
+return vehID;
 }
 
 function cCarrier::CreateAirVehicle(routeidx)
@@ -47,7 +49,7 @@ local price = AIEngine.GetPrice(veh);
 INSTANCE.bank.RaiseFundsBy(price);
 local firstveh = cCarrier.CreateAircraftEngine(veh, homedepot);
 if (firstveh == -1)	{ DError("Cannot create the vehicle "+veh,2,"cCarrier::CreateAirVehicle"); return false; }
-			else	{ DInfo("Just brought a new aircraft: "+AIVehicle.GetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),0,"cCarrier::CreateAirVehicle"); }
+			else	{ DInfo("Just brought a new aircraft: "+cCarrier.VehicleGetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),0,"cCarrier::CreateAirVehicle"); }
 // no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
 // as thir engine is the fastest always
 local firstorderflag = null;

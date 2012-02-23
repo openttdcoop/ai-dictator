@@ -32,6 +32,8 @@ INSTANCE.bank.RaiseFundsBy(price);
 if (!INSTANCE.bank.CanBuyThat(price))	DWarn("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1,"cCarrier::CreateRoadEngine");
 local vehID=AIVehicle.BuildVehicle(depot, engineID);
 if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Failure to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateRoadEngine"); return -1; }
+INSTANCE.carrier.vehnextprice-=price;
+if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
 cEngine.Update(vehID);
 // get & set refit cost
 local testRefit=AIAccounting();
@@ -73,7 +75,7 @@ while (!confirm)
 	{
 	vehID=INSTANCE.carrier.CreateRoadEngine(engineID, homedepot, cargoid);
 	if (AIVehicle.IsValidVehicle(vehID))
-		DInfo("Just brought a new road vehicle: "+AIVehicle.GetName(vehID),0,"cCarrier::CreateRoadVehicle");
+		DInfo("Just brought a new road vehicle: "+cCarrier.VehicleGetName(vehID),0,"cCarrier::CreateRoadVehicle");
 	else	{
 		DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
 		lackMoney=(vehID==-2);
@@ -127,8 +129,9 @@ vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 vehlist.KeepValue(1);
 vehlist.Valuate(cEngine.GetCapacity, cargoid);
 vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
-if (INSTANCE.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, cargoid);
-					else	vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
+/*if (INSTANCE.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, cargoid);
+					else	vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);*/
+vehlist.Valuate(cCarrier.GetEngineRawEfficiency, cargoid);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
 //DInfo("Selected bus/truck : "+AIEngine.GetName(vehlist.Begin())+" eff: "+vehlist.GetValue(vehlist.Begin()),1,"cCarrier::ChooseRoadVeh");
 if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), cargoid, true); // set top engine for trucks

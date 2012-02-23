@@ -44,13 +44,13 @@ cost+=1000; // i'm not sure how much i need to destroy old airport
 INSTANCE.bank.RaiseFundsBy(cost);
 if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
 	{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",1); return false; }
-DInfo("Trying to upgrade airport #"+stationid+" "+AIStation.GetName(stationid),0);
+DInfo("Trying to upgrade airport #"+stationid+" "+cStation.StationGetName(stationid),0);
 // find traffic that use that airport & reroute it
 // prior to reroute aircraft, make sure they have a route to go
 foreach (ownID, dummy in station.owner)
 	{
 	local dummyObj=cRoute.GetRouteObject(ownID);
-	INSTANCE.carrier.VehicleBuildOrders(dummyObj.groupID);
+	INSTANCE.carrier.VehicleBuildOrders(dummyObj.groupID,true);
 	}
 INSTANCE.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 

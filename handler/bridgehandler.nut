@@ -52,9 +52,7 @@ function cBridge::GetBridgeUID(tile)
 // Return the bridge UID (our internal ID) from that tile
 	{
 	local validstart=cBridge.IsValidTile(tile);
-	local validend=cBridge.IsValidTile(tile);
-	if (!validstart && !validend)
-		{ DError("This is not a bridge",2,"cBridge::GetBridgeUID"); return null; }
+	if (!validstart)	{ DError("This is not a bridge",2,"cBridge::GetBridgeUID"); return null; }
 	return 0-( (tile+1)*(AIBridge.GetOtherBridgeEnd(tile)+1) );
 	}
 
@@ -63,9 +61,7 @@ function cBridge::Save()
 	{
 	this.bridgeUID=cBridge.GetBridgeUID(this.firstside);
 	if (bridgeUID==null)	return; // no bridge found
-	local validstart=cBridge.IsValidTile(this.firstside);
-	if (validstart)	this.otherside=AIBridge.GetOtherBridgeEnd(this.firstside);
-			else	this.firstside=AIBridge.GetOtherBridgeEnd(this.otherside);
+	this.otherside=AIBridge.GetOtherBridgeEnd(this.firstside);
 	if (this.bridgeUID in cBridge.bridgedatabase)	return;
 	this.length=AIMap.DistanceManhattan(this.firstside, this.otherside) +1;
 	local dir=cBuilder.GetDirection(this.firstside, this.otherside);
@@ -75,7 +71,7 @@ function cBridge::Save()
 	this.bridgeID=AIBridge.GetBridgeID(this.firstside);
 	cBridge.bridgedatabase[this.bridgeUID] <- this;
 	cBridge.BridgeList.AddItem(this.bridgeUID,this.owner);
-	DInfo("Adding "+AIBridge.GetName(this.bridgeID)+" to cBridge database",2,"cBridge::Save");
+	DInfo("Adding "+AIBridge.GetName(this.bridgeID)+" at "+this.firstside+" to cBridge database",2,"cBridge::Save");
 	DInfo("List of known bridges : "+(cBridge.bridgedatabase.len()),1,"cBridge::Save");
 	}
 
@@ -90,7 +86,7 @@ function cBridge::Load(bUID)
 		bUID=cobj.bridgeUID;
 		}
 	else	cobj.bridgeUID=bUID;
-	if (bUID in cBridge.bridgedatabase)	{ cobj=cBridge.GetBridgeObject(bUID); cBridge.CheckBridge(bUID); }
+	if (bUID in cBridge.bridgedatabase)	{ cobj=cBridge.GetBridgeObject(bUID); cobj.CheckBridge(); }
 						else	cobj.Save(); // we will not save a null bridgeUID
 	return cobj;
 	}
@@ -102,17 +98,15 @@ function cBridge::GetLength(bUID)
 	return bobj.length;
 	}
 
-function cBridge::CheckBridge(bUID)
+function cBridge::CheckBridge()
 // Check if the bridge need an update of its infos
 	{
-	local cobj=cBridge.Load(bUID);
-	local validstart=cBridge.IsValidTile(cobj.firstside);
-	local validend=cBridge.IsValidTile(cobj.otherside);
+	local validstart=cBridge.IsValidTile(this.firstside);
+	local validend=cBridge.IsValidTile(this.otherside);
 	if (!validstart || !validend)
 		{
 		DInfo("Bridge infos aren't valid anymore, bridge has moved ?",2,"cBridge::CheckBridge");
-		cBridge.DeleteBridge(bUID);
-		cobj.Save(); // try to save it again, the Save function will seek who is valid and who's not
+		cBridge.DeleteBridge(this.bUID);
 		}
 	}
 
@@ -131,6 +125,13 @@ function cBridge::GetDirection(bUID)
 	{
 	local cobj=cBridge.Load(bUID);
 	return cobj.direction;
+	}
+
+function cBridge::GetLocation(bUID)
+// return the firstside (location) of the bridge
+	{
+	local cobj=cBridge.Load(bUID);
+	return cobj.firstside;
 	}
 
 function cBridge::GetOwner(bUID)

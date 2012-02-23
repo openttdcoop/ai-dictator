@@ -21,6 +21,10 @@ function MyRoadPF::_Cost(path, new_tile, new_direction, self)
 	if (AITile.HasTransportType(new_tile, AITile.TRANSPORT_RAIL)) cost += self._cost_level_crossing;
 	return cost;
 }
+function MyRoadPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
+{
+	return 1.2*::RoadPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+}
 
 function MyRoadPF::_GetTunnelsBridges(last_node, cur_node, bridge_dir)
 {
@@ -54,8 +58,12 @@ class MyRailPF extends RailPathFinder {
 function MyRailPF::_Cost(path, new_tile, new_direction, self)
 {
 	local cost = ::RailPathFinder._Cost(path, new_tile, new_direction, self);
-	if (AITile.HasTransportType(new_tile, AITile.TRANSPORT_ROAD)) cost += self._cost_level_crossing;
+//	if (AITile.HasTransportType(new_tile, AITile.TRANSPORT_ROAD)) cost += self._cost_level_crossing;
 	return cost;
+}
+function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
+{
+	return 1.2*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
 }
 
 function cBuilder::CanBuildRoadStation(tile, direction)
@@ -456,14 +464,14 @@ function cBuilder::CheckRoadHealth(routeUID)
 // return true if no problems were found
 {
 local repair=cRoute.GetRouteObject(routeUID);
-if (repair == null)	{ DInfo("Cannot load that route for a repair.",1); repair=INSTANCE.route; }
+if (repair == null)	{ DInfo("Cannot load that route for a repair.",1,"cBuilder::CheckRoadHealth"); repair=INSTANCE.route; }
 if (!repair.source_entry || !repair.target_entry)	return false;
 local good=true;
 local space="        ";
 local correction=false;
 local temp=null;
 if (repair.route_type != AIVehicle.VT_ROAD)	return false; // only check road type
-DInfo("Checking route health of #"+routeUID+" "+repair.name,1);
+DInfo("Checking route health of "+repair.name,1,"cBuilder::CheckRoadHealth");
 // check stations for trouble
 // source station
 correction=false;
@@ -471,11 +479,11 @@ local msg="";
 local error_repair="Fixed !";
 local error_error="Fail to fix it";
 temp=repair.source.stationID;
-if (!AIStation.IsValidStation(temp))	{ DInfo(space+" Source Station is invalid !",1); good=false; }
-	else	DInfo(space+"Source station "+AIStation.GetName(temp)+"("+temp+") is valid",1);
+if (!AIStation.IsValidStation(temp))	{ DInfo(space+" Source Station is invalid !",1,"cBuilder::CheckRoadHealth"); good=false; }
+	else	DInfo(space+"Source station "+cStation.StationGetName(temp)+"("+temp+") is valid",1,"cBuilder::CheckRoadHealth");
 if (good)
 	{
-	DInfo(space+space+"Station size : "+repair.source.locations.Count(),1);
+	DInfo(space+space+"Station size : "+repair.source.locations.Count(),1,"cBuilder::CheckRoadHealth");
 	foreach (tile, front in repair.source.locations)
 		{
 		PutSign(tile, "S");
@@ -488,43 +496,20 @@ if (good)
 				else	{ msg+=error_error; good=false; }
 			}
 		else	{ msg+="usable"; }
-		DInfo(msg,1);
+		DInfo(msg,1,"cBuilder::CheckRoadHealth");
 		}
 	}
-// the depot
 
-msg=space+"Source Depot "+repair.source.depot+" is ";
-if (!AIRoad.IsRoadDepotTile(repair.source.depot))
-	{
-	msg+="invalid. ";
-	if (repair.source.depot=INSTANCE.builder.BuildRoadDepotAtTile(repair.source.GetRoadStationEntry()))	msg+=error_repair;
-		else	{ msg+=error_error; good=false; }
-	}
-else	msg+="valid";
-DInfo(msg,1);
-local depotfront=AIRoad.GetRoadDepotFrontTile(repair.source.depot);
-if (good)
-	{
-	msg=space+space+"Depot entry is ";
-	if (!AIRoad.AreRoadTilesConnected(repair.source.depot, depotfront))
-		{
-		msg+="not usable. ";
-		correction=INSTANCE.builder.BuildRoadFrontTile(repair.source.depot, depotfront);
-		if (correction)	msg+=error_repair;
-			else	{ msg+=error_error; good=false; }
-		}
-	else	msg+="usable";
-	DInfo(msg,1);
-	}
 ClearSignsALL();
+
 // target station
 correction=false;
 temp=repair.target.stationID;
-if (!AIStation.IsValidStation(temp))	{ DInfo(space+" Destination Station is invalid !",1); good=false; }
-	else	DInfo(space+"Source station "+AIStation.GetName(temp)+"("+temp+") is valid",1);
+if (!AIStation.IsValidStation(temp))	{ DInfo(space+" Destination Station is invalid !",1,"cBuilder::CheckRoadHealth"); good=false; }
+	else	DInfo(space+"Destination station "+cStation.StationGetName(temp)+"("+temp+") is valid",1,"cBuilder::CheckRoadHealth");
 if (good)
 	{
-	DInfo(space+space+"Station size : "+repair.target.locations.Count(),1);
+	DInfo(space+space+"Station size : "+repair.target.locations.Count(),1,"cBuilder::CheckRoadHealth");
 	foreach (tile, front in repair.target.locations)
 		{
 		PutSign(tile, "S");
@@ -537,11 +522,56 @@ if (good)
 				else	{ msg+=error_error; good=false; }
 			}
 		else	{ msg+="usable"; }
-		DInfo(msg,1);
+		DInfo(msg,1,"cBuilder::CheckRoadHealth");
 		}
 	}
-// the depot
 
+ClearSignsALL();
+
+// check the road itself from source to destination
+if (good)
+	{
+	msg=space+"Connection from source station to target station : "
+	local one = repair.source.GetRoadStationEntry();
+	local two = repair.target.GetRoadStationEntry();
+	if (!INSTANCE.builder.RoadRunner(one, two, AIVehicle.VT_ROAD))
+		{
+		msg+="Damage & ";
+		INSTANCE.builder.BuildRoadROAD(one, two);
+		if (!INSTANCE.builder.RoadRunner(one, two, AIVehicle.VT_ROAD))
+			{ msg+=error_error; good=false; }
+		else	{ msg+=error_repair; }
+		DInfo(msg,1);
+		}
+	else	{ DInfo(msg+"Working",1,"cBuilder::CheckRoadHealth"); }
+	}
+
+// the source depot
+msg=space+"Source Depot "+repair.source.depot+" is ";
+if (!AIRoad.IsRoadDepotTile(repair.source.depot))
+	{
+	msg+="invalid. ";
+	if (repair.source.depot=INSTANCE.builder.BuildRoadDepotAtTile(repair.source.GetRoadStationEntry()))	msg+=error_repair;
+		else	{ msg+=error_error; good=false; }
+	}
+else	msg+="valid";
+DInfo(msg,1,"cBuilder::CheckRoadHealth");
+local depotfront=AIRoad.GetRoadDepotFrontTile(repair.source.depot);
+if (good)
+	{
+	msg=space+space+"Depot entry is ";
+	if (!AIRoad.AreRoadTilesConnected(repair.source.depot, depotfront))
+		{
+		msg+="not usable. ";
+		correction=INSTANCE.builder.BuildRoadFrontTile(repair.source.depot, depotfront);
+		if (correction)	msg+=error_repair;
+			else	{ msg+=error_error; good=false; }
+		}
+	else	msg+="usable";
+	DInfo(msg,1,"cBuilder::CheckRoadHealth");
+	}
+
+// the destination depot
 msg=space+"Destination Depot "+repair.target.depot+" is ";
 if (!AIRoad.IsRoadDepotTile(repair.target.depot))
 	{
@@ -550,7 +580,7 @@ if (!AIRoad.IsRoadDepotTile(repair.target.depot))
 		else	{ msg+=error_error; good=false; }
 	}
 else	msg+="valid";
-DInfo(msg,1);
+DInfo(msg,1,"cBuilder::CheckRoadHealth");
 local depotfront=AIRoad.GetRoadDepotFrontTile(repair.target.depot);
 if (good)
 	{
@@ -563,11 +593,9 @@ if (good)
 			else	{ msg+=error_error; good=false; }
 		}
 	else	msg+="usable";
-	DInfo(msg,1);
+	DInfo(msg,1,"cBuilder::CheckRoadHealth");
 	}
-ClearSignsALL();
 
-// check the road itself
 if (good)
 	{
 	local src_depot_front=AIRoad.GetRoadDepotFrontTile(repair.source.depot);
@@ -582,9 +610,9 @@ if (good)
 			if (!INSTANCE.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
 				{ msg+=error_error; good=false;  cTileTools.DemolishTile(repair.source.depot); }
 			else	{ msg+=error_repair; }
-			DInfo(msg,1);
+			DInfo(msg,1,"cBuilder::CheckRoadHealth");
 			}
-		else	{ DInfo(msg+"Working",1); }
+		else	{ DInfo(msg+"Working",1,"cBuilder::CheckRoadHealth"); }
 		ClearSignsALL();
 		}
 	foreach (tile, front in repair.target.locations)
@@ -597,24 +625,11 @@ if (good)
 			if (!INSTANCE.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 				{ msg+=error_error; good=false; cTileTools.DemolishTile(repair.target.depot); }
 			else	{ msg+=error_repair; }
-			DInfo(msg,1);
+			DInfo(msg,1,"cBuilder::CheckRoadHealth");
 			}
-		else	{ DInfo(msg+"Working",1); }
+		else	{ DInfo(msg+"Working",1,"cBuilder::CheckRoadHealth"); }
 		ClearSignsALL();
 		}
-	msg=space+"Connection from source station to target station : "
-	local one = repair.source.GetRoadStationEntry();
-	local two = repair.target.GetRoadStationEntry();
-	if (!INSTANCE.builder.RoadRunner(one, two, AIVehicle.VT_ROAD))
-		{
-		msg+="Damage & ";
-		INSTANCE.builder.BuildRoadROAD(one, two);
-		if (!INSTANCE.builder.RoadRunner(one, two, AIVehicle.VT_ROAD))
-			{ msg+=error_error; good=false; }
-		else	{ msg+=error_repair; }
-		DInfo(msg,1);
-		}
-	else	{ DInfo(msg+"Working",1); }
 	}
 ClearSignsALL();
 return good;
@@ -809,7 +824,7 @@ local work=null;
 if (start)	work=road.source;
 	else	work=road.target;
 if (work == null)	return;
-DInfo("Upgrading road station "+AIStation.GetName(work.stationID),0);
+DInfo("Upgrading road station "+cStation.StationGetName(work.stationID),0);
 local depot_id=work.depot;
 DInfo("Road depot is at "+depot_id,2);
 // first lookout where is the station, where is its entry, where is the depot, where is the depot entry
@@ -941,20 +956,20 @@ if (depotdead)
 	}
 if (new_sta_pos > -1)
 	{
-	DInfo("Station "+AIStation.GetName(work.stationID)+" has been upgrade",0);
+	DInfo("Station "+cStation.StationGetName(work.stationID)+" has been upgrade",0);
 	local loc=AIStation.GetLocation(work.stationID);
 	work.locations=cTileTools.FindStationTiles(loc);
 	foreach(loc, dummy in work.locations)	work.locations.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
 	work.size=work.locations.Count();
 	DInfo("New station size: "+work.size+"/"+work.maxsize,2);
-	INSTANCE.builder.BuildRoadROAD(AIRoad.GetRoadStationFrontTile(new_sta_pos), AIRoad.GetRoadDepotFrontTile(work.depot));
+	//INSTANCE.builder.BuildRoadROAD(AIRoad.GetRoadStationFrontTile(new_sta_pos), AIRoad.GetRoadDepotFrontTile(work.depot));
 	}
 else	{ // fail to upgrade station
-	DInfo("Failure to upgrade "+AIStation.GetName(work.stationID),1);
+	DInfo("Failure to upgrade "+cStation.StationGetName(work.stationID),1);
 	if (allfail)
 		{
 		work.maxsize=work.size;
-		DInfo("Cannot upgrade "+AIStation.GetName(work.stationID)+" anymore !",1);
+		DInfo("Cannot upgrade "+cStation.StationGetName(work.stationID)+" anymore !",1);
 		}
 	success=false;
 	}

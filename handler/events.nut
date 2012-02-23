@@ -66,17 +66,19 @@ while (AIEventController.IsEventWaiting())
 				{
 				DInfo("New engine available for preview: " + event.GetName(),0);
 				}
+		INSTANCE.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.AI_ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
 			DInfo("New engine available: " + cEngine.GetName(engine),0);
+		INSTANCE.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.AI_ET_VEHICLE_CRASHED:
 			local vehicle = null;
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
-			DInfo("Vehicle "+INSTANCE.carrier.VehicleName(vehicle)+" has crashed!!!",0);
+			DInfo("Vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" has crashed!!!",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo("Vehicle state: " + AIVehicle.GetState(vehicle),1);
 			INSTANCE.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
@@ -87,13 +89,13 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.AI_ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(AIVehicle.GetName(vehicle) + " is lost, I don't know what to do with that !");
+			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, I don't know what to do with that !");
 			INSTANCE.carrier.VehicleMaintenance_Orders(vehicle);
 		break;
 		case AIEvent.AI_ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(AIVehicle.GetName(vehicle) + " is not profitable, sending it to depot");
+			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot");
 			INSTANCE.builder.RouteIsDamage(INSTANCE.carrier.VehicleFindRouteIndex(vehicle));
 			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;

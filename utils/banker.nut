@@ -50,7 +50,7 @@ if (INSTANCE.carrier.vehnextprice >0)	INSTANCE.bank.canBuild=false;
 local veh=AIVehicleList();
 if (veh.IsEmpty())	INSTANCE.bank.canBuild=true; // we have 0 vehicles force a build
 if (INSTANCE.bank.canBuild) DWarn("Construction is now allowed",1);
-DInfo("canBuild="+INSTANCE.bank.canBuild+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route+" warTreasure="+INSTANCE.carrier.warTreasure,1,"cBanker::Update");
+DInfo("canBuild="+INSTANCE.bank.canBuild+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route+" warTreasure="+INSTANCE.carrier.warTreasure+" vehnextprice="+INSTANCE.carrier.vehnextprice,1,"cBanker::Update");
 }
 
 function cBanker::GetLoanValue(money)
