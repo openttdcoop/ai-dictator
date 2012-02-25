@@ -434,7 +434,7 @@ while (path == false && counter < 250)
 	AIController.Sleep(1);
 	}
 // restore our money
-INSTANCE.bank.RaiseFundsTo(savemoney);
+INSTANCE.bank.RaiseFundsBy(savemoney);
 AISign.RemoveSign(pfInfo);
 if (path != null && path != false)
 	{

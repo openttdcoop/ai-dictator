@@ -125,21 +125,20 @@ function cBuilder::AirportMaker(tile, airporttype)
 {
 local essai=false;
 cTileTools.SeduceTown(AITile.GetClosestTown(tile),AITown.TOWN_RATING_POOR);
-INSTANCE.bank.RaiseFundsBigTime();
+//INSTANCE.bank.RaiseFundsBigTime();
 INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
-if (essai)	DInfo("AirportMaker-> Building an airport at "+tile,1);
+if (essai)	DInfo("-> Built an airport at "+tile,1,"AirportMaker");
 return essai;	
 }
 
 function cBuilder::BuildAirStation(start, routeID=null)
 // Create an airport for our route at start/destination
-// if createstation is not given, create a new station, else re-use the createstation index
 {
 local road=null;
 if (routeID==null)	road=INSTANCE.route;
 		else		road=cRoute.GetRouteObject(routeID);
-DInfo("BuildAirStation-> Looking for a place to build an airport",1);
+local townname="none";
 local helipadonly=false;
 // Pickup the airport we can build
 local airporttype=cBuilder.GetAirportType();
@@ -150,14 +149,17 @@ local tilelist=AITile();
 local success=false;
 local allfail=true;
 local newStation=0;
+local airnoise=0;
+local townnoise=0;
 local heliloc=null;
-DInfo("Start="+start+" source="+road.source_istown+" target="+road.target_istown,2);
 if (start)
 	{
 	if (road.source_istown)
 		{
 		tilelist= cTileTools.GetTilesAroundTown(road.sourceID);
 		helipadonly=false;
+		townname=AITown.GetName(road.sourceID);
+		townnoise=AITown.GetAllowedNoise(road.sourceID);
 		}
 	else	{
 		// no coverage need, we know exactly where we go
@@ -169,6 +171,8 @@ else	{
 	if (road.target_istown)
 		{
 		tilelist= cTileTools.GetTilesAroundTown(road.targetID);
+		townname=AITown.GetName(road.targetID);
+		townnoise=AITown.GetAllowedNoise(road.targetID);
 		helipadonly=false;
 		}
 	else	{
@@ -179,23 +183,47 @@ else	{
 		return false;
 		}
 	}
+DInfo("Looking for a place to build an airport at "+townname,1,"BuildAirStation");
 if (!helipadonly)
 	{
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.RemoveValue(0);
+	tilelist.Valuate(AIAirport.GetNoiseLevelIncrease,airporttype);
+	ClearSignsALL();
+	tilelist.RemoveAboveValue(townnoise);
+	DInfo("Town "+townname+" noise level="+townnoise,2,"BuildAirStation");
+	if (tilelist.IsEmpty())
+			{
+			DInfo("Town "+townname+" can only get a noise level of "+townnoise+" Giving up.",1,"BuildAirStation");
+			INSTANCE.builder.CriticalError=true;
+			return false;
+			}
+	tilelist.Valuate(cTileTools.IsBuildableRectangle,air_x,air_y);
+	tilelist.RemoveValue(-1);
+	if (tilelist.IsEmpty())	
+			{
+			DInfo("There's no buildable space at "+townname+" where i could put an airport of that size",1,"BuildAirStation");
+			INSTANCE.builder.CriticalError=true;
+			return false;
+			}
 	tilelist.Valuate(AITile.GetCargoAcceptance, road.cargoID, 1, 1, rad);
 	tilelist.RemoveBelowValue(8);
 	tilelist.Sort(AIList.SORT_BY_VALUE,false);
-	INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
+	showLogic(tilelist);
+	ClearSignsALL();
+	if (tilelist.IsEmpty())
+			{
+			DInfo("Can't find any suitable place to build an airport at "+townname,1,"BuildAirStation");
+			INSTANCE.builder.CriticalError=true;
+			return false;
+			}
 	foreach (i, dummy in tilelist)
 		{
 		local bestplace=cTileTools.CheckLandForConstruction(i, air_x, air_y);
-		// clear signs
-		local sweeper=AISignList();
-		foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
+		ClearSignsALL();
 		if (bestplace > -1)
 			{
-			DInfo("BuildAirStation-> Trying to build airport at "+bestplace,1);
+			DInfo("Trying to build airport at "+bestplace,1,"BuildAirStation");
 			success=INSTANCE.builder.AirportMaker(bestplace, airporttype);
 			if (success)
 					{
@@ -213,7 +241,7 @@ if (!helipadonly)
 		}
 	}
 else	{ success=true; }
-DInfo("BuildAirStation-> Success to build airport "+success+" allfail="+allfail,1);
+DInfo("Success to build airport "+success+" allfail="+allfail,1,"BuildAirStation");
 if (success)
 	{
 	if (!helipadonly)
@@ -228,7 +256,7 @@ if (success)
 		road.route_type = RouteType.CHOPPER;
 		road.CreateNewStation(start);
 		road.CheckEntry();
-		DInfo("BuildAirStation-> Chopper says depot is "+road.source.depot,1);
+		DInfo("Chopper says depot is at "+road.source.depot,1,"BuildAirStation");
 		road.source.depot=null;
 		}
 /*	if (helipadonly)

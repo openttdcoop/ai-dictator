@@ -13,11 +13,13 @@
 **/
 
 enum RouteType {
-	RAIL,	// AIVehicle.VT_RAIL
-	ROAD,	// AIVehicle.VT_ROAD
+	RAIL,		// AIVehicle.VT_RAIL
+	ROAD,		// AIVehicle.VT_ROAD
 	WATER,	// AIVehicle.VT_WATER
-	AIR,	// AIVehicle.VT_AIR
+	AIR,		// AIVehicle.VT_AIR
+	AIRMAIL,
 	AIRNET,
+	AIRNETMAIL,
 	CHOPPER }
 enum AircraftType {
 	EFFICIENT,
@@ -184,7 +186,7 @@ function DictatorAI::Start()
 					if (route == null)
 						{ builder.building_route=-1; }
 					else	{
-						bank.RaiseFundsTo(jobs.moneyToBuild);
+						bank.RaiseFundsBy(jobs.moneyToBuild);
 						builder.TryBuildThatRoute();
 						this.checkHQ();
 						}

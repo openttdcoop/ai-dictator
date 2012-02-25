@@ -162,8 +162,10 @@ switch (INSTANCE.route.route_type)
 	break;
 	case AIVehicle.VT_WATER:
 	break;
-	case AIVehicle.VT_AIR:
+	case RouteType.AIR:
+	case RouteType.AIRMAIL:
 	case RouteType.AIRNET:
+	case RouteType.AIRNETMAIL:
 	case RouteType.CHOPPER:
 	success=INSTANCE.builder.BuildAirStation(start);
 	break;
@@ -203,6 +205,7 @@ local compare=cStation.GetStationObject(stationID);
 if (compare == null)	// might happen, we found a dead station
 	{
 	INSTANCE.builder.DeleteStation(-1, stationID);
+	DInfo("Removing station "+cStation.StationGetName(stationID)+" that is unused.",1,"FindCompatibleStationExistForAllCases");
 	return false;
 	}
 if (compare.stationID == INSTANCE.route.source_stationID)	return false;
@@ -343,6 +346,10 @@ if (INSTANCE.route.status==0) // not using switch/case so we can advance steps i
 			success=null;
 		break;
 		case	RouteType.AIR:
+		case	RouteType.AIRMAIL:
+		case	RouteType.AIRNET:
+		case	RouteType.AIRNETMAIL:
+		case	RouteType.CHOPPER:
 			local modele=AircraftType.EFFICIENT;
 			if (!INSTANCE.route.source_istown)	modele=AircraftType.CHOPPER;
 			INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, modele);
@@ -476,7 +483,7 @@ if (INSTANCE.route.status==6)
 		DInfo("Route mark as a oneway route",1,"TryBuildThatRoute");
 		INSTANCE.route.twoway=false;
 		}
-	INSTANCE.builddelay=true;
+	INSTANCE.builddelay=false;
 	INSTANCE.builder.building_route=-1; // Allow us to work on a new route now
 	if (INSTANCE.safeStart >0 && INSTANCE.route.route_type == RouteType.ROAD)	INSTANCE.safeStart--;
 	//if (INSTANCE.route.route_type==RouteType.RAIL)	INSTANCE.route.DutyOnRailsRoute(INSTANCE.route.UID);

@@ -250,7 +250,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	road=cRoute.GetRouteObject(uid);
 	if (road==null)	continue;
 	if (!road.isWorking)	continue;
-	if (road.route_type == RouteType.AIRNET)	continue;
+	if (road.route_type == RouteType.AIRNET || road.route_type == RouteType.AIRNETMAIL)	continue;
 	if (road.source == null)	continue;
 	if (road.target == null)	continue;
 	local maxveh=0;
@@ -258,6 +258,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (cargoid == null)	continue;
 	if (road.route_type == RouteType.RAIL)	{ INSTANCE.route.DutyOnRailsRoute(uid); continue; }
 	local futur_engine=INSTANCE.carrier.GetVehicle(uid);
+print("Getvehicle query");
 	local futur_engine_capacity=1;
 	if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);
 					else	continue;
@@ -272,10 +273,12 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			cargoid=cCargo.GetPassengerCargo();
 			INSTANCE.builder.DumpRoute(uid);
 		break;
-		case AIVehicle.VT_AIR:
+		case RouteType.AIR:
+		case RouteType.AIRMAIL:
 			maxveh=INSTANCE.carrier.air_max;
 			cargoid=cCargo.GetPassengerCargo(); // for aircraft, force a check vs passenger
 			// so mail aircraft runner will be add if passenger is high enough, this only affect routes not in the network
+print("aircraft work !!!!");
 		break;
 		case AIVehicle.VT_WATER:
 			maxveh=INSTANCE.carrier.water_max;
@@ -322,7 +325,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 && vehonroute < 4)	vehneed++;
 	if (firstveh)
 		{
-		if (road.route_type == RouteType.ROAD || road.route_type == RouteType.AIR)
+		if (road.route_type == RouteType.ROAD || road.route_type == RouteType.AIR || road.route_type == RouteType.AIRMAIL)
 			{ // force 2 vehicle if none exists yet for truck/bus & aircraft
 			if (vehneed < 2)	vehneed=2;
 			}
@@ -372,31 +375,39 @@ INSTANCE.carrier.highcostAircraft=0;
 DInfo("Priority list="+priority.Count()+" Saved list="+priosave.Count(),1,"DutyOnRoute");
 foreach (groupid, ratio in priority)
 	{
-	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicle",1,"DutyOnRoute"); allneed+=vehneed; }
+	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicles",1,"DutyOnRoute"); allneed+=vehneed; }
 						else	{ vehneed=0; DWarn("Group #"+groupid++" "+AIGroup.GetName(groupid)+" not found in priority list!",1,"DutyOnRoute"); }
 	if (vehneed == 0) continue;
 	local uid=cRoute.GroupIndexer.GetValue(groupid);
 	local rtype=AIGroup.GetVehicleType(groupid);
 	local vehmodele=INSTANCE.carrier.GetVehicle(uid);
 	local vehvalue=0;
+	local goodbuy=false;
 	if (vehmodele != null)	vehvalue=AIEngine.GetPrice(vehmodele);
 	for (local z=0; z < vehneed; z++)
 		{
 		if (rtype == AIVehicle.VT_AIR && !INSTANCE.bank.CanBuyThat(vehvalue))
 			{
 			if (INSTANCE.carrier.highcostAircraft < vehvalue)	INSTANCE.carrier.highcostAircraft=vehvalue;
+			DInfo("Saving money to buy an aircraft of : "+INSTANCE.carrier.highcostAircraft,1,"DutyOnRoute");
 			}
 		if (INSTANCE.bank.CanBuyThat(vehvalue))
-			if ((INSTANCE.carrier.highcostAircraft >= INSTANCE.carrier.vehnextprice) || (INSTANCE.carrier.vehnextprice == 0))
-				if (INSTANCE.carrier.BuildAndStartVehicle(uid))
-					{
-					local rinfo=cRoute.GetRouteObject(uid);
-					DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0,"DutyOnRoute");
-					allbuy++;
-					INSTANCE.carrier.vehnextprice=0; INSTANCE.carrier.highcostAircraft=0;
-					}
+			{
+			if (INSTANCE.carrier.highcostAircraft > 0)
+				{ // we have saved money to buy an aircraft and it's an aircraft
+				if (rtype == AIVehicle.VT_AIR)	{ goodbuy=INSTANCE.carrier.BuildAndStartVehicle(uid); INSTANCE.carrier.highcostAircraft=0; }
+				}
+			else	if (INSTANCE.bank.CanBuyThat(vehvalue+INSTANCE.carrier.vehnextprice))	goodbuy=INSTANCE.carrier.BuildAndStartVehicle(uid);
+			if (goodbuy)
+				{
+				local rinfo=cRoute.GetRouteObject(uid);
+				DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0,"DutyOnRoute");
+				allbuy++;
+				}
+			}
 		}
 	}
+print("VEH need="+allneed+" vehbuy="+allbuy+" busyroute="+INSTANCE.bank.busyRoute);
 if (allbuy < allneed)	INSTANCE.bank.busyRoute=true;
 }
 

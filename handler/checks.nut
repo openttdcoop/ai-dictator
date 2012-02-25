@@ -63,9 +63,8 @@ if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++; }
 DInfo("Montly checks run...",1);
 INSTANCE.route.VirtualAirNetworkUpdate();
 INSTANCE.builder.RouteNeedRepair();
-//if (bank.canBuild && builder.building_route == -1)
 if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
-if (INSTANCE.buildTimer == 3)
+if (INSTANCE.buildTimer == 2) // delaying a build for 2 months
 	{
 	INSTANCE.builddelay=false;
 	INSTANCE.buildTimer=0;
@@ -78,7 +77,6 @@ if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
 
 function cBuilder::HalfYearChecks()
 {
-INSTANCE.builddelay=false; // Wait 6 months, now allow us to build again
 INSTANCE.SixMonth=0;
 INSTANCE.TwelveMonth++;
 DInfo("Half year checks run...",1);
@@ -138,6 +136,7 @@ function cBuilder::YearlyChecks()
 INSTANCE.TwelveMonth=0;
 DInfo("Yearly checks run...",1);
 INSTANCE.builder.BoostedBuys();
+INSTANCE.builder.CheckRouteStationStatus();
 INSTANCE.jobs.CheckTownStatue();
 INSTANCE.builder.BridgeUpgrader();
 INSTANCE.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
@@ -206,6 +205,50 @@ cargo_list.KeepAboveValue(7); // doc says below 8 means no acceptance
 return cargo_list;
 }
 
+function cBuilder::CheckRouteStationStatus()
+// This check that our routes are still working, a dead station might prevent us to keep the job done
+{
+local allstations=AIStationList(AIStation.STATION_ANY);
+foreach (stationID, dummy in allstations)
+	{
+	local stobj=cStation.GetStationObject(stationID);
+	if (stobj == null)	continue;
+	foreach (uid, dummy in stobj.owner)
+		{
+		local road=cRoute.GetRouteObject(uid);
+		if (road == null || !road.isWorking)	continue; // avoid non finish routes
+		local cargoID=road.cargoID;
+		if (road.station_type == AIStation.STATION_AIRPORT)	cargoID=cCargo.GetPassengerCargo(); // always check passenger to avoid mail cargo
+		if (road.source_stationID == stobj.stationID)
+			{
+			if (stobj.IsCargoProduce(cargoID))	stobj.cargo_produce.AddItem(cargoID, 0); // rediscover cargo
+			else	{
+				DWarn("Station "+cStation.StationGetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRoadStationStatus");
+				road.RouteIsNotDoable();
+				continue;
+				}
+			if (stobj.IsCargoAccept(cargoID))	stobj.cargo_accept.AddItem(cargoID, 0);
+			}
+		if (road.target_stationID == stobj.stationID)
+			{
+			if (stobj.IsCargoAccept(cargoID))	stobj.cargo_accept.AddItem(cargoID, 0); // rediscover cargo
+			else	{
+				DWarn("Station "+cStation.StationGetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRoadStationStatus");
+				if (INSTANCE.builder.building_route == -1) // a hope, we might repair the route as we aren't working on another one
+						{
+						road.RouteReleaseStation(stationID);
+						road.target_stationID = null;
+						INSTANCE.builder.building_route = road.UID;
+						}
+					else	road.RouteIsNotDoable();
+				continue;
+				}
+			}
+		}
+	AIController.Sleep(1);
+	}
+}
+
 function cBuilder::RoadStationsBalancing()
 // Look at road stations for busy loading and balance it by sending vehicle to servicing
 // Because vehicle could block the station waiting to load something, while others carrying products can't enter it
@@ -215,6 +258,7 @@ local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
 local allstations=AIList(); // check if the station still use that cargo
 allstations.AddList(busstation);
 allstations.AddList(truckstation);
+/*
 foreach (stationID, dummy in allstations)
 	{
 	INSTANCE.Sleep(1);
@@ -243,27 +287,6 @@ foreach (stationID, dummy in allstations)
 				DWarn("Station "+cStation.StationGetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0);
 				road.RouteReleaseStation(stationID)
 				}
-			}
-		}
-	}
-/*
-foreach (stations, dummy in busstation)
-	{
-	INSTANCE.Sleep(1);
-	DInfo("BUS - Station check #"+stations+" "+cStation.StationGetName(stations),1);
-	local vehlist=cCarrier.VehicleNearStation(stations);
-	vehlist=cCarrier.VehicleList_KeepStuckVehicle(vehlist);
-	vehlist.Valuate(AIVehicle.GetAge);
-	vehlist.KeepAboveValue(30);
-	if (!vehlist.IsEmpty())
-		{
-		local produce=AIStation.GetCargoWaiting(stations, cCargo.GetPassengerCargo());
-		if (produce == 0) // bus are waiting and station have 0 passengers
-			{
-			local vehicle=vehlist.Begin();
-			DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" to balance station",1);
-			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
-			AIVehicle.ReverseVehicle(vehicle);
 			}
 		}
 	}
@@ -443,10 +466,10 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 	local goal=INSTANCE.carrier.highcostAircraft+(INSTANCE.carrier.highcostAircraft * 0.1);
 	local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	local money_goal=money+goal;
-	DWarn("Waiting to buy of new aircraft. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goal,1);
+	DWarn("Waiting to buy of new aircraft. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goal,1,"BoostedBuys");
 	if (INSTANCE.carrier.warTreasure > goal && goal > 0)
 		{
-		DInfo("Trying to buy a new aircraft",1);
+		DInfo("Trying to buy a new aircraft",1,"BoostedBuys");
 		INSTANCE.carrier.CrazySolder(goal);
 		do	{
 			INSTANCE.Sleep(74);

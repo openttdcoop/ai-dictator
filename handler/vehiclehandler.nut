@@ -288,10 +288,10 @@ if (idx == null)
 local betterEngine=cEngine.IsVehicleAtTop(vehID);
 if (betterEngine==-1)
 	{
-	DWarn("That vehicle have its engine already at top, but we sell it anyway",1,"cCarrier::VehicleUpgradeEngine");
-	INSTANCE.carrier.VehicleSell(vehID, false);
-	return false;
+	DWarn("That vehicle have its engine already at top, building a new one anyway",1,"cCarrier::VehicleUpgradeEngine");
+	betterEngine=AIVehicle.GetEngineType(vehID);
 	}
+print("betterengine="+betterEngine+" for "+cCarrier.VehicleGetName(vehID));
 local vehtype=AIVehicle.GetVehicleType(vehID);
 local new_vehID=null;
 local homedepot=AIVehicle.GetLocation(vehID);
@@ -526,7 +526,7 @@ function cCarrier::VehicleIsWaitingInDepot()
 // this function checks our depot sell vehicle in it
 {
 local tlist=AIVehicleList();
-DInfo("Checking vehicles in depots:",2);
+DInfo("Checking vehicles in depots:",2,"cCarrier::VehicleWaitingInDepot");
 tlist.Valuate(AIVehicle.IsStoppedInDepot);
 tlist.KeepValue(1);
 foreach (i, dummy in tlist)
@@ -551,15 +551,19 @@ foreach (i, dummy in tlist)
 						}
 			}
 		}
+	else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"VehicleWaitingInDepot");
 	switch (reason)
 		{
 		case	DepotAction.SELL:
+			DInfo("Vehicle "+name+" is waiting in depot to be sold",1,"VehicleWaitingInDepot");
 			INSTANCE.carrier.VehicleSell(i,true);
 		break;
 		case	DepotAction.UPGRADE:
+			DInfo("Vehicle "+name+" is waiting in depot to be upgrade",1,"VehicleWaitingInDepot");
 			INSTANCE.carrier.VehicleUpgradeEngine(i);
 		break;
 		case	DepotAction.REPLACE:
+			DInfo("Vehicle "+name+" is waiting in depot to be replace",1,"VehicleWaitingInDepot");
 			INSTANCE.carrier.VehicleSell(i,false);
 		break;
 		case	DepotAction.CRAZY:

@@ -133,7 +133,7 @@ function cRoute::CheckEntry()
 function cRoute::RouteUpdateVehicle()
 // Recount vehicle at stations & route, update route stations
 	{
-	if (this.route_type == RouteType.AIRNET)
+	if (this.route_type == RouteType.AIRNET || this.route_type == RouteType.AIRNETMAIL)
 		{
 		local maillist=AIVehicleList_Group(this.GetVirtualAirMailGroup());
 		local passlist=AIVehicleList_Group(this.GetVirtualAirPassengerGroup());
@@ -150,6 +150,8 @@ function cRoute::RouteUpdateVehicle()
 					this.target.UpdateCapacity();
 					}
 				else	this.target.vehicle_count=0;
+INSTANCE.builder.DumpRoute(this.UID);
+print("groupID? "+this.groupID);
 	local vehingroup=AIVehicleList_Group(this.groupID);
 	this.vehicle_count=vehingroup.Count();
 	//DInfo("ROUTE -> "+this.vehicle_count+" vehicle on "+this.name,2);
@@ -159,9 +161,17 @@ function cRoute::RouteBuildGroup()
 // Build a group for that route
 	{
 	local rtype=this.route_type;
-	if (this.route_type == RouteType.CHOPPER)	rtype=AIVehicle.VT_AIR;
+	switch (rtype)
+		{
+		case	RouteType.AIR:
+		case	RouteType.AIRMAIL:
+		case	RouteType.AIRNET:
+		case	RouteType.AIRNETMAIL:
+			rtype=RouteType.AIR;
+		break;
+		}
 	local gid = AIGroup.CreateGroup(rtype);
-	if (!AIGroup.IsValidGroup(gid))	return;
+	if (!AIGroup.IsValidGroup(gid))	{ DError("Cannot create the group, this is serious error, please report it!",0,"cRoute::RouteBuildGroup()"); return; }
 	local st="I";
 	if (this.source_istown)	st="T";
 	local dt="I";
@@ -220,11 +230,12 @@ function cRoute::RouteTypeToString(that_type)
 			return "Trains";
 		case	RouteType.ROAD:
 			return "Bus & Trucks";
-		case	RouteType.AIR:
-			return "Aircrafts";
 		case	RouteType.WATER:
 			return "Boats";
+		case	RouteType.AIR:
+		case	RouteType.AIRMAIL:
 		case	RouteType.AIRNET:
+		case	RouteType.AIRNETMAIL:
 			return "Aircrafts";
 		case	RouteType.CHOPPER:
 			return "Choppers";
@@ -240,7 +251,12 @@ function cRoute::RouteGetName()
 	local rtype=RouteTypeToString(this.route_type);
 	if (this.route_type == RouteType.AIRNET)
 		{
-		this.name="Virtual Air Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+		this.name="Virtual Air Passenger Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+		return;
+		}
+	if (this.route_type == RouteType.AIRNETMAIL)
+		{
+		this.name="Virtual Air Mail Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
 		return;
 		}
 	if (source_entry)	src=cStation.StationGetName(source_stationID);
@@ -285,9 +301,9 @@ function cRoute::CreateNewRoute(UID)
 		case	RouteType.AIR:
 			this.station_type=AIStation.STATION_AIRPORT;
 			local randcargo=AIBase.RandRange(100);
-			if (randcargo >49)	this.cargoID=cCargo.GetMailCargo();
+			if (randcargo >49)	{ this.cargoID=cCargo.GetMailCargo(); this.route_type=RouteType.AIRMAIL; }
 						else	this.cargoID=cCargo.GetPassengerCargo();
-			DInfo("Airport work ! Choosen : "+randcargo+" "+AICargo.GetCargoLabel(this.cargoID),1);
+			DInfo("Airport work, choosen : "+randcargo+" "+AICargo.GetCargoLabel(this.cargoID),1,"CreateNewRoute");
 		break;
 		}
 	this.isWorking = false;
@@ -348,7 +364,7 @@ function cRoute::RouteInitNetwork()
 	mailRoute.target_istown=true;
 	mailRoute.isWorking=true;
 	mailRoute.UID=1;
-	mailRoute.route_type = RouteType.AIRNET;
+	mailRoute.route_type = RouteType.AIRNETMAIL;
 	mailRoute.station_type = AIStation.STATION_AIRPORT;
 	mailRoute.status=100;
 	mailRoute.vehicle_count=0;

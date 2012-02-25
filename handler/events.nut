@@ -30,15 +30,15 @@ while (AIEventController.IsEventWaiting())
 	{
 	local event=AIEventController.GetNextEvent();
 	local eventType=event.GetEventType();
-	DInfo("New event incoming: "+eventType,2);
+	DInfo("New event incoming: "+eventType,2,"HandleEvents"););
 	switch (eventType)
 		{
-/*		case AIEvent.AI_ET_TOWN_FOUNDED:
+		case AIEvent.AI_ET_TOWN_FOUNDED:
 			event = AIEventTownFounded(event);
 			local town = event.GetTownID();
+			DInfo("New town found ! "+AITown.GetName(town),0,"HandleEvents");
 			INSTANCE.jobs.AddNewIndustryOrTown(industry, true);
 		break;
-*/
 		case AIEvent.AI_ET_COMPANY_BANKRUPT:
 			foreach (uid, dummy in cRoute.RouteIndexer)	INSTANCE.builder.RouteIsDamage(uid);
 			// in case someone disapears, set a route health check for all routes
@@ -47,12 +47,12 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();
 			cJobs.RawJobAdd(industry,false);
-			DInfo("New industry "+AIIndustry.GetName(industry),0);
+			DInfo("New industry "+AIIndustry.GetName(industry),0,"HandleEvents"););
 		break;
 		case AIEvent.AI_ET_INDUSTRY_CLOSE:
 			event = AIEventIndustryClose.Convert(event);
 			local industry = event.GetIndustryID();
-			DInfo("Industry "+AIIndustry.GetName(industry)+" is closing !",0);
+			DInfo("Industry "+AIIndustry.GetName(industry)+" is closing !",0,"HandleEvents"););
 			cJobs.RawJobDelete(industry, false)
 		break;
 		case AIEvent.AI_ET_COMPANY_NEW:
@@ -64,21 +64,21 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventEnginePreview.Convert(event);
 			if (event.AcceptPreview()) 
 				{
-				DInfo("New engine available for preview: " + event.GetName(),0);
+				DInfo("New engine available for preview: " + event.GetName(),0,"HandleEvents"););
 				}
 		INSTANCE.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.AI_ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
-			DInfo("New engine available: " + cEngine.GetName(engine),0);
+			DInfo("New engine available: " + cEngine.GetName(engine),0,"HandleEvents"););
 		INSTANCE.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.AI_ET_VEHICLE_CRASHED:
 			local vehicle = null;
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
-			DInfo("Vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" has crashed!!!",0);
+			DInfo("Vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" has crashed!!!",0,"HandleEvents"););
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo("Vehicle state: " + AIVehicle.GetState(vehicle),1);
 			INSTANCE.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
@@ -89,13 +89,13 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.AI_ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, I don't know what to do with that !");
+			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, I don't know what to do with that !","HandleEvents"););
 			INSTANCE.carrier.VehicleMaintenance_Orders(vehicle);
 		break;
 		case AIEvent.AI_ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot");
+			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot","HandleEvents"););
 			INSTANCE.builder.RouteIsDamage(INSTANCE.carrier.VehicleFindRouteIndex(vehicle));
 			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;
@@ -108,7 +108,7 @@ while (AIEventController.IsEventWaiting())
 			if (isme)	info="My company";
 				else	info=AICompany.GetName(company);
 			info+=" is in trouble. I'll take action";
-			DInfo(info+action);
+			DInfo(info+action,0,"HandleEvents"););
 			if (isme)
 				{
 				local vehlist=AIVehicleList();

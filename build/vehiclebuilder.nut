@@ -156,6 +156,7 @@ switch (chem.route_type)
 		if (thatstation.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-thatstation.vehicle_count;
 	break;
 	case RouteType.AIRNET:
+	case RouteType.AIRNETMAIL:
 		thatstation.CheckAirportLimits(); // force recheck limits
 		if (thatstation.CanUpgradeStation())
 			{
@@ -223,8 +224,10 @@ switch (road.route_type)
 	case AIVehicle.VT_WATER:
 	break;
 	case RouteType.AIRNET:
+	case RouteType.AIRNETMAIL:
 	case RouteType.CHOPPER:
-	case AIVehicle.VT_AIR:
+	case RouteType.AIR:
+	case RouteType.AIRMAIL:
 		res=INSTANCE.carrier.CreateAirVehicle(routeid);
 	break;
 	}

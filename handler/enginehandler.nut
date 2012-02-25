@@ -200,7 +200,7 @@ function cEngine::GetEUID(engineType, cargoID)
 // cargoID : for aircraft it's the value of RouteType.AIR/AIRNET/CHOPPER
 	{
 	engineType++; // no 0 base results
-	return (engineType*40)+cargoID; // 32 cargos only, so 40 is really enought
+	return (engineType*40)+cargoID; // 32 cargos only, so 40 is really enough
 	}
 
 function cEngine::GetEngineByCache(engineType, cargoID)
@@ -231,7 +231,7 @@ function cEngine::SetBestEngine(EUID, engineID)
 	if (exist)	{
 			oldvalue=cEngine.BestEngineList.GetValue(EUID);
 			cEngine.BestEngineList.SetValue(EUID, engineID);
-			if (oldvalue != engineID)	DInfo("Setting new top engine for EUID #"+EUID+" to "+engineID+" - "+cEngine.GetName(engineID),2,"cEngine::SetBestEngine");
+			if (oldvalue != engineID)	DInfo("Setting new top engine for EUID #"+EUID+" to "+engineID+"-"+AIEngine.GetName(engineID)+" was "+oldvalue+"-"+AIEngine.GetName(engineID),2,"cEngine::SetBestEngine");
 			}
 		else	cEngine.BestEngineList.AddItem(EUID, engineID);
 	}
@@ -278,7 +278,10 @@ function cEngine::EngineIsTop(engineID, cargoID, setTopEngine)
 	if (setTopEngine)	cEngine.SetBestEngine(EUID, engineID);
 	topengine=cEngine.BestEngineList.GetValue(EUID);
 	if (engineID == topengine)	return -1;
-					else	return topengine;
+					else	{
+						DInfo("Engine "+AIEngine.GetName(engineID)+" can be upgrade for engine "+AIEngine.GetName(topengine),2,"cEngine::EngineIsTop");
+						return topengine;
+						}
 	}
 
 function cEngine::IsVehicleAtTop(vehID)
@@ -286,7 +289,7 @@ function cEngine::IsVehicleAtTop(vehID)
 // return -1 if the vehicle doesn't need upgrade
 // return the better engineID if one exist
 	{
-	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Not a valid vehicle",2,"cEngine::GetVehicleEUID"); return -1; }
+	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Not a valid vehicle",2,"cEngine::IsVehicleAtTop"); return -1; }
 	local idx=cCarrier.VehicleFindRouteIndex(vehID);
 	if (idx==null)	{ DError("Fail to find the route in use by this vehicle",2,"cEngine::IsVehicleAtTop"); return -1; }
 	local road=cRoute.GetRouteObject(idx);

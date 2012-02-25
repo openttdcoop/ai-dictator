@@ -104,12 +104,13 @@ switch (airtype)
 			}
 		vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
 		vehlist.Sort(AIList.SORT_BY_VALUE,true);
+		special=RouteType.AIR;
 		if (AICargo.GetTownEffect(cargo) == cCargo.GetMailCargo())
 			{
 			vehlist.Valuate(AIEngine.GetMaxSpeed);
-			vehlist.Sort(AIList.SORT_BY_VALUE,false);
+			special=RouteType.AIRMAIL;
+			vehlist.Sort(AIList.SORT_BY_VALUE, false);
 			}
-		special=RouteType.AIR;
 	break;
 	case	AircraftType.BEST:
 		if (limitsmall)
@@ -117,19 +118,16 @@ switch (airtype)
 			vehlist.Valuate(AIEngine.GetPlaneType);
 			vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
 			}
+		special=RouteType.AIRNET;
 		if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
 			// here: top efficient capacity for passenger and top efficient speed for mail
-			{ vehlist.Valuate(AIEngine.GetMaxSpeed); }
+			{ vehlist.Valuate(AIEngine.GetMaxSpeed); special=RouteType.AIRNETMAIL; }
 		else	{ vehlist.Valuate(AIEngine.GetCapacity); }
 			vehlist.Sort(AIList.SORT_BY_VALUE,false);
 			local first=vehlist.GetValue(vehlist.Begin()); // get top value (speed or capacity)
 			vehlist.KeepValue(first);
-			if (airtype == AircraftType.EFFICIENT)
-				{
-				vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
-				vehlist.Sort(AIList.SORT_BY_VALUE,true);
-				}
-		special=RouteType.AIRNET;
+			vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
+			vehlist.Sort(AIList.SORT_BY_VALUE,true);
 	break;
 	case	AircraftType.CHOPPER: // top efficient chopper
 		vehlist.Valuate(AIEngine.GetPlaneType);
@@ -149,7 +147,7 @@ function cCarrier::GetAirVehicle(routeidx)
 local road=cRoute.GetRouteObject(routeidx);
 if (road == null)	return null;
 local modele=AircraftType.EFFICIENT;
-if (road.route_type == RouteType.AIRNET)	modele=AircraftType.BEST; // top speed/capacity for network
+if (road.route_type == RouteType.AIRNET || road.route_type == RouteType.AIRNETMAIL)	modele=AircraftType.BEST; // top speed/capacity for network
 if (road.source.specialType == AIAirport.AT_SMALL || road.target.specialType == AIAirport.AT_SMALL)	modele+=20;
 if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER; // need a chopper
 local veh = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);

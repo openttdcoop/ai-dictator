@@ -131,7 +131,8 @@ switch (road.route_type)
 		srcplace = AIStation.GetLocation(road.source.stationID);
 		dstplace = AIStation.GetLocation(road.target.stationID);
 	break;
-	case AIVehicle.VT_AIR:
+	case RouteType.AIR:
+	case RouteType.AIRMAIL:
 		oneorder=AIOrder.AIOF_NONE;
 		twoorder=AIOrder.AIOF_NONE;
 		srcplace= AIStation.GetLocation(road.source.stationID);
@@ -143,7 +144,8 @@ switch (road.route_type)
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
-	case RouteType.AIRNET: // it's the air network
+	case RouteType.AIRNET:
+	case RouteType.AIRNETMAIL: // it's the air network
 		INSTANCE.carrier.AirNetworkOrdersHandler();
 		return true;
 	break;

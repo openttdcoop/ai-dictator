@@ -259,7 +259,7 @@ else	{
 	ClearSignsALL();
 	DInfo("Pathfinding failed.",1);
 	INSTANCE.builder.CriticalError=true;
-	INSTANCE.bank.RaiseFundsTo(savemoney);
+	INSTANCE.bank.RaiseFundsBy(savemoney);
 	AISign.RemoveSign(pfInfo);
 	return false;
 	}
@@ -541,7 +541,7 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link=null)
 if (link==null)	link=AIStation.STATION_NEW;
 local money=AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION);
 if (!cBanker.CanBuyThat(money))	DInfo("We lack money to buy the station",1,"cBuilder::CreateAndBuildTrainStation");
-INSTANCE.bank.RaiseFundsTo(money);
+INSTANCE.bank.RaiseFundsBy(money);
 if (!AIRail.BuildRailStation(tilepos, direction, 1, 5, link))
 	{
 	DInfo("Rail station couldn't be built, link="+link+" err: "+AIError.GetLastErrorString(),1,"cBuilder::CreateAndBuildTrainStation");
@@ -1188,7 +1188,6 @@ print("SIGNAL STOP");*/
 //	PutSign(dstlink,"d");
 //	PutSign(srcpos,"S");
 //	PutSign(srclink,"s");
-print("primstation="+road.source_StationID+" altstation="+road.target_StationID+" thisstation="+staid);
 	if (road.source_RailEntry)
 			srcpos=road.source.locations.GetValue(1);
 		else	srcpos=road.source.locations.GetValue(3);

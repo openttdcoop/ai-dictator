@@ -41,15 +41,15 @@ if (ourLoan==0 && cash>=INSTANCE.bank.mincash)
 		{ INSTANCE.bank.unleash_road=true; }
 	else	{ INSTANCE.bank.unleash_road=false; }
 if (cash < goodcash)	{ INSTANCE.bank.canBuild=false; }
-if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)	{ DInfo("Trying to repay loan",2); INSTANCE.bank.canBuild=false; } // wait to repay loan
 if (ourLoan +(2*AICompany.GetLoanInterval()) < maxLoan)	{ INSTANCE.bank.canBuild=true; }
+if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)
+		{ DInfo("Trying to repay loan",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; } // wait to repay loan
 local veh=AIVehicleList();
-if (INSTANCE.bank.busyRoute)	INSTANCE.bank.canBuild=false;
-//if (INSTANCE.builddelay)	INSTANCE.bank.canBuild=false;
-if (INSTANCE.carrier.vehnextprice >0)	INSTANCE.bank.canBuild=false;
+if (INSTANCE.bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; }
+if (INSTANCE.builddelay)	{ DInfo("Delaying build: we lack a bit of funds",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; }
+if (INSTANCE.carrier.vehnextprice >0)	{ DInfo("Delaying build: we save money for upgrade",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; }
 local veh=AIVehicleList();
-if (veh.IsEmpty())	INSTANCE.bank.canBuild=true; // we have 0 vehicles force a build
-if (INSTANCE.bank.canBuild) DWarn("Construction is now allowed",1);
+if (veh.IsEmpty())	{ DInfo("Forcing build: We have 0 vehicle running !"); INSTANCE.bank.canBuild=true; } // we have 0 vehicles force a build
 DInfo("canBuild="+INSTANCE.bank.canBuild+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route+" warTreasure="+INSTANCE.carrier.warTreasure+" vehnextprice="+INSTANCE.carrier.vehnextprice,1,"cBanker::Update");
 }
 

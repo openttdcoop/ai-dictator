@@ -20,11 +20,11 @@
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
    function GetVersion()       { return 152; }
-   function MinVersionToLoad() { return 100; }
+   function MinVersionToLoad() { return 1; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
    function GetShortName()     { return "DCTR"; }
-   function GetAPIVersion()    { return "1.0"; }
+   function GetAPIVersion()    { return "1.5"; }
    
    function GetSettings() {
 

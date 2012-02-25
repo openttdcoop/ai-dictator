@@ -193,7 +193,7 @@ local tilelist=AITileList();
 local secondtile=0;
 local before=0;
 local after=0;
-DInfo("Width: "+width+" height: "+height,1,"IsBuildableRectangle");
+//DInfo("Width: "+width+" height: "+height,1,"IsBuildableRectangle");
 width-=1;
 height-=1;
 if (width < 0) width=0;
@@ -344,14 +344,13 @@ function cTileTools::CheckLandForConstruction(tile, width, height, ignoreList=AI
 PutSign(tile,"?");
 local newTile=cTileTools.IsBuildableRectangle(tile, width, height, ignoreList);
 if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
-//function cTileTools::IsBuildableRectangleFlat(tile, width, height)
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))	return newTile;
 local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
 INSTANCE.bank.RaiseFundsBigTime();
 cTileTools.TerraformLevelTiles(newTile, tileTo);
 INSTANCE.NeedDelay(100);
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))		return newTile;
-											else	return -1;
+return -1;
 }
 
 function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
@@ -489,13 +488,14 @@ DInfo("Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),1,"cTil
 do	{
 	h_firstitem=cellHCount.Begin();
 	l_firstitem=cellLCount.Begin();
-	//DInfo("Checking h:"+cellHCount.GetValue(h_firstitem)+" vs l:"+cellLCount.GetValue(l_firstitem));
+	DInfo("Checking h:"+cellHCount.GetValue(h_firstitem)+" vs l:"+cellLCount.GetValue(l_firstitem));
+print("cellHCount: "+cellHCount.Count()+" cellLcount="+cellLCount.Count());
 	if (cellHCount.GetValue(h_firstitem) < cellLCount.GetValue(l_firstitem))
 			{
-			DInfo("Trying lowering tiles level to "+currentHeight,2,"cTileTools::TerraformSolver");
 			HeightIsLow=true;
 			currentHeight=l_firstitem;
 			cellLCount.RemoveItem(l_firstitem);
+			DInfo("Trying lowering tiles level to "+currentHeight,2,"cTileTools::TerraformSolver");
 			}
 	else		{
 			HeightIsLow=false;
@@ -526,7 +526,7 @@ do	{
 			if (Solve.GetValue(currentHeight) < money)	Solve.SetValue(currentHeight,money); // add it if solve cost less
 			}
 		else	Solve.AddItem(currentHeight,money);
-	} while (h_firstitem > 0 || l_firstitem > 0); // loop until both lists are empty
+	} while (cellHCount.Count() > 0 || cellLCount.Count() > 0); // loop until both lists are empty
 DInfo("Solver has search "+terratrys+" time",1,"cTileTools::TerraformSolver");
 return Solve;
 }
@@ -546,12 +546,9 @@ local savetiles=AIList();
 savetiles.AddList(towntiles);
 local good=true;
 local money=AIAccounting();
-//towntiles.Valuate(AITile.GetDistanceManhattanToTile,AITown.GetLocation(townID));
-//towntiles.Sort(AIList.SORT_BY_VALUE, true);
 savetiles.Valuate(AITile.HasTreeOnTile);
 savetiles.KeepValue(0);
 local town_name=AITown.GetName(townID);
-//foreach (tile, dummy in towntiles)	PutSign(tile,"R");
 // 1 -> 2 = 293 trees
 // 2 -> 3 = 417 trees
 DInfo("Town: "+town_name+" rating: "+curRating+" free tiles="+savetiles.Count(),2,"cTileTools::SeduceTown");
@@ -580,7 +577,7 @@ foreach (tile, dummy in towntiles)
 	do	{
 		good=AITile.PlantTree(tile);
 		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
-		INSTANCE.bank.RaiseFundsTo(12000);
+		INSTANCE.bank.RaiseFundsBy(1000);
 		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
 		//AIController.Sleep(1);
 		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000));

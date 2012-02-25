@@ -106,7 +106,7 @@ function cBridge::CheckBridge()
 	if (!validstart || !validend)
 		{
 		DInfo("Bridge infos aren't valid anymore, bridge has moved ?",2,"cBridge::CheckBridge");
-		cBridge.DeleteBridge(this.bUID);
+		cBridge.DeleteBridge(this.bridgeUID);
 		}
 	}
 
