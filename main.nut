@@ -407,7 +407,7 @@ switch (fairlevel)
 		terraform = false; // no terraforming in easy difficulty
 	break;
 	case 1: 
-		carrier.road_max_onroute=12;
+		carrier.road_max_onroute=15;
 		carrier.road_max=3;
 		carrier.road_upgrade=10;
 		carrier.rail_max=4;
@@ -416,9 +416,9 @@ switch (fairlevel)
 		carrier.airnet_max=3;
 	break;
 	case 2: 
-		carrier.road_max_onroute=20;	// upto 12 bus/truck per route
+		carrier.road_max_onroute=30;	// upto 12 bus/truck per route
 		carrier.road_max=6;		// upto a 6 size road station
-		carrier.road_upgrade=10;	// upgarde road station every X vehicles. station can handle so a max that*road_max vehicle
+		carrier.road_upgrade=10;	// upgrade road station every X vehicles. station can handle so a max that*road_max vehicle
 		carrier.rail_max=12; 		// it's our highest train limit, can't build more than 12 platforms per station
 		carrier.water_max=60; 		// there's no real limit for boats
 		carrier.air_max=8; 		// 8 aircrafts / route
