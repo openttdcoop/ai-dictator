@@ -166,8 +166,12 @@ switch (INSTANCE.route.route_type)
 	case RouteType.AIRMAIL:
 	case RouteType.AIRNET:
 	case RouteType.AIRNETMAIL:
+	case RouteType.SMALLAIR:
+	case RouteType.SMALLMAIL:
 	case RouteType.CHOPPER:
 	success=INSTANCE.builder.BuildAirStation(start);
+	if (success!=-1)	success=true;
+			else	success=false;
 	break;
 	}
 return success;
@@ -349,10 +353,12 @@ if (INSTANCE.route.status==0) // not using switch/case so we can advance steps i
 		case	RouteType.AIRMAIL:
 		case	RouteType.AIRNET:
 		case	RouteType.AIRNETMAIL:
+		case	RouteType.SMALLAIR:
+		case	RouteType.SMALLMAIL:
 		case	RouteType.CHOPPER:
 			local modele=AircraftType.EFFICIENT;
 			if (!INSTANCE.route.source_istown)	modele=AircraftType.CHOPPER;
-			INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, modele);
+			success=INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, modele);
 		break;
 		}
 	if (success == null)
@@ -373,7 +379,7 @@ if (INSTANCE.route.status==1)
 			INSTANCE.builder.CriticalError = false; // unset it and keep going
 			}
 		else	{ // reason is not critical, lacking funds...
-			INSTANCE.builddelay=true;;
+			INSTANCE.builddelay=true;
 			return false; // let's get out, so we still have a chance to upgrade the station & find its compatibility
 			}
 		}
@@ -463,13 +469,9 @@ if (INSTANCE.route.status==5)
 	}	
 if (INSTANCE.route.status==6)
 	{
+	INSTANCE.route.CheckEntry();
 	INSTANCE.route.RouteDone();
 	DInfo("Route contruction complete ! "+INSTANCE.route.name,0,"TryBuildThatRoute");
-/*	local srcprod=INSTANCE.route.source.cargo_produce.HasItem(INSTANCE.route.cargoID);
-	local srcacc=INSTANCE.route.source.cargo_accept.HasItem(INSTANCE.route.cargoID);
-	local dstprod=INSTANCE.route.target.cargo_produce.HasItem(INSTANCE.route.cargoID);
-	local dstacc=INSTANCE.route.target.cargo_accept.HasItem(INSTANCE.route.cargoID);
-*/
 	local srcprod=INSTANCE.route.source.IsCargoProduce(INSTANCE.route.cargoID);
 	local srcacc=INSTANCE.route.source.IsCargoAccept(INSTANCE.route.cargoID);
 	local dstprod=INSTANCE.route.target.IsCargoProduce(INSTANCE.route.cargoID);

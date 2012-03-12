@@ -187,7 +187,7 @@ foreach (ownID, dummy in station.owner)
 		vehlist.RemoveValue(AIVehicle.VS_CRASHED);
 		foreach (veh, dummy in vehlist)
 			if (cCarrier.ToDepotList.HasItem(veh))	vehlist.RemoveItem(veh); // remove vehicle on their way to depot
-		if (vehlist.IsEmpty()) return false;
+		if (vehlist.IsEmpty()) continue;
 		veh=vehlist.Begin();
 		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
 		if (orderindex != -1)
@@ -291,7 +291,6 @@ if (betterEngine==-1)
 	DWarn("That vehicle have its engine already at top, building a new one anyway",1,"cCarrier::VehicleUpgradeEngine");
 	betterEngine=AIVehicle.GetEngineType(vehID);
 	}
-print("betterengine="+betterEngine+" for "+cCarrier.VehicleGetName(vehID));
 local vehtype=AIVehicle.GetVehicleType(vehID);
 local new_vehID=null;
 local homedepot=AIVehicle.GetLocation(vehID);
@@ -394,7 +393,7 @@ foreach (vehicle, dummy in tlist)
 	{
 	local vehtype=AIVehicle.GetVehicleType(vehicle);
 	//if (ignore_some >6 && vehtype == AIVehicle.VT_ROAD)	
-INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
+	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 	ignore_some++;
 	local topengine=cEngine.IsVehicleAtTop(vehicle); // new here
 	if (topengine != -1)	price=cEngine.GetPrice(topengine);
@@ -409,7 +408,7 @@ INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 		DInfo("-> Vehicle "+name+" is getting old ("+tx+" days left), replacing it",0,"cCarrier::VehicleMaintenance");
 		INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.REPLACE);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
-		continue;
+//		continue;
 		}
 	tx=INSTANCE.carrier.VehicleGetProfit(vehicle);
 	ty=AIVehicle.GetAge(vehicle);
@@ -426,7 +425,7 @@ INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 		local idx=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 		INSTANCE.builder.RouteIsDamage(idx);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
-		continue;
+//		continue;
 		}
 	if (topengine != -1)
 		{
@@ -437,7 +436,7 @@ INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0,"cCarrier::VehicleMaintenance");
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
-		continue;
+//		continue;
 		}
 	cCarrier.VehicleMaintenance_Orders(vehicle);
 	AIController.Sleep(1);
@@ -480,6 +479,7 @@ DInfo("-> Selling Vehicle "+INSTANCE.carrier.VehicleGetName(veh),0);
 local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(uid);
 local vehvalue=AIVehicle.GetCurrentValue(veh);
+local vehtype=AIVehicle.GetVehicleType(veh);
 INSTANCE.carrier.vehnextprice-=vehvalue;
 if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
 cTrain.DeleteVehicle(veh);
@@ -488,7 +488,11 @@ if (road == null) return;
 road.RouteUpdateVehicle();
 if (recordit)	road.date_VehicleDelete=AIDate.GetCurrentDate();
 // detect a dead route, no profit so we delete the vehicle, and it was the last one on that route
-if (road.vehicle_count==0 && profit < 1)	road.RouteIsNotDoable();
+if (road.vehicle_count==0 && profit < 1)
+	{
+	if (vehtype == AIVehicle.VT_AIR)	road.isWorking=false; // disable the route, but don't remove the airport, we could reuse it
+						else	road.RouteIsNotDoable(); // ok remove the route itself
+	}
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
@@ -522,8 +526,9 @@ if (road.groupID != null)
 	}
 }
 
-function cCarrier::VehicleIsWaitingInDepot()
-// this function checks our depot sell vehicle in it
+function cCarrier::VehicleIsWaitingInDepot(onlydelete=false)
+// this function checks our depots and sell vehicle in it
+// if onlydelete set to true, we only remove vehicle, no upgrade/replace...
 {
 local tlist=AIVehicleList();
 DInfo("Checking vehicles in depots:",2,"cCarrier::VehicleWaitingInDepot");
@@ -552,6 +557,7 @@ foreach (i, dummy in tlist)
 			}
 		}
 	else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"VehicleWaitingInDepot");
+	if (onlydelete)	{ DInfo("We've been ask to delete all vehicles waiting in depot",1,"VehicleWaitingInDepot"); reason=DepotAction.SELL; }
 	switch (reason)
 		{
 		case	DepotAction.SELL:

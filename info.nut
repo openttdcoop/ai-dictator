@@ -24,7 +24,7 @@
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
    function GetShortName()     { return "DCTR"; }
-   function GetAPIVersion()    { return "1.5"; }
+   function GetAPIVersion()    { return "1.0"; }
    
    function GetSettings() {
 
@@ -52,7 +52,7 @@
 
 	AddSetting({
 		name = "use_train",
-		description = "Use trains - Not working, sorry",
+		description = "Use trains - Not working yet, sorry",
 		easy_value = 1,
 		medium_value = 1,
 		hard_value = 1,
@@ -123,14 +123,14 @@
 	 name = "debug",
 	 description = "Enable debug messages",
 	 min_value = 0,
-	 max_value = 2,
+	 max_value = 3,
 	 easy_value = 0,
 	 medium_value = 0,
 	 hard_value = 0,
 	 custom_value = 0,
 	 flags = AICONFIG_INGAME
 	});
-    AddLabels("debug", {_0 = "Disable debug", _1 = "Basic debug", _2 = "Full debug"});
+    AddLabels("debug", {_0 = "Disable debug", _1 = "Basic debug", _2 = "Full debug", _3 = "Signs"});
    }
  }
  

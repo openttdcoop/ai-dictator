@@ -20,6 +20,8 @@ enum RouteType {
 	AIRMAIL,
 	AIRNET,
 	AIRNETMAIL,
+	SMALLAIR,
+	SMALLMAIL,
 	CHOPPER }
 enum AircraftType {
 	EFFICIENT,
@@ -160,7 +162,7 @@ function DictatorAI::Start()
 		//use_boat=true;
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
-		for (local i=0; i < 10; i++)	jobs.RawJobHandling();
+		for (local i=0; i < 4; i++)	jobs.RawJobHandling();
 		// feed the ai with some jobs to start play with
 		if (AICompany.GetMaxLoanAmount() < 200000)	safeStart=3;
 									else	safeStart=0;
@@ -179,7 +181,7 @@ function DictatorAI::Start()
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
 				if (builder.building_route != -1)
 					{
-					builder.DumpTopJobs();
+					//builder.DumpTopJobs();
 					jobs_obj=cJobs.GetJobObject(builder.building_route);
 					route=cRoute(); // reset it
 					route.CreateNewRoute(builder.building_route);
@@ -190,17 +192,13 @@ function DictatorAI::Start()
 						builder.TryBuildThatRoute();
 						this.checkHQ();
 						}
-					//DInfo(" ");
-					// now jump to build stage
 					}
 				}
-			//else { DInfo(" "); }
-//		builder.TrainStationTesting();
 		bank.CashFlow();
 		eventManager.HandleEvents();
 		builder.QuickTasks();
 		//builder.ShowBlackList();
-		AIController.Sleep(60);
+		AIController.Sleep(10);
 		builder.WeeklyChecks();
 		builder.MonthlyChecks();
 		jobs.RawJobHandling();
@@ -324,7 +322,6 @@ if ("vehicle" in data)	SixMonth=data.vehicle;
 if ("dbvehicle" in data)	TwelveMonth=data.dbvehicle;
 if ("bridgeID" in data)	bank.mincash=data.bridgeID;
 bank.busyRoute=version;
-print("SixMonth="+SixMonth+" TwelveMonth="+TwelveMonth);
 loadedgame = true;
 }
 
@@ -443,7 +440,7 @@ if (INSTANCE.safeStart >0)
 	use_air=false;
 	}
 //INSTANCE.safeStart=0;
-//use_train=false;
+use_train=false;
 //use_road=false;
 //use_air=false;
 }

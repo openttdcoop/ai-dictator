@@ -37,11 +37,9 @@ local maxLoan=AICompany.GetMaxLoanAmount();
 local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 local goodcash=INSTANCE.bank.mincash*cBanker.GetInflationRate();
 if (goodcash < INSTANCE.bank.mincash) goodcash=INSTANCE.bank.mincash;
-if (ourLoan==0 && cash>=INSTANCE.bank.mincash)
-		{ INSTANCE.bank.unleash_road=true; }
-	else	{ INSTANCE.bank.unleash_road=false; }
+if (ourLoan==0 && cash>=INSTANCE.bank.mincash)	INSTANCE.bank.unleash_road=true;
 if (cash < goodcash)	{ INSTANCE.bank.canBuild=false; }
-if (ourLoan +(2*AICompany.GetLoanInterval()) < maxLoan)	{ INSTANCE.bank.canBuild=true; }
+if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ INSTANCE.bank.canBuild=true; }
 if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)
 		{ DInfo("Trying to repay loan",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; } // wait to repay loan
 local veh=AIVehicleList();
@@ -81,7 +79,8 @@ function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
 local max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
-INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
+if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 2000000)	INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
+// Don't use the loan if we have plenty cash
 }
 
 function cBanker::CanBuyThat(money)

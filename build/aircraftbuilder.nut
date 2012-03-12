@@ -88,46 +88,52 @@ vehlist.Valuate(AIEngine.GetMaxSpeed);
 vehlist.KeepAboveValue(45); // some newgrf use weird unplayable aircrafts (for our distance usage)
 local special=0;
 local limitsmall=false;
+local fastengine=false;
 if (airtype >= 20)
 	{
 	airtype-=20; // this will get us back to original aircraft type
+	if (airtype > 1)	airtype=0; // force EFFICIENT for small aircraft only
 	limitsmall=true;
 	}
 switch (airtype)
 	{
 	case	AircraftType.EFFICIENT: // top efficient aircraft for passenger and top speed (not efficient) for mail
 	// top efficient aircraft is generally the same as top capacity/efficient one
-		if (limitsmall)
+		vehlist.Valuate(AIEngine.GetMaxSpeed);
+		vehlist.RemoveBelowValue(65); // remove too dumb aircraft 65=~250km/h
+		vehlist.Valuate(cEngine.GetCapacity, passCargo)
+		vehlist.RemoveBelowValue(30);
+		if (limitsmall) // small ones
 			{
 			vehlist.Valuate(AIEngine.GetPlaneType);
 			vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
+			special=RouteType.SMALLAIR;
 			}
-		vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
-		vehlist.Sort(AIList.SORT_BY_VALUE,true);
-		special=RouteType.AIR;
-		if (AICargo.GetTownEffect(cargo) == cCargo.GetMailCargo())
-			{
+		else	special=RouteType.AIR;
+		if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
+			{ // mail/fast ones
 			vehlist.Valuate(AIEngine.GetMaxSpeed);
-			special=RouteType.AIRMAIL;
-			vehlist.Sort(AIList.SORT_BY_VALUE, false);
+			special++; // AIRMAIL OR SMALLAIR
+			vehlist.Sort(AIList.SORT_BY_VALUE,false);
+			vehlist.KeepTop(5); // best fastest engine out of the 5 top fast one
 			}
+		else	{
+			vehlist.Valuate(AIEngine.GetCapacity);
+			vehlist.Sort(AIList.SORT_BY_VALUE,false);
+			vehlist.KeepTop(5);
+			}
+		vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo); // passenger/big ones
+		vehlist.Sort(AIList.SORT_BY_VALUE,true);
 	break;
 	case	AircraftType.BEST:
-		if (limitsmall)
-			{
-			vehlist.Valuate(AIEngine.GetPlaneType);
-			vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
-			}
 		special=RouteType.AIRNET;
-		if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
-			// here: top efficient capacity for passenger and top efficient speed for mail
-			{ vehlist.Valuate(AIEngine.GetMaxSpeed); special=RouteType.AIRNETMAIL; }
-		else	{ vehlist.Valuate(AIEngine.GetCapacity); }
-			vehlist.Sort(AIList.SORT_BY_VALUE,false);
-			local first=vehlist.GetValue(vehlist.Begin()); // get top value (speed or capacity)
-			vehlist.KeepValue(first);
-			vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo);
-			vehlist.Sort(AIList.SORT_BY_VALUE,true);
+		if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL) // fast aircraft
+			{
+			special++; //AIRNETMAIL
+			fastengine=true;
+			}
+			vehlist.Valuate(cCarrier.GetEngineRawEfficiency, passCargo, fastengine);	// keep top raw efficiency out of remain ones
+			vehlist.Sort(AIList.SORT_BY_VALUE,true);					// for fast aircrafts only 5 choices, but big aircrafts have plenty choices
 	break;
 	case	AircraftType.CHOPPER: // top efficient chopper
 		vehlist.Valuate(AIEngine.GetPlaneType);

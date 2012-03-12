@@ -133,6 +133,8 @@ switch (road.route_type)
 	break;
 	case RouteType.AIR:
 	case RouteType.AIRMAIL:
+	case RouteType.SMALLAIR:
+	case RouteType.SMALLMAIL:
 		oneorder=AIOrder.AIOF_NONE;
 		twoorder=AIOrder.AIOF_NONE;
 		srcplace= AIStation.GetLocation(road.source.stationID);
@@ -150,8 +152,8 @@ switch (road.route_type)
 		return true;
 	break;
 	case RouteType.CHOPPER:
-		oneorder=AIOrder.AIOF_FULL_LOAD_ANY;
-		twoorder=AIOrder.AIOF_FULL_LOAD_ANY;
+		oneorder=AIOrder.AIOF_NONE;
+		twoorder=AIOrder.AIOF_NONE;
 		srcplace= AIIndustry.GetHeliportLocation(road.sourceID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;

@@ -16,7 +16,7 @@ function PutSign(place,msg)
 // put a sign at place
 {
 if (!INSTANCE.debug) return;
-if (DictatorAI.GetSetting("debug") < 2) return;
+if (DictatorAI.GetSetting("debug") < 3) return;
 if (place != null) AISign.BuildSign(place,msg);
 }
 
@@ -109,7 +109,6 @@ foreach (station, dummy in alist)
 	local thatstation=cStation.GetStationObject(station);
 	AISign.BuildSign(thatstation.depot,cStation.StationGetName(station));
 	}
-print("STADUMP END");
 }
 
 function cBuilder::ShowBlackList()

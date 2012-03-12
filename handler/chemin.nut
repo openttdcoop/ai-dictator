@@ -203,6 +203,7 @@ if (vehneed > 0)
 		{
 		if (vehnumber % 6 == 0)	thatnetwork=1;
 					else	thatnetwork=0;
+		if (vehnumber == 0)	thatnetwork=0;
 		if (INSTANCE.bank.CanBuyThat(AIEngine.GetPrice(futurveh)) && INSTANCE.carrier.CanAddNewVehicle(0,true,1))
 		if (INSTANCE.carrier.BuildAndStartVehicle(thatnetwork))
 			{
@@ -220,10 +221,12 @@ function cRoute::VehicleGroupProfitRatio(groupID)
 {
 if (!AIGroup.IsValidGroup(groupID))	return 0;
 local vehlist=AIVehicleList_Group(groupID);
-vehlist.Valuate(AIVehicle.GetProfitThisYear);
 local vehnumber=vehlist.Count();
-if (vehnumber == 0) return 0; // avoid / per 0
+local vehtype=AIGroup.GetVehicleType(groupID);
+if (vehtype==AIVehicle.VT_AIR)
+if (vehnumber == 0) return 1000000; // avoid / per 0 and set high value to group without vehicle
 local totalvalue=0;
+vehlist.Valuate(AIVehicle.GetProfitThisYear);
 foreach (vehicle, value in vehlist)
 	{ totalvalue+=value*1000; }
 return totalvalue / vehnumber;
@@ -232,12 +235,12 @@ return totalvalue / vehnumber;
 function cRoute::DutyOnRoute()
 // this is where we add vehicle and tiny other things to max our money
 {
-if (INSTANCE.carrier.vehnextprice > 0 && INSTANCE.carrier.vehnextprice < INSTANCE.carrier.highcostAircraft)
+/*if (INSTANCE.carrier.vehnextprice > 0 && INSTANCE.carrier.vehnextprice < INSTANCE.carrier.highcostAircraft)
 	{
 	INSTANCE.bank.busyRoute=true;
 	DInfo("We're upgrading something, buys are blocked...",1,"DutyOnRoute");
 	return;
-	}
+	}*/
 local firstveh=false;
 local priority=AIList();
 local road=null;
@@ -258,7 +261,6 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (cargoid == null)	continue;
 	if (road.route_type == RouteType.RAIL)	{ INSTANCE.route.DutyOnRailsRoute(uid); continue; }
 	local futur_engine=INSTANCE.carrier.GetVehicle(uid);
-print("Getvehicle query");
 	local futur_engine_capacity=1;
 	if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);
 					else	continue;
@@ -275,10 +277,11 @@ print("Getvehicle query");
 		break;
 		case RouteType.AIR:
 		case RouteType.AIRMAIL:
+		case RouteType.SMALLAIR:
+		case RouteType.SMALLMAIL:
 			maxveh=INSTANCE.carrier.air_max;
 			cargoid=cCargo.GetPassengerCargo(); // for aircraft, force a check vs passenger
 			// so mail aircraft runner will be add if passenger is high enough, this only affect routes not in the network
-print("aircraft work !!!!");
 		break;
 		case AIVehicle.VT_WATER:
 			maxveh=INSTANCE.carrier.water_max;
@@ -325,7 +328,7 @@ print("aircraft work !!!!");
 	if (AIStation.GetCargoRating(road.source.stationID,cargoid) < 25 && vehonroute < 4)	vehneed++;
 	if (firstveh)
 		{
-		if (road.route_type == RouteType.ROAD || road.route_type == RouteType.AIR || road.route_type == RouteType.AIRMAIL)
+		if (road.route_type==RouteType.ROAD || road.route_type==RouteType.AIR || road.route_type==RouteType.AIRMAIL || road.route_type==RouteType.SMALLAIR || road.route_type==RouteType.SMALLMAIL)
 			{ // force 2 vehicle if none exists yet for truck/bus & aircraft
 			if (vehneed < 2)	vehneed=2;
 			}
@@ -352,6 +355,7 @@ local allneed=0;
 local allbuy=0;
 INSTANCE.bank.busyRoute=false;
 if (priority.IsEmpty())	return;
+/*
 local priosave=AIList();
 priosave.AddList(priority);
 local airgp=AIList();
@@ -367,16 +371,21 @@ othergp.Valuate(INSTANCE.route.VehicleGroupProfitRatio);
 othergp.Sort(AIList.SORT_BY_VALUE,false);
 priority.Clear();
 priority.AddList(airgp);
-priority.AddList(othergp);
+priority.AddList(othergp);*/
+local priocount=AIList();
+priocount.AddList(priority);
+priority.Valuate(AIGroup.GetVehicleType);
+priority.Sort(AIList.SORT_BY_VALUE,false);
+
 local vehneed=0;
 local vehvalue=0;
 local topvalue=0;
 INSTANCE.carrier.highcostAircraft=0;
-DInfo("Priority list="+priority.Count()+" Saved list="+priosave.Count(),1,"DutyOnRoute");
+DInfo("Priority list="+priority.Count()+" Saved list="+priocount.Count(),1,"DutyOnRoute");
 foreach (groupid, ratio in priority)
 	{
-	if (priosave.HasItem(groupid))	{ vehneed=priosave.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicles",1,"DutyOnRoute"); allneed+=vehneed; }
-						else	{ vehneed=0; DWarn("Group #"+groupid++" "+AIGroup.GetName(groupid)+" not found in priority list!",1,"DutyOnRoute"); }
+	vehneed=priocount.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicles",1,"DutyOnRoute");
+	allneed+=vehneed;
 	if (vehneed == 0) continue;
 	local uid=cRoute.GroupIndexer.GetValue(groupid);
 	local rtype=AIGroup.GetVehicleType(groupid);
@@ -386,18 +395,10 @@ foreach (groupid, ratio in priority)
 	if (vehmodele != null)	vehvalue=AIEngine.GetPrice(vehmodele);
 	for (local z=0; z < vehneed; z++)
 		{
-		if (rtype == AIVehicle.VT_AIR && !INSTANCE.bank.CanBuyThat(vehvalue))
-			{
-			if (INSTANCE.carrier.highcostAircraft < vehvalue)	INSTANCE.carrier.highcostAircraft=vehvalue;
-			DInfo("Saving money to buy an aircraft of : "+INSTANCE.carrier.highcostAircraft,1,"DutyOnRoute");
-			}
+		DInfo("process vehicle "+z+" for group #"+groupid,2,"DutyOnRoute");
 		if (INSTANCE.bank.CanBuyThat(vehvalue))
 			{
-			if (INSTANCE.carrier.highcostAircraft > 0)
-				{ // we have saved money to buy an aircraft and it's an aircraft
-				if (rtype == AIVehicle.VT_AIR)	{ goodbuy=INSTANCE.carrier.BuildAndStartVehicle(uid); INSTANCE.carrier.highcostAircraft=0; }
-				}
-			else	if (INSTANCE.bank.CanBuyThat(vehvalue+INSTANCE.carrier.vehnextprice))	goodbuy=INSTANCE.carrier.BuildAndStartVehicle(uid);
+			if (INSTANCE.bank.CanBuyThat(vehvalue+INSTANCE.carrier.vehnextprice))	goodbuy=INSTANCE.carrier.BuildAndStartVehicle(uid);
 			if (goodbuy)
 				{
 				local rinfo=cRoute.GetRouteObject(uid);
@@ -405,9 +406,12 @@ foreach (groupid, ratio in priority)
 				allbuy++;
 				}
 			}
+		else	{
+			DInfo("Not enough money to buy "+cEngine.GetName(vehmodele)+" cost: "+vehvalue,2,"DutyOnRoute");
+			if (INSTANCE.carrier.highcostAircraft < vehvalue)	INSTANCE.carrier.highcostAircraft=vehvalue;
+			}
 		}
 	}
-print("VEH need="+allneed+" vehbuy="+allbuy+" busyroute="+INSTANCE.bank.busyRoute);
 if (allbuy < allneed)	INSTANCE.bank.busyRoute=true;
 }
 

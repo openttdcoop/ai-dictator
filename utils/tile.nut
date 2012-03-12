@@ -153,7 +153,7 @@ if (AIMarine.IsCanalTile(tile))	return false;
 if (AIMarine.IsLockTile(tile))	return false;
 if (!AITile.IsWaterTile(tile))	return AITile.IsBuildable(tile);
 					else	return INSTANCE.terraform; // if no terraform is allow, water tile cannot be use
-return true;
+return AITile.IsBuildable();
 }
 
 function cTileTools::IsAreaFlat(startTile, width, height)
@@ -172,7 +172,7 @@ function cTileTools::IsAreaFlat(startTile, width, height)
 	return true;
 }
 
-function cTileTools::IsBuildableRectangleFlat(tile, width, height)
+function cTileTools::IsBuildableRectangleFlat(tile, width, height, ignoreList=AIList())
 // a wrapper to AITile.IsBuildableRectangle that also answer to "Are all tiles flat"
 {
 local check=AITile.IsBuildableRectangle(tile, width, height);
@@ -200,7 +200,109 @@ if (width < 0) width=0;
 if (height < 0) height=0;
 // tile is @ topleft of the rectangle
 // secondtile is @ lowerright
-tilelist=AITileList();
+tilelist.Clear();
+secondtile=tile+AIMap.GetTileIndex(width,height);
+returntile=tile;
+tilelist.AddRectangle(tile,secondtile);
+tilelist.Valuate(cTileTools.IsBuildable);
+before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
+tilelist.KeepValue(1);
+after=tilelist.Count();
+if (after==before)	
+	{
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"1");
+	//PutSign(returntile,"X");
+	return returntile;
+	}
+// tile is @ topright of the rectangle
+// secondtile is @ lowerleft
+tilelist.Clear();
+secondtile=tile+AIMap.GetTileIndex(width,0-height);
+returntile=tile+AIMap.GetTileIndex(0,0-height);
+tilelist.AddRectangle(tile,secondtile);
+tilelist.Valuate(cTileTools.IsBuildable);
+before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
+tilelist.KeepValue(1);
+after=tilelist.Count();
+if (after==before)	
+	{
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"2");
+	//PutSign(returntile,"X");
+	return returntile;
+	}
+// tile is @ lowerleft of the rectangle
+// secondtile is @ upperright
+tilelist.Clear();
+secondtile=tile+AIMap.GetTileIndex(0-width,height);
+returntile=tile+AIMap.GetTileIndex(0-width,0);
+tilelist.AddRectangle(tile,secondtile);
+tilelist.Valuate(cTileTools.IsBuildable);
+before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
+tilelist.KeepValue(1);
+after=tilelist.Count();
+if (after==before)	
+	{
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"3");
+	//PutSign(returntile,"X");
+	return returntile;
+	}
+// tile is @ lowerright of the rectangle
+// secondtile is @ upperleft
+tilelist.Clear();
+secondtile=tile+AIMap.GetTileIndex(0-width,0-height);
+returntile=secondtile;
+tilelist.AddRectangle(tile,secondtile);
+tilelist.Valuate(cTileTools.IsBuildable);
+before=tilelist.Count();
+foreach (itile, idummy in ignoreList)
+	{
+	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
+	}
+tilelist.KeepValue(1);
+after=tilelist.Count();
+if (after==before)	
+	{
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"4");
+	//PutSign(returntile,"X");
+	return returntile;
+	}
+
+return -1;
+}
+
+function cTileTools::IsFlatBuildableAreaExist(tile, width, height, ignoreList=AIList())
+// This check if the rectangle area is buildable and flat in any directions from that point
+// Like the IsBuildableRectangle, but not limit to upper left point
+// tile : tile to search a solve for
+// width & height : dimensions
+// ignoreList: AIList() with tiles we should ignore (report them as if they were IsBuildable even something is there)
+// return tile point where to put the objet or -1 if nothing is buildable there
+{
+local returntile=-1;
+local tilelist=AITileList();
+local secondtile=0;
+local before=0;
+local after=0;
+//DInfo("Width: "+width+" height: "+height,1,"IsBuildableRectangle");
+width-=1;
+height-=1;
+if (width < 0) width=0;
+if (height < 0) height=0;
+// tile is @ topleft of the rectangle
+// secondtile is @ lowerright
+tilelist.Clear();
 secondtile=tile+AIMap.GetTileIndex(width,height);
 returntile=tile;
 tilelist.AddRectangle(tile,secondtile);
@@ -213,10 +315,10 @@ foreach (itile, idummy in ignoreList)
 tilelist.KeepValue(1);
 //if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"1");
 after=tilelist.Count();
-if (after==before)	return returntile;
+if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 // tile is @ topright of the rectangle
 // secondtile is @ lowerleft
-tilelist=AITileList();
+tilelist.Clear();
 secondtile=tile+AIMap.GetTileIndex(width,0-height);
 returntile=tile+AIMap.GetTileIndex(0,0-height);
 tilelist.AddRectangle(tile,secondtile);
@@ -229,10 +331,10 @@ foreach (itile, idummy in ignoreList)
 tilelist.KeepValue(1);
 //if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"2");
 after=tilelist.Count();
-if (after==before)	return returntile;
+if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 // tile is @ lowerleft of the rectangle
 // secondtile is @ upperright
-tilelist=AITileList();
+tilelist.Clear();
 secondtile=tile+AIMap.GetTileIndex(0-width,height);
 returntile=tile+AIMap.GetTileIndex(0-width,0);
 tilelist.AddRectangle(tile,secondtile);
@@ -245,9 +347,10 @@ foreach (itile, idummy in ignoreList)
 tilelist.KeepValue(1);
 //if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"3");
 after=tilelist.Count();
-if (after==before)	return returntile;
+if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 // tile is @ lowerright of the rectangle
 // secondtile is @ upperleft
+tilelist.Clear();
 secondtile=tile+AIMap.GetTileIndex(0-width,0-height);
 returntile=secondtile;
 tilelist.AddRectangle(tile,secondtile);
@@ -260,8 +363,7 @@ foreach (itile, idummy in ignoreList)
 tilelist.KeepValue(1);
 after=tilelist.Count();
 //if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"4");
-if (after==before)	return returntile;
-
+if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 return -1;
 }
 
@@ -303,8 +405,8 @@ do	{
 		srcH=AITile.GetMaxHeight(tile);
 		if (evaluateOnly)	return false;
 		}
-	DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2,"ShapeTile");
-	//PutSign(tile,"!");
+	//DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2,"ShapeTile");
+	PutSign(tile,"!");
 	INSTANCE.Sleep(1);
 	if ((srcH < wantedHeight || srcL < wantedHeight) && !generror)
 		{
@@ -312,7 +414,7 @@ do	{
 					AITile.RaiseTile(tile, AITile.SLOPE_FLAT);			
 				else	AITile.RaiseTile(tile, compSlope);
 		error=AIError.GetLastError();	
-		DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
+		//DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
 		if (error != AIError.ERR_NONE)	generror=true;
 		}
 	if ((srcL > wantedHeight || srcH > wantedHeight) && !generror)
@@ -321,7 +423,7 @@ do	{
 					{ AITile.LowerTile(tile, AITile.SLOPE_ELEVATED);}
 				else	{ AITile.LowerTile(tile, slope); }
 		error=AIError.GetLastError();	
-		DInfo("Lowering tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
+		//DInfo("Lowering tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
 		if (error != AIError.ERR_NONE)	generror=true;
 		}
 	} while (!generror && srcH != wantedHeight && srcL != wantedHeight && !evaluateOnly);
@@ -348,7 +450,7 @@ if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))	return newTile;
 local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
 INSTANCE.bank.RaiseFundsBigTime();
 cTileTools.TerraformLevelTiles(newTile, tileTo);
-INSTANCE.NeedDelay(100);
+INSTANCE.NeedDelay(20);
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))		return newTile;
 return -1;
 }
@@ -360,7 +462,6 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 local tlist=AITileList();
 tlist.AddRectangle(tileFrom, tileTo);
 if (tlist.IsEmpty())	DInfo("No tiles to work with !",1,"TerraformLevelTiles");
-//if (INSTANCE.debug)	foreach (tile, dummy in tlist)	PutSign(tile,"T");
 local Solve=cTileTools.TerraformHeightSolver(tlist);
 Solve.RemoveValue(0); // discard failures
 local bestOrder=AIList();
@@ -381,8 +482,7 @@ if (!Solve.IsEmpty())
 		if (!cBanker.CanBuyThat(prize))
 			{
 			DInfo("Stopping action. We won't have enought money to succeed",1,"TerraformLevelTiles");
-			cTileTools.terraformCost.Clear();
-			cTileTools.terraformCost.AddItem(0,prize);
+			cTileTools.terraformCost.AddItem(999999,prize);
 			break;
 			}
 		cBanker.RaiseFundsBigTime();
@@ -488,8 +588,6 @@ DInfo("Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),1,"cTil
 do	{
 	h_firstitem=cellHCount.Begin();
 	l_firstitem=cellLCount.Begin();
-	DInfo("Checking h:"+cellHCount.GetValue(h_firstitem)+" vs l:"+cellLCount.GetValue(l_firstitem));
-print("cellHCount: "+cellHCount.Count()+" cellLcount="+cellLCount.Count());
 	if (cellHCount.GetValue(h_firstitem) < cellLCount.GetValue(l_firstitem))
 			{
 			HeightIsLow=true;
@@ -507,7 +605,7 @@ print("cellHCount: "+cellHCount.Count()+" cellLcount="+cellLCount.Count());
 	terratrys++;
 	if (currentHeight == 0) // not serious to build at that level
 		{
-		DInfo("Water level detect !",1,"cTileTools::TerraformSolver");
+		DInfo("Water level detect !",2,"cTileTools::TerraformSolver");
 		Solve.AddItem(0,0);
 		continue;
 		}
@@ -516,17 +614,17 @@ print("cellHCount: "+cellHCount.Count()+" cellLcount="+cellLCount.Count());
 	money=cTileTools.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);
 	if (money != -1)
 			{
-			DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,1,"cTileTools::TerraformSolver");
+			DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,2,"cTileTools::TerraformSolver");
 			if (money == 0)	money=1; // in case no money is need, we still ask 1 credit, else we will mistake as a failure
 			if (HeightIsLow)	money=0-money; // force negative to lower tile
 			}
 		else	money=0; // 0 == failure
-	if (Solve.HasItem(currentHeight))
+	if (Solve.HasItem(currentHeight) && money!=0)
 			{
-			if (Solve.GetValue(currentHeight) < money)	Solve.SetValue(currentHeight,money); // add it if solve cost less
+			if (abs(Solve.GetValue(currentHeight)) > abs(money))	Solve.SetValue(currentHeight,money); // add it if solve cost less
 			}
 		else	Solve.AddItem(currentHeight,money);
-	} while (cellHCount.Count() > 0 || cellLCount.Count() > 0); // loop until both lists are empty
+	} while (cellHCount.Count() > 0 && cellLCount.Count() > 0); // loop until both lists are empty
 DInfo("Solver has search "+terratrys+" time",1,"cTileTools::TerraformSolver");
 return Solve;
 }
@@ -555,16 +653,16 @@ DInfo("Town: "+town_name+" rating: "+curRating+" free tiles="+savetiles.Count(),
 //if (curRating < AITown.TOWN_RATING_VERY_POOR && savetiles.Count()< 45)
 // 1 -> 4 rate = 
 local needclean=0;
-if (savetiles.Count() < 95)	needclean=95-savetiles.Count();
+if (savetiles.Count() < 120)	needclean=120-savetiles.Count();
 if (curRating == 1 && needclean > 0)
 	{ // we need clean some area to get space for our trees
 	local treeon=AIList();
 	treeon.AddList(towntiles);
 	treeon.Valuate(AITile.HasTreeOnTile);
 	treeon.KeepValue(1);
-	treeon.KeepTop(needclean);
-	savetiles.AddList(treeon); // this way we add tiles that have trees on it, but keep tiles without tiles too
-	savetiles.KeepTop(95);
+	//treeon.KeepTop(needclean);
+	//savetiles.AddList(treeon); // this way we add tiles that have trees on it, but keep tiles without tiles too
+	//savetiles.KeepTop(95);
 	foreach (tile, dummy in savetiles) AITile.DemolishTile(tile); // if we lack money to remove the tree we will fail anyway
 	}
 local totalTree=0;
@@ -580,14 +678,21 @@ foreach (tile, dummy in towntiles)
 		INSTANCE.bank.RaiseFundsBy(1000);
 		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
 		//AIController.Sleep(1);
-		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>10000));
+		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>5000));
 	AIController.Sleep(2);
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
 	}
 local endop="Success !";
+if (curRating == AITown.TOWN_RATING_APPALLING && AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))
+	{
+	DInfo("Town dislike us too much, trying to bribe it...",1,"cTileTools.SeduceTown");
+	AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
+	}
+curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 if (!good && curRating < needRating)	endop="Failure.";
+						else	good=true;
 DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1,"cTileTools::SeduceTown");
-return (curRating >= needRating);
+return good;
 }
 
 function cTileTools::IsRemovable(tile)

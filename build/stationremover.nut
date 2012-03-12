@@ -35,7 +35,7 @@ if (exist)
 		DWarn("Still have "+vehcheck.Count()+" vehicles using station "+cStation.StationGetName(stationid),1);
 		}
 	if (!temp.station_tiles.IsEmpty())
-		foreach (tile, dummy in temp.station_tiles)	{ AITile.DemolishTile(tile); cTileTools.UnBlackListTile(tile); }
+		foreach (tile, dummy in temp.station_tiles)	{ cTileTools.UnBlackListTile(tile); }
 	}
 local wasnamed=cStation.StationGetName(stationid);
 local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));

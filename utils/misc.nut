@@ -144,7 +144,7 @@ function LoadOldSave()
 	AILog.Info("If the AI crash, please bugreport the savegame version and AI version in use.");
 	AILog.Info("If you re-save your game, it will be saved with the new save format.");
 	AILog.Error("WARNING");
-	AIController.Sleep(200);
+	AIController.Sleep(20);
 	local all_stations=bank.unleash_road;
 	DInfo("Restoring stations",0,"main");
 	local iter=0;
@@ -197,6 +197,7 @@ function LoadOldSave()
 		i+=14;
 		iter++;
 		cRoute.database[obj.UID] <- obj;
+		if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
 		obj.RouteUpdate(); // re-enable the link to stations
 		if (obj.UID > 1)
 			{ // don't try this one virtual routes
@@ -204,11 +205,7 @@ function LoadOldSave()
 			obj.source.cargo_accept.AddItem(obj.cargoID,0);
 			obj.target.cargo_produce.AddItem(obj.cargoID,0);
 			obj.target.cargo_accept.AddItem(obj.cargoID,0);
-			if (obj.route_type == RouteType.AIR && obj.cargoID==cCargo.GetMailCargo())	obj.route_type=RouteType.AIRMAIL;
-			}
-		else	{
-			if (obj.cargoID==cCargo.GetMailCargo())	obj.route_type=RouteType.AIRNETMAIL;
-									else	obj.route_type=RouteType.AIRNET;
+			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
 		cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
 		if (obj.UID == 0)	cRoute.VirtualAirGroup[0]=obj.groupID;
@@ -290,23 +287,18 @@ function LoadSaveGame()
 		i+=15;
 		iter++;
 		cRoute.database[obj.UID] <- obj;
+		if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
 		if (obj.UID == 0)	cRoute.VirtualAirGroup[0]=obj.groupID;
 		if (obj.UID == 1)	cRoute.VirtualAirGroup[1]=obj.groupID;
 		obj.RouteUpdate(); // re-enable the link to stations
-print("obj.route_type="+obj.route_type);
 		if (obj.UID > 1)
 			{ // don't try this one virtual routes
 			obj.source.cargo_produce.AddItem(obj.cargoID,0);
 			obj.source.cargo_accept.AddItem(obj.cargoID,0);
 			obj.target.cargo_produce.AddItem(obj.cargoID,0);
 			obj.target.cargo_accept.AddItem(obj.cargoID,0);
-			if (obj.route_type == RouteType.AIR && obj.cargoID==cCargo.GetMailCargo())	obj.route_type=RouteType.AIRMAIL;
+			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
-		else	{
-			if (obj.cargoID==cCargo.GetMailCargo())	obj.route_type=RouteType.AIRNETMAIL;
-									else	obj.route_type=RouteType.AIRNET;
-			}
-print("new obj.route_type="+obj.route_type);
 		obj.RouteUpdateVehicle();
 		cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
 		}
@@ -345,17 +337,28 @@ function LoadingGame()
 	bank.unleash_road=false;
 	bank.busyRoute=false;
 	bank.mincash=10000;
+	builder.building_route = -1; // disable loading old route, for now unfinish route cannot be complete as job uid doesn't exist
 	DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0,"LoadingGame");
 	DInfo("Registering our routes",0,"LoadingGame");
-	foreach (item in cRoute.database)
+	foreach (routeUID, dummy in cRoute.RouteIndexer)
 		{
-		local regjob=cJobs.GetJobObject(item.UID);
-		if (regjob == null)	continue;
-		regjob.isUse=true;
+		local aroute=cRoute.GetRouteObject(routeUID);
+		if (aroute==null)	continue;
+		if (aroute.UID < 2)	continue;
+		if (!aroute.isWorking)	continue;
+		local rt=aroute.route_type;
+		if (rt > AIVehicle.VT_AIR)	rt=AIVehicle.VT_AIR;
+		cJobs.CreateNewJob(aroute.sourceID, aroute.targetID, aroute.source_istown, aroute.cargoID, rt);
+		}
+	DInfo("Tagging jobs in use",0,"LoadingGame");
+	foreach (jobID, dummy in cJobs.jobIndexer)
+		{
+		local ajob=cJobs.GetJobObject(jobID);
+		if (ajob==null)	continue;
+		ajob.isUse=true;
 		}
 	local alltowns=AITownList();
 	foreach (townID, dummy in alltowns)
 		if (AITown.GetRating(townID, AICompany.COMPANY_SELF) != AITown.TOWN_RATING_NONE)	cJobs.statueTown.AddItem(townID,0);
 	INSTANCE.builder.CheckRouteStationStatus();
 }
-

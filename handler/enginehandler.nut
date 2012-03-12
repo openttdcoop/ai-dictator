@@ -63,7 +63,7 @@ function cEngine::Save()
 	this.cargo_capacity.SetValue(crgtype, AIEngine.GetCapacity(this.engineID));
 	this.name=AIEngine.GetName(this.engineID);
 	cEngine.enginedatabase[this.engineID] <- this;
-	DInfo("Adding "+this.name+" to cEngine database",2,"cEngine::Save");
+	DInfo("Adding engine "+this.engineID+" "+this.name+" to cEngine database",2,"cEngine::Save");
 	DInfo("List of known engines : "+(cEngine.enginedatabase.len()),1,"cEngine::Save");
 	}
 
@@ -209,17 +209,21 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 	{
 	local EUID=cEngine.GetEUID(engineType, cargoID);
 	if (cEngine.BestEngineList.HasItem(EUID))	return cEngine.BestEngineList.GetValue(EUID);
+							else	DInfo("Engine cache miss for "+EUID,2,"GetEngineByCache");
 	return -1;
 	}
 
 function cEngine::EngineCacheInit()
 // browse vehicle so our cache will get fill
 	{
-	local cargoList=AICargoList();
 	local engList=AIEngineList(AIVehicle.VT_ROAD);
-	engList.AddList(AIEngineList(AIVehicle.VT_RAIL));
 	DInfo("Caching engines: "+engList.Count(),0,"");
 	foreach (engID, dummy in engList)	local dum=cEngine.GetName(engID);
+	// Init common aircraft usage: normal passenger and mail + small passenger and mail
+	cCarrier.ChooseAircraft(cCargo.GetPassengerCargo(), 0);
+	cCarrier.ChooseAircraft(cCargo.GetMailCargo(), 0);
+	cCarrier.ChooseAircraft(cCargo.GetPassengerCargo(), 20);
+	cCarrier.ChooseAircraft(cCargo.GetMailCargo(), 20);
 	}
 
 function cEngine::SetBestEngine(EUID, engineID)

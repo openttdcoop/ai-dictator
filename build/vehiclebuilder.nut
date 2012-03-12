@@ -160,7 +160,8 @@ switch (chem.route_type)
 		thatstation.CheckAirportLimits(); // force recheck limits
 		if (thatstation.CanUpgradeStation())
 			{
-			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID))	max_allow=0;
+			INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID);
+			max_allow=0;
 			// get out after an upgrade, station could have change place...
 			}
 		DInfo(airname+"Limit for that route (network): "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),1);
@@ -173,11 +174,15 @@ switch (chem.route_type)
 		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_max,1);
 		if (chem.vehicle_count+max_allow > 4)	max_allow=4-chem.vehicle_count;
 	break;
-	case AIVehicle.VT_AIR: // Airport upgrade is not related to number of aircrafts using them
+	case RouteType.AIR: // Airport upgrade is not related to number of aircrafts using them
+	case RouteType.AIRMAIL:
+	case RouteType.SMALLAIR:
+	case RouteType.SMALLMAIL:
 		thatstation.CheckAirportLimits(); // force recheck limits
 		if (thatstation.CanUpgradeStation())
 			{
-			if (INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID)) max_allow=0;
+			INSTANCE.builder.AirportNeedUpgrade(thatstation.stationID);
+			max_allow=0;
 			}
 		local limitmax=INSTANCE.carrier.air_max;
 		if (shared)
@@ -228,6 +233,8 @@ switch (road.route_type)
 	case RouteType.CHOPPER:
 	case RouteType.AIR:
 	case RouteType.AIRMAIL:
+	case RouteType.SMALLAIR:
+	case RouteType.SMALLMAIL:
 		res=INSTANCE.carrier.CreateAirVehicle(routeid);
 	break;
 	}
@@ -251,7 +258,7 @@ switch (road.route_type)
 	case	RouteType.ROAD:
 		return INSTANCE.carrier.GetRoadVehicle(routeidx);
 	break;
-	default:
+	default: // to catch all AIR type
 		return INSTANCE.carrier.GetAirVehicle(routeidx);
 	break;
 	}
@@ -268,19 +275,28 @@ local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
 if (capacity==0)	return 999999999;
 if (price<=0)	return 999999999;
-local eff=(100000+ (price+(lifetime*runningcost))) / ((capacity*0.9)+speed).tointeger();
+local eff=(10000+ (price+(lifetime*runningcost))) / ((capacity*0.9)+speed).tointeger();
 return eff;
 }
 
-function cCarrier::GetEngineRawEfficiency(engine, cargoID)
+function cCarrier::GetEngineRawEfficiency(engine, cargoID, fast)
 // only consider the raw capacity/speed ratio
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
 {
+local price=cEngine.GetPrice(engine, cargoID);
 local capacity=cEngine.GetCapacity(engine, cargoID);
 local speed=AIEngine.GetMaxSpeed(engine);
+local lifetime=AIEngine.GetMaxAge(engine);
+local runningcost=AIEngine.GetRunningCost(engine);
 if (capacity<=0)	return 999999999;
-local eff=100000 / ((capacity*0.9)+speed).tointeger();
+if (price<=0)	return 999999999;
+//local eff=100000 / ((capacity*0.9)+speed).tointeger();
+local eff=0;
+//if (fast)	eff=((10000+price+(lifetime*runningcost)) / (capacity+(speed*2))).tointeger();
+//	else	eff=((10000+price+(lifetime*runningcost)) / ((capacity*2)+speed)).tointeger();
+if (fast)	eff=(10000 + runningcost) / speed;
+	else	eff=(10000 + runningcost) / capacity
 return eff;
 }
 
@@ -295,7 +311,7 @@ local vehGroup=AIVehicle.GetGroupID(vehID);
 if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
 		else	vehList.AddItem(vehID,0);
 foreach (vehicle, dummy in vehList)
-cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
+	cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
 }
 
 function cCarrier::CheckOneVehicleOfGroup(doGroup)

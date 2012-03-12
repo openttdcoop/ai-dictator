@@ -107,9 +107,6 @@ function cStation::UpdateStationInfos()
 // Update informations for that station if informations are old enough
 	{
 	this.UpdateCapacity();
-	local now=AIDate.GetCurrentDate();
-//	if ( (now - this.lastUpdate) < 7)	return false;
-	this.lastUpdate=now;
 	this.UpdateCargos();
 	}
 
@@ -138,7 +135,7 @@ function cStation::UpdateCargos(stationID=null)
 			{
 			local rating=AIStation.GetCargoRating(thatstation.stationID, cargo);
 			thatstation.cargo_accept.SetValue(cargo, rating);
-			DInfo("CARGOS-> Station #"+thatstation.stationID+" "+cStation.StationGetName(thatstation.stationID)+" accept "+AICargo.GetCargoLabel(cargo)+" with "+rating+" rating",2,"cStation::UpdateCargos");
+			DInfo("CARGOS-> Station "+cStation.StationGetName(thatstation.stationID)+" accept "+AICargo.GetCargoLabel(cargo)+" with "+rating+" rating",2,"cStation::UpdateCargos");
 			}
 		INSTANCE.Sleep(1);
 		}
@@ -209,6 +206,7 @@ function cStation::CanUpgradeStation()
 // check if station could be upgrade
 // just return canUpgrade value or for airports true or false if we find a better airport
 	{
+	if (!cBanker.CanBuyThat(AICompany.GetLoanInterval()))	return false;
 	switch (this.stationType)
 		{
 		case	AIStation.STATION_DOCK:
@@ -220,13 +218,16 @@ function cStation::CanUpgradeStation()
 			return true;
 		break;
 		case	AIStation.STATION_AIRPORT:
+			local canupgrade=false;
 			local newairport = cBuilder.GetAirportType();
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
-			if (newairport > this.specialType)
-				{ DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2,"cStation::CanUpgradeStation"); }
+			local vehlist=AIVehicleList_Station(this.stationID);
+			local townID=AIAirport.GetNearestTown(AIStation.GetLocation(this.stationID), this.specialType);
+			local townpop=AITown.GetPopulation(townID);
+			if (newairport > this.specialType && !vehlist.IsEmpty() && townpop >= (newairport*200))
+				{ canupgrade=true; DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2,"cStation::CanUpgradeStation"); }
 			if (this.locations.Count()==1)	return false; // plaforms have 1 size only
-			if (newairport > this.specialType)	return true;
-								else	return false;
+			return canupgrade;
 		break;
 		default: // bus or truck
 			this.vehicle_max=this.size*INSTANCE.carrier.road_upgrade;
@@ -317,7 +318,7 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 		local valid_accept=false;
 		foreach (tiles, sdummy in staloc)
 			{
-			if (valid_accept || valid_produce)	break;
+			if (valid_accept && valid_produce)	break;
 			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.radius);
 			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.radius);
 			if (!valid_produce && produce > 0)	valid_produce=true;
@@ -371,10 +372,10 @@ function cStation::OwnerReleaseStation(uid)
 		this.owner.RemoveItem(uid);
 		DInfo("Route #"+uid+" release station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1,"cStation::OwnerReleaseStation");
 		this.UpdateStationInfos();
-		if (this.owner.IsEmpty())
+		/*if (this.owner.IsEmpty())
 			{
 			INSTANCE.builder.DeleteStation(uid, this.stationID);
-			}
+			}*/
 		}
 	}
 
@@ -400,7 +401,7 @@ function cStation::CheckAirportLimits()
 		{
 		DWarn("Invalid airport type at "+this.locations.Begin(),1,"CheckAirportLimits");
 		PutSign(this.locations.Begin(),"INVALID AIRPORT TYPE !");
-		INSTANCE.NeedDelay(100);
+		INSTANCE.NeedDelay(50);
 		return;
 		}
 	this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);

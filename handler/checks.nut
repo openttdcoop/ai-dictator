@@ -51,7 +51,7 @@ function cBuilder::WeeklyChecks()
 local week=AIDate.GetCurrentDate();
 if (week - INSTANCE.OneWeek < 7)	return false;
 INSTANCE.OneWeek=AIDate.GetCurrentDate();
-DInfo("Weekly checks run...",1);
+DInfo("Weekly checks run...",1,"Checks");
 INSTANCE.builder.RoadStationsBalancing();
 }
 
@@ -59,8 +59,8 @@ function cBuilder::MonthlyChecks()
 {
 local month=AIDate.GetMonth(AIDate.GetCurrentDate());
 if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++; }
-				else	return false;
-DInfo("Montly checks run...",1);
+					else	return false;
+DInfo("Montly checks run...",1,"Checks");
 INSTANCE.route.VirtualAirNetworkUpdate();
 INSTANCE.builder.RouteNeedRepair();
 if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
@@ -79,13 +79,14 @@ function cBuilder::HalfYearChecks()
 {
 INSTANCE.SixMonth=0;
 INSTANCE.TwelveMonth++;
-DInfo("Half year checks run...",1);
+DInfo("Half year checks run...",1,"Checks");
+INSTANCE.builder.BoostedBuys();
 if (cCarrier.VirtualAirRoute.len() > 1) 
 	{
 	local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
 	local passlist=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
 	local totair=maillist.Count()+passlist.Count();
-	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
+	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0,"Checks");
 	}
 if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
 local stationList=AIList();	// check for no more working station if cargo disapears...
@@ -110,18 +111,21 @@ if (!INSTANCE.route.RouteDamage.HasItem(idx))	INSTANCE.route.RouteDamage.AddItem
 
 function cBuilder::RouteNeedRepair()
 {
-DInfo("Damage routes: "+INSTANCE.route.RouteDamage.Count(),1);
+DInfo("Damage routes: "+INSTANCE.route.RouteDamage.Count(),1,"RouteNeedRepair");
 if (INSTANCE.route.RouteDamage.IsEmpty()) return;
 local deletethatone=-1;
+local runLimit=2; // number of routes to repair per run
 foreach (routes, dummy in INSTANCE.route.RouteDamage)
 	{
+	runLimit--;
 	local trys=dummy;
 	trys++;
-	DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1);
+	DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1,"RouteNeedRepair");
 	local test=INSTANCE.builder.CheckRoadHealth(routes);
 	if (test)	INSTANCE.route.RouteDamage.SetValue(routes, -1)
 		else	INSTANCE.route.RouteDamage.SetValue(routes, trys);
 	if (trys >= 12)	{ deletethatone=routes }
+	if (runLimit <= 0)	break;
 	}
 INSTANCE.route.RouteDamage.RemoveValue(-1);
 if (deletethatone != -1)
@@ -134,8 +138,8 @@ if (deletethatone != -1)
 function cBuilder::YearlyChecks()
 {
 INSTANCE.TwelveMonth=0;
-DInfo("Yearly checks run...",1);
-INSTANCE.builder.BoostedBuys();
+DInfo("Yearly checks run...",1,"Checks");
+
 INSTANCE.builder.CheckRouteStationStatus();
 INSTANCE.jobs.CheckTownStatue();
 INSTANCE.builder.BridgeUpgrader();
@@ -158,7 +162,7 @@ foreach (i, dummy in airID)
 	if (vehlist.Count() < 2)	continue;
 	local passcargo=cCargo.GetPassengerCargo(); // i don't care mail
 	local cargowaiting=AIStation.GetCargoWaiting(i,passcargo);
-	if (cargowaiting > 100)
+	if (cargowaiting > 30)
 		{
 		DInfo("Airport "+cStation.StationGetName(i)+" is busy but can handle it : "+cargowaiting,2); 
 		continue;
@@ -167,7 +171,9 @@ foreach (i, dummy in airID)
 		{
 		local percent=INSTANCE.carrier.VehicleGetLoadingPercent(i);
 		//DInfo("Vehicle "+i+" load="+percent,2);
-		if (percent > 4 && percent < 90)
+		local orderflags=AIOrder.GetOrderFlags(i, AIOrder.ORDER_CURRENT);
+		local order_full=( (orderflags & AIOrder.AIOF_FULL_LOAD_ANY) == AIOrder.AIOF_FULL_LOAD_ANY);
+		if (percent > 4 && percent < 90 && order_full)
 			{ // we have a vehicle with more than 20% cargo in it
 			INSTANCE.carrier.VehicleOrderSkipCurrent(i);
 			DInfo("Forcing vehicle "+cCarrier.VehicleGetName(i)+" to get out of the station with "+i+" load",1);
@@ -258,39 +264,7 @@ local truckstation = AIStationList(AIStation.STATION_TRUCK_STOP);
 local allstations=AIList(); // check if the station still use that cargo
 allstations.AddList(busstation);
 allstations.AddList(truckstation);
-/*
-foreach (stationID, dummy in allstations)
-	{
-	INSTANCE.Sleep(1);
-	local stobj=cStation.GetStationObject(stationID);
-	if (stobj == null) continue;
-	stobj.UpdateStationInfos();
-	foreach (uid, dummy in stobj.owner)
-		{
-		INSTANCE.Sleep(1);
-		local road=cRoute.GetRouteObject(uid);
-		if (road == null)	continue; // might happen if the route isn't saved because not finished yet
-		if (road.source_stationID == stobj.stationID)
-			{
-			if (!stobj.cargo_produce.HasItem(road.cargoID))
-				{
-				DWarn("Station "+cStation.StationGetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0);
-				// road.RouteReleaseStation(stationID);
-				road.RouteIsNotDoable();
-				continue;
-				}
-			}
-		if (road.target_stationID == stobj.stationID)
-			{
-			if (!stobj.cargo_accept.HasItem(road.cargoID))
-				{
-				DWarn("Station "+cStation.StationGetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0);
-				road.RouteReleaseStation(stationID)
-				}
-			}
-		}
-	}
-*/
+
 truckstation.AddList(busstation);
 if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
@@ -479,7 +453,6 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 			waitingtimer++;
 			}
 		while (waitingtimer < 120 && !cBanker.CanBuyThat(goal));
-		INSTANCE.carrier.vehnextprice=INSTANCE.carrier.highcostAircraft; // reserve the money to buy the aircraft
 		}
 
 	}
