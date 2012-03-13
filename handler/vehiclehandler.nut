@@ -488,11 +488,12 @@ if (road == null) return;
 road.RouteUpdateVehicle();
 if (recordit)	road.date_VehicleDelete=AIDate.GetCurrentDate();
 // detect a dead route, no profit so we delete the vehicle, and it was the last one on that route
+/*
 if (road.vehicle_count==0 && profit < 1)
 	{
 	if (vehtype == AIVehicle.VT_AIR)	road.isWorking=false; // disable the route, but don't remove the airport, we could reuse it
 						else	road.RouteIsNotDoable(); // ok remove the route itself
-	}
+	}*/
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)

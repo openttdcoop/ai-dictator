@@ -47,7 +47,7 @@ noiselevel=AITown.GetAllowedNoise(townid);
 local ourloc=0;
 local ournoise=AIAirport.GetNoiseLevelIncrease(station.locations.Begin(),airporttype);
 DInfo("Town rating = "+townrating+" noiselevel="+noiselevel,2);
-cTileTools.SeduceTown(townid,AITown.TOWN_RATING_MEDIOCRE);
+cTileTools.SeduceTown(townid,AITown.TOWN_RATING_GOOD);
 if (townrating < AITown.TOWN_RATING_GOOD)
 	{ DInfo("Cannot upgrade airport, too dangerous with our current rating with this town.",1); return false; }
 local cost=AIAirport.GetPrice(airporttype);
@@ -112,9 +112,8 @@ function cBuilder::AirportMaker(tile, airporttype)
 local essai=false;
 if (!cTileTools.SeduceTown(AITile.GetClosestTown(tile),AITown.TOWN_RATING_MEDIOCRE))
 	{
-	DInfo("Giving up, the town doesn't like us...",1,"AirportMaker");
+	DInfo("Town doesn't like us...",1,"AirportMaker");
 	cTileTools.terraformCost.AddItem(999995,1); // tell rating is poor
-	return false;
 	}
 INSTANCE.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
@@ -231,9 +230,13 @@ if (!helipadonly)
 		if (newTile != -1)	worktilelist.AddItem(newTile,666);
 		}
 	tilelist.Clear();
-	tilelist.AddList(worktilelist);	
-	tilelist.Valuate(AITile.IsWithinTownInfluence,townID);
-	tilelist.KeepValue(1);
+	tilelist.AddList(worktilelist);
+	tilelist.Valuate(AIAirport.GetNearestTown, airporttype);
+//	tilelist.Valuate(AITile.IsWithinTownInfluence,townID);
+//	tilelist.KeepValue(1);
+//	tilelist.Valuate(AITile.GetTownAuthority);
+// this is boring how openttd handle town authority and rating !!!
+	tilelist.KeepValue(townID);
 	tilelist.Valuate(cTileTools.IsTilesBlackList);
 	tilelist.KeepValue(0);
 	if (tilelist.IsEmpty())	
@@ -245,10 +248,11 @@ if (!helipadonly)
 	tilelist.Valuate(AITile.GetCargoAcceptance, cargoID, air_x, air_y, rad);
 	tilelist.RemoveBelowValue(8);
 	tilelist.Sort(AIList.SORT_BY_VALUE, false);
-//	if (oldAirport_Location!=-1)	solverlist.AddItem(oldAirport_Location,666); // add first the old location of the airport
 	solverlist.AddList(tilelist);
 	tilelist.Valuate(AITile.IsWaterTile);
 	tilelist.RemoveValue(1);
+	tilelist.Valuate(AITile.GetCargoAcceptance, cargoID, air_x, air_y, rad);
+	tilelist.RemoveBelowValue(8);
 	foreach (tile, dummy in tilelist)
 		{
 		PutSign(tile,".");
@@ -364,7 +368,6 @@ if (success)
 		road.route_type = RouteType.CHOPPER;
 		road.CreateNewStation(start);
 		road.CheckEntry();
-		DInfo("Chopper says depot is at "+road.target.depot,1,"BuildAirStation");
 		road.source.depot=null;
 		return heliloc;
 		}

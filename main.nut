@@ -153,7 +153,7 @@ function DictatorAI::Start()
 			cStation.CheckCargoHandleByStation(stationID);
 			}
 		INSTANCE.route.VirtualAirNetworkUpdate();
-		INSTANCE.carrier.CheckOneVehicleOfGroup(true); // force a check on all vehicles
+		//INSTANCE.carrier.CheckOneVehicleOfGroup(true); // force a check on all vehicles
 		DInfo("...Loading game end",0,"Main");
 		}
 	 else {
@@ -196,7 +196,7 @@ function DictatorAI::Start()
 				}
 		bank.CashFlow();
 		eventManager.HandleEvents();
-		builder.QuickTasks();
+		//builder.QuickTasks();
 		//builder.ShowBlackList();
 		AIController.Sleep(10);
 		builder.WeeklyChecks();

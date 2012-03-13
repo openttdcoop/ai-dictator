@@ -273,8 +273,8 @@ local capacity=cEngine.GetCapacity(engine, cargoID);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
-if (capacity==0)	return 999999999;
-if (price<=0)	return 999999999;
+if (capacity==0)	return 9999999;
+if (price<=0)	return 9999999;
 local eff=(10000+ (price+(lifetime*runningcost))) / ((capacity*0.9)+speed).tointeger();
 return eff;
 }
@@ -289,14 +289,11 @@ local capacity=cEngine.GetCapacity(engine, cargoID);
 local speed=AIEngine.GetMaxSpeed(engine);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
-if (capacity<=0)	return 999999999;
-if (price<=0)	return 999999999;
-//local eff=100000 / ((capacity*0.9)+speed).tointeger();
+if (capacity<=0)	return 9999999;
+if (price<=0)	return 9999999;
 local eff=0;
-//if (fast)	eff=((10000+price+(lifetime*runningcost)) / (capacity+(speed*2))).tointeger();
-//	else	eff=((10000+price+(lifetime*runningcost)) / ((capacity*2)+speed)).tointeger();
-if (fast)	eff=(10000 + runningcost) / speed;
-	else	eff=(10000 + runningcost) / capacity
+if (fast)	eff=1000000 / ((capacity*0.9)+speed).tointeger();
+	else	eff=1000000-(capacity * speed);
 return eff;
 }
 

@@ -16,36 +16,6 @@
 // all operations here are cBuilder even the file itself do handling work
 // operations here are time eater
 
-function cBuilder::CheckAirportUpgrade()
-{
-INSTANCE.route.VirtualAirNetworkUpdate();
-DInfo("Checking if any airport need to be upgrade...",2);
-local newairporttype=INSTANCE.builder.GetAirportType();
-for (local i=0; i < INSTANCE.route.RListGetSize(); i++)
-	{
-	local road=INSTANCE.route.RListGetItem(i);
-	if (road.ROUTE.kind!=AIVehicle.VT_AIR)	continue;
-	if (!road.ROUTE.isServed) continue;
-	local stationtype=0;
-	local src=INSTANCE.route.GListGetItem(road.ROUTE.src_station);
-	local dst=INSTANCE.route.GListGetItem(road.ROUTE.dst_station);
-	local upgrade=false;
-	if (src.STATION.type < newairporttype)
-		{
-		DInfo("stationt type="+src.STATION.type+" newairporttype="+newairporttype,2);
-		INSTANCE.builder.AirportNeedUpgrade(i,true);
-		upgrade=true;
-		}
-	if (dst.STATION.type < newairporttype)
-		{
-		DInfo("stationt type="+src.STATION.type+" newairporttype="+newairporttype,2);
-		INSTANCE.builder.AirportNeedUpgrade(i,false);
-		upgrade=true;
-		}
-	if (upgrade) break;
-	}
-}
-
 function cBuilder::WeeklyChecks()
 {
 local week=AIDate.GetCurrentDate();
@@ -270,7 +240,7 @@ if (truckstation.IsEmpty())	return;
 foreach (stations, dummy in truckstation)
 	{
 	INSTANCE.Sleep(1);
-	DInfo("TRUCK - Station check #"+stations+" "+cStation.StationGetName(stations),1);
+	DInfo("TRUCK - Station check #"+stations+" "+cStation.StationGetName(stations),1,"RoadStationsBalancing");
 	local truck_atstation=cCarrier.VehicleNearStation(stations);
 	if (truck_atstation.Count() < 2)	continue;
 	local truck_loading=AIList();
@@ -284,7 +254,7 @@ foreach (stations, dummy in truckstation)
 	local truck_dropper_loading=AIList();
 	local truck_dropper_waiting=AIList();
 	local station_tile=cTileTools.FindStationTiles(AIStation.GetLocation(stations));
-	DInfo("         Size: "+station_tile.Count(),1);
+	DInfo("         Size: "+station_tile.Count(),1,"RoadStationsBalancing");
 	local station_accept_cargo=AIList();
 	local station_produce_cargo=AIList();
 	local cargo_produce=null;
@@ -303,7 +273,7 @@ foreach (stations, dummy in truckstation)
 			if (!station_accept_cargo.HasItem(cargotype))	station_accept_cargo.AddItem(cargotype,0);
 			}
 		}
-	DInfo("         infos: produce="+station_produce_cargo.Count()+" accept="+station_accept_cargo.Count(),1);
+	DInfo("         infos: produce="+station_produce_cargo.Count()+" accept="+station_accept_cargo.Count(),1,"RoadStationsBalancing");
 	// pfff, now we know what cargo that station can use (accept or produce)
 	station_produce_cargo.Valuate(AICargo.GetTownEffect);
 	station_produce_cargo.RemoveValue(AICargo.TE_PASSENGERS);
@@ -358,7 +328,7 @@ foreach (stations, dummy in truckstation)
 	local numload=truck_getter_loading.Count();
 	local numunload=truck_dropper_loading.Count();
 	local numdrop=truck_dropper_loading.Count();
-	DInfo("         Station "+cStation.StationGetName(stations)+" have "+numload+" vehicle loading, "+numunload+" vehicle unloading, "+truck_getter_waiting.Count()+" vehicle waiting to load, "+truck_dropper_waiting.Count()+" waiting to unload",1);
+	DInfo("         Station "+cStation.StationGetName(stations)+" have "+numload+" vehicle loading, "+numunload+" vehicle unloading, "+truck_getter_waiting.Count()+" vehicle waiting to load, "+truck_dropper_waiting.Count()+" waiting to unload",1,"RoadStationsBalancing");
 	if (truck_getter_loading.Count() > 0)
 		{
 		if (truck_dropper_waiting.Count() > 0)
@@ -367,7 +337,7 @@ foreach (stations, dummy in truckstation)
 				{
 				if (load == 0)
 					{ // don't push the vehicle that is loading, TODO: might fail if 2 vehicles with a bit of cargo enter the station, better found a way to test station. But it's a rare case
-					DInfo("Pushing vehicle "+vehicle+"-"+cCarrier.VehicleGetName(vehicle)+" out of the station to free space for unloaders",1);
+					DInfo("Pushing vehicle "+vehicle+"-"+cCarrier.VehicleGetName(vehicle)+" out of the station to free space for unloaders",1,"RoadStationsBalancing");
 					AIVehicle.ReverseVehicle(vehicle);
 					AIVehicle.SendVehicleToDepotForServicing(vehicle);
 					return; // stop checks as droppers are waiting because station is busy with getters
@@ -379,13 +349,13 @@ foreach (stations, dummy in truckstation)
 		foreach (stacargo, dummy in station_produce_cargo)
 			{
 			local amount_wait=AIStation.GetCargoWaiting(stations, stacargo);
-			DInfo("Station "+cStation.StationGetName(stations)+" produce "+AICargo.GetCargoLabel(stacargo)+" with "+amount_wait+" units waiting",1);
+			DInfo("Station "+cStation.StationGetName(stations)+" produce "+AICargo.GetCargoLabel(stacargo)+" with "+amount_wait+" units waiting",1,"RoadStationsBalancing");
 			foreach (vehicle, vehcargo in truck_getter_waiting)
 				{
 				if (AIVehicle.GetCapacity(vehicle, stacargo)==0)	continue; // not a vehicle using that cargo
 				if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
 				if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
-				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" to balance station",1);
+				DInfo("Selling vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" to balance station",1,"RoadStationsBalancing");
 				INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 				AIVehicle.ReverseVehicle(vehicle);
 				}

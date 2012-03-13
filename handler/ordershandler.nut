@@ -274,6 +274,7 @@ if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 for (local jjj=0; jjj < AIOrder.GetOrderCount(veh); jjj++)
 // this send vehicle to met dropoff station before its depot, chopper won't have the dropoff station in their order to lower distance
 	{
+	if (road.target_stationID == null)	break;
 	if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != AIStation.GetLocation(road.target_stationID))
 		AIOrder.SkipToOrder(veh, jjj+1);
 	else	{

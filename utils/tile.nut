@@ -629,6 +629,24 @@ DInfo("Solver has search "+terratrys+" time",1,"cTileTools::TerraformSolver");
 return Solve;
 }
 
+function cTileTools::TownBriber(townID, needRating)
+// Bribe a town upto getting the neededRating
+{
+local good=true;
+local testing=null;
+local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
+if (curRating >= needRating || curRating == AITown.TOWN_RATING_NONE)	return true;
+local counter=0;
+while (good && curRating < needRating && counter < 5)
+	{
+	if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))	good=AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
+	DInfo("Offering money to "+AITown.GetName(townID)+" = "+good+" nowrate="+curRating+" targetrate="+needRating,2,"TownBriber");
+	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
+	counter++;
+	}
+return (curRating >= needRating);	
+}
+
 function cTileTools::SeduceTown(townID, needRating)
 // Fill a tile with trees
 // needRating : rating we must reach
@@ -650,21 +668,24 @@ local town_name=AITown.GetName(townID);
 // 1 -> 2 = 293 trees
 // 2 -> 3 = 417 trees
 DInfo("Town: "+town_name+" rating: "+curRating+" free tiles="+savetiles.Count(),2,"cTileTools::SeduceTown");
-//if (curRating < AITown.TOWN_RATING_VERY_POOR && savetiles.Count()< 45)
-// 1 -> 4 rate = 
 local needclean=0;
-if (savetiles.Count() < 120)	needclean=120-savetiles.Count();
-if (curRating == 1 && needclean > 0)
+if (curRating >= needRating)	return true;
+if (savetiles.Count() < 140)	needclean=140-savetiles.Count();
+if (curRating == AITown.TOWN_RATING_APPALLING && needclean > 0)
 	{ // we need clean some area to get space for our trees
 	local treeon=AIList();
 	treeon.AddList(towntiles);
 	treeon.Valuate(AITile.HasTreeOnTile);
 	treeon.KeepValue(1);
-	//treeon.KeepTop(needclean);
-	//savetiles.AddList(treeon); // this way we add tiles that have trees on it, but keep tiles without tiles too
-	//savetiles.KeepTop(95);
-	foreach (tile, dummy in savetiles) AITile.DemolishTile(tile); // if we lack money to remove the tree we will fail anyway
+	treeon.KeepTop(needclean);
+	foreach (tile, dummy in treeon) AITile.DemolishTile(tile); // if we lack money to remove the tree we will fail anyway
 	}
+
+towntiles.Valuate(AITile.HasTreeOnTile);
+towntiles.KeepValue(0);
+towntiles.Valuate(AITile.GetDistanceManhattanToTile, AITown.GetLocation(townID));
+towntiles.Sort(AIList.SORT_BY_VALUE, true);
+if (cTileTools.TownBriber(townID, needRating))	return true;
 local totalTree=0;
 local totalspent=0;
 local tiledone=0;
@@ -676,22 +697,17 @@ foreach (tile, dummy in towntiles)
 		good=AITile.PlantTree(tile);
 		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
 		INSTANCE.bank.RaiseFundsBy(1000);
-		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
+//		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
 		//AIController.Sleep(1);
 		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>5000));
 	AIController.Sleep(2);
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
 	}
 local endop="Success !";
-if (curRating == AITown.TOWN_RATING_APPALLING && AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))
-	{
-	DInfo("Town dislike us too much, trying to bribe it...",1,"cTileTools.SeduceTown");
-	AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
-	}
 curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 if (!good && curRating < needRating)	endop="Failure.";
 						else	good=true;
-DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count(),1,"cTileTools::SeduceTown");
+DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count()+" needtree:"+totalTree,1,"cTileTools::SeduceTown");
 return good;
 }
 

@@ -132,7 +132,7 @@ vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
 if (INSTANCE.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, cargoid, true);
 					else	vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
-//DInfo("Selected bus/truck : "+AIEngine.GetName(vehlist.Begin())+" eff: "+vehlist.GetValue(vehlist.Begin()),1,"cCarrier::ChooseRoadVeh");
+DInfo("Selected bus/truck : "+AIEngine.GetName(vehlist.Begin())+" eff: "+vehlist.GetValue(vehlist.Begin()),1,"cCarrier::ChooseRoadVeh");
 if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), cargoid, true); // set top engine for trucks
 return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }
