@@ -393,14 +393,11 @@ local ignore_some=0;
 foreach (vehicle, dummy in tlist)
 	{
 	local vehtype=AIVehicle.GetVehicleType(vehicle);
-	//if (ignore_some >6 && vehtype == AIVehicle.VT_ROAD)	
 	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 	ignore_some++;
 	local topengine=cEngine.IsVehicleAtTop(vehicle); // new here
 	if (topengine != -1)	price=cEngine.GetPrice(topengine);
 				else	price=cEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
-	//price+=(0.5*price);
-	// add a 50% to price to avoid try changing an engine and running low on money because of fluctuating money
 	name=INSTANCE.carrier.VehicleGetName(vehicle);
 	tx=AIVehicle.GetAgeLeft(vehicle);
 	if (tx < cCarrier.OldVehicle)
@@ -409,7 +406,6 @@ foreach (vehicle, dummy in tlist)
 		DInfo("-> Vehicle "+name+" is getting old ("+tx+" days left), replacing it",0,"cCarrier::VehicleMaintenance");
 		INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.REPLACE);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
-//		continue;
 		}
 	tx=INSTANCE.carrier.VehicleGetProfit(vehicle);
 	ty=AIVehicle.GetAge(vehicle);
@@ -426,10 +422,8 @@ foreach (vehicle, dummy in tlist)
 		local idx=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 		INSTANCE.builder.RouteIsDamage(idx);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
-//		continue;
 		}
-	local enginecheck=cEngine.IsRabbitSet(AIVehicle.GetEngineType(vehicle));
-print("enginecheck="+enginecheck);
+	local enginecheck=cEngine.IsRabbitSet(vehicle);
 	if (topengine != -1 && enginecheck)	topengine=-1; // stop upgrade
 	if (topengine != -1)
 		{
@@ -438,10 +432,9 @@ print("enginecheck="+enginecheck);
 		if (!INSTANCE.bank.CanBuyThat(INSTANCE.carrier.vehnextprice+price))	continue; // no way, we lack funds for it
 		INSTANCE.carrier.vehnextprice+=price;
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0,"cCarrier::VehicleMaintenance");
-		cEngine.RabbitSet(AIVehicle.GetEngineType(vehicle));
+		cEngine.RabbitSet(vehicle);
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
-//		continue;
 		}
 	cCarrier.VehicleMaintenance_Orders(vehicle);
 	AIController.Sleep(1);

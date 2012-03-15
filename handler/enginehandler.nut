@@ -27,7 +27,7 @@ static	function GetEngineObject(engineID)
 	cargo_capacity	= null;	// capacity per cargo item=cargoID, value=capacity when refit
 	cargo_price		= null;	// price to refit item=cargoID, value=refit cost
 	cargo_length	= null;	// that's the length of a vehicle depending on its current cargo setting
-	isKnown		= null;	// 0- seen that engine, 1- a vehicle is going for test, 2- tests made
+	isKnown		= null;	// -1 seen that engine, -2 tests made or vehicleID when a vehicle is going for test
 	incompatible	= null;	// AIList of wagons imcompatible with a train engine
 	
 	constructor()
@@ -37,7 +37,7 @@ static	function GetEngineObject(engineID)
 		cargo_capacity	= AIList();
 		cargo_price		= AIList();
 		cargo_length	= AIList();
-		isKnown		= 0;
+		isKnown		= -1;
 		incompatible	= AIList();
 		}
 }
@@ -45,7 +45,7 @@ static	function GetEngineObject(engineID)
 function cEngine::Save()
 // Save the engine in the database
 	{
-	if (this.engineID == null)	{ this.isKnown=2; return; }
+	if (this.engineID == null)	{ this.isKnown=-2; return; }
 	if (this.engineID in cEngine.enginedatabase)	return;
 	local crglist=AICargoList();
 	foreach (crg, dummy in crglist)
@@ -97,29 +97,36 @@ function cEngine::Update(vehID)
 		engObj.cargo_capacity.SetValue(cargoID, testing);
 		engObj.cargo_length.SetValue(cargoID, AIVehicle.GetLength(vehID)); // assume all cargo will gave same length
 		}
-	engObj.isKnown=2;
-//	cEngine.EngineRabbitList.AddItem(engObj.engineID, 1); // so no other rabbit will be sent
+	engObj.isKnown=-2;
 	}
 
-function cEngine::IsRabbitSet(engineID)
-// return true if we sent a test engine already
+function cEngine::IsRabbitSet(vehicleID)
+// return true if we have a test vehicle already
 	{
+	local engineID=AIVehicle.GetEngineType(vehicleID);
 	local eng=cEngine.Load(engineID);
-	return (eng.isKnown==1);
+	if (eng.isKnown >= 0 && !AIVehicle.IsValidVehicle(eng.isKnown))	eng.isKnown=-1;
+	return (eng.isKnown >= 0);
 	}
 
-function cEngine::RabbitSet(engineID)
+function cEngine::RabbitSet(vehicleID)
 // Set the status of the engine as a rabbit vehicle is on its way for testing
 	{
+	if (vehicleID == null)	return ;
+	local engineID=AIVehicle.GetEngineType(vehicleID);
+	if (engineID == null)	return ;
 	local eng=cEngine.Load(engineID);
-	if (eng.isKnown==0)	{ eng.isKnown=1; DInfo("Using that vehicle as test vehicle for engine checks",2,"cEngine::RabbitSet"); }
+	if (eng.isKnown == -1)	{ eng.isKnown=vehicleID; DInfo("Using that vehicle as test vehicle for engine checks",2,"cEngine::RabbitSet"); }
 	}
 
-function cEngine::RabbitUnset(engineID)
+function cEngine::RabbitUnset(vehicleID)
 // Unset the status of the rabbit vehicle, only useful if the rabbit vehicle never reach a depot (crash)
 	{
+	if (vehicleID == null) return ;
+	local engineID=AIVehicle.GetEngineType(vehicleID);
+	if (engineID==null)	return ;
 	local eng=cEngine.Load(engineID);
-	if (eng.isKnown==1)	eng.isKnown=0;
+	if (eng.isKnown >= 0)	eng.isKnown=-1;
 	}
 
 function cEngine::GetCapacity(eID, cargoID=null)
