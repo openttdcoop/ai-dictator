@@ -125,6 +125,8 @@ vehlist.Valuate(AIEngine.GetPrice);
 vehlist.RemoveValue(0); // remove towncars toys
 vehlist.Valuate(AIEngine.IsArticulated);
 vehlist.KeepValue(0);
+vehlist.Valuate(cEngine.IsEngineBlacklist);
+vehlist.KeepValue(0);
 vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 vehlist.KeepValue(1);
 vehlist.Valuate(cEngine.GetCapacity, cargoid);

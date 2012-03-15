@@ -263,7 +263,7 @@ function cStation::IsCargoProduceAccept(cargoID, produce_query, stationID=null)
 	local thatstation=null;
 	if (stationID == null)	thatstation=this;
 				else	thatstaiton=cStation.GetStationObject(stationID);
-	if (thatstation == null)	return;
+	if (thatstation == null)	return false;
 	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(thatstation.stationID));
 	foreach (tiles, sdummy in staloc)
 		{

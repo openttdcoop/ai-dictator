@@ -17,6 +17,11 @@ function cBuilder::DeleteStation(uid, stationid)
 // check no one else use it before doing that
 {
 local exist=false;
+if (stationid == null)
+	{
+	DInfo("Nothing to do, null stationid gave",1,"cBuilder::DeleteStation");
+	return;
+	}
 local temp=cStation.GetStationObject(stationid);
 if (temp != null)	exist=true; // a case where a station exist but not in our base
 if (exist)
@@ -37,7 +42,7 @@ if (exist)
 	if (!temp.station_tiles.IsEmpty())
 		foreach (tile, dummy in temp.station_tiles)	{ cTileTools.UnBlackListTile(tile); }
 	}
-local wasnamed=cStation.StationGetName(stationid);
+local wasnamed=AIStation.GetName(stationid);
 local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
 foreach (tile, dummy in tilelist)
 	{

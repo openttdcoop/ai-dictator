@@ -355,23 +355,6 @@ local allneed=0;
 local allbuy=0;
 INSTANCE.bank.busyRoute=false;
 if (priority.IsEmpty())	return;
-/*
-local priosave=AIList();
-priosave.AddList(priority);
-local airgp=AIList();
-local othergp=AIList();
-airgp.AddList(priority);
-airgp.Valuate(AIGroup.GetVehicleType);
-othergp.AddList(airgp);
-airgp.KeepValue(AIVehicle.VT_AIR);
-othergp.RemoveValue(AIVehicle.VT_AIR);
-airgp.Valuate(INSTANCE.route.VehicleGroupProfitRatio);
-airgp.Sort(AIList.SORT_BY_VALUE,false);
-othergp.Valuate(INSTANCE.route.VehicleGroupProfitRatio);
-othergp.Sort(AIList.SORT_BY_VALUE,false);
-priority.Clear();
-priority.AddList(airgp);
-priority.AddList(othergp);*/
 local priocount=AIList();
 priocount.AddList(priority);
 priority.Valuate(AIGroup.GetVehicleType);

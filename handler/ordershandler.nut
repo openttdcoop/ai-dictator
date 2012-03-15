@@ -226,7 +226,7 @@ if (homedepot == null)
 	if (AIVehicle.SendVehicleToDepot(veh)) // it might find a depot near, let's hope
 		{
 		DWarn("Looks like "+INSTANCE.carrier.VehicleGetName(veh)+" found a depot in its way",0,"cCarrier::VehicleSetDepotOrder");
-		INSTANCE.carrier.ToDepotList.AddItem(veh,DepotAction.SELL);
+		//INSTANCE.carrier.ToDepotList.AddItem(veh,DepotAction.SELL);
 		}
 	else	{
 		DError("DOH DOH ! We're really in bad situation with "+INSTANCE.carrier.VehicleGetName(veh)+". Trying to move it to some other route as last hope!",0,"cCarrier::VehicleSetDepotOrder");

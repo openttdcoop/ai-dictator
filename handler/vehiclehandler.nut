@@ -348,6 +348,7 @@ for (local z=AIOrder.GetOrderCount(vehID)-1; z >=0; z--)
 			AIOrder.RemoveOrder(vehID, z);
 			}
 		}
+numorders=AIOrder.GetOrderCount(vehID);
 if (numorders < 2)
 		{
 		local groupid=AIVehicle.GetGroupID(vehID);
@@ -427,6 +428,9 @@ foreach (vehicle, dummy in tlist)
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 //		continue;
 		}
+	local enginecheck=cEngine.IsRabbitSet(AIVehicle.GetEngineType(vehicle));
+print("enginecheck="+enginecheck);
+	if (topengine != -1 && enginecheck)	topengine=-1; // stop upgrade
 	if (topengine != -1)
 		{
 		// reserving money for the upgrade
@@ -434,6 +438,7 @@ foreach (vehicle, dummy in tlist)
 		if (!INSTANCE.bank.CanBuyThat(INSTANCE.carrier.vehnextprice+price))	continue; // no way, we lack funds for it
 		INSTANCE.carrier.vehnextprice+=price;
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0,"cCarrier::VehicleMaintenance");
+		cEngine.RabbitSet(AIVehicle.GetEngineType(vehicle));
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 //		continue;

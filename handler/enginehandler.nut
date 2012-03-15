@@ -14,7 +14,7 @@
 class cEngine extends AIEngine
 {
 static	enginedatabase= {};
-static	EngineInUseList=AIList();	// list of engines that are use by a vehicle. item=EUID, value=number of vehicle
+//static	EngineRabbitList=AIList();	// list of engines that should be test: item=EUID, value=unused if in list we have a test vehicle going
 static	BestEngineList=AIList();	// list of best engine for a couple engine/cargos, item=EUID, value=best engineID
 
 static	function GetEngineObject(engineID)
@@ -27,7 +27,7 @@ static	function GetEngineObject(engineID)
 	cargo_capacity	= null;	// capacity per cargo item=cargoID, value=capacity when refit
 	cargo_price		= null;	// price to refit item=cargoID, value=refit cost
 	cargo_length	= null;	// that's the length of a vehicle depending on its current cargo setting
-	isKnown		= null;	// true if we know it already
+	isKnown		= null;	// 0- seen that engine, 1- a vehicle is going for test, 2- tests made
 	incompatible	= null;	// AIList of wagons imcompatible with a train engine
 	
 	constructor()
@@ -37,7 +37,7 @@ static	function GetEngineObject(engineID)
 		cargo_capacity	= AIList();
 		cargo_price		= AIList();
 		cargo_length	= AIList();
-		isKnown		= false;
+		isKnown		= 0;
 		incompatible	= AIList();
 		}
 }
@@ -45,7 +45,7 @@ static	function GetEngineObject(engineID)
 function cEngine::Save()
 // Save the engine in the database
 	{
-	if (this.engineID == null)	{ this.isKnown=true; return; }
+	if (this.engineID == null)	{ this.isKnown=2; return; }
 	if (this.engineID in cEngine.enginedatabase)	return;
 	local crglist=AICargoList();
 	foreach (crg, dummy in crglist)
@@ -87,7 +87,7 @@ function cEngine::Update(vehID)
 	{
 	local new_engine=AIVehicle.GetEngineType(vehID);
 	local engObj=cEngine.Load(new_engine);
-	if (engObj.isKnown)	return;
+	if (engObj.isKnown==2)	return;
 	DInfo("Grabbing vehicle properties for "+engObj.name,2,"cEngine::Update");
 	local crgList=AICargoList();
 	foreach (cargoID, dummy in crgList)
@@ -97,7 +97,29 @@ function cEngine::Update(vehID)
 		engObj.cargo_capacity.SetValue(cargoID, testing);
 		engObj.cargo_length.SetValue(cargoID, AIVehicle.GetLength(vehID)); // assume all cargo will gave same length
 		}
-	engObj.isKnown=true;
+	engObj.isKnown=2;
+//	cEngine.EngineRabbitList.AddItem(engObj.engineID, 1); // so no other rabbit will be sent
+	}
+
+function cEngine::IsRabbitSet(engineID)
+// return true if we sent a test engine already
+	{
+	local eng=cEngine.Load(engineID);
+	return (eng.isKnown==1);
+	}
+
+function cEngine::RabbitSet(engineID)
+// Set the status of the engine as a rabbit vehicle is on its way for testing
+	{
+	local eng=cEngine.Load(engineID);
+	if (eng.isKnown==0)	{ eng.isKnown=1; DInfo("Using that vehicle as test vehicle for engine checks",2,"cEngine::RabbitSet"); }
+	}
+
+function cEngine::RabbitUnset(engineID)
+// Unset the status of the rabbit vehicle, only useful if the rabbit vehicle never reach a depot (crash)
+	{
+	local eng=cEngine.Load(engineID);
+	if (eng.isKnown==1)	eng.isKnown=0;
 	}
 
 function cEngine::GetCapacity(eID, cargoID=null)
@@ -304,4 +326,13 @@ function cEngine::IsVehicleAtTop(vehID)
 	return cEngine.EngineIsTop(engineID, cargoID, false);
 	}
 
+function cEngine::IsEngineBlacklist(engineID)
+// return true if the engine is blacklist
+// we use that as a valuator to remove bad engine
+// For now only the ikarus set is know to be bad because lying to noai with IsArticulated answer
+	{
+	local name=AIEngine.GetName(engineID);
+	if (name.find("Ikarus") != null)	return true;
+	return false;
+	}
 

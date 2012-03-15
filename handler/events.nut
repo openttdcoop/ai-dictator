@@ -80,8 +80,9 @@ while (AIEventController.IsEventWaiting())
 			vehicle = event.GetVehicleID();
 			DInfo("Vehicle "+INSTANCE.carrier.VehicleGetName(vehicle)+" has crashed!!!",0,"HandleEvents");
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
-			DInfo("Vehicle state: " + AIVehicle.GetState(vehicle),1);
+			local engineID=AIVehicle.GetEngineType(vehicle);
 			INSTANCE.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
+			if (engineID != null)	cEngine.RabbitUnset(engineID);
 		break;
 		case AIEvent.AI_ET_VEHICLE_WAITING_IN_DEPOT:
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
@@ -98,6 +99,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
 			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot",0,"HandleEvents");
+			INSTANCE.carrier.VehicleMaintenance_Orders(vehicle);
 			INSTANCE.builder.RouteIsDamage(INSTANCE.carrier.VehicleFindRouteIndex(vehicle));
 			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;

@@ -407,12 +407,16 @@ function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way
 	{
 	if (this.UID < 2)	return; // don't touch virtual routes
-	DInfo("Marking route "+this.name+" undoable !!!",1);
+	DInfo("Marking route "+this.name+" undoable !!!",1,"RouteIsNotDoable");
 	cJobs.JobIsNotDoable(this.UID);
+	local stasrc=this.source_stationID;
+	local stadst=this.target_stationID;
 	this.CheckEntry();
 	INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID);
-	this.RouteReleaseStation(this.source_stationID);
-	this.RouteReleaseStation(this.target_stationID);
+	this.RouteReleaseStation(stasrc);
+	this.RouteReleaseStation(stadst);
+	INSTANCE.builder.DeleteStation(this.UID, stasrc);
+	INSTANCE.builder.DeleteStation(this.UID, stadst);
 	if (this.groupID != null)	AIGroup.DeleteGroup(this.groupID);
 	local uidsafe = this.UID;
 	if (this.UID in cRoute.database)
