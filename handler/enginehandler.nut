@@ -87,7 +87,7 @@ function cEngine::Update(vehID)
 	{
 	local new_engine=AIVehicle.GetEngineType(vehID);
 	local engObj=cEngine.Load(new_engine);
-	if (engObj.isKnown==2)	return;
+	if (engObj.isKnown==-2)	return;
 	DInfo("Grabbing vehicle properties for "+engObj.name,2,"cEngine::Update");
 	local crgList=AICargoList();
 	foreach (cargoID, dummy in crgList)
@@ -340,6 +340,7 @@ function cEngine::IsEngineBlacklist(engineID)
 	{
 	local name=AIEngine.GetName(engineID);
 	if (name.find("Ikarus 180") != null)	return true;
+	if (name.find("Ikarus 280") != null)	return true;
 	return false;
 	}
 
