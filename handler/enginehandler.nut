@@ -339,7 +339,7 @@ function cEngine::IsEngineBlacklist(engineID)
 // For now only the ikarus set is know to be bad because lying to noai with IsArticulated answer
 	{
 	local name=AIEngine.GetName(engineID);
-	if (name.find("Ikarus") != null)	return true;
+	if (name.find("Ikarus 180") != null)	return true;
 	return false;
 	}
 

@@ -242,7 +242,7 @@ switch (reason)
 	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" is going to depot "+rr,0,"cCarrier::VehicleSendToDepot");
-INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
+if (understood)	INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
 }
 
 function cCarrier::VehicleGetFullCapacity(veh)
@@ -293,10 +293,10 @@ if (betterEngine==-1)
 	}
 local vehtype=AIVehicle.GetVehicleType(vehID);
 local new_vehID=null;
-local homedepot=AIVehicle.GetLocation(vehID);
 local road=INSTANCE.route.GetRouteObject(idx);
 if (road == null)	return;
-//local group = AIVehicle.GetGroupID(vehID);
+local homedepot=cRoute.GetDepot(idx);
+if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
 DInfo("Upgrading using depot at "+homedepot,2,"cCarrier::VehicleUpgradeEngine");
 PutSign(homedepot,"D");
 local money=0;
@@ -305,6 +305,7 @@ switch (vehtype)
 	{
 	case AIVehicle.VT_RAIL:
 /* Upgrading the loco engine is doable, but it might get too complexe for nothing, so i will destroy the train, and tell the AddWagon function we need X more wagons, as the train is now removed, the function will have no choice then build another one. This new one (if it's doable) will be an upgraded version of loco and wagons. Problem solve. */
+		homedepot=AIVehicle.GetLocation(vehID);
 		local numwagon=cCarrier.GetNumberOfWagons(vehID);
 		INSTANCE.carrier.VehicleSell(vehID,false);
 		INSTANCE.carrier.AddWagon(idx, numwagon);

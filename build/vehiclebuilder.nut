@@ -306,7 +306,7 @@ if (!AIVehicle.IsValidVehicle(vehID))	return false;
 local vehList=AIList();
 local vehGroup=AIVehicle.GetGroupID(vehID);
 if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
-		else	vehList.AddItem(vehID,0);
+if (vehList.IsEmpty())	vehList.AddItem(vehID,0);
 foreach (vehicle, dummy in vehList)
 	cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
 }
@@ -320,7 +320,7 @@ foreach (groupID, dummy in allgroup)
 	{
 	local vehlist=AIVehicleList_Group(groupID);
 	vehlist.Valuate(AIBase.RandItem);
-	vehlist.Sort(AIList.SORT_BY_VALUE,true);
+//	vehlist.Sort(AIList.SORT_BY_VALUE,true);
 	if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(),doGroup);
 	AIController.Sleep(1);
 	}
