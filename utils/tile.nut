@@ -786,3 +786,71 @@ function cTileTools::YexoValuate(list, valuator, ...)
 	}
 }
 
+function cTileTools::GetPosRelativeFromDirection(dirswitch, direction)
+// Get the relative tile from "dirswitch" relative to "direction"
+// dirswitch: 0- left, 1-right, 2-forward, 3=backward
+{
+local left, right, forward, backward = null;
+switch (direction)
+	{
+	case DIR_NE:
+		left=AIMap.GetTileIndex(0,-1);
+		right=AIMap.GetTileIndex(0,1);
+		forward=AIMap.GetTileIndex(-1,0);
+		backward=AIMap.GetTileIndex(1,0);
+
+	break;
+	case DIR_SE:
+		left=AIMap.GetTileIndex(-1,0);
+		right=AIMap.GetTileIndex(1,0);
+		forward=AIMap.GetTileIndex(0,1);
+		backward=AIMap.GetTileIndex(0,-1);
+	break;
+	case DIR_SW:
+		left=AIMap.GetTileIndex(0,1);
+		right=AIMap.GetTileIndex(0,-1);
+		forward=AIMap.GetTileIndex(1,0);
+		backward=AIMap.GetTileIndex(-1,0);
+	break;
+	case DIR_NW:
+		left=AIMap.GetTileIndex(1,0);
+		right=AIMap.GetTileIndex(-1,0);
+		forward=AIMap.GetTileIndex(0,-1);
+		backward=AIMap.GetTileIndex(0,1);
+	break;
+	}
+
+switch (dirswitch)
+	{
+	case 0:
+		return left;
+	case 1:
+		return right;
+	case 2:
+		return forward;
+	case 3:
+		return backward;
+	}
+return -1;
+}
+
+function cTileTools::GetLeftRelativeFromDirection(direction)
+	{
+	return cTileTools.GetPosRelativeFromDirection(0,direction);
+	}
+
+function cTileTools::GetRightRelativeFromDirection(direction)
+	{
+	return cTileTools.GetPosRelativeFromDirection(1,direction);
+	}
+
+function cTileTools::GetForwardRelativeFromDirection(direction)
+	{
+	return cTileTools.GetPosRelativeFromDirection(2,direction);
+	}
+
+function cTileTools::GetBackwardRelativeFromDirection(direction)
+	{
+	return cTileTools.GetPosRelativeFromDirection(3,direction);
+	}
+

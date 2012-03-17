@@ -275,11 +275,11 @@ checklist.Valuate(AIRoad.IsRoadTile);
 checklist.KeepValue(1);
 if (checklist.IsEmpty())
 	{
-	DInfo("Cannot stick our station to a road, building classic",2);
+	DInfo("Cannot stick our station to a road, building classic",2,"BuildRoadStation");
 	isneartown=false;
 	}
 else	{
-	DInfo("Sticking station & depot to the road",2);
+	DInfo("Sticking station & depot to the road",2,"BuildRoadStation");
 	}
 checklist.AddList(tilelist); // re-put tiles in it in case we fail building later
 
@@ -322,7 +322,7 @@ if (isneartown)	{ // first, removing most of the unbuildable cases
 			}
 		tilelist.Sort(AIList.SORT_BY_VALUE,true);
 		}
-DInfo("Tilelist set to "+tilelist.Count(),2);
+DInfo("Tilelist set to "+tilelist.Count(),2,"BuildRoadStation");
 local success = false;
 local depotbuild=false;
 local stationbuild=false;
@@ -377,7 +377,7 @@ if (!isneartown)
 	}
 if (!success) 
 	{
-	DInfo("Can't find a good place to build the road station !",1);
+	DInfo("Can't find a good place to build the road station !",1,"BuildRoadStation");
 	INSTANCE.builder.CriticalError=true;
 	return false;
 	}
@@ -389,12 +389,12 @@ if (!isneartown)
 	AIRoad.BuildRoad(stafront, depfront);
 	if (!AIRoad.BuildRoadStation(statile, stafront, stationtype, AIStation.STATION_NEW))
 		{
-		DError("Station could not be built",1);
+		DError("Station could not be built",1,"BuildRoadStation");
 		return false;
 		}
 	if (!AIRoad.BuildRoadDepot(deptile, depfront))
 		{
-		DError("Depot could not be built",1);
+		DError("Depot could not be built",1,"BuildRoadStation");
 		cTileTools.DemolishTile(statile);
 		return false;
 		}
@@ -405,6 +405,12 @@ if (start)	INSTANCE.route.source_stationID=AIStation.GetStationID(statile);
 INSTANCE.route.CreateNewStation(start);
 if (start)	INSTANCE.route.source.depot=deptile;
 	else	INSTANCE.route.target.depot=deptile;
+local stadir = INSTANCE.builder.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
+local tileFrom= statile + cTileTools.GetRightRelativeFromDirection(stadir);
+local tileTo= statile + cTileTools.GetLeftRelativeFromDirection(stadir);
+cTileTools.TerraformLevelTiles(tileFrom, tileTo); // try levels mainstation and its neighbourg
+tileTo=statile+cTileTools.GetLeftRelativeFromDirection(stadir)+cTileTools.GetForwardRelativeFromDirection(stadir)+cTileTools.GetForwardRelativeFromDirection(stadir);
+cTileTools.TerraformLevelTiles(tileFrom, tileTo); // try levels all tiles a station could use to grow
 return true;
 }
 

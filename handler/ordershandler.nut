@@ -193,7 +193,6 @@ return -1;
 function cCarrier::VehicleSetDepotOrder(veh)
 // set all orders of the vehicle to force it going to a depot
 {
-print("setdepotorder");
 if (veh == null)	return;
 if (cStation.IsDepot(AIVehicle.GetLocation(veh)))	return;
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
