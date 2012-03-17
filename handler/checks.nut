@@ -197,7 +197,7 @@ foreach (stationID, dummy in allstations)
 		if (road.station_type == AIStation.STATION_AIRPORT)	cargoID=cCargo.GetPassengerCargo(); // always check passenger to avoid mail cargo
 		if (road.source_stationID == stobj.stationID)
 			{
-			if (stobj.IsCargoProduce(cargoID))	stobj.cargo_produce.AddItem(cargoID, 0); // rediscover cargo
+			if (stobj.IsCargoProduce(cargoID))	{ stobj.cargo_produce.AddItem(cargoID, 0); }// rediscover cargo
 			else	{
 				DWarn("Station "+cStation.StationGetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRoadStationStatus");
 				road.RouteIsNotDoable();
@@ -210,15 +210,7 @@ foreach (stationID, dummy in allstations)
 			if (stobj.IsCargoAccept(cargoID))	stobj.cargo_accept.AddItem(cargoID, 0); // rediscover cargo
 			else	{
 				DWarn("Station "+cStation.StationGetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRoadStationStatus");
-/*
-				if (INSTANCE.builder.building_route == -1) // a hope, we might repair the route as we aren't working on another one
-						{
-						road.RouteReleaseStation(stationID);
-						road.target_stationID = null;
-						INSTANCE.builder.building_route = road.UID;
-						}
-					else	*/road.RouteIsNotDoable();
-//				continue;
+				road.RouteIsNotDoable();
 				}
 			}
 		}

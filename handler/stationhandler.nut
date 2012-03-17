@@ -119,10 +119,6 @@ function cStation::UpdateCargos(stationID=null)
 	local allcargos=AIList();
 	allcargos.AddList(thatstation.cargo_produce);
 	allcargos.AddList(thatstation.cargo_accept);
-	if (AIAirport.IsAirportTile(AIStation.GetLocation(thatstation.stationID)))
-		{
-		
-		}
 	foreach (cargo, value in allcargos)
 		{
 		if (thatstation.cargo_produce.HasItem(cargo))
@@ -286,13 +282,19 @@ function cStation::IsCargoProduceAccept(cargoID, produce_query, stationID=null)
 function cStation::IsCargoProduce(cargoID, stationID=null)
 // Check if a cargo is produce at that station
 	{
-	return cStation.IsCargoProduceAccept(cargoID, true, stationID);
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+				else	thatstaiton=cStation.GetStationObject(stationID);
+	return thatstation.IsCargoProduceAccept(cargoID, true, stationID);
 	}
 
 function cStation::IsCargoAccept(cargoID, stationID=null)
 // Check if a cargo is accept at that station
 	{
-	return cStation.IsCargoProduceAccept(cargoID, false, stationID);
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+				else	thatstaiton=cStation.GetStationObject(stationID);
+	return thatstation.IsCargoProduceAccept(cargoID, false, stationID);
 	}
 
 function cStation::CheckCargoHandleByStation(stationID=null)
@@ -324,8 +326,16 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 			if (!valid_produce && produce > 0)	valid_produce=true;
 			if (!valid_accept && accept > 7)	valid_accept=true;
 			}
-		if (!valid_produce && thatstation.cargo_produce.HasItem(cargo_id))	{ DInfo("Station "+thatstation.name+" no longer produce "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation"); thatstation.cargo_produce.RemoveItem(cargo_id); }
-		if (!valid_accept && thatstation.cargo_accept.HasItem(cargo_id))	{ DInfo("Station "+thatstation.name+" no longer accept "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation");thatstation.cargo_accept.RemoveItem(cargo_id); }
+		if (!valid_produce && thatstation.cargo_produce.HasItem(cargo_id))
+			{
+			DInfo("Station "+thatstation.name+" no longer produce "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation");
+			thatstation.cargo_produce.RemoveItem(cargo_id);
+			}
+		if (!valid_accept && thatstation.cargo_accept.HasItem(cargo_id))
+			{
+			DInfo("Station "+thatstation.name+" no longer accept "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation");
+			thatstation.cargo_accept.RemoveItem(cargo_id);
+			}
 		INSTANCE.Sleep(1);
 		}
 	}

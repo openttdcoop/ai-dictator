@@ -28,7 +28,7 @@ if (exist)
 	{
 	if (temp.owner.Count() != 0)
 		{
-		DInfo("Can't delete station "+cStation.StationGetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",1);
+		DInfo("Can't delete station "+cStation.StationGetName(stationid)+" ! Station is use by "+temp.owner.Count()+" route",1,"cBuilder::DeleteStation");
 		return false;
 		}
 	// didn't find someone else use it
@@ -37,7 +37,7 @@ if (exist)
 	local vehcheck=AIVehicleList_Station(stationid);
 	if (!vehcheck.IsEmpty())
 		{
-		DWarn("Still have "+vehcheck.Count()+" vehicles using station "+cStation.StationGetName(stationid),1);
+		DWarn("Still have "+vehcheck.Count()+" vehicles using station "+cStation.StationGetName(stationid),1,"cBuilder::DeleteStation");
 		}
 	if (!temp.station_tiles.IsEmpty())
 		foreach (tile, dummy in temp.station_tiles)	{ cTileTools.UnBlackListTile(tile); }
@@ -48,11 +48,11 @@ foreach (tile, dummy in tilelist)
 	{
 	if (!AITile.DemolishTile(tile)) return false;
 	}
-DInfo("Removing station "+wasnamed,0);
+DInfo("Removing station "+wasnamed,0,"cBuilder::DeleteStation");
 if (exist)
 	{
-	if (!INSTANCE.builder.DeleteDepot(temp.depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
-								else	{ DInfo("Removing depot link to station "+wasnamed,0); }
+	if (!INSTANCE.builder.DeleteDepot(temp.depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1,"cBuilder::DeleteStation"); }
+								else	{ DInfo("Removing depot link to station "+wasnamed,0,"cBuilder::DeleteStation"); }
 	cStation.DeleteStation(stationid);
 	}
 return true;

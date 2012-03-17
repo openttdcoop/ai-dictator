@@ -474,7 +474,7 @@ function cCarrier::VehicleSell(veh, recordit)
 // sell the vehicle and update route info
 {
 local profit=AIVehicle.GetProfitThisYear(veh);
-DInfo("-> Selling Vehicle "+INSTANCE.carrier.VehicleGetName(veh),0);
+DInfo("Selling Vehicle "+INSTANCE.carrier.VehicleGetName(veh),0,"cCarrier::VehicleSell");
 local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(uid);
 local vehvalue=AIVehicle.GetCurrentValue(veh);
@@ -486,13 +486,6 @@ AIVehicle.SellVehicle(veh);
 if (road == null) return;
 road.RouteUpdateVehicle();
 if (recordit)	road.date_VehicleDelete=AIDate.GetCurrentDate();
-// detect a dead route, no profit so we delete the vehicle, and it was the last one on that route
-/*
-if (road.vehicle_count==0 && profit < 1)
-	{
-	if (vehtype == AIVehicle.VT_AIR)	road.isWorking=false; // disable the route, but don't remove the airport, we could reuse it
-						else	road.RouteIsNotDoable(); // ok remove the route itself
-	}*/
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
@@ -504,7 +497,7 @@ local vehlist=null;
 if (road.groupID != null)
 	{
 	vehlist=AIVehicleList_Group(road.groupID);
-	DInfo("Removing a group of vehicle : "+vehlist.Count(),1);
+	DInfo("Removing a group of vehicle : "+vehlist.Count(),1,"VehicleGroupSendToDepotAndSell");
 	foreach (vehicle, dummy in vehlist)
 		{
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
@@ -518,7 +511,7 @@ if (road.groupID != null)
 			AIController.Sleep(10);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
 			wait=(AIVehicle.IsValidVehicle(vehicle));
-			DInfo("wait? "+AIVehicle.IsValidVehicle(vehicle)+" waiting:"+wait+" waitcount="+waitcount,0);
+			DInfo("wait? "+AIVehicle.IsValidVehicle(vehicle)+" waiting:"+wait+" waitcount="+waitcount,2,"VehicleGroupSendToDepotAndSell");
 			waitcount++;
 			if (waitcount > waitmax)	wait=false;
 			} while (wait);

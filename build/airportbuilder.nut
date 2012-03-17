@@ -65,7 +65,7 @@ foreach (ownID, dummy in station.owner)
 	}
 INSTANCE.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 local counter=0;
-local maxcount=200;
+local maxcount=600;
 local result=false;
 INSTANCE.carrier.VehicleHandleTrafficAtStation(station.stationID,true);
 // time to pray a bit for success, we could invalidate a working route here
