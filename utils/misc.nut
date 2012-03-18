@@ -217,7 +217,7 @@ function LoadOldSave()
 	DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2,"main");
 }
 
-function LoadSaveGame()
+function LoadSaveGame(revision)
 {
 	local all_stations=bank.unleash_road;
 	DInfo("Restoring stations",0,"main");
@@ -284,7 +284,12 @@ function LoadSaveGame()
 		obj.primary_RailLink=all_routes[i+13];
 		obj.secondary_RailLink=all_routes[i+14];
 		obj.twoway=all_routes[i+15];
-		i+=15;
+		if (revision)	i+=15;
+				else	{ // newer savegame from 155
+					obj.source_RailEntry=all_routes[i+16];
+					obj.target_RailEntry=all_routes[i+17];
+					i+=17;
+					}
 		iter++;
 		cRoute.database[obj.UID] <- obj;
 		if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
@@ -328,7 +333,8 @@ function LoadSaveGame()
 function LoadingGame()
 {
 	if (bank.busyRoute < 152)	LoadOldSave();
-					else	LoadSaveGame();
+					else	if (bank.busyRoute < 155)	LoadSaveGame(true);
+										else	LoadSaveGame(false);
 	OneWeek=0;
 	OneMonth=0;
 	SixMonth=0;
@@ -350,6 +356,14 @@ function LoadingGame()
 		if (rt > AIVehicle.VT_AIR)	rt=AIVehicle.VT_AIR;
 		cJobs.CreateNewJob(aroute.sourceID, aroute.targetID, aroute.source_istown, aroute.cargoID, rt);
 		}
+	/*DInfo("Starting stopped trains",1,"LoadingGame");
+	local trainlist=AIVehicleList();
+	trainlist.Valuate(AIVehicle.GetState);
+	trainlist.KeepValue(AIVehicle.VS_IN_DEPOT);
+	trainlist.Valuate(AIVehicle.GetVehicleType);
+	trainlist.KeepValue(AIVehicle.VT_RAIL);
+	foreach (vehID, dummy in trainlist)	AIVehicle.StartStopVehicle(vehID);*/
+
 	DInfo("Tagging jobs in use",0,"LoadingGame");
 	foreach (jobID, dummy in cJobs.jobIndexer)
 		{
@@ -357,8 +371,34 @@ function LoadingGame()
 		if (ajob==null)	continue;
 		ajob.isUse=true;
 		}
+
 	local alltowns=AITownList();
 	foreach (townID, dummy in alltowns)
 		if (AITown.GetRating(townID, AICompany.COMPANY_SELF) != AITown.TOWN_RATING_NONE)	cJobs.statueTown.AddItem(townID,0);
 	INSTANCE.builder.CheckRouteStationStatus();
+
+	local railgroup=AIGroupList();
+	railgroup.Valuate(AIGroup.GetVehicleType);
+print("railgroup size="+railgroup.Count());
+	railgroup.KeepValue(AIVehicle.VT_RAIL);
+print("railgroup size="+railgroup.Count());
+foreach (gid, dummy in railgroup)
+	{
+	local uid=cRoute.GroupIndexer.GetValue(gid);
+	local thatroute=cRoute.GetRouteObject(uid);
+//	thatroute.CheckEntry();
+	cBuilder.DumpRoute(uid);
+//		PutSign(thatroute.source.depot,"SD");
+//		PutSign(thatroute.target.depot,"TD");
+	local sdepot=cRoute.GetDepot(uid, 1);
+	local ddepot=cRoute.GetDepot(uid, 2);
+	if (sdepot != -1 && ddepot != -1)
+		{
+		PutSign(sdepot,"SD");
+		PutSign(ddepot,"TD");
+		print("checking depot to depot");
+		print("result="+cBuilder.RoadRunner(sdepot, ddepot, AIVehicle.VT_RAIL)); ClearSignsALL();
+		}
+	else			print("bad depot");
+	}
 }

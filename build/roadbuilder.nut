@@ -1095,6 +1095,13 @@ local valid=false;
 local direction=null;
 local found=(source == target);
 local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
+/*if (road_type == AIVehicle.VT_RAIL)
+	{
+	directions.push(AIMap.GetTileIndex(1, 1));
+	directions.push(AIMap.GetTileIndex(1, -1));
+	directions.push(AIMap.GetTileIndex(-1, -1));
+	directions.push(AIMap.GetTileIndex(-1, 1));
+	}*/
 foreach (voisin in directions)
 	{
 	direction=source+voisin;
@@ -1105,6 +1112,7 @@ foreach (voisin in directions)
 		// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
 		// if we are connect to someone, i reset "source" to be "someone" and continue
 		local guessTile=null;	
+//print("********* tunnel!");
 		foreach (where in directions)
 			{
 			if (road_type == AIVehicle.VT_ROAD)

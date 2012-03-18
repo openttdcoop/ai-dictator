@@ -402,6 +402,7 @@ do	{
 	if (AIVehicle.IsValidVehicle(tID) && AIVehicle.GetState(tID) == AIVehicle.VS_IN_DEPOT && !giveup)
 		{ // now we can add wagons to it
 		local beforesize=cCarrier.GetNumberOfWagons(tID);
+		depotID=AIVehicle.GetLocation(tID);
 		cCarrier.VehicleOrdersReset(tID); // maybe we call that train to come to the depot
 		INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
 		tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen);

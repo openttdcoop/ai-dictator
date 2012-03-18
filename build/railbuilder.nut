@@ -192,48 +192,25 @@ INSTANCE.route.CreateNewStation(start);
 return true;
 }
 
-function cBuilder::PathFinderHint(head1, head2)
-// Cut out distances from head1 to head2 by returning a point in middle of that distance
-{
-//AISign.BuildSign(head1[0],"*");
-print("head1[0]="+head1[0]+"   head2[0]="+head2[0]);
-local half_x=(AIMap.GetTileX(head1[0])+AIMap.GetTileX(head2[0]) / 2).tointeger();
-local half_y=(AIMap.GetTileY(head1[0])+AIMap.GetTileY(head2[0]) / 2).tointeger();
-local newend=AIMap.GetTileIndex(half_x,half_y);
-if (AIMap.IsValidTile(newend))
-	{
-	return [newend + AIMap.GetTileIndex(-1, 0), newend];
-	}
-return false;	
-}
-
 function cBuilder::BuildRoadRAIL(head1, head2) {
 local pathfinder = MyRailPF();
-/*local hinter=cBuilder.PathFinderHint(head1, head2);
-local waypoint=null;
-if (hinter == false)
-	{
-	print("cannot find a valid tile in between");
-	}
-else	waypoint=hinter;
-*/
 /*pathfinder._cost_level_crossing = 900;
 pathfinder.cost_slope = 200;
 pathfinder.cost_coast = 100;
 pathfinder.cost_bridge_per_tile = 90;
 pathfinder.cost_tunnel_per_tile = 75;
 pathfinder.max_bridge_length = 20;
-pathfinder.max_tunnel_length = 20;
-*/
-//pathfinder.cost.max_cost = (AIMap.DistanceManhattan(head1[0],head2[0]) * 2 * pathfinder.cost.slope).tointeger();
-DInfo("Pathfinder max_cost set to "+pathfinder._max_cost+" "+pathfinder.cost.max_cost);
+pathfinder.max_tunnel_length = 20;*/
+pathfinder.cost.turn = 200;
+pathfinder.cost.max_bridge_length=30;
+pathfinder.cost.max_tunnel_length=20;
+pathfinder.cost.tile=80;
+pathfinder.cost.slope=100;
+//pathfinder.cost.diagonal_tile=100;
 
-
-//pathfinder.InitializePath([head1], [head2]);
 local src=head1;
 local dst=head2;
 
-print("src="+src+" - dst="+dst);
 pathfinder.InitializePath([src], [dst]);
 local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 local pfInfo=null;
@@ -263,58 +240,71 @@ else	{
 	AISign.RemoveSign(pfInfo);
 	return false;
 	}
-	INSTANCE.bank.RaiseFundsBigTime();
-	local prev = null;
-	local prevprev = null;
-	local pp1, pp2, pp3 = null;
-	while (path != null) {
-		if (prevprev != null) {
-			if (AIMap.DistanceManhattan(prev, path.GetTile()) > 1) {
-				if (AITunnel.GetOtherTunnelEnd(prev) == path.GetTile()) {
-					if (!AITunnel.BuildTunnel(AIVehicle.VT_RAIL, prev)) {
-						DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
-						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH) {
-							DInfo("That tunnel would be too expensive. Construction aborted.",2);
-							return false;
-						}
-						if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
-					}
-				} else {
-					local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
-					bridgelist.Valuate(AIBridge.GetPrice,AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
-					bridgelist.Sort(AIList.SORT_BY_VALUE,true);
-					if (!AIBridge.BuildBridge(AIVehicle.VT_RAIL, bridgelist.Begin(), prev, path.GetTile())) {
-						DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
-						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH) {
-							DInfo("That bridge would be too expensive. Construction aborted.",2);
-							return false;
-						}
-						if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
-					}
-				}
-				pp3 = pp2;
-				pp2 = pp1;
-				pp1 = prevprev;
-				prevprev = prev;
-				prev = path.GetTile();
-				path = path.GetParent();
-			} else {
-				if (!AIRail.BuildRail(prevprev, prev, path.GetTile())) {
+INSTANCE.bank.RaiseFundsBigTime();
+local prev = null;
+local prevprev = null;
+local pp1, pp2, pp3 = null;
+while (path != null)
+	{
+	if (prevprev != null)
+		{
+		if (AIMap.DistanceManhattan(prev, path.GetTile()) > 1)
+			{
+			if (AITunnel.GetOtherTunnelEnd(prev) == path.GetTile())
+				{
+				if (!AITunnel.BuildTunnel(AIVehicle.VT_RAIL, prev))
+					{
 					DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
+					if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
+						{
+						DInfo("That tunnel would be too expensive. Construction aborted.",2);
+						return false;
+						}
 					if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
+					}
 				}
-			}
-		}
-		if (path != null) {
+			else	{
+				local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
+				bridgelist.Valuate(AIBridge.GetPrice,AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
+				bridgelist.Sort(AIList.SORT_BY_VALUE,true);
+				if (!AIBridge.BuildBridge(AIVehicle.VT_RAIL, bridgelist.Begin(), prev, path.GetTile()))
+					{
+					DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
+					if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
+						{
+						DInfo("That bridge would be too expensive. Construction aborted.",2);
+						return false;
+						}
+					if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
+					cBridge.IsBridgeTile(prev); // force bridge check
+					}
+				}
 			pp3 = pp2;
 			pp2 = pp1;
 			pp1 = prevprev;
 			prevprev = prev;
 			prev = path.GetTile();
-			path = path.GetParent(); 
+			path = path.GetParent();
+			}
+		 else {
+			if (!AIRail.BuildRail(prevprev, prev, path.GetTile()))
+				{
+				DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
+				if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
+				}
+			}
+		}
+	if (path != null)
+		{
+		pp3 = pp2;
+		pp2 = pp1;
+		pp1 = prevprev;
+		prevprev = prev;
+		prev = path.GetTile();
+		path = path.GetParent(); 
 		}
 	}
-	return true;
+return true;
 }
 
 function cBuilder::RetryRail(prevprev, pp1, pp2, pp3, head1)
@@ -492,19 +482,6 @@ do	{
 					else	dstlink=dstStation.locations.GetValue(14);
 			srcpos=srclink+cStation.GetRelativeTileBackward(srcStation.stationID, srcUseEntry);
 			dstpos=dstlink+cStation.GetRelativeTileBackward(dstStation.stationID, dstUseEntry);
-			ClearSignsALL();
-
-/*			print("testing stations**********");
-			INSTANCE.builder.RailStationGrow(fromObj, true, false);
-			cStation.NewTrain(true, false, fromObj);
-			INSTANCE.builder.RailStationGrow(fromObj, true, false);
-			cStation.NewTrain(true, false, fromObj);
-			INSTANCE.builder.RailStationGrow(fromObj, true, false);
-			INSTANCE.builder.RailStationGrow(fromObj, true, true); // TODO: remove force grow
-			INSTANCE.builder.RailStationGrow(toObj, true, true);
-			INSTANCE.builder.RailStationGrow(fromObj, false, false); // TODO: remove force grow
-			INSTANCE.builder.RailStationGrow(toObj, false, false);
-			ClearSignsALL();*/
 			if (mainowner==-1)
 				{
 				DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos,2,"CreateStationConnection");
@@ -721,8 +698,6 @@ if (newStationSize > thatstation.size)
 		plat_main=idxRightPlatform;
 		plat_alt=idxLeftPlatform;
 		}
-/*	local pside=rightTileOf;
-	if (useEntry)	pside=leftTileOf;*/
 	displace=plat_main+pside;
 	local areaclean=AITileList();
 	areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
@@ -740,8 +715,6 @@ if (newStationSize > thatstation.size)
 		INSTANCE.builder.IsCriticalError();
 		allfail=INSTANCE.builder.CriticalError;
 		INSTANCE.builder.CriticalError=false;
-		/*pside=leftTileOf;
-		if (useEntry)	pside=rightTileOf;*/
 		pside=rightTileOf;
 		if (useEntry)	pside=leftTileOf;
 		displace=plat_alt+pside;
@@ -1439,19 +1412,26 @@ trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE
 trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE
 trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW
 trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE
-if (rails==255)	return 0;
+if (rails==255)	return 0; // invalid rail
 local railmask=0;
 foreach (tracks, value in trackMap)
 	{
 	if ((rails & tracks)==tracks)	{ railmask=railmask | value; }
-	if (railmask==(NE+SW+NW+SE))	return railmask; // no need to test further
+	if (railmask==(NE+SW+NW+SE))	return railmask; // no need to test more tracks
 	}
 return railmask;
 }
 
 function cBuilder::AreRailTilesConnected(tilefrom, tileto)
 // Look at tilefront and build rails to connect that tile to its neightbourg tiles that are us with rails
+// tilefrom, tileto : tiles to check
+// return true if you can walk from tilefrom to tileto
 {
+local atemp=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+if (AITile.GetOwner(tilefrom) != atemp)	return false; // not own by us
+if (AITile.GetOwner(tileto) != atemp)		return false; // not own by us
+atemp=AIRail.GetRailType(tilefrom);
+if (AIRail.GetRailType(tileto) != atemp)	return false; // not same railtype
 local NE = 1; // we will use them as bitmask
 local	SW = 2;
 local	NW = 4;
@@ -1462,23 +1442,46 @@ local tileto_mask=cBuilder.GetRailBitMask(AIRail.GetRailTracks(tileto));
 local tilefrom_need, tileto_need=0;
 switch (direction)
 	{
-	case	0: // SE-NW
-		tilefrom_need=SE;
-		tileto_need=NW;
-		break;
-	case	1: // NW-SE
+	case	0: // SE-NW, it's easy, if we want go SE->N
 		tilefrom_need=NW;
 		tileto_need=SE;
 		break;
-	case	2: // SW-NE
-		tilefrom_need=SW;
-		tileto_need=NE;
+	case	1: // NW-SE
+		tilefrom_need=SE;
+		tileto_need=NW;
 		break;
-	case	3: // NE-SW
+	case	2: // SW-NE
 		tilefrom_need=NE;
 		tileto_need=SW;
 		break;
+	case	3: // NE-SW
+		tilefrom_need=SW;
+		tileto_need=NE;
+		break;
 	}
+if (AIRail.IsRailDepotTile(tileto) && AIRail.GetRailDepotFrontTile(tileto)==tilefrom)	tileto_mask=tileto_need;
+if (AIRail.IsRailDepotTile(tilefrom) && AIRail.GetRailDepotFrontTile(tilefrom)==tileto)	tilefrom_mask=tilefrom_need;
+// if we have a depot, make it act like it is a classic rail if its entry match where we going or come from
+if (cBridge.IsBridgeTile(tileto) || AITunnel.IsTunnelTile(tileto))
+	{
+	local endat=null;
+	endat=cBridge.IsBridgeTile(tileto) ? AIBridge.GetOtherBridgeEnd(tileto) : AITunnel.GetOtherTunnelEnd(tileto);
+	local jumpdir=cBuilder.GetDirection(tileto, endat);
+	if (jumpdir == direction) // if the bridge/tunnel goes the same direction, then consider it a plain rail
+		{
+		tileto_mask=tileto_need;
+		}
+	 }
+if (cBridge.IsBridgeTile(tilefrom) || AITunnel.IsTunnelTile(tilefrom))
+	{
+	local endat=null;
+	endat=cBridge.IsBridgeTile(tilefrom) ? AIBridge.GetOtherBridgeEnd(tilefrom) : AITunnel.GetOtherTunnelEnd(tilefrom);
+	local jumpdir=cBuilder.GetDirection(endat, tilefrom); // reverse direction to find the proper one
+	if (jumpdir == direction) // if the bridge/tunnel goes the same direction, then consider it a plain rail
+		{
+		tilefrom_mask=tilefrom_need;
+		}
+	 }
 if ( (tilefrom_mask & tilefrom_need)==tilefrom_need && (tileto_mask & tileto_need)==tileto_need)	return true;
 return false;
 }
@@ -1633,25 +1636,25 @@ foreach (voisin in directions)
 	{
 	if (AIRail.GetSignalType(source, source+voisin) == AIRail.SIGNALTYPE_PBS)
 		{
-		sourcedir=cBuilder.GetDirection(source, source+voisin);
+		sourcedir=cBuilder.GetDirection(source+voisin, source);
 		DInfo("Found source signal at "+source+" facing "+sourcedir+" voisin="+(source+voisin),2,"SignalBuilder");
 		sourcecheck=source+voisin; // to feed pathfinder with a tile without the signal on it
 		PutSign(sourcecheck,"s");
 		}
 	}
-if (sourcedir == null)	{ DError("Cannot find signal at "+source,2,"SignalBuilder"); return false; }
+if (sourcedir == null)	{ DError("Cannot find source signal at "+source,2,"SignalBuilder"); return false; }
 foreach (voisin in directions)
 	{
 	if (AIRail.GetSignalType(target, target+voisin) == AIRail.SIGNALTYPE_PBS)
 		{
-		targetdir=cBuilder.GetDirection(target, target+voisin);
+		targetdir=cBuilder.GetDirection(target+voisin, target);
 		DInfo("Found target signal at "+target+" facing "+targetdir+" voisin="+(target+voisin),2,"SignalBuilder");
 		targetcheck=target+voisin;
 		PutSign(targetcheck,"t");
 		}
 	}
 print("SIGNAL STOP");
-if (targetdir == null)	{ DError("Cannot find signal at "+target,2,"SignalBuilder"); return false; }
+if (targetdir == null)	{ DError("Cannot find target signal at "+target,2,"SignalBuilder"); return false; }
 local pathwalker = RailFollower();
 pathwalker.InitializePath([[source, sourcecheck]], [[targetcheck, target]]);// start beforestart    end afterend
 local path = pathwalker.FindPath(20000);
@@ -1666,20 +1669,20 @@ while (path != null)
 	switch (targetdir) // target cause the path is record from target->source
 		{
 		case	0: // SE-NW
-			tilesource=tile;
-			tilefront=prev;
-			break;
-		case	1: // NW-SE
 			tilesource=prev;
 			tilefront=tile;
+			break;
+		case	1: // NW-SE
+			tilesource=tile;
+			tilefront=prev;
 			break;
 		case	2: // SW-NE
 			tilesource=prev;
 			tilefront=tile;
 			break;
 		case	3: // NE-SW
-			tilesource=tile;
-			tilefront=prev;
+			tilesource=prev;
+			tilefront=tile;
 			break;
 		}
 
@@ -1687,11 +1690,11 @@ while (path != null)
 	if (cc >= max_signals_distance)
 		{
 		if (AIRail.GetSignalType(tilesource,tilefront) != AIRail.SIGNALTYPE_NONE)	{ cc=0; prev=tile; continue; }
-		if (AIRail.BuildSignal(tilesource,tilefront, AIRail.SIGNALTYPE_NORMAL))	{ print("build signal"); PutSign(tile,"Y"); cc=0; max_signals_distance=8; }
+		if (AIRail.BuildSignal(tilesource,tilefront, AIRail.SIGNALTYPE_NORMAL))	{ print("build signal: tilesource="+tilesource+" tilefront="+tilefront); PutSign(tile,"Y"); cc=0; max_signals_distance=8; }
 					else { print("error building"+AIError.GetLastErrorString()); max_signals_distance++; allsuccess=false; }
 		}
-	PutSign(tile,cc);
-INSTANCE.NeedDelay(2); 
+	//PutSign(tile,cc);
+AIController.Sleep(4);
 	//PutSign(tile,"*");
 	cc++;
 	prev=tile;

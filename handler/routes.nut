@@ -84,14 +84,14 @@ static	function GetRouteObject(UID)
 		status		= 0;			// *
 		groupID		= null;		// *
 		source_entry	= false;
-		source_stationID	= null;
+		source_stationID	= null;		// *
 		target_entry	= false;
-		target_stationID	= null;
+		target_stationID	= null;		// *
 		cargoID		= null;		// *
 		date_VehicleDelete= 0;
 		date_lastCheck	= null;
-		source_RailEntry	= null;
-		target_RailEntry	= null;
+		source_RailEntry	= null;		// *
+		target_RailEntry	= null;		// *
 		primary_RailLink	= false;		// *
 		secondary_RailLink= false;		// *
 		twoway		= false;		// *
@@ -471,8 +471,11 @@ function cRoute::RouteReleaseStation(stationid)
 	INSTANCE.builddelay=false; INSTANCE.bank.canBuild=true;
 	}
 
-function cRoute::GetDepot(uid)
+function cRoute::GetDepot(uid, source=0)
 // Return a valid depot we could use, this mean we will seek out both side of the route if we cannot find a proper one
+// source: 0- Get any depot we could use, 1- Get source depot, 2- Get target depot
+// per default return any valid depot we could found, if source=1 or 2 return an error if the query depot doesn't exist
+// return -1 on errors
 	{
 	local road=cRoute.GetRouteObject(uid);
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::GetDepot"); return -1; }
@@ -487,17 +490,24 @@ function cRoute::GetDepot(uid)
 						else	{ one=sx; three=se; }
 		if (road.target_RailEntry)	{ two=de; four=dx; }
 						else	{ two=dx; four=de; }
-		if (cStation.IsDepot(one))	return one;
-		if (cStation.IsDepot(two))	return two;
-		if (cStation.IsDepot(three))	return three;
-		if (cStation.IsDepot(four))	return four;
+		if (source==0 || source==1)
+			{
+			if (cStation.IsDepot(one))	return one;
+			if (cStation.IsDepot(three))	return three;
+			}
+		if (source==0 || source==2)
+			{
+			if (cStation.IsDepot(two))	return two;
+			if (cStation.IsDepot(four))	return four;
+			}
 		}
 	else	{
-		if (cStation.IsDepot(road.source.depot))	return road.source.depot;
-		if (cStation.IsDepot(road.target.depot))	return road.target.depot;
+		if (source==0 || source==1)	if (cStation.IsDepot(road.source.depot))	return road.source.depot;
+		if (source==0 || source==2)	if (cStation.IsDepot(road.target.depot))	return road.target.depot;
 		if (road.route_type == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
 		}
-	DError("Route "+road.name+" doesn't have any valid depot !",2,"cRoute::GetDepot");
+	if (source==0)	DError("Route "+road.name+" doesn't have any valid depot !",2,"cRoute::GetDepot");
+			else	DError("Route "+road.name+" doesn't have the request depot ! source="+source,2,"cRoute::GetDepot");
 	return -1;
 	}
 
@@ -525,6 +535,7 @@ function cRoute::CanAddTrainToStation(uid)
 	{
 	local road=cRoute.GetRouteObject(uid);
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrainToStation"); return -1; }
+cBuilder.DumpRoute(uid);
 	local canAdd=true;
 	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1,"cRoute::CanAddTrainToStation"); INSTANCE.NeedDelay(100);
 	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);

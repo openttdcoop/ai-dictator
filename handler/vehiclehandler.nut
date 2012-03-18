@@ -208,8 +208,8 @@ if (!AIVehicle.IsValidVehicle(veh))	return false;
 if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false; // ignore ones going to depot already
 INSTANCE.carrier.VehicleSetDepotOrder(veh);
 local understood=false;
-understood=AIVehicle.SendVehicleToDepot(veh);
-if (!understood) { DInfo(INSTANCE.carrier.VehicleGetName(veh)+" refuse to go to depot",1,"cCarrier::VehicleSendToDepot"); }
+//understood=AIVehicle.SendVehicleToDepot(veh);
+//if (!understood) { DInfo(INSTANCE.carrier.VehicleGetName(veh)+" refuse to go to depot",1,"cCarrier::VehicleSendToDepot"); }
 local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
 INSTANCE.Sleep(6);	// wait it to move a bit
@@ -242,7 +242,8 @@ switch (reason)
 	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" is going to depot "+rr,0,"cCarrier::VehicleSendToDepot");
-if (understood)	INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
+//if (understood)	
+INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
 }
 
 function cCarrier::VehicleGetFullCapacity(veh)
@@ -549,8 +550,16 @@ foreach (i, dummy in tlist)
 						}
 			}
 		}
-	else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"VehicleWaitingInDepot");
-	if (onlydelete)	{ DInfo("We've been ask to delete all vehicles waiting in depot",1,"VehicleWaitingInDepot"); reason=DepotAction.SELL; }
+	else	{
+		if (AIVehicle.GetVehicleType(i)==AIVehicle.VT_RAIL)
+			{
+			DInfo("I don't know the reason why "+name+" is at depot, restarting it",1,"VehicleWaitingInDepot");
+			if (AIVehicle.StartStopVehicle(i))	continue;
+			}
+		else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"VehicleWaitingInDepot");
+		}
+	if (onlydelete && AIVehicle.GetVehicleType(i) == AIVehicle.VT_AIR)
+		{ DInfo("We've been ask to delete all vehicles waiting in depot",1,"VehicleWaitingInDepot"); reason=DepotAction.SELL; }
 	switch (reason)
 		{
 		case	DepotAction.SELL:

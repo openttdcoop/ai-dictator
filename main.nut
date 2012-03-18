@@ -260,6 +260,8 @@ foreach (obj in cRoute.database)
 	all_routes.push(obj.primary_RailLink);
 	all_routes.push(obj.secondary_RailLink);
 	all_routes.push(obj.twoway);
+	all_routes.push(obj.source_RailEntry);
+	all_routes.push(obj.target_RailEntry);
 	}
 // stations
 foreach(obj in cStation.stationdatabase)
@@ -432,7 +434,6 @@ if (AIGameSettings.IsValid("station_spread"))
 	if (spdcheck < carrier.rail_max)	carrier.rail_max=spdcheck;
 	}
 use_boat=false; // we will handle boats later
-//use_train=false;
 if (INSTANCE.safeStart >0)
 	{ // Keep only road
 	use_boat=false;
@@ -440,7 +441,7 @@ if (INSTANCE.safeStart >0)
 	use_air=false;
 	}
 //INSTANCE.safeStart=0;
-use_train=false;
+//use_train=false;
 //use_road=false;
 //use_air=false;
 }
