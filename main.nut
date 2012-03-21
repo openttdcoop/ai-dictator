@@ -134,16 +134,6 @@ class DictatorAI extends AIController
  
 function DictatorAI::Start()
 {
-print("true="+true);
-local aa=true;
-local bb=false;
-local cc=0;
-local dd=1;
-if (dd)	print("dd is true");
-	else	print("dd is false");
-print("aa="+aa+" cc="+cc);
-dd-=1;
-print("dd less one = "+dd);
 	::INSTANCE <- this;
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	CheckCurrentSettings();
@@ -168,10 +158,9 @@ print("dd less one = "+dd);
 	 else {
 		AIInit();
 		bank.SaveMoney();
-		//use_boat=true;
 		route.RouteInitNetwork();
 		jobs.PopulateJobs();
-		for (local i=0; i < 4; i++)	jobs.RawJobHandling();
+		for (local i=0; i < 3; i++)	jobs.RawJobHandling();
 		// feed the ai with some jobs to start play with
 		if (AICompany.GetMaxLoanAmount() < 200000)	safeStart=3;
 									else	safeStart=0;

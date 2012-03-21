@@ -713,8 +713,7 @@ function cJobs::RawJobHandling()
 	jfilter.AddList(cJobs.rawJobs);
 	jfilter.RemoveValue(0); // keep only one not done yet
 	local stilltodo=jfilter.Count();
-	//jfilter.Valuate(AIBase.RandItem); // randomize remain entries
-	//jfilter.Sort(AIList.SORT_BY_VALUE,true);
+	jfilter.Valuate(AIBase.RandItem); // randomize remain entries
 	jfilter.KeepTop(1); //make one only
 	if (jfilter.IsEmpty())	{
 					DInfo("All raw jobs have been process",2,"RawJobHandling");
@@ -736,6 +735,7 @@ function cJobs::RawJobHandling()
 						local isTown=(realID >= 10000) ? true : false;
 						if (isTown)	realID-=10000;
 						cJobs.AddNewIndustryOrTown(realID,isTown);
+						::AIController.Sleep(1);
 						cJobs.rawJobs.SetValue(jid,0); // mark it done
 						}
 	DInfo("rawJobs to do: "+stilltodo+" / "+cJobs.rawJobs.Count(),1,"RawJobHandling");
@@ -792,7 +792,7 @@ foreach (ID, dummy in indjobs)
 	}
 foreach (ID, dummy in townjobs)
 	{
-	//cJobs.RawJobAdd(ID,true);
+	cJobs.RawJobAdd(ID,true);
 	curr++;
 	if (curr % 18 == 0)
 		{

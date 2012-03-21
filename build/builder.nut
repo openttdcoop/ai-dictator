@@ -398,7 +398,6 @@ if (INSTANCE.route.status==2)
 		else	{
 			success=true;
 			DInfo("Source station is already build, we're reusing an existing one",0,"TryBuildThatRoute");
-			INSTANCE.route.RouteUpdate();
 			}
 	if (!success)
 		{ // it's bad we cannot build our source station, that's really bad !
@@ -426,7 +425,6 @@ if (INSTANCE.route.status==3)
 		else	{
 			success=true;
 			DInfo("Destination station is already build, we're reusing an existing one",0,"TryBuildThatRoute");
-			INSTANCE.route.RouteUpdate();
 			}
 	if (!success)
 		{ // we cannot do destination station
@@ -442,6 +440,7 @@ if (INSTANCE.route.status==3)
 	}
 if (INSTANCE.route.status==4)
 	{
+	INSTANCE.route.RouteCheckEntry();
 	success=INSTANCE.builder.BuildRoadByType();
 	if (success)	{ INSTANCE.route.status=5; }
 		else	{

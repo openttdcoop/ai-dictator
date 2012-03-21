@@ -332,7 +332,7 @@ if (success)
 		if (start)	road.source_stationID=AIStation.GetStationID(newStation);
 			else	road.target_stationID=AIStation.GetStationID(newStation);
 		road.CreateNewStation(start);
-		road.CheckEntry();
+		road.RouteCheckEntry();
 		if (needMoney > 0)
 			{
 			local stationObj=null;
@@ -352,9 +352,8 @@ if (success)
 					local oldOwner=cRoute.GetRouteObject(ownerUID);
 					if (oldOwner.source_stationID == oldAirport_ID)	oldOwner.source_stationID=AIStation.GetStationID(newStation);
 					if (oldOwner.target_stationID == oldAirport_ID)	oldOwner.target_stationID=AIStation.GetStationID(newStation);
-					oldOwner.RouteUpdate(); // set shortcuts & reclaim the station...
+					oldOwner.RouteCheckEntry(); // set shortcuts & reclaim the station...
 					oldOwner.RouteUpdateVehicle();
-					oldOwner.RouteAirportCheck();
 					AIController.Sleep(1);
 					}
 				}
@@ -367,7 +366,7 @@ if (success)
 		road.source_stationID=AIStation.GetStationID(heliloc);
 		road.route_type = RouteType.CHOPPER;
 		road.CreateNewStation(start);
-		road.CheckEntry();
+		road.RouteCheckEntry();
 		road.source.depot=null;
 		return heliloc;
 		}

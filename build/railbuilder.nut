@@ -608,27 +608,16 @@ if (trainExitDropper != 0)
 	if (trainExitDropper == 1)	tXD=1;
 					else	tXD=(trainExitDropper / 2)+1;
 	}
-
-/*
-if (tED == 0)
-	{
-	if (trainEntryDropper < 3)	tED=trainEntryDropper;
-	}
-if (trainEntryDropper > 0 && tED==0)	tED++;
-if (trainEntryDropper > 1*/
-
-print("tED="+tED+" tXD="+tXD);
-//if (trainExitDropper > 0 && tXD==0)	tXD++;
 local newStationSize=trainEntryTaker+trainExitTaker+tED+tXD;
-
 local maxE_total=thatstation.maxsize * 2;
 if (!cStation.IsRailStationEntryOpen(staID))	maxE_total=thatstation.size *2;
 local maxX_total=thatstation.maxsize * 2;
 if (!cStation.IsRailStationExitOpen(staID))	maxX_total=thatstation.size *2;
-DInfo(thatstation.name+" entry throughput : "+(trainEntryDropper+trainEntryTaker)+"/"+maxE_total+" trains",1,"cBuilder::StationGrow");
-DInfo(thatstation.name+" exit throughput : "+(trainExitDropper+trainExitTaker)+"/"+maxX_total+" trains",1,"cBuilder::StationGrow");
 if (!cStation.IsRailStationEntryOpen(staID) && useEntry)	{ DWarn(thatstation.name+" entry is CLOSE",1,"cBuilder::StationGrow"); return false }
 if (!cStation.IsRailStationExitOpen(staID) && !useEntry)	{ DWarn(thatstation.name+" exit is CLOSE",1,"cBuilder::StationGrow"); return false }
+
+DInfo(thatstation.name+" entry throughput : "+(trainEntryDropper+trainEntryTaker)+"/"+maxE_total+" trains",1,"cBuilder::StationGrow");
+DInfo(thatstation.name+" exit throughput : "+(trainExitDropper+trainExitTaker)+"/"+maxX_total+" trains",1,"cBuilder::StationGrow");
 
 local position=thatstation.GetLocation();
 local direction=thatstation.GetRailStationDirection();
@@ -1163,32 +1152,10 @@ if (needIN>0) // only work when needIN is built as we only work on target statio
 	}
 
 DInfo("Phase7: building signals",1,"RailStationGrow");
-if (road!=null && road.secondary_RailLink) // route must be valid + alternate rail is built
+if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker >2 || trainExitDropper+trainExitTaker > 2)) // route must be valid + alternate rail is built
 	{
-/*PutSign(road.source.locations.GetValue(1),"S1");
-PutSign(road.source.locations.GetValue(2),"S2");
-PutSign(road.source.locations.GetValue(3),"S3");
-PutSign(road.source.locations.GetValue(4),"S4");
-PutSign(road.target.locations.GetValue(1),"T1");
-PutSign(road.target.locations.GetValue(2),"T2");
-PutSign(road.target.locations.GetValue(3),"T3");
-PutSign(road.target.locations.GetValue(4),"T4");
-print("SIGNAL STOP");*/
 	local srcpos, dstpos = null;
 	local unstuck_need=false;
-/*	if (road.source_RailEntry)
-			srclink=road.source.locations.GetValue(11);
-		else	srclink=road.source.locations.GetValue(13);
-		if (road.target_RailEntry)
-			dstlink=road.target.locations.GetValue(12);
-		else	dstlink=road.target.locations.GetValue(14);
-		srcpos=srclink+cStation.GetRelativeTileBackward(road.source.stationID, road.source_RailEntry);
-		dstpos=dstlink+cStation.GetRelativeTileBackward(road.target.stationID, road.target_RailEntry);
-*/
-//	PutSign(road.source.locations.GetValue(1),"D");
-//	PutSign(dstlink,"d");
-//	PutSign(srcpos,"S");
-//	PutSign(srclink,"s");
 	if (road.source_RailEntry)
 			srcpos=road.source.locations.GetValue(1);
 		else	srcpos=road.source.locations.GetValue(3);
@@ -1205,7 +1172,6 @@ print("SIGNAL STOP");*/
 			cStation.RailStationSetPrimarySignalBuilt(road.source.stationID);
 			}
 		else	{ DInfo("... not all signals were built",2,"RailStationGrow"); }
-		//cCarrier.CheckStuckTrainAtSignal(dstpos, srcpos);
 		unstuck_need=true;
 		}
 	print("SIGNAL stop");
@@ -1216,15 +1182,6 @@ print("SIGNAL STOP");*/
 	if (road.target_RailEntry)
 			dstpos=road.target.locations.GetValue(1);
 		else	dstpos=road.target.locations.GetValue(3);
-/*
-	if (road.source_RailEntry)
-			srclink=road.source.locations.GetValue(12);
-		else	srclink=road.source.locations.GetValue(14);
-	if (road.target_RailEntry)
-			dstlink=road.target.locations.GetValue(11);
-		else	dstlink=road.target.locations.GetValue(13);
-	srcpos=srclink+cStation.GetRelativeTileBackward(road.source.stationID, road.source_RailEntry);
-	dstpos=dstlink+cStation.GetRelativeTileBackward(road.target.stationID, road.target_RailEntry);*/
 	if (!cStation.IsRailStationSecondarySignalBuilt(road.target.stationID))
 		{
 		DInfo("Building signals on secondary track",2,"RailStationGrow");
@@ -1234,7 +1191,6 @@ print("SIGNAL STOP");*/
 			cStation.RailStationSetSecondarySignalBuilt(road.target.stationID);
 			}
 		else	{ DInfo("... not all signals were built",2,"RailStationGrow"); }
-		//cCarrier.CheckStuckTrainAtSignal(srcpos, dstpos);
 		unstuck_need=true;
 		}
 	print("SIGNAL stop");

@@ -378,7 +378,7 @@ foreach (gid, dummy in railgroup)
 	{
 	local uid=cRoute.GroupIndexer.GetValue(gid);
 	local thatroute=cRoute.GetRouteObject(uid);
-//	thatroute.CheckEntry();
+//	thatroute.RouteCheckEntry();
 	cBuilder.DumpRoute(uid);
 //		PutSign(thatroute.source.depot,"SD");
 //		PutSign(thatroute.target.depot,"TD");
