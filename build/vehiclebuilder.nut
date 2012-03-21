@@ -275,13 +275,14 @@ local runningcost=AIEngine.GetRunningCost(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
 if (capacity==0)	return 9999999;
 if (price<=0)	return 9999999;
-local eff=(10000+ (price+(lifetime*runningcost))) / ((capacity*0.9)+speed).tointeger();
+local eff=(100000+ (price+(lifetime*runningcost))) / ((capacity*0.9)+speed).tointeger();
 return eff;
 }
 
 function cCarrier::GetEngineRawEfficiency(engine, cargoID, fast)
 // only consider the raw capacity/speed ratio
 // engine = enginetype to check
+// if fast=true try to get the fastest engine even if capacity is a bit lower than another
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
 {
 local price=cEngine.GetPrice(engine, cargoID);
@@ -294,6 +295,29 @@ if (price<=0)	return 9999999;
 local eff=0;
 if (fast)	eff=1000000 / ((capacity*0.9)+speed).tointeger();
 	else	eff=1000000-(capacity * speed);
+return eff;
+}
+
+function cCarrier::GetEngineLocoEfficiency(engine, cargoID, rtype)
+// Get a ratio for a loco engine
+// if cheap=true return the best ratio the loco have for the best ratio prize/efficiency, if false just the best engine without any costs influence
+// return an index, the smallest = the better
+{
+local price=cEngine.GetPrice(engine, cargoID);
+local power=AIEngine.GetPower(engine);
+local speed=AIEngine.GetMaxSpeed(engine);
+local lifetime=AIEngine.GetMaxAge(engine);
+local runningcost=AIEngine.GetRunningCost(engine);
+local extraprize=1;
+if (!AIEngine.HasPowerOnRail(engine, rtype))	extraprize=2; // twice its price as we need switching railtype and it cost us
+if (power<=0)	return 9999999;
+if (price<=0)	return 9999999;
+local eff=0;
+local rawidx=(power*speed) / 100;
+//if (cheap)	eff=(10000+ (price+(lifetime*runningcost))) / rawidx.tointeger();
+//	else	eff=1000000-(rawidx);
+//eff=(100000+ ( (price*extraprize)+(lifetime*runningcost) ) ) / rawidx.tointeger();
+eff=(100000 - rawidx);
 return eff;
 }
 

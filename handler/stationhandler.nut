@@ -103,6 +103,14 @@ bit5 alt train line fire done
 		}
 }
 
+function cStation::StationIsInDataBase(stationID)
+// Check if a station exist in the stationdatabase
+// return true if exist
+	{
+	local sta=cStation.GetStationObject(sta);
+	return (sta instanceof cStation);
+	}
+
 function cStation::UpdateStationInfos()
 // Update informations for that station if informations are old enough
 	{
@@ -1018,6 +1026,7 @@ local ted=thatstation.locations.GetValue(7);
 local txd=thatstation.locations.GetValue(8);
 local tet=thatstation.locations.GetValue(9);
 local txt=thatstation.locations.GetValue(10);
+print("before remove: ted="+ted+" txd="+txd+" tet="+tet+" txt="+txt);
 if (taker)
 	{
 	if (useEntry)	tet-=1;
@@ -1035,6 +1044,7 @@ thatstation.locations.SetValue(7, ted);
 thatstation.locations.SetValue(8, txd);
 thatstation.locations.SetValue(9, tet);
 thatstation.locations.SetValue(10, txt);
-DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" remove train: taker="+taker+" useEntry="+useEntry,2,"cStation::StationAddTrain");
+DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" remove train: taker="+taker+" useEntry="+useEntry,2,"cStation::StationRemoveTrain");
+print("after remove: ted="+ted+" txd="+txd+" tet="+tet+" txt="+txt);
 }
 

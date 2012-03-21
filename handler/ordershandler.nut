@@ -87,6 +87,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 // Redo all orders vehicles from that group should have
 // orderReset true to reset all vehicles orders in the group, false to simply reassign sharing orders to vehicle in the group
 {
+if (groupID == null)	return false;
 local vehlist=AIVehicleList_Group(groupID);
 if (vehlist.IsEmpty()) return false;
 
@@ -96,7 +97,7 @@ vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 vehlist.RemoveValue(AIVehicle.VS_CRASHED);
 foreach (veh, dummy in vehlist)
 	{
-	if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh, 1); print("removing going to depot veh="+veh); } // remove ones going to depot
+	if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh, 1); } // remove ones going to depot
 						else		{ vehlist.SetValue(veh, 0); }
 	}
 vehlist.RemoveValue(1);
@@ -268,12 +269,20 @@ if (road != null)
 	// this send vehicle to met dropoff station before its depot, choppers won't have the dropoff station in their orders to lower distance
 		{
 		if (road.target_stationID == null)	break;
-		if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != AIStation.GetLocation(road.target_stationID))
-			AIOrder.SkipToOrder(veh, jjj+1);
-		else	{
-			DInfo("Sending vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" to destination station",1,"cCarrier::VehicleSetDepotOrder");		
-			break;
+		if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)
+			{
+			if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) == AIStation.GetLocation(road.target_stationID) || AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) == AIStation.GetLocation(road.source_stationID))
+				{
+				AIOrder.SkipToOrder(veh, jjj+1);
+				break;
+				}
 			}
+		else	if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != AIStation.GetLocation(road.target_stationID))
+				{
+				AIOrder.SkipToOrder(veh, jjj+1);
+				DInfo("Sending vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" to destination station",1,"cCarrier::VehicleSetDepotOrder");		
+				break;
+				}
 		}
 DInfo("Setting depot order for vehicle "+INSTANCE.carrier.VehicleGetName(veh),2,"cCarrier::VehicleSetDepotOrder");
 }

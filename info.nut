@@ -52,7 +52,7 @@
 
 	AddSetting({
 		name = "use_train",
-		description = "Use trains - Not working yet, sorry",
+		description = "Use trains",
 		easy_value = 1,
 		medium_value = 1,
 		hard_value = 1,

@@ -326,6 +326,7 @@ function cEngine::IsVehicleAtTop(vehID)
 	local idx=cCarrier.VehicleFindRouteIndex(vehID);
 	if (idx==null)	{ DError("Fail to find the route in use by this vehicle",2,"cEngine::IsVehicleAtTop"); return -1; }
 	local road=cRoute.GetRouteObject(idx);
+	if (road == null)	{ DError("Cannot map the route of that vehicle",2,"cEngine::IsVehicleAtTop"); return -1; }
 	local cargoID=road.cargoID;
 	local vehType=AIVehicle.GetVehicleType(vehID);
 	if (vehType==AIVehicle.VT_AIR)	cargoID=road.route_type;

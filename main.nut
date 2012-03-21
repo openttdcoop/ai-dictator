@@ -134,6 +134,16 @@ class DictatorAI extends AIController
  
 function DictatorAI::Start()
 {
+print("true="+true);
+local aa=true;
+local bb=false;
+local cc=0;
+local dd=1;
+if (dd)	print("dd is true");
+	else	print("dd is false");
+print("aa="+aa+" cc="+cc);
+dd-=1;
+print("dd less one = "+dd);
 	::INSTANCE <- this;
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	CheckCurrentSettings();
@@ -153,7 +163,6 @@ function DictatorAI::Start()
 			cStation.CheckCargoHandleByStation(stationID);
 			}
 		INSTANCE.route.VirtualAirNetworkUpdate();
-		//INSTANCE.carrier.CheckOneVehicleOfGroup(true); // force a check on all vehicles
 		DInfo("...Loading game end",0,"Main");
 		}
 	 else {
@@ -183,15 +192,16 @@ function DictatorAI::Start()
 					{
 					//builder.DumpTopJobs();
 					jobs_obj=cJobs.GetJobObject(builder.building_route);
-					route=cRoute(); // reset it
-					route.CreateNewRoute(builder.building_route);
-					if (route == null)
-						{ builder.building_route=-1; }
-					else	{
-						bank.RaiseFundsBy(jobs.moneyToBuild);
-						builder.TryBuildThatRoute();
-						this.checkHQ();
-						}
+					route=cRoute.GetRouteObject(builder.building_route);
+					if (route == null)	{
+									route=cRoute();
+									route.CreateNewRoute(builder.building_route);
+									DInfo("Creating a new route : "+cRoute.RouteGetName(builder.building_route),0,"main");
+									}
+								else	DInfo("Construction of route "+cRoute.RouteGetName(builder.building_route)+" is at phase "+route.status,1,"main");
+					bank.RaiseFundsBy(jobs.moneyToBuild);
+					builder.TryBuildThatRoute();
+					this.checkHQ();
 					}
 				}
 		bank.CashFlow();
@@ -291,7 +301,7 @@ foreach (obj in cTrain.vehicledatabase)
 	all_vehicle.push(obj.dstStationID);
 	all_vehicle.push(obj.src_useEntry);
 	all_vehicle.push(obj.dst_useEntry);
-	all_vehicle.push(obj.dualusage);
+	all_vehicle.push(obj.stationbit);
 	all_vehicle.push(obj.full);
 	}
 // bridges
@@ -440,10 +450,6 @@ if (INSTANCE.safeStart >0)
 	use_train=false;
 	use_air=false;
 	}
-//INSTANCE.safeStart=0;
-//use_train=false;
-//use_road=false;
-//use_air=false;
 }
 
 function DictatorAI::ListToArray(list)

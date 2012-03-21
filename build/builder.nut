@@ -268,8 +268,6 @@ else	{ // check the station is within our industry
 		return false;
 		}
 	}
-
-DInfo("Checking if station can accept more vehicles",1,"cBuilder::FindCompatibleStationExistsForAllCases");
 return true;
 }
 
@@ -460,7 +458,7 @@ if (INSTANCE.route.status==5)
 	{ // check the route is really valid
 	if (INSTANCE.route.route_type == AIVehicle.VT_ROAD)
 		{
-		INSTANCE.route.CheckEntry();
+		INSTANCE.route.RouteCheckEntry();
 		success=INSTANCE.builder.CheckRoadHealth(INSTANCE.route.UID);
 		}
 	else	{ success=true; } // other route type for now are ok
@@ -469,20 +467,19 @@ if (INSTANCE.route.status==5)
 	}	
 if (INSTANCE.route.status==6)
 	{
-	INSTANCE.route.CheckEntry();
 	INSTANCE.route.RouteDone();
-	DInfo("Route contruction complete ! "+INSTANCE.route.name,0,"TryBuildThatRoute");
+	DInfo("Route contruction complete ! "+cRoute.RouteGetName(INSTANCE.route.UID),0,"TryBuildThatRoute");
 	local srcprod=INSTANCE.route.source.IsCargoProduce(INSTANCE.route.cargoID);
 	local srcacc=INSTANCE.route.source.IsCargoAccept(INSTANCE.route.cargoID);
 	local dstprod=INSTANCE.route.target.IsCargoProduce(INSTANCE.route.cargoID);
 	local dstacc=INSTANCE.route.target.IsCargoAccept(INSTANCE.route.cargoID);
 	if (srcprod && srcacc && dstprod && dstacc)
 		{
-		DInfo("Route mark as a twoway route",1,"TryBuildThatRoute");
+		DInfo("Route set as twoway",0,"TryBuildThatRoute");
 		INSTANCE.route.twoway=true;
 		}
 	else	{
-		DInfo("Route mark as a oneway route",1,"TryBuildThatRoute");
+		DInfo("Route set as oneway",0,"TryBuildThatRoute");
 		INSTANCE.route.twoway=false;
 		}
 	INSTANCE.builddelay=false;

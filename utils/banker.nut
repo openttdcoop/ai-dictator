@@ -116,6 +116,7 @@ function cBanker::RaiseFundsBy(money)
 {
 	local curr = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	if (curr < 0) curr=0;
+	if (money < curr)	return true; // set we have the money to build it
 	local needed = money + curr;
 	return (cBanker.RaiseFundsTo(needed));
 }

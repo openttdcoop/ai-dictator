@@ -30,7 +30,7 @@ static	function GetRouteObject(UID)
 		}
 
 	UID			= null;	// UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
-	name			= null;	// string with the route name
+//	name			= null;	// string with the route name
 	sourceID		= null;	// id of source town/industry
 	source_location	= null;	// location of source
 	source_istown	= null;	// if source is town
@@ -68,7 +68,7 @@ static	function GetRouteObject(UID)
 	constructor()
 		{ // * are saved variables
 		UID			= null;		// *
-		name			= "UNKNOWN";	
+//		name			= "UNKNOWN";	
 		sourceID		= null;		// *
 		source_location	= 0;
 		source_istown	= false;		// *
@@ -110,7 +110,7 @@ function cRoute::GetVirtualAirPassengerGroup()
 	return cRoute.VirtualAirGroup[0];
 	}
 
-function cRoute::CheckEntry()
+function cRoute::RouteCheckEntry()
 // setup entries infos, this pointed our shortcut to the correct station object and mark them
 	{
 	this.source_entry = (this.source_stationID != null);
@@ -118,8 +118,8 @@ function cRoute::CheckEntry()
 	if (this.source_entry)	
 			{
 			this.source=cStation.GetStationObject(this.source_stationID);
-			if (this.source != null) this.source.ClaimOwner(this.UID);
-						else	this.source_entry=false;
+			if (this.source != null)	this.source.ClaimOwner(this.UID);
+							else	this.source_entry=false;
 			}
 		else	this.source=null;
 	if (this.target_entry)
@@ -130,6 +130,7 @@ function cRoute::CheckEntry()
 			}
 		else	this.target=null;
 	//DInfo("Route "+this.UID+" source="+this.source+" target="+this.target,1);
+	if (this.route_type >= RouteType.AIR)	this.RouteAirportCheck();
 	}
 
 function cRoute::RouteAirportCheck(uid=null)
@@ -138,16 +139,15 @@ function cRoute::RouteAirportCheck(uid=null)
 	local road=null;
 	if (uid==null)	road=this;
 			else	road=cRoute.GetRouteObject(uid);
-	if (road==null || road.route_type < RouteType.AIR)	{ DWarn("Invalid aircrafts route : "+uid,1,"RouteAirportCheck"); return; }
+	if (road==null || road.route_type < RouteType.AIR)	return;
 	local oldtype=road.route_type;
-	if (road.UID > 1 && !road.source_entry || !road.target_entry)	road.CheckEntry(); // ignore virtual
 	road.route_type=RouteType.AIR;
 	if (road.UID < 2)	road.route_type=RouteType.AIRNET;
 	if (road.cargoID == cCargo.GetMailCargo())	road.route_type++;
 	if (road.UID > 1 && !cBuilder.AirportAcceptBigPlanes(road.source_stationID) || !cBuilder.AirportAcceptBigPlanes(road.target_stationID))	road.route_type+=4;
 	// adding 4 to met small AIR or MAIL
 	if (!road.source_istown)	road.route_type=RouteType.CHOPPER;
-	if (oldtype != road.route_type)	{ road.RouteGetName(); DInfo("Changing aircraft type for route "+road.name,1,"RouteAirportCheck"); }
+	if (oldtype != road.route_type)	{ DInfo("Changing aircraft type for route "+cRoute.RouteGetName(road.UID),1,"RouteAirportCheck"); }
 	}
 
 function cRoute::RouteUpdateVehicle()
@@ -172,7 +172,6 @@ function cRoute::RouteUpdateVehicle()
 				else	this.target.vehicle_count=0;
 	local vehingroup=AIVehicleList_Group(this.groupID);
 	this.vehicle_count=vehingroup.Count();
-	//DInfo("ROUTE -> "+this.vehicle_count+" vehicle on "+this.name,2);
 	}
 
 function cRoute::RouteBuildGroup()
@@ -210,22 +209,14 @@ function cRoute::RouteDone()
 	if (this.target_istown)	cJobs.statueTown.AddItem(this.targetID,0);
 	this.RouteAirportCheck();
 	if (this.UID>1 && this.target_istown && this.route_type != RouteType.WATER && this.route_type != RouteType.RAIL && (this.cargoID==cCargo.GetPassengerCargo() || this.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(this.targetID);
-	}
-
-function cRoute::RouteUpdate()
-// when something change, update the route
-	{
-	this.CheckEntry();
-	this.RouteGetName();
-	DInfo("ROUTE -> Route "+name+" has been update",2,"cRoute::RouteUpdate");
+	this.RouteCheckEntry();
 	}
 
 function cRoute::RouteSave()
 // save that route to the database
 	{
-	this.RouteUpdate();
-	DInfo("Saving a new route. "+this.name,0,"cRoute::RouteSave");
-	if (this.UID in database)	DWarn("ROUTE -> Route "+this.UID+" is already in database",2,"cRoute::RouteSave");
+	this.RouteCheckEntry();
+	if (this.UID in database)	DInfo("ROUTE -> Route "+this.UID+" is already in database",2,"cRoute::RouteSave");
 			else		{
 					DInfo("ROUTE -> Adding route "+this.UID+" to the route database",2,"cRoute::RouteSave");
 					database[this.UID] <- this;
@@ -258,34 +249,37 @@ function cRoute::RouteTypeToString(that_type)
 	return "unkown";
 	}
 
-function cRoute::RouteGetName()
+function cRoute::RouteGetName(uid)
 // set a string for that route
 	{
 	local src=null;
 	local dst=null;
-	local toret=null;
-	local rtype=RouteTypeToString(this.route_type);
-	if (this.UID == 0) // ignore virtual route, use for old savegame
+	local name="#"+uid+" invalid route";
+	local road=cRoute.GetRouteObject(uid);
+	if (road == null)	return name;
+	local rtype=cRoute.RouteTypeToString(road.route_type);
+	if (road.UID == 0) // ignore virtual route, use by old savegame
 		{
-		this.name="Virtual Air Passenger Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
-		return;
+		name="Virtual Air Passenger Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+		return name;
 		}
-	if (this.UID == 1)
+	if (road.UID == 1)
 		{
-		this.name="Virtual Air Mail Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
-		return;
+		name="Virtual Air Mail Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+		return name;
 		}
-	if (source_entry)	src=cStation.StationGetName(this.source_stationID);
-			else	{
-				if (this.source_istown)	src=AITown.GetName(this.sourceID);
-							else	src=AIIndustry.GetName(this.sourceID);
-				}
-	if (target_entry)	dst=cStation.StationGetName(target_stationID);
-			else	{
-				if (this.source_istown)	src=AITown.GetName(this.targetID);
-							else	src=AIIndustry.GetName(this.targetID);
-				}
-	this.name="#"+this.UID+": From "+src+" to "+dst+" for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+	if (road.source_entry)	src=cStation.StationGetName(road.source_stationID);
+				else	{
+					if (road.source_istown)	src=AITown.GetName(road.sourceID);
+								else	src=AIIndustry.GetName(road.sourceID);
+					}
+	if (road.target_entry)	dst=cStation.StationGetName(road.target_stationID);
+				else	{
+					if (road.target_istown)	dst=AITown.GetName(road.targetID);
+								else	dst=AIIndustry.GetName(road.targetID);
+					}
+	name="#"+road.UID+": From "+src+" to "+dst+" for "+AICargo.GetCargoLabel(road.cargoID)+" using "+rtype;
+	return name;
 	}
 
 function cRoute::CreateNewRoute(UID)
@@ -324,11 +318,11 @@ function cRoute::CreateNewRoute(UID)
 		}
 	this.isWorking = false;
 	this.status = 0;
-	if (source_istown)	source_location=AITown.GetLocation(sourceID);
-				else	source_location=AIIndustry.GetLocation(sourceID);
-	if (target_istown)	target_location=AITown.GetLocation(targetID);
-				else	target_location=AIIndustry.GetLocation(targetID);
-	this.CheckEntry();
+	if (this.source_istown)	source_location=AITown.GetLocation(this.sourceID);
+				else	source_location=AIIndustry.GetLocation(this.sourceID);
+	if (this.target_istown)	target_location=AITown.GetLocation(this.targetID);
+				else	target_location=AIIndustry.GetLocation(this.targetID);
+	this.RouteSave();
 	}
 
 function cRoute::VirtualMailCopy()
@@ -348,7 +342,7 @@ function cRoute::VirtualMailCopy()
 	mailRoute.target_location=passRoute.target_location;
 	mailRoute.source_istown=passRoute.source_istown;
 	mailRoute.target_istown=passRoute.target_istown;
-	mailRoute.CheckEntry();
+	mailRoute.RouteCheckEntry();
 	}
 
 function cRoute::RouteInitNetwork()
@@ -407,11 +401,11 @@ function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way
 	{
 	if (this.UID < 2)	return; // don't touch virtual routes
-	DInfo("Marking route "+this.name+" undoable !!!",1,"RouteIsNotDoable");
+	DInfo("Marking route "+cRoute.RouteGetName(this.UID)+" undoable !!!",1,"RouteIsNotDoable");
 	cJobs.JobIsNotDoable(this.UID);
 	local stasrc=this.source_stationID;
 	local stadst=this.target_stationID;
-	this.CheckEntry();
+	this.RouteCheckEntry();
 	INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID);
 	this.RouteReleaseStation(stasrc);
 	this.RouteReleaseStation(stadst);
@@ -421,7 +415,7 @@ function cRoute::RouteIsNotDoable()
 	local uidsafe = this.UID;
 	if (this.UID in cRoute.database)
 		{
-		DInfo("ROUTE -> Removing route "+this.UID+" from database",1);
+		DInfo("ROUTE -> Removing route "+this.UID+" from database",1,"RouteIsNotDoable");
 		cRoute.RouteIndexer.RemoveItem(this.UID);
 		cRoute.RouteDamage.RemoveItem(this.UID);
 		delete cRoute.database[this.UID];
@@ -436,11 +430,11 @@ function cRoute::CreateNewStation(start)
 	local scheck=this.source_stationID;
 	if (!start)	scheck=this.target_stationID;
 	if (!AIStation.IsValidStation(scheck))
-		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1,"CRoute::CreateNewStation"); }
+		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1,"cRoute::CreateNewStation"); }
 	local station=cStation();
 	station.stationID=scheck;
 	station.InitNewStation();
-	this.RouteUpdate();
+	this.RouteCheckEntry();
 	this.RouteAirportCheck();
 	}
 
@@ -466,7 +460,7 @@ function cRoute::RouteReleaseStation(stationid)
 		this.isWorking=false;
 		INSTANCE.builder.building_route=this.UID;
 		}
-	this.CheckEntry();
+	this.RouteCheckEntry();
 	if (INSTANCE.route.RouteDamage.HasItem(this.UID))	INSTANCE.route.RouteDamage.RemoveItem(this.UID);
 	INSTANCE.builddelay=false; INSTANCE.bank.canBuild=true;
 	}
@@ -506,8 +500,8 @@ function cRoute::GetDepot(uid, source=0)
 		if (source==0 || source==2)	if (cStation.IsDepot(road.target.depot))	return road.target.depot;
 		if (road.route_type == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
 		}
-	if (source==0)	DError("Route "+road.name+" doesn't have any valid depot !",2,"cRoute::GetDepot");
-			else	DError("Route "+road.name+" doesn't have the request depot ! source="+source,2,"cRoute::GetDepot");
+	if (source==0)	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have any valid depot !",2,"cRoute::GetDepot");
+			else	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have the request depot ! source="+source,2,"cRoute::GetDepot");
 	return -1;
 	}
 
@@ -519,8 +513,8 @@ function cRoute::AddTrain(uid, vehID)
 	local road=cRoute.GetRouteObject(uid);
 	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID: "+vehID,2,"cRoute::AddTrain"); return -1; }
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::AddTrain"); return -1; }
-	cTrain.TrainSetStation(vehID, road.source_stationID, true, road.source_RailEntry, road.twoway);
-	cTrain.TrainSetStation(vehID, road.target_stationID, false, road.target_RailEntry, road.twoway);
+	cTrain.TrainSetStation(vehID, road.source_stationID, true, road.source_RailEntry, true); // train load at station
+	cTrain.TrainSetStation(vehID, road.target_stationID, false, road.target_RailEntry, road.twoway); // if twoway train load at station, else if will only drop
 	// hmmm, choices: a two way route == 2 taker that are also dropper train
 	// we could then tell stations we have 2 taker == each train will have a platform
 	// or 2 dropper == station will have just 1 platform and trains must wait on the line

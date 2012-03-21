@@ -60,7 +60,7 @@ local engine=ChooseRailEngine(rtype, cargo);
 AIController.Sleep(1);
 if (engine==null)	return AIList();
 if (rtype==null)	rtype=cCarrier.GetRailTypeNeedForEngine(engine);
-if (engine==null || rtype==-1)	return AIList();
+if (rtype==-1)	return AIList();
 local wagon=cCarrier.ChooseRailWagon(cargo, rtype, engine);
 AIController.Sleep(1);
 if (wagon != null)	couple.AddItem(engine,wagon);
@@ -91,11 +91,6 @@ if (cargoID!=null)
 	vehlist.Valuate(cEngine.CanPullCargo, cargoID);
 	vehlist.KeepValue(1);
 	}
-vehlist.Valuate(AIEngine.GetMaxSpeed);
-vehlist.Sort(AIList.SORT_BY_VALUE,false);
-vehlist.KeepValue(vehlist.GetValue(vehlist.Begin()));
-vehlist.Valuate(AIEngine.GetPower);
-vehlist.Sort(AIList.SORT_BY_VALUE,false);
 // before railtype filtering, add this engine as topengine
 if (!vehlist.IsEmpty())	cEngine.RailTypeIsTop(vehlist.Begin(), cargoID, true);
 if (rtype != null)
@@ -103,10 +98,15 @@ if (rtype != null)
 	vehlist.Valuate(AIEngine.HasPowerOnRail, rtype);
 	vehlist.KeepValue(1);
 	}
+else	rtype = AIRail.GetCurrentRailType();
+vehlist.Valuate(cCarrier.GetEngineLocoEfficiency,cargoID, rtype);
+vehlist.Sort(AIList.SORT_BY_VALUE, true);
+//foreach (engid, eff in vehlist)	print("name="+cEngine.GetName(engid)+" eff="+eff);
 local veh = null;
 if (vehlist.IsEmpty())	DWarn("Cannot find a train engine for that rail type",1,"cCarrier::ChooseRailEngine");
 			else	veh=vehlist.Begin();
-if (!vehlist.IsEmpty() && cargoID!=null)	cEngine.EngineIsTop(vehlist.Begin(), cargoID, true); // set top engine for trains
+//if (veh != null)	print("pickup ="+cEngine.GetName(veh));
+if (!vehlist.IsEmpty() && cargoID != null)	cEngine.EngineIsTop(vehlist.Begin(), cargoID, true); // set top engine for trains
 //print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
 return veh;
 }
@@ -354,6 +354,11 @@ do	{
 			{
 			DInfo("Updating number of wagons need for "+cCarrier.VehicleGetName(tID)+" to "+wagonNeed,1,"cCarrier::AddWagon");
 			INSTANCE.carrier.ToDepotList.SetValue(tID, DepotAction.ADDWAGON+wagonNeed);
+			if (AIOrder.GetOrderCount(tID)<3)
+				{
+				INSTANCE.carrier.ToDepotList.RemoveItem(tID);
+				INSTANCE.carrier.VehicleSendToDepot(tID, DepotAction.ADDWAGON+wagonNeed);
+				}
 			}
 		else	{
 			if (!cBanker.CanBuyThat(cTrain.GetWagonPrice(tID)*wagonNeed)) return; // don't call it if we lack money

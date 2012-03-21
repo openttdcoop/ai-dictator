@@ -477,7 +477,7 @@ local space="        ";
 local correction=false;
 local temp=null;
 if (repair.route_type != AIVehicle.VT_ROAD)	return false; // only check road type
-DInfo("Checking route health of "+repair.name,1,"cBuilder::CheckRoadHealth");
+DInfo("Checking route health of "+cRoute.RouteGetName(repair.UID),1,"cBuilder::CheckRoadHealth");
 // check stations for trouble
 // source station
 correction=false;
@@ -657,6 +657,17 @@ while (path != null)
 		{
 		if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1)
 			{
+			local parpar=par.GetParent();
+			if (parpar != null)
+				{
+				// check for small up/down hills correction
+				if ((AITile.GetSlope(par.GetTile())+AITile.GetSlope(path.GetTile()))==15)
+					{
+					DInfo("Smoothing land to build road",1,"ConstructRoadROAD");
+					cTileTools.TerraformLevelTiles(path.GetTile(), parpar.GetTile());
+					}
+				}
+
 			if (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()))
 				{
 				local error = AIError.GetLastError();
@@ -664,7 +675,7 @@ while (path != null)
 					{
 					if (error == AIError.ERR_VEHICLE_IN_THE_WAY)
 						{
-						DInfo("A vehicle was in the way while I was building the road. Retrying...",1);
+						DInfo("A vehicle was in the way while I was building the road. Retrying...",1,"ConstructRoadROAD");
 						counter = 0;
 						AIController.Sleep(75);
 						while (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()) && counter < 3)
@@ -674,7 +685,7 @@ while (path != null)
 							}
 						if (counter > 2)
 							{
-							DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
+							DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1,"ConstructRoadROAD");
 							cBuilder.ReportHole(path.GetTile(), par.GetTile(), waserror);
 							waserror = true;
 							}
@@ -687,7 +698,7 @@ while (path != null)
 							}
 						}
 					else	{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
+						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1,"ConstructRoadROAD");
 						cBuilder.ReportHole(path.GetTile(), par.GetTile(), waserror);
 						waserror = true;
 						}
@@ -716,10 +727,10 @@ while (path != null)
 					{
 					if (!AITunnel.BuildTunnel(AIVehicle.VT_ROAD, path.GetTile()))
 						{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
+						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1,"ConstructRoadROAD");
 						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
 							{
-							DInfo("That tunnel would be too expensive. Construction aborted.",1);
+							DInfo("That tunnel would be too expensive. Construction aborted.",1,"ConstructRoadROAD");
 							return false;
 							}
 						cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
@@ -739,10 +750,10 @@ while (path != null)
 					bridgelist.Sort(AIList.SORT_BY_VALUE,true);
 					if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgelist.Begin(), path.GetTile(), par.GetTile()))
 						{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
+						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1,"ConstructRoadROAD");
 						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
 							{
-							DInfo("That bridge would be too expensive. Construction aborted.",1);
+							DInfo("That bridge would be too expensive. Construction aborted.",1,"ConstructRoadROAD");
 							return false;
 							}
 						cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
@@ -768,7 +779,7 @@ if (waserror)
 	holes.push([holestart, holeend]);
 	}
 if (holes.len() > 0)
-	{ DInfo("Road construction fail...",1); return false; }
+	{ DInfo("Road construction fail...",1,"ConstructRoadROAD"); return false; }
 return true;
 }
 

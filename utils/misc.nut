@@ -198,7 +198,7 @@ function LoadOldSave()
 		iter++;
 		cRoute.database[obj.UID] <- obj;
 		if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
-		obj.RouteUpdate(); // re-enable the link to stations
+		obj.RouteCheckEntry(); // re-enable the link to stations
 		if (obj.UID > 1)
 			{ // don't try this one virtual routes
 			obj.source.cargo_produce.AddItem(obj.cargoID,0);
@@ -295,7 +295,7 @@ function LoadSaveGame(revision)
 		if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
 		if (obj.UID == 0)	cRoute.VirtualAirGroup[0]=obj.groupID;
 		if (obj.UID == 1)	cRoute.VirtualAirGroup[1]=obj.groupID;
-		obj.RouteUpdate(); // re-enable the link to stations
+		obj.RouteCheckEntry(); // re-enable the link to stations
 		if (obj.UID > 1)
 			{ // don't try this one virtual routes
 			obj.source.cargo_produce.AddItem(obj.cargoID,0);
@@ -319,7 +319,7 @@ function LoadSaveGame(revision)
 		obj.dstStationID=all_trains[i+2];
 		obj.src_useEntry=all_trains[i+3];
 		obj.dst_useEntry=all_trains[i+4];
-		obj.dualusage=all_trains[i+5];
+		obj.stationbit=all_trains[i+5];
 		obj.full=all_trains[i+6];
 		i+=6;
 		cTrain.vehicledatabase[obj.vehicleID] <- obj;
@@ -343,7 +343,6 @@ function LoadingGame()
 	bank.unleash_road=false;
 	bank.busyRoute=false;
 	bank.mincash=10000;
-	builder.building_route = -1; // disable loading old route, for now unfinish route cannot be complete as job uid doesn't exist
 	DInfo("We are promoting "+AICargo.GetCargoLabel(cargo_favorite),0,"LoadingGame");
 	DInfo("Registering our routes",0,"LoadingGame");
 	foreach (routeUID, dummy in cRoute.RouteIndexer)
@@ -356,13 +355,6 @@ function LoadingGame()
 		if (rt > AIVehicle.VT_AIR)	rt=AIVehicle.VT_AIR;
 		cJobs.CreateNewJob(aroute.sourceID, aroute.targetID, aroute.source_istown, aroute.cargoID, rt);
 		}
-	/*DInfo("Starting stopped trains",1,"LoadingGame");
-	local trainlist=AIVehicleList();
-	trainlist.Valuate(AIVehicle.GetState);
-	trainlist.KeepValue(AIVehicle.VS_IN_DEPOT);
-	trainlist.Valuate(AIVehicle.GetVehicleType);
-	trainlist.KeepValue(AIVehicle.VT_RAIL);
-	foreach (vehID, dummy in trainlist)	AIVehicle.StartStopVehicle(vehID);*/
 
 	DInfo("Tagging jobs in use",0,"LoadingGame");
 	foreach (jobID, dummy in cJobs.jobIndexer)
@@ -376,7 +368,7 @@ function LoadingGame()
 	foreach (townID, dummy in alltowns)
 		if (AITown.GetRating(townID, AICompany.COMPANY_SELF) != AITown.TOWN_RATING_NONE)	cJobs.statueTown.AddItem(townID,0);
 	INSTANCE.builder.CheckRouteStationStatus();
-
+/*
 	local railgroup=AIGroupList();
 	railgroup.Valuate(AIGroup.GetVehicleType);
 print("railgroup size="+railgroup.Count());
@@ -400,5 +392,6 @@ foreach (gid, dummy in railgroup)
 		print("result="+cBuilder.RoadRunner(sdepot, ddepot, AIVehicle.VT_RAIL)); ClearSignsALL();
 		}
 	else			print("bad depot");
-	}
+	}*/
+cBuilder.BridgeUpgrader();
 }

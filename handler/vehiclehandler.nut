@@ -192,7 +192,7 @@ foreach (ownID, dummy in station.owner)
 		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
 		if (orderindex != -1)
 			{
-			DInfo("Re-routing traffic on route "+road.name+" to ignore "+cStation.StationGetName(stationID),0);
+			DInfo("Re-routing traffic on route "+cRoute.RouteGetName(road.UID)+" to ignore "+cStation.StationGetName(stationID),0);
 			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
 				{ DError("Fail to remove order for vehicle "+INSTANCE.carrier.VehicleGetName(veh),2); }
 			}
@@ -310,7 +310,7 @@ switch (vehtype)
 		local numwagon=cCarrier.GetNumberOfWagons(vehID);
 		INSTANCE.carrier.VehicleSell(vehID,false);
 		INSTANCE.carrier.AddWagon(idx, numwagon);
-		DInfo("Train vehicle "+oldenginename+" replace",0,"cCarrier::VehicleUpgradeEngine");
+		DInfo("Train vehicle "+oldenginename+" replace, a new train will be built",0,"cCarrier::VehicleUpgradeEngine");
 		return; // for now cannot do more than that
 	break;
 	case AIVehicle.VT_ROAD:
@@ -482,7 +482,7 @@ local vehvalue=AIVehicle.GetCurrentValue(veh);
 local vehtype=AIVehicle.GetVehicleType(veh);
 INSTANCE.carrier.vehnextprice-=vehvalue;
 if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
-cTrain.DeleteVehicle(veh);
+cTrain.DeleteVehicle(veh);	// must be call before selling the vehicle
 AIVehicle.SellVehicle(veh);
 if (road == null) return;
 road.RouteUpdateVehicle();
@@ -555,6 +555,7 @@ foreach (i, dummy in tlist)
 			{
 			DInfo("I don't know the reason why "+name+" is at depot, restarting it",1,"VehicleWaitingInDepot");
 			if (AIVehicle.StartStopVehicle(i))	continue;
+			cCarrier.VehicleBuildOrders(AIVehicle.GetGroupID(i), false);
 			}
 		else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"VehicleWaitingInDepot");
 		}

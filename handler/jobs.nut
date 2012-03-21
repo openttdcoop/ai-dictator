@@ -335,7 +335,7 @@ function cJobs::EstimateCost()
 // Estimate the cost to build a job
 	{
 	local money = 0;
-	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_HOUSE);
+	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_ROCKY);
 	local engine=0;
 	local engineprice=0;
 	local daystransit=0;
@@ -356,18 +356,23 @@ function cJobs::EstimateCost()
 		break;
 		case	AIVehicle.VT_RAIL:
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
-			local rtype=AIRail.GetCurrentRailType();
+			local rtype=null;
 			engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
 			if (engine.IsEmpty())	engineprice=500000000;
 						else	{
 							engineprice+=cEngine.GetPrice(engine.Begin());
 							engineprice+=2*cEngine.GetPrice(engine.GetValue(engine.Begin()));
+							rtype=cCarrier.GetRailTypeNeedForEngine(engine.Begin());
+							if (rtype==-1)	rtype=null;
 							}
 			money+=engineprice;
-			money+=(2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)); // station train 5 length
-			money+=2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT));
-			money+=4*clean;
-			money+=(12+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK));
+			money+=(4*clean);
+			if (rtype==null)	money+=10000000000;
+					else	{
+						money+=((12+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)));
+						money+=((2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION))); // station train 5 length
+						money+=(2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT)));
+						}
 			daystransit=4;
 		break;
 		case	AIVehicle.VT_WATER: //TODO: finish it
@@ -590,13 +595,13 @@ function cJobs::UpdateDoableJobs()
 		// not doable if disabled
 		if (myjob.isUse)	{ doable=false; parentListID.AddItem(myjob.parentID,1); }
 		// not doable if already done, also record the parentID to block similar jobs
-		if (doable && myjob.ranking==0)	doable=false;
+		if (doable && myjob.ranking==0)	{ print("0 rank"); doable=false; }
 		// not doable if ranking is at 0
 		if (doable)
 		// not doable if max distance is limited and lower the job distance
 			{
 			local curmax = INSTANCE.jobs.GetTransportDistance(myjob.roadType, false, !INSTANCE.bank.unleash_road);
-			if (curmax < myjob.distance)	doable=false;
+			if (curmax < myjob.distance)	{ doable=false; }
 			}
 		// not doable if any parent is already in use
 		if (doable)
@@ -644,7 +649,7 @@ function cJobs::UpdateDoableJobs()
 					break;
 					}
 				}
-		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	doable=false;
+		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	{ doable=false; }
 		}
 	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
@@ -697,6 +702,7 @@ function cJobs::DeleteJob(uid)
 		delete cJobs.database[uid];
 		cJobs.jobIndexer.RemoveItem(uid);
 		cJobs.jobDoable.RemoveItem(uid);
+		cJobs.badJobs.RemoveItem(uid);
 		}
 	}
 
@@ -718,6 +724,7 @@ function cJobs::RawJobHandling()
 						foreach (uid, dummy in cJobs.badJobs)
 							{
 							local job=cJobs.GetJobObject(uid);
+							if (job == null)	{ cJobs.badJobs.RemoveItem(uid); continue; }
 							if (!job.isUse && !job.isdoable)	job.isdoable=true;
 							AIController.Sleep(1);
 							}
@@ -785,7 +792,7 @@ foreach (ID, dummy in indjobs)
 	}
 foreach (ID, dummy in townjobs)
 	{
-	cJobs.RawJobAdd(ID,true);
+	//cJobs.RawJobAdd(ID,true);
 	curr++;
 	if (curr % 18 == 0)
 		{

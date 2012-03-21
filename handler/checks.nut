@@ -429,12 +429,14 @@ function cBuilder::BridgeUpgrader()
 	RoadBridgeList.Valuate(cBridge.GetMaxSpeed);
 	local RailBridgeList=AIList();
 	RailBridgeList.AddList(RoadBridgeList);
-	RoadBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxRoad); // Keep only too slow bridges
-	RailBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxTrain);
 	RoadBridgeList.Valuate(cBridge.IsRoadBridge);
 	RoadBridgeList.KeepValue(1);
 	RailBridgeList.Valuate(cBridge.IsRailBridge);
 	RailBridgeList.KeepValue(1);
+	local numRail=RailBridgeList.Count();
+	local numRoad=RoadBridgeList.Count();
+	RoadBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxRoad); // Keep only too slow bridges
+	RailBridgeList.KeepBelowValue(INSTANCE.carrier.speed_MaxTrain);
 	local workBridge=AIList();
 	local twice=false;
 	local neededSpeed=0;
@@ -442,7 +444,7 @@ function cBuilder::BridgeUpgrader()
 	local justOne=false;
 	if (!AIController.GetSetting("upgrade_townbridge"))	justOne=true;
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-	DInfo("We knows "+RailBridgeList.Count()+" rail bridges and "+RoadBridgeList.Count()+" road bridges",0,"cBuilder::BridgeUpgrader");
+	DInfo("We knows "+numRail+" rail bridges and "+numRoad+" road bridges",0,"cBuilder::BridgeUpgrader");
 	do	{
 		workBridge.Clear();
 		if (!twice)	{ workBridge.AddList(RoadBridgeList); neededSpeed=INSTANCE.carrier.speed_MaxRoad; btype=AIVehicle.VT_ROAD; }
@@ -457,6 +459,7 @@ function cBuilder::BridgeUpgrader()
 			local speederBridge=AIBridgeList_Length(thatbridge.length);
 			speederBridge.Valuate(AIBridge.GetMaxSpeed);
 			speederBridge.KeepAboveValue(neededSpeed); // Keep only ones faster
+			speederBridge.Sort(AIList.SORT_BY_VALUE, true);
 			local oldbridge=AIBridge.GetName(thatbridge.bridgeID);
 			if (!speederBridge.IsEmpty())
 				{

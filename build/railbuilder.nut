@@ -276,8 +276,8 @@ while (path != null)
 						return false;
 						}
 					if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
-					cBridge.IsBridgeTile(prev); // force bridge check
 					}
+				cBridge.IsBridgeTile(prev); // force bridge check
 				}
 			pp3 = pp2;
 			pp2 = pp1;
@@ -287,7 +287,14 @@ while (path != null)
 			path = path.GetParent();
 			}
 		 else {
-			if (!AIRail.BuildRail(prevprev, prev, path.GetTile()))
+			// check for small up/down hills correction
+			local targetTile=path.GetTile();
+			if ((AITile.GetSlope(prev)+AITile.GetSlope(targetTile))==15)
+				{
+				DInfo("Smoothing land to build rails",1,"BuildRoadRAIL");
+				cTileTools.TerraformLevelTiles(prevprev, targetTile);
+				}
+			if (!AIRail.BuildRail(prevprev, prev, targetTile))
 				{
 				DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
 				if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
@@ -575,7 +582,7 @@ local trainExitTaker=thatstation.locations.GetValue(10);
 local trainEntryDropper=thatstation.locations.GetValue(7);
 local trainExitDropper=thatstation.locations.GetValue(8);
 local station_depth=thatstation.locations.GetValue(19);
-//print("raw**: trainEntryTaker="+trainExitTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
+
 
 local success=false;
 local closeIt=false;
@@ -588,10 +595,30 @@ else	{
 	if (taker)	trainExitTaker++;
 		else	trainExitDropper++;
 	}
-local tED=trainEntryDropper / 2;
+print("raw**: "+thatstation.name+" trainEntryTaker="+trainExitTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
+local tED=(trainEntryDropper / 2);
+local tXD=(trainExitDropper / 2);
+if (trainEntryDropper != 0)
+	{
+	if (trainEntryDropper == 1)	tED=1;
+					else	tED=(trainEntryDropper / 2)+1;
+	}
+if (trainExitDropper != 0)
+	{
+	if (trainExitDropper == 1)	tXD=1;
+					else	tXD=(trainExitDropper / 2)+1;
+	}
+
+/*
+if (tED == 0)
+	{
+	if (trainEntryDropper < 3)	tED=trainEntryDropper;
+	}
 if (trainEntryDropper > 0 && tED==0)	tED++;
-local tXD=trainExitDropper / 2;
-if (trainExitDropper > 0 && tXD==0)	tXD++;
+if (trainEntryDropper > 1*/
+
+print("tED="+tED+" tXD="+tXD);
+//if (trainExitDropper > 0 && tXD==0)	tXD++;
 local newStationSize=trainEntryTaker+trainExitTaker+tED+tXD;
 
 local maxE_total=thatstation.maxsize * 2;
@@ -677,7 +704,7 @@ local displace=0;
 DInfo("Phase 1: grow",1,"RailStationGrow");
 if (newStationSize > thatstation.size)
 	{
-	DInfo("Upgrading "+thatstation.StationGetName()+" to "+newStationSize+" platforms",0,"RailStationGrow");
+	DInfo("Upgrading "+thatstation.StationGetName()+" to "+newStationSize+" platforms",1,"RailStationGrow");
 	if (thatstation.maxsize==thatstation.size)
 		{
 		DInfo("We'll need another platform to handle that train, but the station "+cStation.StationGetName(thatstation.stationID)+" cannot grow anymore.",1,"RailStationGrow");
@@ -1148,6 +1175,7 @@ PutSign(road.target.locations.GetValue(3),"T3");
 PutSign(road.target.locations.GetValue(4),"T4");
 print("SIGNAL STOP");*/
 	local srcpos, dstpos = null;
+	local unstuck_need=false;
 /*	if (road.source_RailEntry)
 			srclink=road.source.locations.GetValue(11);
 		else	srclink=road.source.locations.GetValue(13);
@@ -1177,6 +1205,8 @@ print("SIGNAL STOP");*/
 			cStation.RailStationSetPrimarySignalBuilt(road.source.stationID);
 			}
 		else	{ DInfo("... not all signals were built",2,"RailStationGrow"); }
+		//cCarrier.CheckStuckTrainAtSignal(dstpos, srcpos);
+		unstuck_need=true;
 		}
 	print("SIGNAL stop");
 	ClearSignsALL();
@@ -1204,9 +1234,18 @@ print("SIGNAL STOP");*/
 			cStation.RailStationSetSecondarySignalBuilt(road.target.stationID);
 			}
 		else	{ DInfo("... not all signals were built",2,"RailStationGrow"); }
+		//cCarrier.CheckStuckTrainAtSignal(srcpos, dstpos);
+		unstuck_need=true;
 		}
 	print("SIGNAL stop");
 	ClearSignsALL();
+	if (unstuck_need)
+		{
+		local vehlist=AIVehicleList_Station(road.source_stationID);
+		local seclist=AIVehicleList_Station(road.target_stationID);
+		vehlist.AddList(seclist);
+		foreach (vehicle, dummy in vehlist)	AIVehicle.SendVehicleToDepotForServicing(vehicle);
+		}
 	}
 
 DInfo("Phase8: build depot",1,"RailStationGrow");
@@ -1673,14 +1712,14 @@ while (path != null)
 			tilefront=tile;
 			break;
 		case	1: // NW-SE
-			tilesource=tile;
-			tilefront=prev;
+			tilesource=prev;//*
+			tilefront=tile;
 			break;
 		case	2: // SW-NE
 			tilesource=prev;
 			tilefront=tile;
 			break;
-		case	3: // NE-SW
+		case	3: // NE-SW //*
 			tilesource=prev;
 			tilefront=tile;
 			break;
@@ -1689,9 +1728,12 @@ while (path != null)
 //	if (!AITile.HasTransportType(tile, AITile.TRANSPORT_RAIL)) print("bad tile");
 	if (cc >= max_signals_distance)
 		{
-		if (AIRail.GetSignalType(tilesource,tilefront) != AIRail.SIGNALTYPE_NONE)	{ cc=0; prev=tile; continue; }
+		local ignoreit=false;
+		if (AIRail.GetSignalType(tilesource,tilefront) != AIRail.SIGNALTYPE_NONE)	ignoreit=true;
+		if (cBridge.IsBridgeTile(tilesource) || AITunnel.IsTunnelTile(tilesource))	ignoreit=true;
+		if (ignoreit)	{ cc=0; prev=tile; continue; }
 		if (AIRail.BuildSignal(tilesource,tilefront, AIRail.SIGNALTYPE_NORMAL))	{ print("build signal: tilesource="+tilesource+" tilefront="+tilefront); PutSign(tile,"Y"); cc=0; max_signals_distance=8; }
-					else { print("error building"+AIError.GetLastErrorString()); max_signals_distance++; allsuccess=false; }
+			else { PutSign(tile,"!"); print("error building"+AIError.GetLastErrorString()); max_signals_distance++; allsuccess=false; return false; }
 		}
 	//PutSign(tile,cc);
 AIController.Sleep(4);

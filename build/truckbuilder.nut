@@ -64,7 +64,7 @@ if (altplace && road.target.depot != null)	homedepot = road.target.depot;
 if (!cStation.IsDepot(homedepot))
 	{
 	INSTANCE.builder.RouteIsDamage(roadidx);
-	DError("Route "+road.name+" depot is not valid, adding route to repair task.",1,"cCarrier::CreateRoadVehicle");
+	DError("Route "+cRoute.RouteGetName(road.UID)+" depot is not valid, adding route to repair task.",1,"cCarrier::CreateRoadVehicle");
 	return false;
 	}
 local vehID=null;

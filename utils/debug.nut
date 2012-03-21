@@ -45,7 +45,7 @@ function cBuilder::DumpRoute(idx=null)
 local road=null;
 if (idx == null)	road=INSTANCE.route;
 		else	road=cRoute.GetRouteObject(idx);
-DInfo("Route #"+road.UID+" "+road.name,2,"Debug::DumpRoute");
+DInfo("Route #"+road.UID+" "+cRoute.RouteGetName(road.UID),2,"Debug::DumpRoute");
 local srcname="";
 local tgtname="";
 if (road.source_istown)	srcname=AITown.GetName(road.sourceID);

@@ -288,7 +288,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		break;
 		}
 	road.source.UpdateStationInfos();
-	DInfo("After station update",2,"DutyOnRoute");
+	DInfo("Route "+cRoute.RouteGetName(uid),2,"DutyOnRoute");
 	local vehneed=0;
 	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
 	local vehonroute=road.vehicle_count;
@@ -339,7 +339,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	DInfo("CanAddNewVehicle for source station says "+vehneed,2,"DutyOnRoute");
 	vehneed=INSTANCE.carrier.CanAddNewVehicle(uid, false, vehneed);
 	DInfo("CanAddNewVehicle for destination station says "+vehneed,2,"DutyOnRoute");
-	DInfo("Route="+road.name+" capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2,"DutyOnRoute");
+	DInfo("Capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2,"DutyOnRoute");
 	// adding vehicle
 	if (vehneed > 0)
 		{
@@ -385,7 +385,7 @@ foreach (groupid, ratio in priority)
 			if (goodbuy)
 				{
 				local rinfo=cRoute.GetRouteObject(uid);
-				DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+rinfo.name,0,"DutyOnRoute");
+				DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+cRoute.RouteGetName(rinfo.UID),0,"DutyOnRoute");
 				allbuy++;
 				}
 			}

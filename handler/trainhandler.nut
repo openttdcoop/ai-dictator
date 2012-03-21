@@ -28,7 +28,7 @@ static	function GetTrainObject(vehicleID)
 	dstStationID	= null;	// the destination stationID that train is using
 	src_useEntry	= null;	// source station is use by its entry=true, exit=false;
 	dst_useEntry	= null;	// destination station is use by its entry=true, exit=false;
-	dualusage		= null;	// true if train take and drop at both stations
+	stationbit		= null;	// bit0 source station, bit1=destination station :: set to 1 train load or 0 train unload at station
 	full			= null; 	// set to true if train cannot have more wagons attach to it
 	wagonPrice		= null;	// price to buy a new wagon for that train
 	lastdepotvisit	= null;	// record last time that train was in a depot
@@ -43,7 +43,7 @@ static	function GetTrainObject(vehicleID)
 		dstStationID	= null;	// *
 		src_useEntry	= null;	// *
 		dst_useEntry	= null;	// *
-		dualusage		= false;	// *
+		stationbit		= 0;		// *
 		full			= false;	// *
 		wagonPrice		= 0;
 		lastdepotvisit	= 0;
@@ -83,19 +83,20 @@ function cTrain::Update(vehID)
 	train.length=AIVehicle.GetLength(vehID);
 	}
 
-function cTrain::TrainSetStation(vehID, stationID, isSource, useEntry, dual)
+function cTrain::TrainSetStation(vehID, stationID, isSource, useEntry, taker)
 // set the station properties of a train
 	{
 	local train=cTrain.Load(vehID);
-	train.dualusage=dual;
 	if (isSource)
 		{
 		train.src_useEntry=useEntry;
 		train.srcStationID=stationID;
+		if (taker)	train.stationbit+=1;
 		}
 	else	{
 		train.dst_useEntry=useEntry;
 		train.dstStationID=stationID;
+		if (taker)	train.stationbit+=2;
 		}
 	DInfo("Train "+cCarrier.VehicleGetName(vehID)+" assign to station "+cStation.GetName(stationID),2,"cTrain::TrainSetStation");
 	}
@@ -109,8 +110,12 @@ function cTrain::DeleteVehicle(vehID)
 		if (AIVehicle.IsValidVehicle(vehID))	atrain=cTrain.Load(vehID); // if invalid cTrain.Load would call DeleteVehicle and infinite loop
 								else	{ atrain=cTrain(); atrain.vehicleID=vehID; }
 		DInfo("Removing train "+cCarrier.VehicleGetName(vehID)+" from database",2,"cTrain::DeleteVehicle");
-		cStation.StationRemoveTrain(atrain.dualusage, atrain.src_useEntry, atrain.srcStationID);
-		cStation.StationRemoveTrain(atrain.dualusage, atrain.dst_useEntry, atrain.dstStationID);
+print("trainbit="+atrain.stationbit);
+		local taker=((atrain.stationbit & 1) == 1);
+		cStation.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID);
+		taker=((atrain.stationbit & 2) == 2);
+print("taker bug?"+taker);
+		cStation.StationRemoveTrain(taker, atrain.dst_useEntry, atrain.dstStationID);
 		delete cTrain.vehicledatabase[vehID];
 		}
 	}
