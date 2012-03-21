@@ -40,7 +40,10 @@ if (exist)
 		DWarn("Still have "+vehcheck.Count()+" vehicles using station "+cStation.StationGetName(stationid),1,"cBuilder::DeleteStation");
 		}
 	if (!temp.station_tiles.IsEmpty())
+		{
+		if (temp.stationType == AIStation.STATION_TRAIN)	cBuilder.RailCleaner(temp.station_tiles);
 		foreach (tile, dummy in temp.station_tiles)	{ cTileTools.UnBlackListTile(tile); }
+		}
 	}
 local wasnamed=AIStation.GetName(stationid);
 local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));

@@ -192,7 +192,7 @@ INSTANCE.route.CreateNewStation(start);
 return true;
 }
 
-function cBuilder::BuildRoadRAIL(head1, head2) {
+function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID) {
 local pathfinder = MyRailPF();
 /*pathfinder._cost_level_crossing = 900;
 pathfinder.cost_slope = 200;
@@ -207,11 +207,9 @@ pathfinder.cost.max_tunnel_length=20;
 pathfinder.cost.tile=80;
 pathfinder.cost.slope=100;
 //pathfinder.cost.diagonal_tile=100;
-
-local src=head1;
-local dst=head2;
-
-pathfinder.InitializePath([src], [dst]);
+//local src=head1;
+//local dst=head2;
+pathfinder.InitializePath([head1], [head2]);
 local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 local pfInfo=null;
 INSTANCE.bank.SaveMoney(); // thinking long time, don't waste money
@@ -260,7 +258,11 @@ while (path != null)
 						DInfo("That tunnel would be too expensive. Construction aborted.",2);
 						return false;
 						}
-					if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
+					if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID)) return false; else return true;
+					}
+				else	{
+					cStation.RailStationClaimTile(prev, useEntry, stationID);
+					cStation.RailStationClaimTile(path.GetTile(), useEntry, stationID);					
 					}
 				}
 			else	{
@@ -275,7 +277,11 @@ while (path != null)
 						DInfo("That bridge would be too expensive. Construction aborted.",2);
 						return false;
 						}
-					if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
+					if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID)) return false; else return true;
+					}
+				else	{
+					cStation.RailStationClaimTile(prev, useEntry, stationID);
+					cStation.RailStationClaimTile(path.GetTile(), useEntry, stationID);					
 					}
 				cBridge.IsBridgeTile(prev); // force bridge check
 				}
@@ -296,8 +302,13 @@ while (path != null)
 				}
 			if (!AIRail.BuildRail(prevprev, prev, targetTile))
 				{
+				cBuilder.IsCriticalError();
 				DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
-				if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1)) return false; else return true;
+				if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID))	return false; else { INSTANCE.builder.CriticalError=false; return true; }
+				}
+			else	{
+				cStation.RailStationClaimTile(prev, useEntry, stationID);
+				cStation.RailStationClaimTile(path.GetTile(), useEntry, stationID);					
 				}
 			}
 		}
@@ -314,13 +325,8 @@ while (path != null)
 return true;
 }
 
-function cBuilder::RetryRail(prevprev, pp1, pp2, pp3, head1)
+function cBuilder::RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID)
 {
-	/*recursiondepth++;
-	if (recursiondepth > 10) {
-		AILog.Error("It looks like I got into an infinite loop.");
-		return false;
-	}*/
 	if (pp1 == null) return false;
 	local head2 = [null, null];
 	local tiles = [pp3, pp2, pp1, prevprev];
@@ -351,7 +357,7 @@ function cBuilder::RetryRail(prevprev, pp1, pp2, pp3, head1)
 			head2[0] = tile;
 		}
 	}
-	if (cBuilder.BuildRoadRAIL(head2, head1)) return true; else return false;
+	if (cBuilder.BuildRoadRAIL(head2, head1, useEntry, stationID)) return true; else return false;
 }
 
 function cBuilder::ReportHole(start, end, waserror)
@@ -496,7 +502,7 @@ do	{
 				PutSign(dstlink,"d");
 				PutSign(srcpos,"S");
 				PutSign(srclink,"s");
-				if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]))
+				if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], srcUseEntry, srcStation.stationID))
 						return false;
 					else	retry=false;
 				dstStation.locations.SetValue(22,INSTANCE.route.UID);
@@ -523,12 +529,12 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link=null)
 // link: true to link to a previous station
 {
 if (link==null)	link=AIStation.STATION_NEW;
-local money=AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION);
+local money=INSTANCE.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate();
 if (!cBanker.CanBuyThat(money))	DInfo("We lack money to buy the station",1,"cBuilder::CreateAndBuildTrainStation");
 INSTANCE.bank.RaiseFundsBy(money);
-if (!AIRail.BuildRailStation(tilepos, direction, 1, 5, link))
+if (!AIRail.BuildRailStation(tilepos, direction, 1, INSTANCE.carrier.train_length, link))
 	{
-	DInfo("Rail station couldn't be built, link="+link+" err: "+AIError.GetLastErrorString(),1,"cBuilder::CreateAndBuildTrainStation");
+	DInfo("Rail station couldn't be built, link="+link+" cost="+money+" err: "+AIError.GetLastErrorString(),1,"cBuilder::CreateAndBuildTrainStation");
 	PutSign(tilepos,"!");
 	return false;
 	}
@@ -1142,7 +1148,7 @@ if (needIN>0) // only work when needIN is built as we only work on target statio
 		PutSign(srcpos,"S");
 		PutSign(srclink,"s");
 //print("break");
-		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos]))
+		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target_stationID))
 			{
 			DError("Fail to build alternate track",1,"RailStationGrow");
 			return false;
@@ -1374,7 +1380,7 @@ trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	0);
 trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	0);
 foreach (tile, dummy in many)
 	{
-	PutSign(tile,"Z"); AIController.Sleep(40);
+	PutSign(tile,"Z");
 	if (AITile.GetOwner(tile) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
 	if (AIRail.IsRailStationTile(tile))	continue; // protect station
 	if (AIRail.IsRailDepotTile(tile))

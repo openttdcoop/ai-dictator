@@ -27,12 +27,14 @@ function cTileTools::GetTileOwner(tile)
 // return station that own the tile
 {
 if (cTileTools.TilesBlackList.HasItem(tile))	return cTileTools.TilesBlackList.GetValue(tile);
+if (!cTileTools.IsRemovable(tile))	{ cTileTools.TilesBlackList.AddItem(tile, -255); return -255; }
 return -1;
 }
 
 function cTileTools::CanUseTile(tile, owner)
 // Answer if we can use that tile
 {
+local coulduse=true;
 local ot=cTileTools.GetTileOwner(tile);
 if (ot == owner)	return true;
 if (ot == -1)	return true;

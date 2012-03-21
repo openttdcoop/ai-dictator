@@ -645,7 +645,7 @@ function cBuilder::ConstructRoadROAD(path)
 // this construct (build) the road we get from path
 {
 INSTANCE.bank.RaiseFundsBigTime();
-DInfo("Building road structure",0);
+DInfo("Building road structure",0,"ConstructRoadROAD");
 local prev = null;
 local waserror = false;
 local counter=0;

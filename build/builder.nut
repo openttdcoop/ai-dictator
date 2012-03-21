@@ -330,43 +330,44 @@ function cBuilder::TryBuildThatRoute()
 // advance the route construction
 {
 local success=false;
-local trainspec=null;
+local buildWithRailType=null;
 DInfo("Route #"+INSTANCE.builder.building_route+" Status:"+INSTANCE.route.status,1,"TryBuildThatRoute");
-if (INSTANCE.route.status==0) // not using switch/case so we can advance steps in one pass
+// not using switch/case so we can advance steps in one pass
+switch (INSTANCE.route.route_type)
 	{
-	switch (INSTANCE.route.route_type)
-		{
-		case	RouteType.RAIL:
-			trainspec=INSTANCE.carrier.ChooseRailCouple(INSTANCE.route.cargoID);
-			if (trainspec.IsEmpty())	success=null;
-							else	success=true;
-		break;
-		case	RouteType.ROAD:
-			success=INSTANCE.carrier.ChooseRoadVeh(INSTANCE.route.cargoID);
-		break;
-		case	RouteType.WATER:
-			success=null;
-		break;
-		case	RouteType.AIR:
-		case	RouteType.AIRMAIL:
-		case	RouteType.AIRNET:
-		case	RouteType.AIRNETMAIL:
-		case	RouteType.SMALLAIR:
-		case	RouteType.SMALLMAIL:
-		case	RouteType.CHOPPER:
-			local modele=AircraftType.EFFICIENT;
-			if (!INSTANCE.route.source_istown)	modele=AircraftType.CHOPPER;
-			success=INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, modele);
-		break;
-		}
-	if (success == null)
-		{
-		DWarn("There's no vehicle we could use to carry that cargo: "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"TryBuildThatRoute");
-		INSTANCE.route.RouteIsNotDoable();
-		return false;
-		}
-	else	{ INSTANCE.route.status=1; } // advance to next phase
+	case	RouteType.RAIL:
+		local trainspec=INSTANCE.carrier.ChooseRailCouple(INSTANCE.route.cargoID);
+		if (trainspec.IsEmpty())	success=null;
+						else	success=true;
+		if (success)	buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
+		if (success==-1)	success=null;
+	break;
+	case	RouteType.ROAD:
+		success=INSTANCE.carrier.ChooseRoadVeh(INSTANCE.route.cargoID);
+	break;
+	case	RouteType.WATER:
+		success=null;
+	break;
+	case	RouteType.AIR:
+	case	RouteType.AIRMAIL:
+	case	RouteType.AIRNET:
+	case	RouteType.AIRNETMAIL:
+	case	RouteType.SMALLAIR:
+	case	RouteType.SMALLMAIL:
+	case	RouteType.CHOPPER:
+		local modele=AircraftType.EFFICIENT;
+		if (!INSTANCE.route.source_istown)	modele=AircraftType.CHOPPER;
+		success=INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, modele);
+	break;
 	}
+if (!success)
+	{
+	DWarn("There's no vehicle we could use to carry that cargo: "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"TryBuildThatRoute");
+	INSTANCE.route.RouteIsNotDoable();
+	return false;
+	}
+else	{ if (INSTANCE.route.status==0)	INSTANCE.route.status=1; } // advance to next phase
+
 if (INSTANCE.route.status==1)
 	{
 	INSTANCE.builder.FindCompatibleStationExists();
@@ -383,16 +384,11 @@ if (INSTANCE.route.status==1)
 		}
 	INSTANCE.route.status=2;
 	}
-local buildWithRailType=null;
 if (INSTANCE.route.status==2)
 	{
 	if (INSTANCE.route.source_stationID==null)
 			{
-			if (INSTANCE.route.route_type == RouteType.RAIL) 
-				{
-				buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
-				INSTANCE.builder.SetRailType(buildWithRailType);
-				}
+			if (INSTANCE.route.route_type == RouteType.RAIL)	INSTANCE.builder.SetRailType(buildWithRailType);
 			success=INSTANCE.builder.BuildStation(true);
 			}
 		else	{
@@ -415,9 +411,9 @@ if (INSTANCE.route.status==3)
 	{
 	if (INSTANCE.route.target_stationID==null)
 			{
-			if (INSTANCE.route.route_type == RouteType.RAIL) 
+			if (INSTANCE.route.route_type == RouteType.RAIL)
 				{
-				buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
+				buildWithRailType=AIRail.GetRailType(AIStation.GetLocation(INSTANCE.route.source_stationID));
 				INSTANCE.builder.SetRailType(buildWithRailType);
 				}
 			success=INSTANCE.builder.BuildStation(false);
@@ -438,7 +434,7 @@ if (INSTANCE.route.status==3)
 		}
 	else	{ INSTANCE.route.status=4 }
 	}
-if (INSTANCE.route.status==4)
+if (INSTANCE.route.status==4) // pathfinding
 	{
 	INSTANCE.route.RouteCheckEntry();
 	success=INSTANCE.builder.BuildRoadByType();

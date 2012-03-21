@@ -170,7 +170,9 @@ function cRoute::RouteUpdateVehicle()
 					this.target.UpdateCapacity();
 					}
 				else	this.target.vehicle_count=0;
-	local vehingroup=AIVehicleList_Group(this.groupID);
+	local vehingroup=null;
+	if (this.groupID == null)	return;
+	vehingroup=AIVehicleList_Group(this.groupID);
 	this.vehicle_count=vehingroup.Count();
 	}
 

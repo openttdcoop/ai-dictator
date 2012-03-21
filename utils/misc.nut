@@ -207,7 +207,7 @@ function LoadOldSave()
 			obj.target.cargo_accept.AddItem(obj.cargoID,0);
 			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
-		cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
+		if (obj.groupID != null)	cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
 		if (obj.UID == 0)	cRoute.VirtualAirGroup[0]=obj.groupID;
 		if (obj.UID == 1)	cRoute.VirtualAirGroup[1]=obj.groupID;
 		obj.RouteUpdateVehicle();
@@ -305,7 +305,7 @@ function LoadSaveGame(revision)
 			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
 		obj.RouteUpdateVehicle();
-		cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
+		if (obj.groupID != null)	cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
 		}
 	DInfo(iter+" routes found.",0,"LoadSaveGame");
 	DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2,"LoadSaveGame");

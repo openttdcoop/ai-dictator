@@ -25,7 +25,7 @@ network.source_stationID=oneAirportID;
 network.targetID=cStation.VirtualAirports.GetValue(twoAirportID);
 network.target_location=AITown.GetLocation(network.targetID);
 network.target_stationID=twoAirportID;
-network.CheckEntry(); // claims that airport
+network.RouteCheckEntry(); // claims that airport
 INSTANCE.route.VirtualMailCopy();
 }
 

@@ -595,7 +595,7 @@ function cJobs::UpdateDoableJobs()
 		// not doable if disabled
 		if (myjob.isUse)	{ doable=false; parentListID.AddItem(myjob.parentID,1); }
 		// not doable if already done, also record the parentID to block similar jobs
-		if (doable && myjob.ranking==0)	{ print("0 rank"); doable=false; }
+		if (doable && myjob.ranking==0)	{ doable=false; }
 		// not doable if ranking is at 0
 		if (doable)
 		// not doable if max distance is limited and lower the job distance
