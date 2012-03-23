@@ -292,21 +292,21 @@ function cJobs::QuickRefresh()
 // refresh datas on first 5 doable top jobs
 	{
 	local smallList=AIList();
+	INSTANCE.jobs.UpdateDoableJobs();
 	smallList.AddList(cJobs.jobIndexer);
 	smallList.Valuate(cJobs.IsInfosUpdate);
 	smallList.KeepValue(0); // keep only ones that need refresh
 	smallList.Valuate(AIBase.RandItem);
-	smallList.Sort(AIList.SORT_BY_VALUE,true);
+	//smallList.Sort(AIList.SORT_BY_VALUE,true);
 	smallList.KeepTop(5);
 	foreach (smallID, dvalue in smallList)	{ INSTANCE.jobs.RefreshValue(smallID, true); }
-	INSTANCE.jobs.UpdateDoableJobs();
 	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
-	foreach (item, value in smallList)
+	/*foreach (item, value in smallList)
 		{ // now remove jobs that we cannot build because of money need for that
 		local j=cJobs.GetJobObject(item);
 		if (!cBanker.CanBuyThat(j.moneyToBuild))	 { smallList.RemoveItem(item); }
-		}
+		}*/
 	smallList.Sort(AIList.SORT_BY_VALUE,false);
 	smallList.KeepTop(5);
 	if (INSTANCE.safeStart > 0 && smallList.IsEmpty())	INSTANCE.safeStart=0; // disable it if we cannot find any jobs
@@ -335,7 +335,7 @@ function cJobs::EstimateCost()
 // Estimate the cost to build a job
 	{
 	local money = 0;
-	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_ROCKY);
+	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_ROCKY)*cBanker.GetInflationRate();
 	local engine=0;
 	local engineprice=0;
 	local daystransit=0;
@@ -348,10 +348,10 @@ function cJobs::EstimateCost()
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
-			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
-			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT));
+			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP))*cBanker.GetInflationRate();
+			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT))*cBanker.GetInflationRate();
 			money+=4*clean;
-			money+=(4+distance)*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD));
+			money+=(4+distance)*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD))*cBanker.GetInflationRate();
 			daystransit=16;
 		break;
 		case	AIVehicle.VT_RAIL:
@@ -366,12 +366,12 @@ function cJobs::EstimateCost()
 							if (rtype==-1)	rtype=null;
 							}
 			money+=engineprice;
-			money+=(4*clean);
+			money+=(8*clean);
 			if (rtype==null)	money+=10000000000;
 					else	{
-						money+=((12+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)));
-						money+=((2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION))); // station train 5 length
-						money+=(2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT)));
+						money+=((20+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)))*cBanker.GetInflationRate();
+						money+=((2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)))*cBanker.GetInflationRate(); // station train 5 length
+						money+=(2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT)))*cBanker.GetInflationRate();
 						}
 			daystransit=4;
 		break;
@@ -382,8 +382,8 @@ function cJobs::EstimateCost()
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
-			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK));
-			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT));
+			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK))*cBanker.GetInflationRate();
+			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT))*cBanker.GetInflationRate();
 			daystransit=32;
 		break;
 		case	AIVehicle.VT_AIR:
@@ -609,6 +609,7 @@ function cJobs::UpdateDoableJobs()
 				{
 				DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs");
 				doable=false;
+				cJobs.jobIndexer.RemoveItem(id);
 				cJobs.DeleteJob(id)
 				continue;
 				}
@@ -616,7 +617,6 @@ function cJobs::UpdateDoableJobs()
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
 		// not doable if the industry no longer exist
 		if (doable)	{
-				myjob.jobDoable.AddItem(id, myjob.ranking);
 				switch (myjob.roadType)
 					{
 					case	AIVehicle.VT_AIR:
@@ -650,6 +650,7 @@ function cJobs::UpdateDoableJobs()
 					}
 				}
 		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	{ doable=false; }
+		if (doable)	myjob.jobDoable.AddItem(id, myjob.ranking);
 		}
 	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
@@ -658,7 +659,8 @@ function cJobs::UpdateDoableJobs()
 		if (parentListID.HasItem(myjob.parentID))
 			{
 			DInfo("Job already done by parent job ! Second pass filter",2,"UpdateDoableJobs");
-			INSTANCE.jobs.jobDoable.RemoveItem(jobID);
+			cJobs.jobDoable.RemoveItem(jobID);
+			cJobs.jobIndexer.RemoveItem(jobID);
 			cJobs.DeleteJob(jobID);
 			}
 		}

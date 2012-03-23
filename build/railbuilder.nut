@@ -207,19 +207,20 @@ pathfinder.cost.max_tunnel_length=20;
 pathfinder.cost.tile=80;
 pathfinder.cost.slope=100;
 //pathfinder.cost.diagonal_tile=100;
-//local src=head1;
-//local dst=head2;
 pathfinder.InitializePath([head1], [head2]);
 local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 local pfInfo=null;
 INSTANCE.bank.SaveMoney(); // thinking long time, don't waste money
 pfInfo=AISign.BuildSign(head1[0],"Pathfinding...");
-DInfo("Rail Pathfinding...",1);
+DInfo("Rail Pathfinding...",1,"BuildRoadRAIL");
+local maxTrys=350;
+if (cTileTools.IsRemovable(head1[0]) && !AITile.IsStationTile(head1[0]) && !cTileTools.DemolishTile(head1[0]))	maxTrys=100;
+if (AICompany.IsMine(AITile.GetOwner(head1[0])))	maxTrys=350;
 local counter = 0;
 local path = false;
-while (path == false && counter < 350)
+while (path == false && counter < maxTrys)
 	{
-	path = pathfinder.FindPath(350);
+	path = pathfinder.FindPath(maxTrys);
 	counter++;
 	AISign.SetName(pfInfo,"Pathfinding... "+counter);
 	//AIController.Sleep(1);
@@ -839,6 +840,8 @@ if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !close
 	rail=railLeft;
 	DInfo("Building crossing point ",2,"RailStationGrow");
 	local j=1;
+	cTileTools.DemolishTile(workTile);
+	if (!AITile.IsBuildable(workTile))	{ closeIt=true; } // because we must have a tile in front of the station buildable for the signal
 	do	{
 		temptile=workTile+(j*forwardTileOf);
 		cTileTools.TerraformLevelTiles(position,temptile);
@@ -851,7 +854,7 @@ if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !close
 					INSTANCE.builder.DropRailHere(rail, temptile,true); // remove the test track
 					}
 		j++;
-		} while (j < 4 && !success);
+		} while (j < 5 && !success);
 	if (success)
 		{
 		thatstation.RailStationClaimTile(crossing, useEntry);
@@ -1147,8 +1150,7 @@ if (needIN>0) // only work when needIN is built as we only work on target statio
 		PutSign(dstlink,"d");
 		PutSign(srcpos,"S");
 		PutSign(srclink,"s");
-//print("break");
-		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target_stationID))
+		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target.stationID))
 			{
 			DError("Fail to build alternate track",1,"RailStationGrow");
 			return false;
@@ -1242,7 +1244,7 @@ for (local hh=0; hh < 2; hh++)
 	local topRightPlatform=thatstation.locations.GetValue(21);
 	local topRL=cStation.GetRelativeCrossingPoint(topLeftPlatform, stationside);
 	local topRR=cStation.GetRelativeCrossingPoint(topRightPlatform, stationside);
-	local depotlocations=[topRL+rightTileOf, topRL+leftTileOf, topRR+rightTileOf, topRR+leftTileOf, topRL+forwardTileOf, topRR+forwardTileOf];
+	local depotlocations=[topRL+forwardTileOf, topRR+forwardTileOf, topRL+rightTileOf, topRL+leftTileOf, topRR+rightTileOf, topRR+leftTileOf];
 	local depotfront=[topRL, topRL, topRR, topRR, topRL, topRR];
 	DInfo("Building station depot",1,"RailStationGrow");
 	for (local h=0; h < depotlocations.len(); h++)
@@ -1384,6 +1386,11 @@ foreach (tile, dummy in many)
 	if (AITile.GetOwner(tile) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	continue;
 	if (AIRail.IsRailStationTile(tile))	continue; // protect station
 	if (AIRail.IsRailDepotTile(tile))
+		{
+		AITile.DemolishTile(tile);
+		continue;
+		}
+	if (AITile.HasTransportType(tile, AITile.TRANSPORT_RAIL) && (AIBridge.IsBridgeTile(tile) || AITunnel.IsTunnelTile(tile)) ) 
 		{
 		AITile.DemolishTile(tile);
 		continue;

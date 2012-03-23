@@ -201,10 +201,16 @@ function LoadOldSave()
 		obj.RouteCheckEntry(); // re-enable the link to stations
 		if (obj.UID > 1)
 			{ // don't try this one virtual routes
-			obj.source.cargo_produce.AddItem(obj.cargoID,0);
-			obj.source.cargo_accept.AddItem(obj.cargoID,0);
-			obj.target.cargo_produce.AddItem(obj.cargoID,0);
-			obj.target.cargo_accept.AddItem(obj.cargoID,0);
+			if (obj.source_entry)
+				{
+				obj.source.cargo_produce.AddItem(obj.cargoID,0);
+				obj.source.cargo_accept.AddItem(obj.cargoID,0);
+				}
+			if (obj.target_entry)
+				{
+				obj.target.cargo_produce.AddItem(obj.cargoID,0);
+				obj.target.cargo_accept.AddItem(obj.cargoID,0);
+				}
 			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
 		if (obj.groupID != null)	cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
@@ -298,10 +304,16 @@ function LoadSaveGame(revision)
 		obj.RouteCheckEntry(); // re-enable the link to stations
 		if (obj.UID > 1)
 			{ // don't try this one virtual routes
-			obj.source.cargo_produce.AddItem(obj.cargoID,0);
-			obj.source.cargo_accept.AddItem(obj.cargoID,0);
-			obj.target.cargo_produce.AddItem(obj.cargoID,0);
-			obj.target.cargo_accept.AddItem(obj.cargoID,0);
+			if (obj.source_entry)
+				{
+				obj.source.cargo_produce.AddItem(obj.cargoID,0);
+				obj.source.cargo_accept.AddItem(obj.cargoID,0);
+				}
+			if (obj.target_entry)
+				{
+				obj.target.cargo_produce.AddItem(obj.cargoID,0);
+				obj.target.cargo_accept.AddItem(obj.cargoID,0);
+				}
 			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
 		obj.RouteUpdateVehicle();

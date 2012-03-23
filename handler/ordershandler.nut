@@ -55,7 +55,7 @@ if (numorders != cCarrier.VirtualAirRoute.len())
 		{
 		local destination=INSTANCE.carrier.VirtualAirRoute[i];
 		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_NONE))
-			{ DError("Aircraft network order refuse",2); }
+			{ DError("Aircraft network order refuse",2,"AirNetworkOrdersHandler"); }
 		}
 	if (numorders > 0)
 		{
@@ -79,7 +79,7 @@ function cCarrier::VehicleOrdersReset(veh)
 while (AIOrder.GetOrderCount(veh) > 0)
 	{
 	if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, 0)))
-		{ DError("Cannot remove orders ",2); break; }
+		{ DError("Cannot remove orders ",2,"VehicleOrdersReset"); break; }
 	}
 }
 
@@ -162,7 +162,7 @@ switch (road.route_type)
 	break;
 	}
 if (srcplace == null || dstplace == null) return false;
-DInfo("Setting orders for route "+idx,2,"VehicleBuildOrders");
+DInfo("Setting orders for route "+cRoute.RouteGetName(idx),2,"VehicleBuildOrders");
 if (orderReset)
 	{
 	INSTANCE.carrier.VehicleOrdersReset(veh);
@@ -248,11 +248,16 @@ if (homedepot == null || !cStation.IsDepot(homedepot))
 	}
 if (road != null && road.source_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocation(road.source_stationID), AIOrder.AIOF_NONE);
 local orderindex=0;
-if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
-	{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
-if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
-	{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
-// Adding depot orders twice time, so we should endup with at least 2 orders minimum to avoid get caught again by orders check
+if (homedepot != null)
+	{
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+	}
+// Adding depot orders 3 time, so we should endup with at least 3 orders minimum to avoid get caught again by orders check
 if (road != null && road.target_entry && cStation.IsDepot(road.target.depot))	homedepot=road.target.depot;
 if (road != null && road.target_stationID != null)
 	{
@@ -260,6 +265,8 @@ if (road != null && road.target_stationID != null)
 	if (INSTANCE.carrier.AircraftIsChopper(veh))	mainstation=AIStation.GetLocation(road.source_stationID);
 	AIOrder.AppendOrder(veh, mainstation, AIOrder.AIOF_NONE);
 	}
+if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))

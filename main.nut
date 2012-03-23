@@ -39,7 +39,6 @@ enum DepotAction {
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
-//require("pathfinder/prail/main.nut");
 require("handler/bridgehandler.nut");
 require("build/builder.nut");
 require("build/stationbuilder.nut");
@@ -162,8 +161,9 @@ function DictatorAI::Start()
 		jobs.PopulateJobs();
 		for (local i=0; i < 3; i++)	jobs.RawJobHandling();
 		// feed the ai with some jobs to start play with
+		safeStart=0;
+		if (AICompany.GetMaxLoanAmount() < 400000)	safeStart=1;
 		if (AICompany.GetMaxLoanAmount() < 200000)	safeStart=3;
-									else	safeStart=0;
 		}
 	bank.Update();
 	while(true)
@@ -213,8 +213,9 @@ ClearSignsALL();
 
 function DictatorAI::NeedDelay(delay=30)
 {
+if (!debug)	return;
 DInfo("We are waiting: "+delay,2,"NeedDelay");
-if (debug) ::AIController.Sleep(delay);
+::AIController.Sleep(delay);
 } 
 
 function DictatorAI::Save()
@@ -423,7 +424,7 @@ switch (fairlevel)
 		carrier.rail_max=12; 		// it's our highest train limit, can't build more than 12 platforms per station
 		carrier.water_max=60; 		// there's no real limit for boats
 		carrier.air_max=8; 		// 8 aircrafts / route
-		carrier.airnet_max=4;		// 4 aircrafts / airport in the air network, ie: 10 airports = 120 aircrafts
+		carrier.airnet_max=4;		// 4 aircrafts / airport in the air network, ie: 10 airports = 40 aircrafts
 	break;
 	}
 local spdcheck=null;

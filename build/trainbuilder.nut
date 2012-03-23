@@ -314,6 +314,8 @@ return pullerID;
 function cCarrier::AddWagon(uid, wagonNeed)
 // Add wagons to route uid, handle the train engine by buying it if need
 // If need we send a train to depot to get more wagons, and we will be called back by the in depot event
+// We will return true if we consider the job done (adding wagons)
+// This is not always without getting an error, but we will says true per example if we cannot add new wagons because the station cannot support more wagons...
 {
 if (wagonNeed==0)	DWarn("We are query to build 0 wagons !!!",1,"cCarrier::AddWagon");
 local road=cRoute.GetRouteObject(uid);
@@ -361,11 +363,11 @@ do	{
 				}
 			}
 		else	{
-			if (!cBanker.CanBuyThat(cTrain.GetWagonPrice(tID)*wagonNeed)) return; // don't call it if we lack money
+			if (!cBanker.CanBuyThat(cTrain.GetWagonPrice(tID)*wagonNeed)) return false; // don't call it if we lack money
 			if (!cTrain.CanModifyTrain(tID))
 				{
 				DInfo("We already modify this train recently, waiting a few before calling it again",1,"cCarrier::AddWagon");
-				return;
+				return true;
 				}
 			DInfo("Sending a train to depot to add "+wagonNeed+" more wagons",1,"cCarrier::AddWagon");
 			INSTANCE.carrier.VehicleSendToDepot(tID, DepotAction.ADDWAGON+wagonNeed);
@@ -373,14 +375,14 @@ do	{
 			if (AIEngine.IsValidEngine(wagonID))
 				INSTANCE.carrier.vehnextprice+=(wagonNeed*AIEngine.GetPrice(wagonID));
 			}
-		return;
+		return true;
 		}
 	if (tID==-1)
 		{ // build a new engine loco
 		if (!cRoute.CanAddTrainToStation(uid))
 			{
 			DInfo("Cannot add any trains anymore as one of the station cannot handle one more",1,"cCarrier::AddWagon");
-			return false;
+			return true;
 			}
 		DInfo("Adding a new engine to create a train",0,"cCarrier::AddWagon");
 		depotID=cRoute.GetDepot(uid); // because previous CanAddTrainToStation could have move it
@@ -444,6 +446,7 @@ foreach (train, dummy in vehlist)
 		{
 		DError("Something bad happen, that train is empty",2,"cCarrier::AddWagon");
 		cCarrier.VehicleSell(train,false);
+		giveup=true;
 		}
 	else	{
 		DInfo("Starting "+cCarrier.VehicleGetName(train)+"...",0,"cCarrier::AddWagon");

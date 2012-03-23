@@ -45,7 +45,7 @@ foreach (airID, dummy in airports)
 	}
 airports.RemoveValue(0); // don't network small airports & platform, it's too hard for slow aircrafts
 if (airports.IsEmpty())	return;
-			else	DInfo("NETWORK -> Found "+airports.Count()+" valid airports for network",1);
+			else	DInfo("NETWORK -> Found "+airports.Count()+" valid airports for network",1,"VirtualAirNetworkUpdate");
 airports.Valuate(AIStation.GetLocation);
 local virtualpath=AIList();
 local validairports=AIList();
@@ -99,9 +99,9 @@ if (INSTANCE.carrier.VirtualAirRoute.len() > 1)
 			stealgroup.Valuate(AIVehicle.GetGroupID);
 			stealgroup.RemoveValue(cRoute.GetVirtualAirPassengerGroup());
 			stealgroup.RemoveValue(cRoute.GetVirtualAirMailGroup());
-			stealgroup.RemoveTop(2);
+			stealgroup.RemoveTop(1);
 			if (stealgroup.IsEmpty())	continue;
-			DInfo("Re-assigning "+stealgroup.Count()+" aircrafts to the network",0);
+			DInfo("Reassigning "+stealgroup.Count()+" aircrafts to the network",0,"VirtualAirNetworkUpdate");
 			local thatnetwork=0;
 			foreach (vehicle, gid in stealgroup)
 				{
@@ -114,7 +114,7 @@ if (INSTANCE.carrier.VirtualAirRoute.len() > 1)
 			}
 		}
 
-DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+ cCarrier.VirtualAirRoute.len(),1);
+DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+ cCarrier.VirtualAirRoute.len(),1,"VirtualAirNetworkUpdate");
 INSTANCE.route.RouteUpdateAirPath();
 INSTANCE.carrier.AirNetworkOrdersHandler();
 }
@@ -149,17 +149,18 @@ function cRoute::DutyOnAirNetwork()
 {
 if (INSTANCE.carrier.VirtualAirRoute.len()<2) return;
 local vehlist=AIList();
+local passengerID=cCargo.GetPassengerCargo();
 local maillist=AIVehicleList_Group(INSTANCE.route.GetVirtualAirMailGroup());
 local passlist=AIVehicleList_Group(INSTANCE.route.GetVirtualAirPassengerGroup());
-vehlist.AddList(maillist);
 vehlist.AddList(passlist);
 local totalcapacity=0;
 local onecapacity=0;
 local age=0;
 local vehneed=0;
-local vehnumber=vehlist.Count();
-DInfo("NETWORK -> Aircrafts in network: "+vehnumber,1);
-local futurveh=INSTANCE.carrier.ChooseAircraft(cCargo.GetPassengerCargo(),AircraftType.BEST);
+local vehnumber=maillist.Count()+passlist.Count();
+DInfo("NETWORK: Aircrafts in network: "+vehnumber,1,"DutyOnAirNetwork");
+local futurveh=INSTANCE.carrier.ChooseAircraft(cCargo.GetMailCargo(),AircraftType.BEST); // this check force to discover new engine for the virtual mail network
+futurveh=INSTANCE.carrier.ChooseAircraft(passengerID,AircraftType.BEST);
 if (futurveh == null)	return; // when aircrafts are disable, return null
 if (vehlist.IsEmpty())
 	{
@@ -180,22 +181,29 @@ else	{
 	vehlist.Valuate(AIVehicle.GetAge);
 	vehlist.Sort(AIList.SORT_BY_VALUE,true); // younger first
 	age=vehlist.GetValue(vehlist.Begin());
-	if (age < 60) { DInfo("We already buy an aircraft recently for the network: "+age,2); return; }
+	if (age < 60) { DInfo("We already buy an aircraft recently for the network: "+age,2,"DutyOnAirNetwork"); return; }
 	}
 if (onecapacity == 0)	onecapacity=90; // estimation
-DInfo("NETWORK -> Total capacity of network: "+totalcapacity,1);
+DInfo("NETWORK: Total capacity of network: "+totalcapacity,1,"DutyOnAirNetwork");
 local bigairportlocation=INSTANCE.carrier.VirtualAirRoute[0];
 local bigairportID=AIStation.GetStationID(bigairportlocation);
 local bigairportObj=cStation.GetStationObject(bigairportID);
 if (bigairportObj == null)	return;
 bigairportObj.UpdateStationInfos();
-local cargowaiting=bigairportObj.cargo_produce.GetValue(cCargo.GetPassengerCargo());
+local cargowaiting=bigairportObj.cargo_produce.GetValue(passengerID);
 if ((cargowaiting-totalcapacity) > 0)	vehneed=cargowaiting / onecapacity;
-if (totalcapacity==0 && vehneed==0 && AIStation.GetCargoRating(bigairportID, cCargo.GetPassengerCargo())<25) vehneed=1;
+local overcharge=AITown.GetLastMonthProduction(AITile.GetClosestTown(bigairportlocation), passengerID) / 2;
+print("overcharg="+overcharge);
+if (vehneed==0 && AIStation.GetCargoRating(bigairportID, passengerID)<45 && totalcapacity < overcharge)
+	{
+	vehneed=1;
+	DInfo("NETWORK: overcharging network capacity to increase rating",1,"DutyOnAirNetwork");
+	}
 // one because poor station rating
 if (vehnumber < (cCarrier.VirtualAirRoute.len() / 2))	vehneed=(cCarrier.VirtualAirRoute.len() /2) - vehnumber;
-DInfo("NETWORK -> need="+vehneed,1);
+DInfo("NETWORK: need="+vehneed,1,"DutyOnAirNetwork");
 PutSign(bigairportlocation,"Network Airport Reference: "+cargowaiting);
+if (vehneed > 6)	vehneed=6; // limit to 6 aircrafts add per trys
 if (vehneed > 0)
 	{
 	local thatnetwork=0;
@@ -207,7 +215,7 @@ if (vehneed > 0)
 		if (INSTANCE.bank.CanBuyThat(AIEngine.GetPrice(futurveh)) && INSTANCE.carrier.CanAddNewVehicle(0,true,1))
 		if (INSTANCE.carrier.BuildAndStartVehicle(thatnetwork))
 			{
-			DInfo("Adding an aircraft to the network, "+(vehnumber+1)+" aircrafts runs it now",0);
+			DInfo("Adding an aircraft to the network, "+(vehnumber+1)+" aircrafts runs it now",0,"DutyOnAirNetwork");
 			vehnumber++;
 			}
 		}

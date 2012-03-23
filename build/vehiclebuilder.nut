@@ -104,7 +104,7 @@ if (start)	{ thatstation=chem.source; otherstation=chem.target; }
 local divisor=0;
 local sellvalid=( (AIDate.GetCurrentDate() - chem.date_VehicleDelete) > 60);
 // prevent buy a new vehicle if we sell one less than 60 days before (this isn't affect by replacing/upgrading vehicle)
-if (!sellvalid)	{ max_allow=0; DInfo("Route sold a vehicle not a long time ago",1); }
+if (!sellvalid)	{ max_allow=0; DInfo("Route sold a vehicle not a long time ago",1,"cCarrier::CanAddNewVehicle"); }
 local virtualized=cStation.IsStationVirtual(thatstation.stationID);
 local othervirtual=cStation.IsStationVirtual(otherstation.stationID);
 local airportmode="(classic)";
@@ -115,7 +115,7 @@ local airname=cStation.StationGetName(thatstation.stationID)+"-> ";
 switch (chem.route_type)
 	{
 	case AIVehicle.VT_ROAD:
-		DInfo("Road station "+cStation.StationGetName(thatstation.stationID)+" limit "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
+		DInfo("Road station "+cStation.StationGetName(thatstation.stationID)+" limit "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1,"cCarrier::CanAddNewVehicle");
 		if (thatstation.CanUpgradeStation())
 			{ // can still upgrade
 			if (chem.vehicle_count+max_allow > INSTANCE.carrier.road_max_onroute)	max_allow=(INSTANCE.carrier.road_max_onroute-chem.vehicle_count);
@@ -164,14 +164,14 @@ switch (chem.route_type)
 			max_allow=0;
 			// get out after an upgrade, station could have change place...
 			}
-		DInfo(airname+"Limit for that route (network): "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),1);
+		DInfo(airname+"Limit for that route (network): "+chem.vehicle_count+"/"+INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),1,"cCarrier::CanAddNewVehicle");
 		DInfo(airname+"Limit for that airport (network): "+chem.vehicle_count+"/"+thatstation.vehicle_max,1);
 		if (chem.vehicle_count+max_allow > INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) max_allow=(INSTANCE.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) - chem.vehicle_count;
 		if (chem.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-chem.vehicle_count;
 	break;
 	case RouteType.CHOPPER:
-		DInfo(airname+"Limit for that route (choppers): "+chem.vehicle_count+"/4",1);
-		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_max,1);
+		DInfo(airname+"Limit for that route (choppers): "+chem.vehicle_count+"/4",1,"cCarrier::CanAddNewVehicle");
+		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_max,1,"cCarrier::CanAddNewVehicle");
 		if (chem.vehicle_count+max_allow > 4)	max_allow=4-chem.vehicle_count;
 	break;
 	case RouteType.AIR: // Airport upgrade is not related to number of aircrafts using them
@@ -199,8 +199,8 @@ switch (chem.route_type)
 			dualnetwork=true;
 			routemod="(dual network)";
 			}
-		DInfo(airname+"Limit for that route "+routemod+": "+chem.vehicle_count+"/"+limitmax,1);
-		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
+		DInfo(airname+"Limit for that route "+routemod+": "+chem.vehicle_count+"/"+limitmax,1,"cCarrier::CanAddNewVehicle");
+		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1,"cCarrier::CanAddNewVehicle");
 		if (!INSTANCE.use_air)	max_allow=0;
 		if (chem.vehicle_count+max_allow > limitmax)	max_allow=limitmax - chem.vehicle_count;
 		// limit by route limit
@@ -343,8 +343,9 @@ local allgroup=AIGroupList();
 foreach (groupID, dummy in allgroup)
 	{
 	local vehlist=AIVehicleList_Group(groupID);
-	vehlist.Valuate(AIBase.RandItem);
-//	vehlist.Sort(AIList.SORT_BY_VALUE,true);
+	//vehlist.Valuate(AIBase.RandItem);
+	vehlist.Valuate(AIVehicle.GetAge);
+	vehlist.Sort(AIList.SORT_BY_VALUE,false);
 	if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(),doGroup);
 	AIController.Sleep(1);
 	}

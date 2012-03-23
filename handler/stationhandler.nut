@@ -408,7 +408,7 @@ function cStation::IsDepot(tile)
 function cStation::CheckAirportLimits()
 // Set limits for airports
 	{
-	if (!AIStation.IsValidStation(this.stationID))
+	if (!AIStation.IsValidStation(this.stationID) || !AIStation.HasStationType(this.stationID, AIStation.STATION_AIRPORT))
 		{
 		DWarn("Invalid airport station ID",1,"CheckAirportLimits");
 		return; // it happen if the airport is moved and now invalid
@@ -423,17 +423,14 @@ function cStation::CheckAirportLimits()
 		return;
 		}
 	this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
-	local planetype=0;	// big planes
-	if (this.specialType == AIAirport.AT_SMALL)	planetype=1; // small planes
-	this.locations.SetValue(this.locations.Begin(), planetype);
 	this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
 	local virtualized=cStation.IsStationVirtual(this.stationID);
 	// get out of airnetwork if the network is too poor
 	local rawlimit=INSTANCE.carrier.AirportTypeLimit[this.specialType];
-	DInfo("rawlimit="+rawlimit+" type="+this.specialType,1);
+	DInfo("rawlimit="+rawlimit+" type="+this.specialType,1,"CheckAirportLimits");
 	this.vehicle_max=rawlimit;
-	if (virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * cCarrier.VirtualAirRoute.len();
-	if (this.vehicle_max > rawlimit)	this.vehicle_max=rawlimit;
+	if (virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * rawlimit;
+			else	if (this.vehicle_max > rawlimit)	this.vehicle_max=rawlimit;
 	}
 
 function cStation::InitNewStation()

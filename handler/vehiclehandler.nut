@@ -174,6 +174,9 @@ local road=null;
 local vehlist=null;
 local veh=null;
 local group=null;
+local checkgroup=AIList();
+checkgroup.AddList(station.owner);
+checkgroup.AddItem(0,0); // add virtual group in the list
 foreach (ownID, dummy in station.owner)
 	{
 	if (ownID == 1)	continue; // ignore virtual mail route, route 0 will re-reroute route 1 already
@@ -205,7 +208,11 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 // send a vehicle to depot
 {
 if (!AIVehicle.IsValidVehicle(veh))	return false;
-if (INSTANCE.carrier.ToDepotList.HasItem(veh))	return false; // ignore ones going to depot already
+if (INSTANCE.carrier.ToDepotList.HasItem(veh))
+	{
+	if (AIOrder.GetOrderCount(veh)<3)	INSTANCE.carrier.ToDepotList.RemoveItem(veh); // going to depot with strange orders
+						else	return false; // ignore ones going to depot already
+	}
 INSTANCE.carrier.VehicleSetDepotOrder(veh);
 local understood=false;
 //understood=AIVehicle.SendVehicleToDepot(veh);

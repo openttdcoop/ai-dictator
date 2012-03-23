@@ -30,7 +30,6 @@ static	function GetRouteObject(UID)
 		}
 
 	UID			= null;	// UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
-//	name			= null;	// string with the route name
 	sourceID		= null;	// id of source town/industry
 	source_location	= null;	// location of source
 	source_istown	= null;	// if source is town
@@ -68,7 +67,6 @@ static	function GetRouteObject(UID)
 	constructor()
 		{ // * are saved variables
 		UID			= null;		// *
-//		name			= "UNKNOWN";	
 		sourceID		= null;		// *
 		source_location	= 0;
 		source_istown	= false;		// *
@@ -160,6 +158,7 @@ function cRoute::RouteUpdateVehicle()
 		this.vehicle_count=maillist.Count()+passlist.Count();
 		return;
 		}
+	if (!this.isWorking)	return;
 	if (this.source_entry)	{ 
 					this.source.vehicle_count=AIVehicleList_Station(this.source.stationID).Count();
 					this.source.UpdateCapacity();
@@ -262,12 +261,12 @@ function cRoute::RouteGetName(uid)
 	local rtype=cRoute.RouteTypeToString(road.route_type);
 	if (road.UID == 0) // ignore virtual route, use by old savegame
 		{
-		name="Virtual Air Passenger Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+		name="Virtual Air Passenger Network for "+AICargo.GetCargoLabel(road.cargoID)+" using "+rtype;
 		return name;
 		}
 	if (road.UID == 1)
 		{
-		name="Virtual Air Mail Network for "+AICargo.GetCargoLabel(cargoID)+" using "+rtype;
+		name="Virtual Air Mail Network for "+AICargo.GetCargoLabel(road.cargoID)+" using "+rtype;
 		return name;
 		}
 	if (road.source_entry)	src=cStation.StationGetName(road.source_stationID);

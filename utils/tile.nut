@@ -27,7 +27,7 @@ function cTileTools::GetTileOwner(tile)
 // return station that own the tile
 {
 if (cTileTools.TilesBlackList.HasItem(tile))	return cTileTools.TilesBlackList.GetValue(tile);
-if (!cTileTools.IsRemovable(tile))	{ cTileTools.TilesBlackList.AddItem(tile, -255); return -255; }
+if (!cTileTools.IsBuildable(tile))	{ cTileTools.TilesBlackList.AddItem(tile, -255); return -255; }
 return -1;
 }
 
