@@ -342,6 +342,8 @@ function cEngine::IsEngineBlacklist(engineID)
 	local name=AIEngine.GetName(engineID);
 	if (name.find("Ikarus") != null)	return true;
 	// ikarus 180, ikarus 417, ikarus 280, ikarus 417GG, ikarus 293...
+	if (name.find("E94G") != null)	return true;
+	// the EAG E94G
 	return false;
 	}
 

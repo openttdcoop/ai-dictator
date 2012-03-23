@@ -474,12 +474,23 @@ function cRoute::GetDepot(uid, source=0)
 	{
 	local road=cRoute.GetRouteObject(uid);
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::GetDepot"); return -1; }
+	local sdepot=-1;
+	local tdepot=-1;
+	if (road.source instanceof cStation)	sdepot=road.source.depot;
+	if (road.target instanceof cStation)	tdepot=road.target.depot;
 	if (road.route_type == RouteType.RAIL)
 		{
-		local se=road.source.depot;
-		local sx=road.source.locations.GetValue(15);
-		local de=road.target.depot;
-		local dx=road.target.locations.GetValue(15);
+		local se, sx, de, dx=-1;
+		if (road.source instanceof cStation)
+			{
+			se=sdepot;
+			sx=road.source.locations.GetValue(15);
+			}
+		if (road.target instanceof cStation)
+			{
+			de=tdepot;
+			dx=road.target.locations.GetValue(15);
+			}
 		local one, two, three, four=null;
 		if (road.source_RailEntry)	{ one=se; three=sx; }
 						else	{ one=sx; three=se; }
@@ -497,12 +508,12 @@ function cRoute::GetDepot(uid, source=0)
 			}
 		}
 	else	{
-		if (source==0 || source==1)	if (cStation.IsDepot(road.source.depot))	return road.source.depot;
-		if (source==0 || source==2)	if (cStation.IsDepot(road.target.depot))	return road.target.depot;
+		if (source==0 || source==1)	if (cStation.IsDepot(sdepot))	return sdepot;
+		if (source==0 || source==2)	if (cStation.IsDepot(tdepot))	return tdepot;
 		if (road.route_type == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
 		}
 	if (source==0)	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have any valid depot !",2,"cRoute::GetDepot");
-			else	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have the request depot ! source="+source,2,"cRoute::GetDepot");
+			else	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have the request depoted ! source="+source,2,"cRoute::GetDepot");
 	return -1;
 	}
 
