@@ -40,6 +40,7 @@ local testRefit=AIAccounting();
 if (!AIVehicle.RefitVehicle(vehID, cargoID))
 	{
 	DError("We fail to refit the engine, maybe we run out of money ?",1,"cCarrier::CreateRoadEngine");
+	AIVehicle.SellVehicle(vehID);
 	}
 else	{
 	local refitprice=testRefit.GetCosts();

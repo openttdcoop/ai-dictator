@@ -192,7 +192,8 @@ INSTANCE.route.CreateNewStation(start);
 return true;
 }
 
-function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID) {
+function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
+{
 local pathfinder = MyRailPF();
 /*pathfinder._cost_level_crossing = 900;
 pathfinder.cost_slope = 200;
@@ -223,7 +224,6 @@ while (path == false && counter < maxTrys)
 	path = pathfinder.FindPath(maxTrys);
 	counter++;
 	AISign.SetName(pfInfo,"Pathfinding... "+counter);
-	//AIController.Sleep(1);
 	}
 if (path != null && path != false)
 	{
@@ -1150,6 +1150,8 @@ if (needIN>0) // only work when needIN is built as we only work on target statio
 		PutSign(dstlink,"d");
 		PutSign(srcpos,"S");
 		PutSign(srclink,"s");
+		AITile.DemolishTile(srclink);
+		AITile.DemolishTile(dstlink);
 		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target.stationID))
 			{
 			DError("Fail to build alternate track",1,"RailStationGrow");

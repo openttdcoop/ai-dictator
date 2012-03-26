@@ -70,7 +70,6 @@ if (debugValue <= debugState )
 	{
 	AILog.Error(func+putMsg+" Error:"+AIError.GetLastErrorString());
 	}
-AIController.Sleep(100);
 }
 
 function DWarn(putMsg, debugValue=1,func="unkown")

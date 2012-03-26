@@ -29,11 +29,13 @@ enum AircraftType {
 	CHOPPER
 }
 enum DepotAction {
-	SELL=0,
-	UPGRADE=1,
-	REPLACE=2,
-	CRAZY=3,
-	ADDWAGON=1000
+	SELL=0,		// to just sell a vehicle
+	UPGRADE=1,		// to upgrade a vehicle
+	REPLACE=2,		// to replace a vehicle, well this should also upgrade it
+	CRAZY=3,		// to get a big amount of money
+	REMOVEROUTE=4,		// to remove a route
+	LINEUPGRADE=5,	// to upgrade a train line to a newer railtype
+	ADDWAGON=1000	// to add a train or wagons to a route
 }
 
 
@@ -162,8 +164,6 @@ function DictatorAI::Start()
 		for (local i=0; i < 3; i++)	jobs.RawJobHandling();
 		// feed the ai with some jobs to start play with
 		safeStart=0;
-		if (AICompany.GetMaxLoanAmount() < 400000)	safeStart=1;
-		if (AICompany.GetMaxLoanAmount() < 200000)	safeStart=3;
 		}
 	bank.Update();
 	while(true)
@@ -179,18 +179,24 @@ function DictatorAI::Start()
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
 				if (builder.building_route != -1)
 					{
-					//builder.DumpTopJobs();
+					builder.DumpTopJobs();
 					jobs_obj=cJobs.GetJobObject(builder.building_route);
 					route=cRoute.GetRouteObject(builder.building_route);
 					if (route == null)	{
 									route=cRoute();
-									route.CreateNewRoute(builder.building_route);
-									DInfo("Creating a new route : "+cRoute.RouteGetName(builder.building_route),0,"main");
+									if (jobs_obj==null)	builder.building_route=-1;
+												else	{
+													route.CreateNewRoute(builder.building_route);
+													DInfo("Creating a new route : "+cRoute.RouteGetName(builder.building_route),0,"main");
+													}
 									}
 								else	DInfo("Construction of route "+cRoute.RouteGetName(builder.building_route)+" is at phase "+route.status,1,"main");
-					bank.RaiseFundsBy(jobs.moneyToBuild);
-					builder.TryBuildThatRoute();
-					this.checkHQ();
+					if (builder.building_route!=-1)
+						{
+						//bank.RaiseFundsBy(jobs_obj.moneyToBuild);
+						builder.TryBuildThatRoute();
+						this.checkHQ();
+						}
 					}
 				}
 		bank.CashFlow();

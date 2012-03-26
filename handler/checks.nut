@@ -42,6 +42,7 @@ if (INSTANCE.buildTimer == 2) // delaying a build for 2 months
 INSTANCE.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
 INSTANCE.carrier.VehicleMaintenance();
 INSTANCE.route.DutyOnRoute();
+if (INSTANCE.SixMonth == 2)	INSTANCE.builder.BoostedBuys();
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
 }
 
@@ -50,7 +51,6 @@ function cBuilder::HalfYearChecks()
 INSTANCE.SixMonth=0;
 INSTANCE.TwelveMonth++;
 DInfo("Half year checks run...",1,"Checks");
-INSTANCE.builder.BoostedBuys();
 if (cCarrier.VirtualAirRoute.len() > 1) 
 	{
 	local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
@@ -365,31 +365,30 @@ INSTANCE.builder.AirportStationsBalancing();
 }
 
 function cBuilder::BoostedBuys()
-// this function check if we can boost a buy by selling our road vehicle
+// this function check if we can boost a buy by selling our road vehicles
 {
-if (!INSTANCE.use_air)	return;
 local airportList=AIStationList(AIStation.STATION_AIRPORT);
 local waitingtimer=0;
 local vehlist=AIVehicleList();
 if (airportList.Count() < 2 && vehlist.Count()>45)
 	{ // try to boost a first air route creation
 	local goalairport=cJobs.CostTopJobs[AIVehicle.VT_AIR];
-	DWarn("Waiting to get an aircraft job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goalairport,1);
+	DWarn("Waiting to get an aircraft job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goalairport,1,"BoostedBuys");
 	if (INSTANCE.carrier.warTreasure > goalairport && goalairport > 0)
 		{
 		local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 		local money_goal=money+goalairport
-		DInfo("Trying to get an aircraft job done",1);
+		DInfo("Trying to get an aircraft job done",1,"BoostedBuys");
 		INSTANCE.carrier.CrazySolder(goalairport);
 		do	{
 			INSTANCE.Sleep(74);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
 			waitingtimer++;
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-			DInfo("Still "+(money_goal - money)+" to raise",1);
+			DInfo("Still "+(money_goal - money)+" to raise",1,"BoostedBuys");
 			}
-		while (waitingtimer < 120 && !cBanker.CanBuyThat(goalairport));
-		if (waitingtimer < 120)	DInfo("Operation should success...",1);
+		while (waitingtimer < 200 && !cBanker.CanBuyThat(goalairport));
+		if (waitingtimer < 200)	DInfo("Operation should success...",1,"BoostedBuys");
 		INSTANCE.carrier.VehicleIsWaitingInDepot();
 		INSTANCE.bank.canBuild=true; INSTANCE.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
 		}
@@ -412,12 +411,35 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 			INSTANCE.Sleep(74);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-			DInfo("Still "+(money_goal - money)+" to raise",1);
+			DInfo("Still "+(money_goal - money)+" to raise",1,"BoostedBuys");
 			waitingtimer++;
 			}
-		while (waitingtimer < 120 && !cBanker.CanBuyThat(goal));
+		while (waitingtimer < 200 && !cBanker.CanBuyThat(goal));
 		}
-
+	}
+vehlist=AIVehicleList();
+waitingtimer=0;
+local goaltrain=cJobs.CostTopJobs[AIVehicle.VT_RAIL];
+if (vehlist.Count()>45 && goaltrain > 0)
+	{	// try boost train buys
+	DWarn("Waiting to build a train job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goaltrain,1,"BoostedBuys");
+	local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	local money_goal=money+goaltrain;
+	if (INSTANCE.carrier.warTreasure > goaltrain && goaltrain > 0)
+		{
+		DInfo("Trying to raise money to buy a new train job",1,"BoostedBuys");
+		INSTANCE.carrier.CrazySolder(goaltrain);
+		do	{
+			INSTANCE.Sleep(74);
+			INSTANCE.carrier.VehicleIsWaitingInDepot();
+			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+			DInfo("Still "+(money_goal - money)+" to raise",1,"BoostedBuys");
+			waitingtimer++;
+			}
+		while (waitingtimer < 200 && !cBanker.CanBuyThat(goaltrain));
+		INSTANCE.carrier.VehicleIsWaitingInDepot();
+		INSTANCE.bank.canBuild=true; INSTANCE.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
+		}
 	}
 }
 
@@ -472,7 +494,6 @@ function cBuilder::BridgeUpgrader()
 					if (thatbridge.owner==-1)	justOne=true;
 					}
 				}
-			INSTANCE.Sleep(1);
 			}
 		twice=!twice;
 		} while (twice);

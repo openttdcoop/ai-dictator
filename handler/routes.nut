@@ -399,20 +399,27 @@ function cRoute::RouteRebuildIndex()
 	}
 
 function cRoute::RouteIsNotDoable()
-// When a route is dead, we remove it this way
+// When a route is dead, we remove it this way, in 2 steps, next step is RouteUndoableFreeOfVehicle()
 	{
 	if (this.UID < 2)	return; // don't touch virtual routes
 	DInfo("Marking route "+cRoute.RouteGetName(this.UID)+" undoable !!!",1,"RouteIsNotDoable");
 	cJobs.JobIsNotDoable(this.UID);
-	local stasrc=this.source_stationID;
-	local stadst=this.target_stationID;
+	this.isWorking=false;
 	this.RouteCheckEntry();
 	INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID);
+	}
+
+function cRoute::RouteUndoableFreeOfVehicle()
+// This is the last step of marking a route undoable
+	{
+	if (this.UID < 2)	return; // don't touch virtual routes
+	local stasrc=this.source_stationID;
+	local stadst=this.target_stationID;
 	this.RouteReleaseStation(stasrc);
 	this.RouteReleaseStation(stadst);
 	INSTANCE.builder.DeleteStation(this.UID, stasrc);
 	INSTANCE.builder.DeleteStation(this.UID, stadst);
-	if (this.groupID != null)	AIGroup.DeleteGroup(this.groupID);
+	if (this.groupID != null)	{ AIGroup.DeleteGroup(this.groupID); cRoute.GroupIndexer.RemoveItem(this.groupID); }
 	local uidsafe = this.UID;
 	if (this.UID in cRoute.database)
 		{
@@ -422,7 +429,6 @@ function cRoute::RouteIsNotDoable()
 		delete cRoute.database[this.UID];
 		}
 	cJobs.DeleteJob(uidsafe);
-	INSTANCE.builder.building_route=-1;
 	}
 
 function cRoute::CreateNewStation(start)
@@ -476,8 +482,8 @@ function cRoute::GetDepot(uid, source=0)
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::GetDepot"); return -1; }
 	local sdepot=-1;
 	local tdepot=-1;
-	if (road.source instanceof cStation)	sdepot=road.source.depot;
-	if (road.target instanceof cStation)	tdepot=road.target.depot;
+	if (road.source != null && road.source instanceof cStation)	sdepot=road.source.depot;
+	if (road.target != null && road.target instanceof cStation)	tdepot=road.target.depot;
 	if (road.route_type == RouteType.RAIL)
 		{
 		local se, sx, de, dx=-1;

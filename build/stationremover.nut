@@ -33,7 +33,7 @@ if (exist)
 		}
 	// didn't find someone else use it
 	// check if we have a vehicle using it
-	INSTANCE.carrier.VehicleGroupSendToDepotAndSell(uid);
+	INSTANCE.carrier.VehicleGroupSendToDepotAndWaitSell(uid);
 	local vehcheck=AIVehicleList_Station(stationid);
 	if (!vehcheck.IsEmpty())
 		{

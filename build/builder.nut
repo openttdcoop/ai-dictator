@@ -364,6 +364,7 @@ if (!success)
 	{
 	DWarn("There's no vehicle we could use to carry that cargo: "+AICargo.GetCargoLabel(INSTANCE.route.cargoID),2,"TryBuildThatRoute");
 	INSTANCE.route.RouteIsNotDoable();
+	INSTANCE.builder.building_route=-1;
 	return false;
 	}
 else	{ if (INSTANCE.route.status==0)	INSTANCE.route.status=1; } // advance to next phase
@@ -401,6 +402,7 @@ if (INSTANCE.route.status==2)
 			{
 			INSTANCE.builder.CriticalError=false;
 			INSTANCE.route.RouteIsNotDoable();
+			INSTANCE.builder.building_route=-1;
 			return false;
 			}
 		else	{ INSTANCE.builddelay=true; return false; }
@@ -428,6 +430,7 @@ if (INSTANCE.route.status==3)
 			{
 			INSTANCE.builder.CriticalError=false;
 			INSTANCE.route.RouteIsNotDoable();
+			INSTANCE.builder.building_route=-1;
 			return false;
 			}
 		else	{ INSTANCE.builddelay=true; return false; }
@@ -444,6 +447,7 @@ if (INSTANCE.route.status==4) // pathfinding
 				{
 				INSTANCE.builder.CriticalError=false;
 				INSTANCE.route.RouteIsNotDoable();
+				INSTANCE.builder.building_route=-1;
 				return false;
 				}
 		else	{ INSTANCE.builddelay=true; return false; }
@@ -458,7 +462,7 @@ if (INSTANCE.route.status==5)
 		}
 	else	{ success=true; } // other route type for now are ok
 	if (success)	{ INSTANCE.route.status=6; }
-			else	{ INSTANCE.route.RouteIsNotDoable(); return false; }
+			else	{ INSTANCE.route.RouteIsNotDoable(); INSTANCE.builder.building_route=-1; return false; }
 	}	
 if (INSTANCE.route.status==6)
 	{

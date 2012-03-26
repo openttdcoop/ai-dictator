@@ -195,7 +195,6 @@ function cCarrier::VehicleSetDepotOrder(veh)
 // set all orders of the vehicle to force it going to a depot
 {
 if (veh == null)	return;
-if (cStation.IsDepot(AIVehicle.GetLocation(veh)))	return;
 local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(idx);
 local homedepot = null;
@@ -215,8 +214,8 @@ if (homedepot == null || !cStation.IsDepot(homedepot))
 			{
 			airports.Valuate(AIStation.GetDistanceManhattanToTile, vehloc);
 			airports.Sort(AIList.SORT_BY_VALUE, true); // closest one
-			homedepot=AIAirport.GetHangarOfAirport(airports.Begin());
-			DInfo("Sending a lost aircraft "+cCarrier.VehicleGetName(veh)+" to the closest airport hangar found",1,"cCarrier::VehicleSetDepotOrder");
+			homedepot=AIAirport.GetHangarOfAirport(AIStation.GetLocation(airports.Begin()));
+			DInfo("Sending a lost aircraft "+cCarrier.VehicleGetName(veh)+" to the closest airport hangar found at "+homedepot,1,"cCarrier::VehicleSetDepotOrder");
 			}
 		}
 	if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_ROAD)
@@ -271,6 +270,7 @@ if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
 	{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+
 if (road != null)
 	for (local jjj=0; jjj < AIOrder.GetOrderCount(veh); jjj++)
 	// this send vehicle to met dropoff station before its depot, choppers won't have the dropoff station in their orders to lower distance
@@ -287,7 +287,7 @@ if (road != null)
 		else	if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != AIStation.GetLocation(road.target_stationID))
 				{
 				AIOrder.SkipToOrder(veh, jjj+1);
-				DInfo("Sending vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" to destination station",1,"cCarrier::VehicleSetDepotOrder");		
+				//DInfo("Sending vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" to destination station",1,"cCarrier::VehicleSetDepotOrder");		
 				break;
 				}
 		}

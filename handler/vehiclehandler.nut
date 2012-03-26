@@ -215,8 +215,6 @@ if (INSTANCE.carrier.ToDepotList.HasItem(veh))
 	}
 INSTANCE.carrier.VehicleSetDepotOrder(veh);
 local understood=false;
-//understood=AIVehicle.SendVehicleToDepot(veh);
-//if (!understood) { DInfo(INSTANCE.carrier.VehicleGetName(veh)+" refuse to go to depot",1,"cCarrier::VehicleSendToDepot"); }
 local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
 INSTANCE.Sleep(6);	// wait it to move a bit
@@ -243,13 +241,15 @@ switch (reason)
 	case	DepotAction.CRAZY:
 		rr="for a crazy action.";
 	break;
+	case	DepotAction.REMOVEROUTE:
+		rr="for removing a dead route.";
+	break;
 	case	DepotAction.ADDWAGON:
 		rr="to add "+wagonnum+" new wagons.";
 		reason=wagonnum+DepotAction.ADDWAGON;
 	break;
 	}
 DInfo("Vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" is going to depot "+rr,0,"cCarrier::VehicleSendToDepot");
-//if (understood)	
 INSTANCE.carrier.ToDepotList.AddItem(veh,reason);
 }
 
@@ -398,12 +398,10 @@ allroadveh.RemoveValue(AIVehicle.VS_CRASHED);
 allroadveh.RemoveValue(AIVehicle.VS_INVALID);
 
 local checkallvehicle=(allroadveh.Count()==tlist.Count());
-local ignore_some=0;
 foreach (vehicle, dummy in tlist)
 	{
 	local vehtype=AIVehicle.GetVehicleType(vehicle);
-	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
-	ignore_some++;
+	if (AIVehicle.GetVehicleType(vehicle)==AIVehicle.VT_ROAD)	INSTANCE.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 	local topengine=cEngine.IsVehicleAtTop(vehicle); // new here
 	if (topengine != -1)	price=cEngine.GetPrice(topengine);
 				else	price=cEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
@@ -451,7 +449,7 @@ foreach (vehicle, dummy in tlist)
 if (!checkallvehicle)
 	{ // we need to estimate the fleet value
 	local midvalue=0;
-	if (tlist.Count()>0)	midvalue=INSTANCE.carrier.warTreasure / tlist.Count();
+	if (allroadveh.Count()>0)	midvalue=INSTANCE.carrier.warTreasure / allroadveh.Count();
 	local fleet=allroadveh.Count()-6;
 	if (fleet < 0)	fleet=0;
 	INSTANCE.carrier.warTreasure=fleet*midvalue;
@@ -481,7 +479,6 @@ foreach (vehicle, dummy in allvehicle)
 function cCarrier::VehicleSell(veh, recordit)
 // sell the vehicle and update route info
 {
-local profit=AIVehicle.GetProfitThisYear(veh);
 DInfo("Selling Vehicle "+INSTANCE.carrier.VehicleGetName(veh),0,"cCarrier::VehicleSell");
 local uid=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(uid);
@@ -496,6 +493,25 @@ road.RouteUpdateVehicle();
 if (recordit)	road.date_VehicleDelete=AIDate.GetCurrentDate();
 }
 
+function cCarrier::VehicleSellAndDestroyRoute(vehicle)
+// This is to watch a group of vehicle to sell, to remove a dead station/route
+// We will callback the handler to remove the route, this might fail if last vehicle is crash
+{
+if (!AIVehicle.IsValidVehicle(vehicle))	return;
+local groupID=AIVehicle.GetGroupID(vehicle);
+local allvehicles=AIVehicleList_Group(groupID);
+allvehicles.Valuate(AIVehicle.GetState);
+allvehicles.RemoveValue(AIVehicle.VS_CRASHED);
+if (allvehicles.Count()>1)	INSTANCE.carrier.VehicleSell(vehicle, false);
+				else	{ // ok we are handling the last one of the group
+					local idx=cRoute.GroupIndexer.GetValue(groupID);
+					local road=cRoute.GetRouteObject(idx);
+					if (road==null)	{ DError("Cannot load that route : "+idx,1,"cCarrier::VehicleSellAndDestroyRoute"); return; }
+					INSTANCE.carrier.VehicleSell(vehicle, false);
+					road.RouteUndoableFreeOfVehicle();
+					}
+}
+
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 // Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
 {
@@ -505,7 +521,24 @@ local vehlist=null;
 if (road.groupID != null)
 	{
 	vehlist=AIVehicleList_Group(road.groupID);
-	DInfo("Removing a group of vehicle : "+vehlist.Count(),1,"VehicleGroupSendToDepotAndSell");
+	if (vehlist.IsEmpty())	RouteUndoableFreeOfVehicle();
+	else	{
+		DInfo("Removing a group of vehicle : "+vehlist.Count(),1,"VehicleGroupSendToDepotAndSell");
+		foreach (vehicle, dummy in vehlist)	INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.REMOVEROUTE);
+		}
+	}
+}
+
+function cCarrier::VehicleGroupSendToDepotAndWaitSell(idx)
+// Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
+{
+local road=INSTANCE.route.GetRouteObject(idx);
+if (road == null)	return;
+local vehlist=null;
+if (road.groupID != null)
+	{
+	vehlist=AIVehicleList_Group(road.groupID);
+	DInfo("Removing a group of vehicle : "+vehlist.Count(),1,"VehicleGroupSendToDepotAndWait");
 	foreach (vehicle, dummy in vehlist)
 		{
 		INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
@@ -519,13 +552,14 @@ if (road.groupID != null)
 			AIController.Sleep(10);
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
 			wait=(AIVehicle.IsValidVehicle(vehicle));
-			DInfo("wait? "+AIVehicle.IsValidVehicle(vehicle)+" waiting:"+wait+" waitcount="+waitcount,2,"VehicleGroupSendToDepotAndSell");
+			DInfo("wait? "+AIVehicle.IsValidVehicle(vehicle)+" waiting:"+wait+" waitcount="+waitcount,2,"VehicleGroupSendToDepotAndWait");
 			waitcount++;
 			if (waitcount > waitmax)	wait=false;
 			} while (wait);
 		}
 	}
 }
+
 
 function cCarrier::VehicleIsWaitingInDepot(onlydelete=false)
 // this function checks our depots and sell vehicle in it
@@ -584,6 +618,9 @@ foreach (i, dummy in tlist)
 		break;
 		case	DepotAction.CRAZY:
 			INSTANCE.carrier.VehicleSell(i,false);
+		break;
+		case	DepotAction.REMOVEROUTE:
+			INSTANCE.carrier.VehicleSellAndDestroyRoute(i);
 		break;
 		case	DepotAction.ADDWAGON:
 			DInfo("Vehicle "+name+" is waiting at depot to get "+numwagon+" wagons",2,"cCarrier::VehicleIsWaitingInDepot");

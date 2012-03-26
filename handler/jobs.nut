@@ -24,8 +24,7 @@ static	jobIndexer = AIList();	// this list have all UID in the database, value =
 static	jobDoable = AIList();	// same as upper, but only doable ones, value = ranking
 static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
 static	TRANSPORT_DISTANCE=[60,150,250, 40,100,150, 60,120,250, 90,250,500];
-static	CostTopJobs = [0, 0, 0, 0]; // price of best job for rail, road, water & air
-static	lastRefresh = [0];	// last date we refresh all jobs
+static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
 static	statueTown = AIList();	// list of towns we use, for statues, decrease everytime a statue is there
 static	rawJobs = AIList();	// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
 static	targetTown = AIList();	// List of towns we use as target to drop/take passenger/mail by bus & aircraft
@@ -346,8 +345,8 @@ function cJobs::EstimateCost()
 			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
 			if (engine==-1)	engine=INSTANCE.carrier.ChooseRoadVeh(this.cargoID);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
-						else	engineprice=500000000;
-			money+=engineprice*2;
+						else	engineprice=1000000;
+			money+=engineprice;
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP))*cBanker.GetInflationRate();
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT))*cBanker.GetInflationRate();
 			money+=4*clean;
@@ -357,17 +356,20 @@ function cJobs::EstimateCost()
 		case	AIVehicle.VT_RAIL:
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 			local rtype=null;
-			engine=INSTANCE.carrier.ChooseRailCouple(this.cargoID);
-			if (engine.IsEmpty())	engineprice=500000000;
+			engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
+			if (engine==-1)	engine=INSTANCE.carrier.ChooseRailEngine(null,this.cargoID);
+			if (engine!=-1)	engineprice=1000000;
 						else	{
-							engineprice+=cEngine.GetPrice(engine.Begin());
+							/*engineprice+=cEngine.GetPrice(engine.Begin());
 							engineprice+=2*cEngine.GetPrice(engine.GetValue(engine.Begin()));
-							rtype=cCarrier.GetRailTypeNeedForEngine(engine.Begin());
+							rtype=cCarrier.GetRailTypeNeedForEngine(engine.Begin());*/
+							engineprice+=cEngine.GetPrice(engine);
+							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
 							if (rtype==-1)	rtype=null;
 							}
-			money+=engineprice;
+			//money+=engineprice;
 			money+=(8*clean);
-			if (rtype==null)	money+=10000000000;
+			if (rtype==null)	money+=1000000;
 					else	{
 						money+=((20+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)))*cBanker.GetInflationRate();
 						money+=((2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)))*cBanker.GetInflationRate(); // station train 5 length
@@ -569,6 +571,11 @@ function cJobs::UpdateDoableJobs()
 	local toproad=0;
 	local toprail=0;
 	local topwater=0;
+	cJobs.CostTopJobs[AIVehicle.VT_RAIL]=0;
+	cJobs.CostTopJobs[AIVehicle.VT_AIR]=0;
+	cJobs.CostTopJobs[AIVehicle.VT_WATER]=0;
+	cJobs.CostTopJobs[AIVehicle.VT_ROAD]=0;
+	// reset all top jobs
 	foreach (id, value in INSTANCE.jobs.jobIndexer)
 		{
 		if (id == 0 || id == 1)	continue;
@@ -609,9 +616,9 @@ function cJobs::UpdateDoableJobs()
 				{
 				DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs");
 				doable=false;
-				cJobs.jobIndexer.RemoveItem(id);
-				cJobs.DeleteJob(id)
-				continue;
+				//cJobs.jobIndexer.RemoveItem(id);
+				//cJobs.DeleteJob(id)
+				//continue;
 				}
 		if (doable && !myjob.source_istown)
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
@@ -650,18 +657,24 @@ function cJobs::UpdateDoableJobs()
 					}
 				}
 		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	{ doable=false; }
+		// disable as we lack money
 		if (doable)	myjob.jobDoable.AddItem(id, myjob.ranking);
 		}
 	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
 			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
 		local myjob=cJobs.GetJobObject(jobID);
+		local airValid=(cJobs.CostTopJobs[AIVehicle.VT_AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]) || INSTANCE.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR]));
+		local trainValid=(cJobs.CostTopJobs[AIVehicle.VT_RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_RAIL]) || INSTANCE.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_RAIL]));
+		if (myjob.roadType == AIVehicle.VT_ROAD && (airValid || trainValid))	cJobs.jobDoable.RemoveItem(jobID);
+			// disable because we have funds to build an aircraft or a rail job
+
 		if (parentListID.HasItem(myjob.parentID))
 			{
 			DInfo("Job already done by parent job ! Second pass filter",2,"UpdateDoableJobs");
 			cJobs.jobDoable.RemoveItem(jobID);
-			cJobs.jobIndexer.RemoveItem(jobID);
-			cJobs.DeleteJob(jobID);
+			//cJobs.jobIndexer.RemoveItem(jobID);
+			//cJobs.DeleteJob(jobID);
 			}
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);

@@ -91,23 +91,35 @@ if (cargoID!=null)
 	vehlist.Valuate(cEngine.CanPullCargo, cargoID);
 	vehlist.KeepValue(1);
 	}
-// before railtype filtering, add this engine as topengine
+vehlist.Valuate(cCarrier.GetEngineLocoEfficiency,cargoID, !INSTANCE.bank.unleash_road);
+vehlist.Sort(AIList.SORT_BY_VALUE, true);
+// before railtype filtering, add this engine as topengine using any railtype
 if (!vehlist.IsEmpty())	cEngine.RailTypeIsTop(vehlist.Begin(), cargoID, true);
 if (rtype != null)
 	{
 	vehlist.Valuate(AIEngine.HasPowerOnRail, rtype);
 	vehlist.KeepValue(1);
+	vehlist.Valuate(cCarrier.GetEngineLocoEfficiency,cargoID, !INSTANCE.bank.unleash_road);
+	vehlist.Sort(AIList.SORT_BY_VALUE, true);
 	}
 else	rtype = AIRail.GetCurrentRailType();
-vehlist.Valuate(cCarrier.GetEngineLocoEfficiency,cargoID, rtype);
-vehlist.Sort(AIList.SORT_BY_VALUE, true);
-//foreach (engid, eff in vehlist)	print("name="+cEngine.GetName(engid)+" eff="+eff);
+//vehlist.Valuate(cCarrier.GetEngineLocoEfficiency,cargoID, !INSTANCE.bank.unleash_road);
+//vehlist.Sort(AIList.SORT_BY_VALUE, true);
+/*
+if (!INSTANCE.bank.unleash_road)	// try to find the cheapest one out of the 5 most efficient ones
+	{
+	vehlist.KeepTop(5);
+	vehlist.Valuate(AIEngine.GetPrice);
+	vehlist.Sort(AIList.SORT_BY_VALUE, true);
+	}
+print("BUG");*/
+foreach (engid, eff in vehlist)	print("name="+cEngine.GetName(engid)+" eff="+eff+" price="+AIEngine.GetPrice(engid));
 local veh = null;
 if (vehlist.IsEmpty())	DWarn("Cannot find a train engine for that rail type",1,"cCarrier::ChooseRailEngine");
 			else	veh=vehlist.Begin();
 //if (veh != null)	print("pickup ="+cEngine.GetName(veh));
 if (!vehlist.IsEmpty() && cargoID != null)	cEngine.EngineIsTop(vehlist.Begin(), cargoID, true); // set top engine for trains
-//print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
+if (veh != null)	print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
 return veh;
 }
 
