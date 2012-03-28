@@ -78,7 +78,7 @@ foreach (rtype, dum in rtypelist)
 return -1;
 }
 
-function cCarrier::ChooseRailEngine(rtype=null, cargoID=null)
+function cCarrier::ChooseRailEngine(rtype=null, cargoID=null, cheap=false)
 // return fastest+powerfulest engine
 {
 local vehlist = AIEngineList(AIVehicle.VT_RAIL);
@@ -105,14 +105,18 @@ if (rtype != null)
 else	rtype = AIRail.GetCurrentRailType();
 //vehlist.Valuate(cCarrier.GetEngineLocoEfficiency,cargoID, !INSTANCE.bank.unleash_road);
 //vehlist.Sort(AIList.SORT_BY_VALUE, true);
+if (cheap)
+	{
+	vehlist.Valuate(AIEngine.GetPrice);
+	vehlist.Sort(AIList.SORT_BY_VALUE,true);
+	}
 /*
 if (!INSTANCE.bank.unleash_road)	// try to find the cheapest one out of the 5 most efficient ones
 	{
 	vehlist.KeepTop(5);
 	vehlist.Valuate(AIEngine.GetPrice);
 	vehlist.Sort(AIList.SORT_BY_VALUE, true);
-	}
-print("BUG");*/
+	}*/
 foreach (engid, eff in vehlist)	print("name="+cEngine.GetName(engid)+" eff="+eff+" price="+AIEngine.GetPrice(engid));
 local veh = null;
 if (vehlist.IsEmpty())	DWarn("Cannot find a train engine for that rail type",1,"cCarrier::ChooseRailEngine");
@@ -273,7 +277,7 @@ while (!confirm)
 		local attachtry=AITestMode(); //must enter test mode to prevent the wagon from moving, avoid bug loosing the wagonID
 		local atest=AIVehicle.MoveWagon(wagonID, 0, pullerID, AIVehicle.GetNumWagons(pullerID) - 1);
 		attachtry=null;
-		INSTANCE.NeedDelay(60);
+		//INSTANCE.NeedDelay(60);
 		if (!atest)
 			{
 			DError("Wagon "+AIEngine.GetName(wagontype)+" is not usable with "+AIEngine.GetName(locotype),1,"cCarrier::AddNewTrain");
@@ -287,7 +291,7 @@ while (!confirm)
 		}
 	else	wagontype=another;
 	if (!AIVehicle.SellVehicle(wagonID))	{ DError("Cannot sell our test wagon",2,"AddNewTrain"); }
-	INSTANCE.NeedDelay(20);
+	//INSTANCE.NeedDelay(20);
 	if (another==null)
 		{
 		DWarn("Can't find any wagons usable with that train engine "+cEngine.GetName(locotype),2,"cCarrier::AddNewTrain");
@@ -298,11 +302,11 @@ while (!confirm)
 	AIController.Sleep(1); // we should rush that, but it might be too hard without a pause
 	}
 //if (wagonNeed>10)	wagonNeed=10; // block to buy only 10 wagons max
-INSTANCE.NeedDelay(100);
+//INSTANCE.NeedDelay(100);
 for (local i=0; i < wagonNeed; i++)
 	{
 	local nwagonID=INSTANCE.carrier.CreateTrainsEngine(wagontype, depot, road.cargoID);
-	INSTANCE.NeedDelay(70);
+	//INSTANCE.NeedDelay(70);
 	if (nwagonID!=-1)
 		{
 		if (!AIVehicle.MoveWagonChain(nwagonID, 0, pullerID, AIVehicle.GetNumWagons(pullerID)-1))
@@ -318,7 +322,7 @@ for (local i=0; i < wagonNeed; i++)
 			}
 		}
 	}
-INSTANCE.NeedDelay(50);
+//INSTANCE.NeedDelay(50);
 cTrain.Update(pullerID);
 return pullerID;
 }
@@ -359,7 +363,6 @@ if (processTrains.len()==0)
 	DInfo("processTrains.len()="+processTrains.len()+" wagonNeed="+wagonNeed+" vehlist.Count()="+vehlist.Count(),2,"cCarrier::AddWagon");
 	return false;
 	}
-INSTANCE.NeedDelay(100);
 do	{
 	tID=processTrains.pop();
 	if (AIVehicle.IsValidVehicle(tID) && AIVehicle.GetState(tID) != AIVehicle.VS_IN_DEPOT)

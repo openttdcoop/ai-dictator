@@ -41,6 +41,7 @@ enum DepotAction {
 
 import("pathfinder.road", "RoadPathFinder", 3);
 import("pathfinder.rail", "RailPathFinder", 1);
+require("handler/pathfinder.nut");
 require("handler/bridgehandler.nut");
 require("build/builder.nut");
 require("build/stationbuilder.nut");
@@ -203,10 +204,13 @@ function DictatorAI::Start()
 		eventManager.HandleEvents();
 		//builder.QuickTasks();
 		//builder.ShowBlackList();
+		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(10);
 		builder.WeeklyChecks();
 		builder.MonthlyChecks();
+		cPathfinder.AdvanceAllTasks();
 		jobs.RawJobHandling();
+		cPathfinder.AdvanceAllTasks();
 		this.ClearSignsALL();
 		}
 }

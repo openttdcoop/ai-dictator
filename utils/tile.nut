@@ -26,8 +26,9 @@ return cTileTools.TilesBlackList.HasItem(tile);
 function cTileTools::GetTileOwner(tile)
 // return station that own the tile
 {
+local isour=AICompany.IsMine(AITile.GetOwner(tile));
 if (cTileTools.TilesBlackList.HasItem(tile))	return cTileTools.TilesBlackList.GetValue(tile);
-if (!cTileTools.IsBuildable(tile))	{ cTileTools.TilesBlackList.AddItem(tile, -255); return -255; }
+if (!cTileTools.IsBuildable(tile) && !isour)	{ cTileTools.TilesBlackList.AddItem(tile, -255); return -255; }
 return -1;
 }
 
@@ -639,12 +640,13 @@ local testing=null;
 local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 if (curRating >= needRating || curRating == AITown.TOWN_RATING_NONE)	return true;
 local counter=0;
-while (good && curRating < needRating && counter < 5)
+while (good && curRating < needRating && counter < 2)
 	{
 	if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))	good=AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
 	DInfo("Offering money to "+AITown.GetName(townID)+" = "+good+" nowrate="+curRating+" targetrate="+needRating,2,"TownBriber");
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 	counter++;
+	INSTANCE.Sleep(70);
 	}
 return (curRating >= needRating);	
 }

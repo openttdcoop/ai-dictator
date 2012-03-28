@@ -181,6 +181,7 @@ foreach (ownID, dummy in station.owner)
 	{
 	if (ownID == 1)	continue; // ignore virtual mail route, route 0 will re-reroute route 1 already
 	road=cRoute.GetRouteObject(ownID);
+	if (road==null || road.groupID==null)	return;
 	if (reroute)
 		{
 		vehlist=AIVehicleList_Group(road.groupID);
@@ -513,20 +514,22 @@ if (allvehicles.Count()>1)	INSTANCE.carrier.VehicleSell(vehicle, false);
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
-// Send & sell all vehicles from that route, we will wait 2 months or the vehicles are sold
+// Send & sell all vehicles from that route
 {
 local road=INSTANCE.route.GetRouteObject(idx);
+print("Sending group undoable, road="+road+" idx="+idx);
 if (road == null)	return;
 local vehlist=null;
 if (road.groupID != null)
 	{
 	vehlist=AIVehicleList_Group(road.groupID);
-	if (vehlist.IsEmpty())	RouteUndoableFreeOfVehicle();
+	if (vehlist.IsEmpty())	return false;
 	else	{
 		DInfo("Removing a group of vehicle : "+vehlist.Count(),1,"VehicleGroupSendToDepotAndSell");
 		foreach (vehicle, dummy in vehlist)	INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.REMOVEROUTE);
 		}
 	}
+return true;
 }
 
 function cCarrier::VehicleGroupSendToDepotAndWaitSell(idx)

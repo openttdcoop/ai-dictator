@@ -92,6 +92,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
 			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, I don't know what to do with that !",0,"HandleEvents");
+			if (!AIVehicle.IsValidVehicle(vehicle)) return;
 			INSTANCE.carrier.VehicleMaintenance_Orders(vehicle);
 			local rcheck=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 			INSTANCE.builder.RouteIsDamage(rcheck);
@@ -100,6 +101,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
 			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot",0,"HandleEvents");
+			if (!AIVehicle.IsValidVehicle(vehicle)) return;
 			INSTANCE.carrier.VehicleMaintenance_Orders(vehicle);
 			INSTANCE.builder.RouteIsDamage(INSTANCE.carrier.VehicleFindRouteIndex(vehicle));
 			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);

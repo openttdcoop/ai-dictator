@@ -49,7 +49,7 @@ local ournoise=AIAirport.GetNoiseLevelIncrease(station.locations.Begin(),airport
 DInfo("Town rating = "+townrating+" noiselevel="+noiselevel,2);
 cTileTools.SeduceTown(townid,AITown.TOWN_RATING_GOOD);
 if (townrating < AITown.TOWN_RATING_GOOD)
-	{ DInfo("Cannot upgrade airport, too dangerous with our current rating with this town.",1); return false; }
+	{ DInfo("Cannot upgrade airport, too dangerous with our current rating with this town.",1); station.lastUpdate+=70; return false; }
 local cost=AIAirport.GetPrice(airporttype);
 cost+=1000; // i'm not sure how much i need to destroy old airport
 INSTANCE.bank.RaiseFundsBy(cost);

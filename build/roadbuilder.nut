@@ -23,7 +23,7 @@ function MyRoadPF::_Cost(path, new_tile, new_direction, self)
 }
 function MyRoadPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
 {
-	return 1.2*::RoadPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+	return 1.1*::RoadPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
 }
 
 function MyRoadPF::_GetTunnelsBridges(last_node, cur_node, bridge_dir)
@@ -63,7 +63,7 @@ function MyRailPF::_Cost(path, new_tile, new_direction, self)
 }
 function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
 {
-	return 1.2*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+	return 1.1*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
 }
 
 function cBuilder::CanBuildRoadStation(tile, direction)

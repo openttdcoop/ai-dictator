@@ -450,7 +450,7 @@ if (INSTANCE.route.status==4) // pathfinding
 				INSTANCE.builder.building_route=-1;
 				return false;
 				}
-		else	{ INSTANCE.builddelay=true; return false; }
+		else	{ return false; }
 			} // and nothing more, stay at that phase & rebuild road when possible
 	}
 if (INSTANCE.route.status==5)

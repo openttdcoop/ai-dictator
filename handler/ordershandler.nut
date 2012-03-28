@@ -123,14 +123,14 @@ switch (road.route_type)
 	case AIVehicle.VT_ROAD:
 		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		if (!road.twoway) oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+		if (!road.twoway) { oneorder+=AIOrder.AIOF_FULL_LOAD_ANY; twoorder+=AIOrder.AIOF_NO_LOAD; }
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
 	case AIVehicle.VT_RAIL:
 		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		if (!road.twoway)	oneorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+		if (!road.twoway)	{ oneorder+=AIOrder.AIOF_FULL_LOAD_ANY; twoorder+=AIOrder.AIOF_NO_LOAD; }
 		srcplace = AIStation.GetLocation(road.source.stationID);
 		dstplace = AIStation.GetLocation(road.target.stationID);
 	break;

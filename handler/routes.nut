@@ -63,6 +63,8 @@ static	function GetRouteObject(UID)
 	primary_RailLink	= null;	// true if we have build the main connecting rails from source to target station
 	secondary_RailLink= null;	// true if we also buld the alternate path from source to target
 	twoway		= null;	// if source station and target station accept but also produce, it's a twoway route
+	pf_source		= null;	// the source of the pathfinding if we have one going on
+	pf_target		= null;	// the target of the pathfinding if we have one going on
 
 	constructor()
 		{ // * are saved variables
@@ -406,12 +408,13 @@ function cRoute::RouteIsNotDoable()
 	cJobs.JobIsNotDoable(this.UID);
 	this.isWorking=false;
 	this.RouteCheckEntry();
-	INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID);
+	if (!INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ print("send return false"); this.RouteUndoableFreeOfVehicle(); }
 	}
 
 function cRoute::RouteUndoableFreeOfVehicle()
 // This is the last step of marking a route undoable
 	{
+print("undoable step2");
 	if (this.UID < 2)	return; // don't touch virtual routes
 	local stasrc=this.source_stationID;
 	local stadst=this.target_stationID;
@@ -547,9 +550,8 @@ function cRoute::CanAddTrainToStation(uid)
 	{
 	local road=cRoute.GetRouteObject(uid);
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrainToStation"); return -1; }
-cBuilder.DumpRoute(uid);
 	local canAdd=true;
-	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1,"cRoute::CanAddTrainToStation"); INSTANCE.NeedDelay(100);
+	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1,"cRoute::CanAddTrainToStation");
 	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
 	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
 	return canAdd;

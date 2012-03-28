@@ -19,7 +19,6 @@ class cCarrier
 static	AirportTypeLimit=[6, 10, 2, 16, 30, 5, 6, 60, 8]; // limit per airport type
 static	IDX_HELPER = 512;			// use to create an uniq ID (also use to set handicap value)
 static	AIR_NET_CONNECTOR=2500;		// town is add to air network when it reach that value population
-//static	TopEngineList=AIList();		// the list of engine ID we know if it can be upgrade or not
 static	ToDepotList=AIList();		// list vehicle going to depot, value=DepotAction for trains we also add wagons need
 static	vehicle_database={};		// database for vehicles
 static	VirtualAirRoute=[];		// the air network destinations list
