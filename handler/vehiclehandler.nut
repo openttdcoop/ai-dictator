@@ -529,6 +529,7 @@ if (road.groupID != null)
 		foreach (vehicle, dummy in vehlist)	INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.REMOVEROUTE);
 		}
 	}
+else	return false;
 return true;
 }
 
@@ -603,8 +604,8 @@ foreach (i, dummy in tlist)
 			}
 		else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"VehicleWaitingInDepot");
 		}
-	if (onlydelete && AIVehicle.GetVehicleType(i) == AIVehicle.VT_AIR)
-		{ DInfo("We've been ask to delete all vehicles waiting in depot",1,"VehicleWaitingInDepot"); reason=DepotAction.SELL; }
+	if (onlydelete && (AIVehicle.GetVehicleType(i) == AIVehicle.VT_AIR || AIVehicle.GetVehicleType(i) == AIVehicle.VT_ROAD))
+		{ DInfo("We've been ask to delete all vehicles waiting in depot",1,"VehicleWaitingInDepot"); reason=DepotAction.CRAZY; }
 	switch (reason)
 		{
 		case	DepotAction.SELL:

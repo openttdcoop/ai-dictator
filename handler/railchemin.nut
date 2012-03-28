@@ -19,6 +19,7 @@ local firstveh=false;
 local road=cRoute.GetRouteObject(uid);
 // no checks, as this is call after DutyOnRoute checks
 local maxveh=0;
+INSTANCE.carrier.highcostTrain=0;
 local cargoid=road.cargoID;
 local railtype=road.source.specialType;
 local futur_engine=INSTANCE.carrier.ChooseRailWagon(cargoid, railtype, null);

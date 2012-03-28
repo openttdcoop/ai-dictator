@@ -63,7 +63,7 @@ function MyRailPF::_Cost(path, new_tile, new_direction, self)
 }
 function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
 {
-	return 1.1*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+	return 1.5*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
 }
 
 function cBuilder::CanBuildRoadStation(tile, direction)

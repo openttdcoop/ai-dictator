@@ -215,6 +215,7 @@ if (status == 0)	return false;
 local path=cPathfinder.GetSolve(head1, head2);
 if (path == null)	status=-1;
 if (status == -1)	{ INSTANCE.builder.CriticalError=true; return false; }
+if (status == 2)	return true;
 
 INSTANCE.bank.RaiseFundsBigTime();
 local prev = null;
@@ -645,7 +646,8 @@ else	{
 	if (taker)	trainExitTaker++;
 		else	trainExitDropper++;
 	}
-print("raw**: "+thatstation.name+" trainEntryTaker="+trainExitTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
+print(" ");
+print("raw****: "+thatstation.name+" trainEntryTaker="+trainExitTaker+" trainEntryDropper="+trainEntryDropper+" trainexitTaker="+trainExitTaker+" trainexitDropper="+trainExitDropper);
 local tED=(trainEntryDropper / 2);
 local tXD=(trainExitDropper / 2);
 if (trainEntryDropper != 0)
@@ -740,9 +742,9 @@ local displace=0;
 // need grow the station ?
 // only define when a train activate it, so only run 1 time
 //newStationSize=thatstation.size+1;
-DInfo("Phase 1: grow",1,"RailStationGrow");
 if (newStationSize > thatstation.size)
 	{
+	DInfo("--- Phase 1: grow",1,"RailStationGrow");
 	DInfo("Upgrading "+thatstation.StationGetName()+" to "+newStationSize+" platforms",1,"RailStationGrow");
 	if (thatstation.maxsize==thatstation.size)
 		{
@@ -822,11 +824,11 @@ sx_crossing=thatstation.locations.GetValue(6);
 local rail=null;
 local success=false;
 local crossing=null;
-DInfo("Phase2: define entry/exit point",1,"RailStationGrow");
 // find if we can use that entry/exit if none is define yet
 // run only 1 time as it's only define when a train trigger it
 if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 	{ // look if we're going too much inside a town, making big damages to it, and mostly sure failure to use that direction to build rails
+	DInfo("--- Phase2: define entry/exit point",1,"RailStationGrow");
 	local towncheck=AITileList();
 	local testcheck=AITileList();
 	towncheck.AddRectangle(workTile, workTile+rightTileOf+(5*forwardTileOf));
@@ -876,11 +878,11 @@ if ( (useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1) )
 
 // define & build crossing point if none exist yet
 // only need define when need, when a train try use one of them, so only run 1 time
-DInfo("Phase3: define crossing point",1,"RailStationGrow");
 if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !closeIt )
 	{
 	// We first try to build the crossing area from worktile+1 upto worktile+3 to find where one is doable
 	// Because a rail can cross a road, we try build a track that will fail to cross a road to be sure it's a valid spot for crossing
+	DInfo("--- Phase3: define crossing point",1,"RailStationGrow");
 	rail=railLeft;
 	DInfo("Building crossing point ",2,"RailStationGrow");
 	local j=1;
@@ -925,7 +927,6 @@ if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !close
 		}
 	}
 
-DInfo("Phase4: build entry&exit IN/OUT",1,"RailStationGrow");
 // build entry/exit IN and OUT, if anyone use entry or exit, we need it built
 // this doesn't need to be run more than 1 time, as each train may trigger the building
 local needIN=0;
@@ -945,6 +946,7 @@ if (!closeIt)
 //print("needIN="+needIN+" needOUT="+needOUT);
 if (needIN > 0 || needOUT > 0)
 	{
+	DInfo("--- Phase4: build entry&exit IN/OUT",1,"RailStationGrow");
 	local tmptaker=taker;
 	local in_str="";
 	rail=railFront;
@@ -955,7 +957,6 @@ if (needIN > 0 || needOUT > 0)
 	if (useEntry)
 		{
 		fromtile=se_crossing;
-print("se_crossing="+se_crossing);
 		if (tmptaker)	{ if (se_IN!=-1)	tmptaker=false; }
 				else	{ if (se_OUT!=-1)	tmptaker=true; }
 		if (tmptaker)	in_str="entry IN";
@@ -963,7 +964,6 @@ print("se_crossing="+se_crossing);
 		}
 	else	{
 		fromtile=sx_crossing;
-print("sx_crossing="+sx_crossing);
 		if (tmptaker)	{ if (sx_IN!=-1)	tmptaker=false; }
 				else	{ if (sx_OUT!=-1)	tmptaker=true; }
 		if (tmptaker)	in_str="exit IN";
@@ -1068,10 +1068,9 @@ print("sx_crossing="+sx_crossing);
 		} while (j < 4 && !success);
 		if (!success)	closeIt=true;
 	}
-print("BREAKING");
+
 // build station entrance point to crossing point
 // this need two runs, as we might need entry & exit built in one time
-DInfo("Phase5: build & connect station entrance",1,"RailStationGrow");
 local entry_build=(se_IN != -1 || se_OUT != -1);
 local exit_build=(sx_IN != -1 || sx_OUT != -1);
 DInfo("Entry build="+entry_build+" - exit build="+exit_build,2,"RailStationGrow");
@@ -1084,6 +1083,7 @@ foreach (platform, status in thatstation.platforms)
 	AIController.Sleep(1);
 	}
 thatstation.DefinePlatform();  // scan the station platforms for their status
+DInfo("--- Phase5: build & connect station entrance",1,"RailStationGrow");
 for (local hh=0; hh < 2; hh++)
 	{
 	local endConnector=AIList();
@@ -1165,7 +1165,6 @@ for (local hh=0; hh < 2; hh++)
 	} // hh loop
 thatstation.DefinePlatform();
 
-DInfo("Phase6: building alternate track",1,"RailStationGrow");
 // first look if we need some more work
 print("needIN="+needIN);
 if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTaker > 1 || trainExitDropper+trainExitTaker > 1))
@@ -1185,6 +1184,7 @@ if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTa
 //print("dowork="+dowork);
 	if (dowork)
 		{
+		DInfo("--- Phase6: building alternate track",1,"RailStationGrow");
 		cBuilder.StationKillDepot(thatstation.depot);
 		cBuilder.StationKillDepot(thatstation.locations[15]);
 		local srcpos, srclink, dstpos, dstlink= null;
@@ -1201,8 +1201,6 @@ if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTa
 		PutSign(dstlink,"d");
 		PutSign(srcpos,"S");
 		PutSign(srclink,"s");
-		AITile.DemolishTile(srclink);
-		AITile.DemolishTile(dstlink);
 		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target.stationID))
 			{
 			if (INSTANCE.builder.CriticalError)
@@ -1226,9 +1224,9 @@ if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTa
 		}
 	}
 
-DInfo("Phase7: building signals",1,"RailStationGrow");
 if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker >2 || trainExitDropper+trainExitTaker > 2)) // route must be valid + alternate rail is built
 	{
+	DInfo("--- Phase7: building signals",1,"RailStationGrow");
 	local srcpos, dstpos = null;
 	local unstuck_need=false;
 	if (road.source_RailEntry)
@@ -1279,7 +1277,7 @@ if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker 
 		}
 	}
 
-DInfo("Phase8: build depot",1,"RailStationGrow");
+DInfo("--- Phase8: build depot",1,"RailStationGrow");
 // build depot for it,
 // in order to build cleaner rail we build the depot where the OUT line should goes, reserving space for it
 // if this cannot be done, we build it next to the IN line, and we just swap lines (OUT<>IN)

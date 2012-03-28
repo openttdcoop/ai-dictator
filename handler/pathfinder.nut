@@ -74,7 +74,7 @@ function cPathfinder::InfoSign(msg)
 function cPathfinder::AdvanceTask(UID)
 // Advance the pathfinding search
 	{
-	local maxTimer=350;	// maximum time put on pathfinding a path
+	local maxTimer=450;	// maximum time put on pathfinding a path
 	local maxStep=30;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);
@@ -107,7 +107,7 @@ function cPathfinder::AdvanceTask(UID)
 		pftask.solve=check;
 		return;
 		}
-	if (check == null)
+	if (check == null || pftask.timer > maxTimer)
 		{
 		DInfo("Pathfinder task "+pftask.UID+" failure",1,"cPathfinder::AdvanceTask");
 		pftask.InfoSign("Pathfinding... failure");

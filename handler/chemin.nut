@@ -254,6 +254,7 @@ local priority=AIList();
 local road=null;
 local chopper=false;
 local dual=false;
+INSTANCE.bank.busyRoute=false;
 INSTANCE.route.DutyOnAirNetwork(); // we handle the network load here
 foreach (uid, dummy in cRoute.RouteIndexer)
 	{
@@ -264,10 +265,10 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 	if (road.route_type == RouteType.AIRNET || road.route_type == RouteType.AIRNETMAIL)	continue;
 	if (road.source == null)	continue;
 	if (road.target == null)	continue;
+	if (road.route_type == RouteType.RAIL)	{ INSTANCE.route.DutyOnRailsRoute(uid); continue; }
 	local maxveh=0;
 	local cargoid=road.cargoID;
 	if (cargoid == null)	continue;
-	if (road.route_type == RouteType.RAIL)	{ INSTANCE.route.DutyOnRailsRoute(uid); continue; }
 	local futur_engine=INSTANCE.carrier.GetVehicle(uid);
 	local futur_engine_capacity=1;
 	if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);
@@ -361,13 +362,11 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 // and priority = aircraft before anyone, then others, in both case, we range from top group profit to lowest
 local allneed=0;
 local allbuy=0;
-INSTANCE.bank.busyRoute=false;
 if (priority.IsEmpty())	return;
 local priocount=AIList();
 priocount.AddList(priority);
 priority.Valuate(AIGroup.GetVehicleType);
 priority.Sort(AIList.SORT_BY_VALUE,false);
-
 local vehneed=0;
 local vehvalue=0;
 local topvalue=0;

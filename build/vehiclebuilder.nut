@@ -42,6 +42,7 @@ static	function GetVehicleObject(vehicleID)
 	do_profit		=null;	// Record each vehicle profits
 	warTreasure		=null;	// total current value of nearly all our road vehicle
 	highcostAircraft	=null;	// the highest cost for an aircraft we need
+	highcostTrain	=null;	// the highest cost for a train
 	speed_MaxTrain	=null;	// maximum speed a train could do
 	speed_MaxRoad	=null;	// maximum speed a road vehicle could do
 
@@ -60,6 +61,7 @@ static	function GetVehicleObject(vehicleID)
 		do_profit		=AIList();
 		warTreasure		=0;
 		highcostAircraft	=0;
+		highcostTrain	=0;
 		speed_MaxTrain	=0;
 		speed_MaxRoad	=0;
 		}

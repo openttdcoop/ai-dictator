@@ -184,6 +184,7 @@ local vehID=AIVehicle.BuildVehicle(depot, engineID);
 if (vehID==AIVehicle.VEHICLE_INVALID)
 		{
 		DInfo("Failure to buy "+AIEngine.GetName(engineID)+" at "+depot+" err: "+AIError.GetLastErrorString(),1,"cCarrier::CreateTrainsEngine");
+		INSTANCE.carrier.highcostTrain=price;
 		return -1;
 		}
 	else	{
@@ -191,6 +192,7 @@ if (vehID==AIVehicle.VEHICLE_INVALID)
 		if (AIVehicle.IsValidVehicle(vehID))	cEngine.Update(vehID);
 		INSTANCE.carrier.vehnextprice-=price;
 		if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
+		INSTANCE.carrier.highcostTrain=price;
 		}
 // get & set refit cost
 local testRefit=AIAccounting();

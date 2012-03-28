@@ -43,6 +43,7 @@ INSTANCE.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
 INSTANCE.carrier.VehicleMaintenance();
 INSTANCE.route.DutyOnRoute();
 if (INSTANCE.SixMonth == 2)	INSTANCE.builder.BoostedBuys();
+if (INSTANCE.SixMonth == 2)	INSTANCE.builder.BridgeUpgrader();
 if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
 }
 
@@ -112,7 +113,6 @@ DInfo("Yearly checks run...",1,"Checks");
 
 INSTANCE.builder.CheckRouteStationStatus();
 INSTANCE.jobs.CheckTownStatue();
-INSTANCE.builder.BridgeUpgrader();
 INSTANCE.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
 INSTANCE.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
@@ -370,6 +370,10 @@ function cBuilder::BoostedBuys()
 local airportList=AIStationList(AIStation.STATION_AIRPORT);
 local waitingtimer=0;
 local vehlist=AIVehicleList();
+foreach (veh, dummy in vehlist) // remove vehicle going to depot already
+		if (cCarrier.ToDepotList.HasItem(veh))	vehlist.SetValue(veh,1);
+								else	vehlist.SetValue(veh,0);
+vehlist.KeepValue(0);
 if (airportList.Count() < 2 && vehlist.Count()>45)
 	{ // try to boost a first air route creation
 	local goalairport=cJobs.CostTopJobs[AIVehicle.VT_AIR];
@@ -382,18 +386,42 @@ if (airportList.Count() < 2 && vehlist.Count()>45)
 		INSTANCE.carrier.CrazySolder(goalairport);
 		do	{
 			INSTANCE.Sleep(74);
-			INSTANCE.carrier.VehicleIsWaitingInDepot();
+			INSTANCE.carrier.VehicleIsWaitingInDepot(true);
 			waitingtimer++;
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 			DInfo("Still "+(money_goal - money)+" to raise",1,"BoostedBuys");
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goalairport));
 		if (waitingtimer < 200)	DInfo("Operation should success...",1,"BoostedBuys");
-		INSTANCE.carrier.VehicleIsWaitingInDepot();
+		INSTANCE.carrier.VehicleIsWaitingInDepot(true);
 		INSTANCE.bank.canBuild=true; INSTANCE.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
 		}
+	return;
 	}
-waitingtimer=0;
+local trainList=AIStationList(AIStation.STATION_TRAIN);
+local goaltrain=cJobs.CostTopJobs[AIVehicle.VT_RAIL];
+if (vehlist.Count()>45 && goaltrain > 0 && trainList.Count() < 2)
+	{	// try boost train job buys
+	DWarn("Waiting to build a train job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goaltrain,1,"BoostedBuys");
+	local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	local money_goal=money+goaltrain;
+	if (INSTANCE.carrier.warTreasure > goaltrain && goaltrain > 0)
+		{
+		DInfo("Trying to raise money to buy a new train job",1,"BoostedBuys");
+		INSTANCE.carrier.CrazySolder(goaltrain);
+		do	{
+			INSTANCE.Sleep(74);
+			INSTANCE.carrier.VehicleIsWaitingInDepot(true);
+			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+			DInfo("Still "+(money_goal - money)+" to raise",1,"BoostedBuys");
+			waitingtimer++;
+			}
+		while (waitingtimer < 200 && !cBanker.CanBuyThat(goaltrain));
+		INSTANCE.carrier.VehicleIsWaitingInDepot(true);
+		INSTANCE.bank.canBuild=true; INSTANCE.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
+		}
+	return;
+	}
 local aircraftnumber=AIVehicleList();
 aircraftnumber.Valuate(AIVehicle.GetVehicleType);
 aircraftnumber.KeepValue(AIVehicle.VT_AIR);
@@ -409,35 +437,35 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 		INSTANCE.carrier.CrazySolder(goal);
 		do	{
 			INSTANCE.Sleep(74);
-			INSTANCE.carrier.VehicleIsWaitingInDepot();
+			INSTANCE.carrier.VehicleIsWaitingInDepot(true);
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 			DInfo("Still "+(money_goal - money)+" to raise",1,"BoostedBuys");
 			waitingtimer++;
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goal));
+		INSTANCE.carrier.VehicleIsWaitingInDepot(true);
 		}
+	return;
 	}
-vehlist=AIVehicleList();
-waitingtimer=0;
-local goaltrain=cJobs.CostTopJobs[AIVehicle.VT_RAIL];
+local goaltrain=INSTANCE.carrier.highcostTrain;
 if (vehlist.Count()>45 && goaltrain > 0)
 	{	// try boost train buys
-	DWarn("Waiting to build a train job. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goaltrain,1,"BoostedBuys");
+	DWarn("Waiting to buy a new train. Current ="+INSTANCE.carrier.warTreasure+" Goal="+goaltrain,1,"BoostedBuys");
 	local money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	local money_goal=money+goaltrain;
-	if (INSTANCE.carrier.warTreasure > goaltrain && goaltrain > 0)
+	if (INSTANCE.carrier.warTreasure > goaltrain)
 		{
 		DInfo("Trying to raise money to buy a new train job",1,"BoostedBuys");
 		INSTANCE.carrier.CrazySolder(goaltrain);
 		do	{
 			INSTANCE.Sleep(74);
-			INSTANCE.carrier.VehicleIsWaitingInDepot();
+			INSTANCE.carrier.VehicleIsWaitingInDepot(true);
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 			DInfo("Still "+(money_goal - money)+" to raise",1,"BoostedBuys");
 			waitingtimer++;
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goaltrain));
-		INSTANCE.carrier.VehicleIsWaitingInDepot();
+		INSTANCE.carrier.VehicleIsWaitingInDepot(true);
 		INSTANCE.bank.canBuild=true; INSTANCE.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
 		}
 	}

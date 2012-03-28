@@ -809,7 +809,7 @@ foreach (ID, dummy in indjobs)
 	}
 foreach (ID, dummy in townjobs)
 	{
-	//cJobs.RawJobAdd(ID,true);
+	cJobs.RawJobAdd(ID,true);
 	curr++;
 	if (curr % 18 == 0)
 		{
