@@ -105,11 +105,17 @@ if (rtype != null)
 else	rtype = AIRail.GetCurrentRailType();
 //vehlist.Valuate(cCarrier.GetEngineLocoEfficiency,cargoID, !INSTANCE.bank.unleash_road);
 //vehlist.Sort(AIList.SORT_BY_VALUE, true);
-if (cheap)
+if (!vehlist.IsEmpty() && cargoID != null)	cEngine.EngineIsTop(vehlist.Begin(), cargoID, true); // set top engine for trains
+foreach (engID, eff in vehlist)
+	{
+	local price=AIEngine.GetPrice(engID);
+	if (!cBanker.CanBuyThat(price))	vehlist.RemoveItem(engID);
+	}
+/*if (cheap)
 	{
 	vehlist.Valuate(AIEngine.GetPrice);
 	vehlist.Sort(AIList.SORT_BY_VALUE,true);
-	}
+	}*/
 /*
 if (!INSTANCE.bank.unleash_road)	// try to find the cheapest one out of the 5 most efficient ones
 	{
@@ -117,13 +123,12 @@ if (!INSTANCE.bank.unleash_road)	// try to find the cheapest one out of the 5 mo
 	vehlist.Valuate(AIEngine.GetPrice);
 	vehlist.Sort(AIList.SORT_BY_VALUE, true);
 	}*/
-foreach (engid, eff in vehlist)	print("name="+cEngine.GetName(engid)+" eff="+eff+" price="+AIEngine.GetPrice(engid));
+//foreach (engid, eff in vehlist)	print("name="+cEngine.GetName(engid)+" eff="+eff+" price="+AIEngine.GetPrice(engid));
 local veh = null;
 if (vehlist.IsEmpty())	DWarn("Cannot find a train engine for that rail type",1,"cCarrier::ChooseRailEngine");
 			else	veh=vehlist.Begin();
 //if (veh != null)	print("pickup ="+cEngine.GetName(veh));
-if (!vehlist.IsEmpty() && cargoID != null)	cEngine.EngineIsTop(vehlist.Begin(), cargoID, true); // set top engine for trains
-if (veh != null)	print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
+//if (veh != null)	print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
 return veh;
 }
 
@@ -428,7 +433,8 @@ do	{
 		local beforesize=cCarrier.GetNumberOfWagons(tID);
 		depotID=AIVehicle.GetLocation(tID);
 		cCarrier.VehicleOrdersReset(tID); // maybe we call that train to come to the depot
-		INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
+		INSTANCE.carrier.VehicleBuildOrders(AIVehicle.GetGroupID(tID),false);
+//INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
 		tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen);
 		if (AIVehicle.IsValidVehicle(tID))
 			{

@@ -29,12 +29,11 @@ static	function GetPathfinderObject(UID)
 	timer			= null;	// the time we spend on that task
 	source		= null;	// the source [] to pathfind
 	target		= null;	// the target [] to pathfind
-	status		= null;	// 0 - working, -1 fail, 1 success pathfind, 2 success route build
+	status		= null;	// 0 - working, -1 fail, 1 success pathfind, 2 success route build, 3 wait for child to finish
 	stationID		= null;	// the stationID rails will be assign to
 	useEntry		= null;	// the entry of the stationID will be use or not
 	// if we success at pathfinding, we will try build the route, and if we fail at building the route, we will recall the pathfinder or try to rebuild it
 	// we will then report failure in status
-	retry			= null;	// set to true if we are trying again
 	r_source		= null;	// the original pathfind source point
 	r_target		= null;	// the original pathfind target point
 	
@@ -51,7 +50,6 @@ static	function GetPathfinderObject(UID)
 		stationID		= null;
 		useEntry		= null;
 		status		= 0;
-		retry			= true;
 		r_source		= null;
 		r_target		= null;
 		}
@@ -60,6 +58,7 @@ static	function GetPathfinderObject(UID)
 function cPathfinder::GetUID(source, target)
 // return UID of the task
 	{
+	if (source == null || target == null)	return null;
 	if (!AIMap.IsValidTile(source[0]) || !AIMap.IsValidTile(target[1]))	return null;
 	return source[0]+target[1];
 	}
@@ -75,7 +74,7 @@ function cPathfinder::AdvanceTask(UID)
 // Advance the pathfinding search
 	{
 	local maxTimer=450;	// maximum time put on pathfinding a path
-	local maxStep=30;		// maximum time put on a try
+	local maxStep=20;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);
 	switch (pftask.status)
@@ -89,6 +88,9 @@ function cPathfinder::AdvanceTask(UID)
 		return;
 		case	2:
 			DInfo("Pathfinder task "+pftask.UID+" has end building the path.",1,"cPathfinder::AdvanceTask");
+		return;
+		case	3:
+			DInfo("Pathfinder task "+pftask.UID+" is waiting its subtask result.",1,"cPathfinder::AdvanceTask");
 		return;
 		}
 	if (pftask.status != 0)	{ DInfo("Pathfinder task "+pftask.UID+" search is over with status "+pftask.status,1,"cPathfinder::AdvanceTask"); return; }
@@ -136,10 +138,12 @@ function cPathfinder::CloseTask(source, target)
 	local UID=cPathfinder.GetUID(source, target);
 	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1,"cPathfinder::GetSolve"); return -1; }
 	local pftask=cPathfinder.GetPathfinderObject(UID);
+	if (pftask == null)	return;
 	if (pftask.UID in cPathfinder.database)
 		{
 		delete cPathfinder.database[pftask.UID];
 		AISign.RemoveSign(pftask.signHandler);
+		DInfo("Pathfinder task "+pftask.UID+" closed.",1,"cPathfinder::AdvanceTask");
 		}
 }
 
@@ -163,11 +167,14 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 	pftask.pathHandler.cost.slope=250;
 	pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 	DInfo("New pathfinder task : "+pftask.UID,1,"cPathfinder::CreateNewTask");
-	if (pftask.UID in cPathfinder.database)	DInfo("That task "+pftask.UID+" is already in database",2,"cPathfinder::CreateNewTask");
-						else		{
-								DInfo("Saving task : "+pftask.UID,2,"cPathfinder::CreateNewTask");
-								cPathfinder.database[pftask.UID] <- pftask;
-								}
+	cPathfinder.database[pftask.UID] <- pftask;
+
+		PutSign(src[0],"s");
+		PutSign(src[1],"S");
+		PutSign(tgt[0],"D");
+		PutSign(tgt[1],"d");
+		INSTANCE.NeedDelay(20);
+
 	}
 
 function cPathfinder::GetStatus(source, target, useEntry, stationID)

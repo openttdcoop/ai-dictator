@@ -193,36 +193,49 @@ return true;
 }
 
 function cBuilder::EasyError(error)
-// Just return true if the error is something really simple we could handle with few time or bucks
+// Just return if the error is something really simple we could handle with few time or bucks
+// 0 no error
+// -1 a temp easy solvable error
+// -2 a big error
 {
 switch (error)
 	{
 	case	AIError.ERR_NOT_ENOUGH_CASH :
-	return true;
+	return -1;
 	case	AIError.ERR_ALREADY_BUILT:
-	return true;
+	return 0;
 	case	AIError.ERR_VEHICLE_IN_THE_WAY:
-	return true;
+	return -1;
 	}
-return false;
+return -2;
 }
 
 function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 {
 local status=cPathfinder.GetStatus(head1, head2, useEntry, stationID);
 print("status="+status);
-if (status == 0)	return false;
 local path=cPathfinder.GetSolve(head1, head2);
-if (path == null)	status=-1;
-if (status == -1)	{ INSTANCE.builder.CriticalError=true; return false; }
-if (status == 2)	return true;
-
+local smallerror=0;
+if (path == null)	smallerror=-2;
+switch (status)
+	{
+	case	0:	// still pathfinding
+	return false;
+	case	-1:	// failure
+		INSTANCE.builder.CriticalError=true;
+	return false;
+	case	2:	// succeed
+	return true;
+	case	3:	// waiting child to end
+	return true;
+	}
+// 1 is non covered as it's end of pathfinding, and should call us to build
 INSTANCE.bank.RaiseFundsBigTime();
 local prev = null;
 local prevprev = null;
 local pp1, pp2, pp3 = null;
-local smallerror=true;
-while (path != null)
+local walked=[];
+while (path != null && smallerror==0)
 	{
 	if (prevprev != null)
 		{
@@ -234,12 +247,12 @@ while (path != null)
 					{
 					DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
 					smallerror=cBuilder.EasyError(AIError.GetLastError());
-					if (smallerror)
+					if (smallerror==-1)
 						{
 						DInfo("That tunnel would be too expensive. Construction aborted.",2);
 						return false;
 						}
-					else	break;
+					if (smallerror==-2)	break;
 					//if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID)) return false; else return true;
 					}
 				else	{
@@ -255,12 +268,12 @@ while (path != null)
 					{
 					DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
 					smallerror=cBuilder.EasyError(AIError.GetLastError());
-					if (smallerror)
+					if (smallerror==-1)
 						{
 						DInfo("That bridge would be too expensive. Construction aborted.",2);
 						return false;
 						}
-					else	break;
+					if (smallerror==-2)	break;
 					//if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID)) return false; else return true;
 					}
 				else	{
@@ -275,11 +288,16 @@ while (path != null)
 			prevprev = prev;
 			prev = path.GetTile();
 			path = path.GetParent();
+			walked.push(prev);
 			}
 		 else {
 			// check for small up/down hills correction
 			local targetTile=path.GetTile();
-			if ((AITile.GetSlope(prev)+AITile.GetSlope(targetTile))==15)
+			local equal= (AITile.GetMinHeight(prev) == AITile.GetMinHeight(targetTile));
+			if (!equal)	equal = (AITile.GetMaxHeight(prev) == AITile.GetMaxHeight(targetTile));
+//			if ( AITile.GetSlope(prev) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT && (AITile.GetMinHeight
+//			if ((AITile.GetSlope(prev)+AITile.GetSlope(targetTile))==15)
+			if (equal && AITile.GetSlope(prev) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT)
 				{
 				DInfo("Smoothing land to build rails",1,"BuildRoadRAIL");
 				cTileTools.TerraformLevelTiles(prevprev, targetTile);
@@ -288,12 +306,12 @@ print("build rail");
 			if (!AIRail.BuildRail(prevprev, prev, targetTile))
 				{
 				smallerror=cBuilder.EasyError(AIError.GetLastError());
-				if (smallerror)
+				if (smallerror==-1)
 					{
 					DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
 					return false;
 					}
-				else	break;
+				if (smallerror==-2)	break;
 				//if (!cBuilder.RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID))	return false; else { INSTANCE.builder.CriticalError=false; return true; }
 				}
 			else	{
@@ -310,50 +328,65 @@ print("build rail");
 		prevprev = prev;
 		prev = path.GetTile();
 		path = path.GetParent();
-print("prevprev="+prevprev+" prev="+prev+" path="+path); 
+		walked.push(prev);
 		}
 	}
 local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, head2));
-if (!smallerror)
+local source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
+if (smallerror == -2)
 	{
-	print("we face a big error");
-	if (mytask.r_source != null && mytask.r_target != null)	// We fail and we are a retry task
+	DError("Pathfinder has detect a failure.",1,"cBuilder::BuildRoadRail");
+	if (walked.len() < 4)
 		{
-		local realtask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(r_source, r_target));
-		realtask.status=-1; // set failure status
+		DInfo("Pathfinder cannot do more",1,"cBuilder::BuildRoadRail");
+		// unroll all tasks and fail
+		source=cPathfinder.GetUID(mytask.source, mytask.target);
+		while (source != null)
+			{ // remove all sub-tasks
+			DInfo("Pathfinder helper task "+source+" failure !",1,"cBuilder::BuildRoadRail");
+			source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
+			cPathfinder.CloseTask(mytask.source, mytask.target);
+			if (source != null)	mytask=cPathfinder.GetPathfinderObject(source);
+			}
+		mytask.status=-1;
 		local badtiles=AIList();
 		badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
 		badtiles.KeepValue(-realtask.stationID);
 		cBuilder.RailCleaner(badtiles); // remove all rail we've built
-		cPathfinder.CloseTask(head1, head2); // close the helper task
 		foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
-		return false;
 		}
 	else	{
-		// Trying to run an helper task
-		print("calling helper task");
-		local realtask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, head2));
-		if (realtask.retry)	{ DInfo("We have already call an helper task, abording",1,"cBuilder::BuildRoadRAIL"); return false; }
-		// create the helper task
-		local newtarget=[path.GetTile(), prev];
+		walked.pop(); // dismiss last one
+		prev=walked.pop();
+		prevprev=walked.pop();
+		local alist=AIList();
+		alist.AddItem(prev, 0);
+		cBuilder.RailCleaner(alist);
+		local newtarget=[prev, prevprev];
+		DInfo("Pathfinder is calling an helper task",1,"cBuilder::BuildRoadRAIL");
+		// Create the helper task
 		local dummy= cPathfinder.GetStatus(head1, newtarget, useEntry, stationID);
 		dummy=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, newtarget));
 		dummy.r_source=head1;
-		dummy.t_target=head2;
-		realtask.retry=true;
-		realtask.status=0;
+		dummy.r_target=head2;
+		mytask.status=3; // wait for subtask end
 		return false;
 		}
 	}
-else	{
+else	{ // we cannot get smallerror==-1 because on -1 it always return, so limit to 0 or -2
 	// let's see if we success or an helper task has succeed for us
-	if (mytask.r_source != null && mytask.r_target != null)
+	if (source != null)
 		{
-		local src=mytask.r_source;
-		local dst=mytask.r_target;
-		cPathfinder.CloseTask(head1, head2);
-		mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, dst)); // reassign to the original task
+		source=cPathfinder.GetUID(mytask.source, mytask.target);
+		while (source != null)
+			{ // remove all sub-tasks
+			DInfo("Pathfinder helper task "+source+" succeed !",1,"cBuilder::BuildRoadRail");
+			source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
+			cPathfinder.CloseTask(mytask.source, mytask.target);
+			if (source != null)	mytask=cPathfinder.GetPathfinderObject(source);
+			}
 		}
+	DInfo("Pathfinder task "+mytask.UID+" succeed !",1,"cBuilder::BuildRoadRail");
 	mytask.status=2;
 	local bltiles=AIList();
 	bltiles.AddList(cTileTools.TilesBlackList);
@@ -362,42 +395,7 @@ else	{
 	return true;
 	}
 }
-/*
-function cBuilder::RetryRail(prevprev, pp1, pp2, pp3, head1, useEntry, stationID)
-{
-	if (pp1 == null) return false;
-	local head2 = [null, null];
-	local tiles = [pp3, pp2, pp1, prevprev];
-	foreach (idx, tile in tiles) {
-		if (tile != null) {
-			head2[1] = tile;
-			break;
-		}
-	}
-	tiles = [prevprev, pp1, pp2, pp3]
-	foreach (idx, tile in tiles) {
-		if (tile == head2[1]) {
-			break;
-		} else {
-			if (AIRail.IsLevelCrossingTile(tile)) {
-				local track = AIRail.GetRailTracks(tile);
-				if (!AIRail.RemoveRailTrack(tile, track)) {
-					local counter = 0;
-					AIController.Sleep(75);
-					while (!AIRail.RemoveRailTrack(tile, track) && counter < 3) {
-						counter++;
-						AIController.Sleep(75);
-					}
-				}
-			} else {
-				cTileTools.DemolishTile(tile);
-			}
-			head2[0] = tile;
-		}
-	}
-	if (cBuilder.BuildRoadRAIL(head2, head1, useEntry, stationID)) return true; else return false;
-}
-*/
+
 function cBuilder::ReportHole(start, end, waserror)
 {
 	if (!waserror) {
@@ -543,10 +541,10 @@ do	{
 			if (mainowner==-1)
 				{
 				DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos+" srclink="+srclink+" dstlink="+dstlink,2,"CreateStationConnection");
-				PutSign(dstpos,"D");
+				/*PutSign(dstpos,"D");
 				PutSign(dstlink,"d");
 				PutSign(srcpos,"S");
-				PutSign(srclink,"s");
+				PutSign(srclink,"s");*/
 				if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], srcUseEntry, srcStation.stationID))
 						return false;
 					else	retry=false;
@@ -1197,28 +1195,24 @@ if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTa
 		srcpos=srclink+cStation.GetRelativeTileBackward(road.source.stationID, road.source_RailEntry);
 		dstpos=dstlink+cStation.GetRelativeTileBackward(road.target.stationID, road.target_RailEntry);
 		DInfo("Calling rail pathfinder: srcpos="+srcpos+" srclink="+" dstpos="+dstpos+" dstlink="+dstlink,2,"RailStationGrow");
-		PutSign(dstpos,"D");
+		/*PutSign(dstpos,"D");
 		PutSign(dstlink,"d");
 		PutSign(srcpos,"S");
-		PutSign(srclink,"s");
+		PutSign(srclink,"s");*/
 		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target.stationID))
 			{
 			if (INSTANCE.builder.CriticalError)
 				{
 				DError("We cannot build the alternate track for that station ",1,"RailStationGrow");
-				if (useEntry)
-					{
-					cStation.RailStationCloseEntry(road.target_stationID);
-					cStation.RailStationCloseExit(road.source_stationID);
-					}
-				else	{
-					cStation.RailStationCloseEntry(road.source_stationID);
-					cStation.RailStationCloseExit(road.target_stationID);
-					cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
-					}
+				closeIt=true;
+				if (useEntry)	cStation.RailStationCloseExit(road.source_stationID);
+						else	cStation.RailStationCloseExit(road.target_stationID);
+				cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
+				closeIt=true;
 				INSTANCE.builder.CriticalError=false;
 				}
-			return false; // lack money, still pathfinding... just wait to retry later
+			else	return false;
+			// lack money, still pathfinding... just wait to retry later nothing to do
 			}
 		else	{ road.secondary_RailLink=true; cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]); }
 		}
@@ -1227,8 +1221,17 @@ if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTa
 if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker >2 || trainExitDropper+trainExitTaker > 2)) // route must be valid + alternate rail is built
 	{
 	DInfo("--- Phase7: building signals",1,"RailStationGrow");
+	local vehlist=AIVehicleList_Station(staID);
+	local vehlistRestart=AIList();
+	vehlistRestart.AddList(vehlist);
+	vehlist.Valuate(AIVehicle.GetState);
+	vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
+	if (!vehlist.IsEmpty())
+		{ // erf, easy solve, not really nice, but this won't prevent our work on signal (that could stuck a train else)
+		foreach (vehicle, dummy in vehlist)	INSTANCE.carrier.VehicleSendToDepot(vehicle,DepotAction.SIGNALUPGRADE)
+		return false;
+		}
 	local srcpos, dstpos = null;
-	local unstuck_need=false;
 	if (road.source_RailEntry)
 			srcpos=road.source.locations.GetValue(1);
 		else	srcpos=road.source.locations.GetValue(3);
@@ -1245,7 +1248,6 @@ if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker 
 			cStation.RailStationSetPrimarySignalBuilt(road.source.stationID);
 			}
 		else	{ DInfo("... not all signals were built",2,"RailStationGrow"); }
-		unstuck_need=true;
 		}
 	print("SIGNAL stop");
 	ClearSignsALL();
@@ -1264,16 +1266,13 @@ if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker 
 			cStation.RailStationSetSecondarySignalBuilt(road.target.stationID);
 			}
 		else	{ DInfo("... not all signals were built",2,"RailStationGrow"); }
-		unstuck_need=true;
 		}
 	print("SIGNAL stop");
-	ClearSignsALL();
-	if (unstuck_need)
+	foreach (vehicle, dummy in vehlistRestart)
 		{
-		local vehlist=AIVehicleList_Station(road.source_stationID);
-		local seclist=AIVehicleList_Station(road.target_stationID);
-		vehlist.AddList(seclist);
-		foreach (vehicle, dummy in vehlist)	AIVehicle.SendVehicleToDepotForServicing(vehicle);
+		INSTANCE.carrier.VehicleOrdersReset(vehicle);
+		INSTANCE.carrier.VehicleBuildOrders(AIVehicle.GetGroupID(vehicle),false);
+		AIVehicle.StartStopVehicle(vehicle);
 		}
 	}
 
@@ -1305,25 +1304,28 @@ for (local hh=0; hh < 2; hh++)
 		}
 	if (!AIRail.IsRailDepotTile(depot_checker))	depot_checker=-1;
 								else	continue;
-	local topLeftPlatform=thatstation.locations.GetValue(20);
-	local topRightPlatform=thatstation.locations.GetValue(21);
-	local topRL=cStation.GetRelativeCrossingPoint(topLeftPlatform, stationside);
-	local topRR=cStation.GetRelativeCrossingPoint(topRightPlatform, stationside);
-	local depotlocations=[topRL+forwardTileOf, topRR+forwardTileOf, topRL+rightTileOf, topRL+leftTileOf, topRR+rightTileOf, topRR+leftTileOf];
-	local depotfront=[topRL, topRL, topRR, topRR, topRL, topRR];
-	DInfo("Building station depot",1,"RailStationGrow");
-	for (local h=0; h < depotlocations.len(); h++)
+	if (depot_checker==-1)
 		{
-		cTileTools.TerraformLevelTiles(crossing,depotlocations[h]);
-		PutSign(depotlocations[h],"D");
-		if (cTileTools.CanUseTile(depotlocations[h],staID))
+		local topLeftPlatform=thatstation.locations.GetValue(20);
+		local topRightPlatform=thatstation.locations.GetValue(21);
+		local topRL=cStation.GetRelativeCrossingPoint(topLeftPlatform, stationside);
+		local topRR=cStation.GetRelativeCrossingPoint(topRightPlatform, stationside);
+		local depotlocations=[topRL+forwardTileOf, topRR+forwardTileOf, topRL+rightTileOf, topRL+leftTileOf, topRR+rightTileOf, topRR+leftTileOf, topRL+leftTileOf+leftTileOf, topRR+rightTileOf+rightTileOf];
+		local depotfront=[topRL, topRL, topRR, topRR, topRL, topRR, topRL+leftTileOf, topRR+rightTileOf];
+		DInfo("Building station depot",1,"RailStationGrow");
+		for (local h=0; h < depotlocations.len(); h++)
 			{
-			cTileTools.DemolishTile(depotlocations[h]);
-			removedepot=AIRail.BuildRailDepot(depotlocations[h], depotfront[h]);
-			}
-		local depotFront=AIRail.GetRailDepotFrontTile(depotlocations[h]);
-		if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(depotlocations[h],depotFront,true);
-		if (success)	{
+			cTileTools.TerraformLevelTiles(crossing,depotlocations[h]);
+			PutSign(depotlocations[h],"D");
+			if (cTileTools.CanUseTile(depotlocations[h],staID))
+				{
+				cTileTools.DemolishTile(depotlocations[h]);
+				removedepot=AIRail.BuildRailDepot(depotlocations[h], depotfront[h]);
+				}
+			local depotFront=AIRail.GetRailDepotFrontTile(depotlocations[h]);
+			if (AIMap.IsValidTile(depotFront))	success=cBuilder.RailConnectorSolver(depotlocations[h],depotFront,true);
+			if (success)
+					{
 					DInfo("We built depot at "+depotlocations[h],1,"RailStationGrow");
 					thatstation.RailStationClaimTile(depotlocations[h],stationside);
 					if (stationside)	thatstation.depot=depotlocations[h];
@@ -1331,9 +1333,9 @@ for (local hh=0; hh < 2; hh++)
 					success=true;
 					break;
 					}
+			}
 		}
-	}
-
+	} // for loop
 if (closeIt)
 	{ // something went wrong, the station entry or exit is now dead
 	if (useEntry)
@@ -1429,11 +1431,10 @@ return AIRail.BuildRailTrack(pos,railneed);
 
 function cBuilder::RailCleaner(targetTile)
 // clean the tile by removing rails/depot/station... we found there
-// targetTile : the tile to remove or an AIList of tiles to remove
+// targetTile : an AIList of tiles to remove
 {
 local many=AIList();
-if (targetTile instanceof ::AIList)	many.AddList(targetTile);
-					else	many.AddItem(targetTile,0);
+many.AddList(targetTile);
 if (many.IsEmpty())	return true;
 local voisin=[AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0)]; // SE, NW, SW, NE
 local trackMap=AIList();

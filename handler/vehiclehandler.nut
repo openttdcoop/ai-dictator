@@ -233,6 +233,8 @@ switch (reason)
 	case	DepotAction.SELL:
 		rr="to be sold.";
 	break;
+	case	DepotAction.LINEUPGRADE:
+	case	DepotAction.SIGNALUPGRADE:
 	case	DepotAction.UPGRADE:
 		rr="to be upgrade.";
 	break;
@@ -629,6 +631,14 @@ foreach (i, dummy in tlist)
 		case	DepotAction.ADDWAGON:
 			DInfo("Vehicle "+name+" is waiting at depot to get "+numwagon+" wagons",2,"cCarrier::VehicleIsWaitingInDepot");
 			INSTANCE.carrier.AddWagon(uid, numwagon);
+		break;
+		case	DepotAction.LINEUPGRADE:
+			//TODO: upgrade the train line
+		break;
+		case	DepotAction.SIGNALUPGRADE:
+			local uid=INSTANCE.carrier.VehicleFindRouteIndex(i);
+			if (uid == null)	return false;
+			cRoute.CanAddTrainToStation(uid); // don't care result, it's just to let the station build its signals
 		break;
 		}
 	if (INSTANCE.carrier.ToDepotList.IsEmpty())	INSTANCE.carrier.vehnextprice=0;

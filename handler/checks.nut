@@ -333,7 +333,7 @@ foreach (stations, dummy in truckstation)
 					DInfo("Pushing vehicle "+vehicle+"-"+cCarrier.VehicleGetName(vehicle)+" out of the station to free space for unloaders",1,"RoadStationsBalancing");
 					AIVehicle.ReverseVehicle(vehicle);
 					AIVehicle.SendVehicleToDepotForServicing(vehicle);
-					return; // stop checks as droppers are waiting because station is busy with getters
+					continue; // stop checks as droppers are waiting because station is busy with getters
 					}
 				}
 			}

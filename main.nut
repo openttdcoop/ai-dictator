@@ -35,6 +35,7 @@ enum DepotAction {
 	CRAZY=3,		// to get a big amount of money
 	REMOVEROUTE=4,		// to remove a route
 	LINEUPGRADE=5,	// to upgrade a train line to a newer railtype
+	SIGNALUPGRADE=6,	// when a station need build signal on rails
 	ADDWAGON=1000	// to add a train or wagons to a route
 }
 
