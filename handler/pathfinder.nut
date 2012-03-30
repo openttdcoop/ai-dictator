@@ -67,7 +67,7 @@ function cPathfinder::InfoSign(msg)
 // Update the sign and recreate it if need
 	{
 	if (AISign.IsValidSign(this.signHandler))	AISign.SetName(this.signHandler, msg);
-							else	this.signHandler=AISign.BuildSign(this.source[0],msg);
+							else	this.signHandler=AISign.BuildSign(this.target[1],msg);
 	}
 
 function cPathfinder::AdvanceTask(UID)
@@ -143,7 +143,7 @@ function cPathfinder::CloseTask(source, target)
 		{
 		delete cPathfinder.database[pftask.UID];
 		AISign.RemoveSign(pftask.signHandler);
-		DInfo("Pathfinder task "+pftask.UID+" closed.",1,"cPathfinder::AdvanceTask");
+		DInfo("Pathfinder task "+pftask.UID+" closed.",1,"cPathfinder::CloseTask");
 		}
 }
 

@@ -24,6 +24,7 @@ function ClearSignsALL()
 // this just clear any signs we can
 {
 if (!INSTANCE.debug)	return;
+if (DictatorAI.GetSetting("debug") < 3) return;
 local sweeper=AISignList();
 //DInfo("Removing Signs ! "+sweeper.Count(),2,"ClearSignsALL");
 AIController.Sleep(20);

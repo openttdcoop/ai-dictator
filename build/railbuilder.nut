@@ -227,7 +227,7 @@ switch (status)
 	case	2:	// succeed
 	return true;
 	case	3:	// waiting child to end
-	return true;
+	return false;
 	}
 // 1 is non covered as it's end of pathfinding, and should call us to build
 INSTANCE.bank.RaiseFundsBigTime();
@@ -345,9 +345,13 @@ if (smallerror == -2)
 			{ // remove all sub-tasks
 			DInfo("Pathfinder helper task "+source+" failure !",1,"cBuilder::BuildRoadRail");
 			source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
-			cPathfinder.CloseTask(mytask.source, mytask.target);
-			if (source != null)	mytask=cPathfinder.GetPathfinderObject(source);
+			if (source != null)
+				{
+				cPathfinder.CloseTask(mytask.source, mytask.target);
+				mytask=cPathfinder.GetPathfinderObject(source);
+				}
 			}
+		DInfo("Pathfinder task "+mytask.UID+" failure !",1,"cBuilder::BuildRoadRail");
 		mytask.status=-1;
 		local badtiles=AIList();
 		badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
@@ -382,8 +386,13 @@ else	{ // we cannot get smallerror==-1 because on -1 it always return, so limit 
 			{ // remove all sub-tasks
 			DInfo("Pathfinder helper task "+source+" succeed !",1,"cBuilder::BuildRoadRail");
 			source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
-			cPathfinder.CloseTask(mytask.source, mytask.target);
-			if (source != null)	mytask=cPathfinder.GetPathfinderObject(source);
+print("source="+source);
+			if (source != null)
+				{
+				//DInfo("Pathfinder helper task "+source+" succeed !",1,"cBuilder::BuildRoadRail");
+				cPathfinder.CloseTask(mytask.source, mytask.target);
+				mytask=cPathfinder.GetPathfinderObject(source);
+				}
 			}
 		}
 	DInfo("Pathfinder task "+mytask.UID+" succeed !",1,"cBuilder::BuildRoadRail");
