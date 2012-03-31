@@ -193,7 +193,6 @@ bigairportObj.UpdateStationInfos();
 local cargowaiting=bigairportObj.cargo_produce.GetValue(passengerID);
 if ((cargowaiting-totalcapacity) > 0)	vehneed=cargowaiting / onecapacity;
 local overcharge=AITown.GetLastMonthProduction(AITile.GetClosestTown(bigairportlocation), passengerID) / 2;
-print("overcharg="+overcharge);
 if (vehneed==0 && AIStation.GetCargoRating(bigairportID, passengerID)<45 && totalcapacity < overcharge)
 	{
 	vehneed=1;

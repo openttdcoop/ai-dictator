@@ -89,16 +89,28 @@ while (!confirm)
 		DWarn("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(engineID),1,"cCarrier::CreateRoadVehicle");
 		return -2;
 		}
-	INSTANCE.NeedDelay(60);
+	//INSTANCE.NeedDelay(60);
 	if (!confirm && AIVehicle.IsValidVehicle(vehID))	cCarrier.VehicleSell(vehID,false);
 	AIController.Sleep(1);
 	}
 
 local firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 local secondorderflag = firstorderflag;
-if (!road.twoway)	firstorderflag+=AIOrder.AIOF_FULL_LOAD_ANY;
+if (!road.twoway)	{ firstorderflag+=AIOrder.AIOF_FULL_LOAD_ANY; secondorderflag=AIOrder.AIOF_NO_LOAD; }
 AIGroup.MoveVehicle(road.groupID, vehID);
-AIOrder.AppendOrder(vehID, srcplace, firstorderflag);
+if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
+	{ // detect IsArticulated bug
+	DInfo("Vehicle "+cCarrier.VehicleGetName(vehID)+" refuse order !",1,"cCarrier::CreateRoadVehicle");
+	local checkstation=AIStation.GetStationID(srcplace);
+	local checkengine=AIVehicle.GetEngineType(vehID);
+	local checktype=AIEngine.GetVehicleType(checkengine);
+	if (AIStation.IsValidStation(checkstation) && (AIStation.HasStationType(checkstation, AIStation.STATION_BUS_STOP) || AIStation.HasStationType(checkstation, AIStation.STATION_TRUCK_STOP)))
+		{
+		cEngine.BlacklistTruck(checkengine);
+		cCarrier.VehicleSell(vehID, false);
+		}
+	return false;
+	}
 AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(vehID);
 if (!AIVehicle.StartStopVehicle(vehID)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateRoadVehicle"); }

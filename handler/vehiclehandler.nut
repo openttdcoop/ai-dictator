@@ -489,7 +489,7 @@ local vehvalue=AIVehicle.GetCurrentValue(veh);
 local vehtype=AIVehicle.GetVehicleType(veh);
 INSTANCE.carrier.vehnextprice-=vehvalue;
 if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
-cTrain.DeleteVehicle(veh);	// must be call before selling the vehicle
+if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_RAIL)	cTrain.DeleteVehicle(veh);	// must be call before selling the vehicle
 AIVehicle.SellVehicle(veh);
 if (road == null) return;
 road.RouteUpdateVehicle();
@@ -519,7 +519,6 @@ function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 // Send & sell all vehicles from that route
 {
 local road=INSTANCE.route.GetRouteObject(idx);
-print("Sending group undoable, road="+road+" idx="+idx);
 if (road == null)	return;
 local vehlist=null;
 if (road.groupID != null)
@@ -566,7 +565,6 @@ if (road.groupID != null)
 	}
 }
 
-
 function cCarrier::VehicleIsWaitingInDepot(onlydelete=false)
 // this function checks our depots and sell vehicle in it
 // if onlydelete set to true, we only remove vehicle, no upgrade/replace...
@@ -582,6 +580,7 @@ foreach (i, dummy in tlist)
 	local numwagon=0;
 	local uid=0;
 	local name=INSTANCE.carrier.VehicleGetName(i);
+	INSTANCE.carrier.VehicleOrdersReset(i);
 	if (INSTANCE.carrier.ToDepotList.HasItem(i))
 		{
 		reason=INSTANCE.carrier.ToDepotList.GetValue(i);
@@ -601,8 +600,8 @@ foreach (i, dummy in tlist)
 		if (AIVehicle.GetVehicleType(i)==AIVehicle.VT_RAIL)
 			{
 			DInfo("I don't know the reason why "+name+" is at depot, restarting it",1,"VehicleWaitingInDepot");
+			cCarrier.TrainSetOrders(i);
 			if (AIVehicle.StartStopVehicle(i))	continue;
-			cCarrier.VehicleBuildOrders(AIVehicle.GetGroupID(i), false);
 			}
 		else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"VehicleWaitingInDepot");
 		}

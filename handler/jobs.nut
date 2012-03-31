@@ -366,6 +366,7 @@ function cJobs::EstimateCost()
 							engineprice+=cEngine.GetPrice(engine);
 							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
 							if (rtype==-1)	rtype=null;
+print("select train as job "+cEngine.GetName(engine));
 							}
 			money+=engineprice;
 			money+=(8*clean);
@@ -659,9 +660,6 @@ function cJobs::UpdateDoableJobs()
 		// disable as we lack money
 		if (doable)	myjob.jobDoable.AddItem(id, myjob.ranking);
 		}
-print("top train job cost="+cJobs.CostTopJobs[AIVehicle.VT_RAIL]);
-print("top air job cost="+cJobs.CostTopJobs[AIVehicle.VT_AIR]);
-print("top road job cost="+cJobs.CostTopJobs[AIVehicle.VT_ROAD]);
 	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
 			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop

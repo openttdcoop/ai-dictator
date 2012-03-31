@@ -181,10 +181,13 @@ cargo_list.KeepAboveValue(7); // doc says below 8 means no acceptance
 return cargo_list;
 }
 
-function cBuilder::CheckRouteStationStatus()
+function cBuilder::CheckRouteStationStatus(onlythisone=null)
 // This check that our routes are still working, a dead station might prevent us to keep the job done
+// pass a stationID to onlythisone to only check that station ID
 {
 local allstations=AIStationList(AIStation.STATION_ANY);
+if (onlythisone != null)	allstations.KeepValue(onlythisone);
+print("BREAK check route :");
 foreach (stationID, dummy in allstations)
 	{
 	local stobj=cStation.GetStationObject(stationID);
@@ -199,7 +202,7 @@ foreach (stationID, dummy in allstations)
 			{
 			if (stobj.IsCargoProduce(cargoID))	{ stobj.cargo_produce.AddItem(cargoID, 0); }// rediscover cargo
 			else	{
-				DWarn("Station "+cStation.StationGetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRoadStationStatus");
+				DWarn("Station "+cStation.StationGetName(stationID)+" no longer produce "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRouteStationStatus");
 				road.RouteIsNotDoable();
 				continue;
 				}
@@ -209,7 +212,7 @@ foreach (stationID, dummy in allstations)
 			{
 			if (stobj.IsCargoAccept(cargoID))	stobj.cargo_accept.AddItem(cargoID, 0); // rediscover cargo
 			else	{
-				DWarn("Station "+cStation.StationGetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRoadStationStatus");
+				DWarn("Station "+cStation.StationGetName(stationID)+" no longer accept "+AICargo.GetCargoLabel(road.cargoID),0,"CheckRouteStationStatus");
 				road.RouteIsNotDoable();
 				}
 			}
@@ -267,6 +270,7 @@ foreach (stations, dummy in truckstation)
 			}
 		}
 	DInfo("         infos: produce="+station_produce_cargo.Count()+" accept="+station_accept_cargo.Count(),1,"RoadStationsBalancing");
+	if (station_produce_cargo.Count()==0 && station_accept_cargo.Count()==0)	{ cBuilder.CheckRouteStationStatus(stations); continue; }
 	// pfff, now we know what cargo that station can use (accept or produce)
 	station_produce_cargo.Valuate(AICargo.GetTownEffect);
 	station_produce_cargo.RemoveValue(AICargo.TE_PASSENGERS);

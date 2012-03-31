@@ -91,7 +91,7 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.AI_ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, I don't know what to do with that !",0,"HandleEvents");
+			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, not a good news",0,"HandleEvents");
 			if (!AIVehicle.IsValidVehicle(vehicle)) return;
 			INSTANCE.carrier.VehicleMaintenance_Orders(vehicle);
 			local rcheck=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);

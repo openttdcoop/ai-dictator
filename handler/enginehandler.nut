@@ -14,7 +14,7 @@
 class cEngine extends AIEngine
 {
 static	enginedatabase= {};
-//static	EngineRabbitList=AIList();	// list of engines that should be test: item=EUID, value=unused if in list we have a test vehicle going
+static	TruckBlackList=AIList();	// list of truck/bus engines we have blacklist to avoid bug with IsArticalted
 static	BestEngineList=AIList();	// list of best engine for a couple engine/cargos, item=EUID, value=best engineID
 
 static	function GetEngineObject(engineID)
@@ -147,7 +147,7 @@ function cEngine::Incompatible(eng1, eng2)
 	local eng2O=cEngine.Load(eng2);
 	eng1O.incompatible.AddItem(eng2,eng1);
 	eng2O.incompatible.AddItem(eng1,eng2);
-	DInfo("Setting "+eng1O.name+" incompatible with "+eng2O.name,2,"cEngine::Incompatible");
+	DInfo("Setting "+eng1O.name+":"+eng1O.engineID+" incompatible with "+eng2O.name+":"+eng2O.engineID,2,"cEngine::Incompatible");
 	}
 
 function cEngine::SetRefitCost(engine, cargo, cost, vlen)
@@ -210,6 +210,10 @@ function cEngine::CanPullCargo(engineID, cargoID)
 	wagonlist.Valuate(cEngine.IsCompatible, engineID);
 	wagonlist.KeepValue(1);
 	wagonlist.Valuate(AIEngine.CanRefitCargo, cargoID);
+	wagonlist.KeepValue(1);
+	wagonlist.Valuate(AIEngine.IsBuildable);
+	wagonlist.KeepValue(1);
+	wagonlist.Valuate(AIEngine.CanRunOnRail, AIEngine.GetRailType(engineID));
 	wagonlist.KeepValue(1);
 	return (!wagonlist.IsEmpty());
 	}
@@ -336,14 +340,14 @@ function cEngine::IsVehicleAtTop(vehID)
 
 function cEngine::IsEngineBlacklist(engineID)
 // return true if the engine is blacklist
-// we use that as a valuator to remove bad engine
-// For now only the ikarus set is know to be bad because lying to noai with IsArticulated answer
 	{
-	local name=AIEngine.GetName(engineID);
-	if (name.find("Ikarus") != null)	return true;
-	// ikarus 180, ikarus 417, ikarus 280, ikarus 417GG, ikarus 293...
-	if (name.find("E94G") != null)	return true;
-	// the EAG E94G
-	return false;
+	return (cEngine.TruckBlackList.HasItem(engineID));
 	}
 
+function cEngine::BlacklistTruck(engineID)
+// Add a truck/bus as a blacklist engine, handle the IsArticlatedBug
+	{
+	if (cEngine.IsEngineBlacklist(engineID))	return;
+	cEngine.TruckBlackList.AddItem(engineID,0);
+	DInfo("Adding "+cEngine.GetName(engineID)+" to blacklist engine list",1,"cEngine::BlacklistTruck");
+	}

@@ -379,30 +379,5 @@ function LoadingGame()
 	foreach (townID, dummy in alltowns)
 		if (AITown.GetRating(townID, AICompany.COMPANY_SELF) != AITown.TOWN_RATING_NONE)	cJobs.statueTown.AddItem(townID,0);
 	INSTANCE.builder.CheckRouteStationStatus();
-/*
-	local railgroup=AIGroupList();
-	railgroup.Valuate(AIGroup.GetVehicleType);
-print("railgroup size="+railgroup.Count());
-	railgroup.KeepValue(AIVehicle.VT_RAIL);
-print("railgroup size="+railgroup.Count());
-foreach (gid, dummy in railgroup)
-	{
-	local uid=cRoute.GroupIndexer.GetValue(gid);
-	local thatroute=cRoute.GetRouteObject(uid);
-//	thatroute.RouteCheckEntry();
-	cBuilder.DumpRoute(uid);
-//		PutSign(thatroute.source.depot,"SD");
-//		PutSign(thatroute.target.depot,"TD");
-	local sdepot=cRoute.GetDepot(uid, 1);
-	local ddepot=cRoute.GetDepot(uid, 2);
-	if (sdepot != -1 && ddepot != -1)
-		{
-		PutSign(sdepot,"SD");
-		PutSign(ddepot,"TD");
-		print("checking depot to depot");
-		print("result="+cBuilder.RoadRunner(sdepot, ddepot, AIVehicle.VT_RAIL)); ClearSignsALL();
-		}
-	else			print("bad depot");
-	}*/
-cBuilder.BridgeUpgrader();
+	cBuilder.BridgeUpgrader();
 }

@@ -1023,7 +1023,6 @@ local ted=thatstation.locations.GetValue(7);
 local txd=thatstation.locations.GetValue(8);
 local tet=thatstation.locations.GetValue(9);
 local txt=thatstation.locations.GetValue(10);
-print("before remove: ted="+ted+" txd="+txd+" tet="+tet+" txt="+txt);
 if (taker)
 	{
 	if (useEntry)	tet-=1;
@@ -1042,6 +1041,5 @@ thatstation.locations.SetValue(8, txd);
 thatstation.locations.SetValue(9, tet);
 thatstation.locations.SetValue(10, txt);
 DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" remove train: taker="+taker+" useEntry="+useEntry,2,"cStation::StationRemoveTrain");
-print("after remove: ted="+ted+" txd="+txd+" tet="+tet+" txt="+txt);
 }
 

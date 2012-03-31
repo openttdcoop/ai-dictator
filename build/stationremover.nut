@@ -58,7 +58,6 @@ if (exist)
 								else	{ DInfo("Removing depot link to station "+wasnamed,0,"cBuilder::DeleteStation"); }
 	cStation.DeleteStation(stationid);
 	}
-print("STOP");
 return true;
 }
 

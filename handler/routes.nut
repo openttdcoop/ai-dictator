@@ -408,13 +408,12 @@ function cRoute::RouteIsNotDoable()
 	cJobs.JobIsNotDoable(this.UID);
 	this.isWorking=false;
 	this.RouteCheckEntry();
-	if (!INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ print("send return false"); this.RouteUndoableFreeOfVehicle(); }
+	if (!INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ this.RouteUndoableFreeOfVehicle(); }
 	}
 
 function cRoute::RouteUndoableFreeOfVehicle()
 // This is the last step of marking a route undoable
 	{
-print("undoable step2");
 	if (this.UID < 2)	return; // don't touch virtual routes
 	local stasrc=this.source_stationID;
 	local stadst=this.target_stationID;
@@ -481,7 +480,6 @@ function cRoute::GetDepot(uid, source=0)
 // per default return any valid depot we could found, if source=1 or 2 return an error if the query depot doesn't exist
 // return -1 on errors
 	{
-print("route depot switch source="+source);
 	local road=cRoute.GetRouteObject(uid);
 	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::GetDepot"); return -1; }
 	local sdepot=-1;
@@ -506,19 +504,15 @@ print("route depot switch source="+source);
 						else	{ one=sx; three=se; }
 		if (road.target_RailEntry)	{ two=de; four=dx; }
 						else	{ two=dx; four=de; }
-print("one="+one+" two="+two+" three="+three+" four="+four);
 		if (source==0 || source==1)
 			{
-print("1 check");
 			if (cStation.IsDepot(one))	return one;
 			if (cStation.IsDepot(three))	return three;
 			}
 		if (source==0 || source==2)
 			{
-print("2 check");
 			if (cStation.IsDepot(two))	return two;
 			if (cStation.IsDepot(four))	return four;
-print("depot target="+cStation.IsDepot(two));
 			}
 		}
 	else	{

@@ -90,7 +90,6 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 if (groupID == null)	return false;
 local vehlist=AIVehicleList_Group(groupID);
 if (vehlist.IsEmpty()) return false;
-
 vehlist.Valuate(AIVehicle.GetState);
 vehlist.RemoveValue(AIVehicle.VS_STOPPED);
 vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
@@ -352,7 +351,7 @@ if (road==null)	return false;
 DInfo("Append orders to "+cCarrier.VehicleGetName(trainID),2,"cCarrier::TrainSetOrder");
 local firstorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
 local secondorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-if (!road.twoway)	firstorder+=AIOrder.AIOF_FULL_LOAD_ANY;
+if (!road.twoway)	{ firstorder+=AIOrder.AIOF_FULL_LOAD_ANY; secondorder=AIOrder.AIOF_NO_LOAD; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), firstorder))
 	{ DError(cCarrier.VehicleGetName(trainID)+" refuse first order",2,"cCarrier::TrainSetOrder"); return false; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), secondorder))

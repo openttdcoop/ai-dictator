@@ -110,12 +110,11 @@ function cTrain::DeleteVehicle(vehID)
 		if (AIVehicle.IsValidVehicle(vehID))	atrain=cTrain.Load(vehID); // if invalid cTrain.Load would call DeleteVehicle and infinite loop
 								else	{ atrain=cTrain(); atrain.vehicleID=vehID; }
 		DInfo("Removing train "+cCarrier.VehicleGetName(vehID)+" from database",2,"cTrain::DeleteVehicle");
-print("trainbit="+atrain.stationbit);
+print("station1="+atrain.srcStationID+" stationdest="+atrain.dstStationID);
 		local taker=((atrain.stationbit & 1) == 1);
-		cStation.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID);
+		if (atrain.srcStationID != null)	cStation.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID);
 		taker=((atrain.stationbit & 2) == 2);
-print("taker bug?"+taker);
-		cStation.StationRemoveTrain(taker, atrain.dst_useEntry, atrain.dstStationID);
+		if (atrain.dstStationID != null)	cStation.StationRemoveTrain(taker, atrain.dst_useEntry, atrain.dstStationID);
 		delete cTrain.vehicledatabase[vehID];
 		}
 	}
