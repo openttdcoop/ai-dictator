@@ -425,7 +425,18 @@ do	{
 		local beforesize=cCarrier.GetNumberOfWagons(tID);
 		depotID=AIVehicle.GetLocation(tID);
 		INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
-		tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen);
+		if (numTrains > 1 || beforesize+wagonNeed < 5)	tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen);
+					else	{
+						local newwagon=4-beforesize;
+						tID=INSTANCE.carrier.AddNewTrain(uid, tID, newwagon, depotID, stationLen);
+						processTrains.push(-1);
+								DInfo("Starting "+cCarrier.VehicleGetName(tID)+"...",0,"cCarrier::AddWagon");
+		cTrain.SetDepotVisit(tID);
+		AIVehicle.StartStopVehicle(tID);
+INSTANCE.Sleep(40);
+			print("will add "+newwagon+" to this train and create another one with "+(wagonNeed-newwagon));
+						}
+print("BREAK");
 		if (AIVehicle.IsValidVehicle(tID))
 			{
 			local newwagon=cCarrier.GetNumberOfWagons(tID)-beforesize;
@@ -447,6 +458,7 @@ do	{
 			cTrain.Update(tID);
 			}
 		}
+print("BREAK "+processTrains.len()+" giveup="+giveup);
 	} while (processTrains.len()!=0 && !giveup);
 //vehlist=AIVehicleList_DefaultGroup(AIVehicle.VT_RAIL);
 //foreach (veh, dummy in vehlist)	AIGroup.MoveVehicle(road.groupID, veh); // failure because out of money, but the loco was create, in default group
