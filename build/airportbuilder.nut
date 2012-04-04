@@ -262,11 +262,17 @@ if (!helipadonly)
 			{
 			DInfo("Found a flat area to try at "+newTile,1,"BuildAirStation");
 			PutSign(newTile,"*");
-			if (airportUpgrade && !oldAirport_Remove)
+			for (local tt=0; tt < 5; tt++)
 				{
-				oldAirport_Remove=AIAirport.RemoveAirport(oldAirport_Location);
-				DInfo("Removing old airport : "+oldAirport_ID,1,"BuildAirStation");
+				if (airportUpgrade && !oldAirport_Remove)
+					{
+					oldAirport_Remove=AIAirport.RemoveAirport(oldAirport_Location);
+					DInfo("Removing old airport : "+oldAirport_ID,1,"BuildAirStation");
+					if (oldAirport_Remove)	{ break; }
+					}
+				INSTANCE.Sleep(5);
 				}
+			if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; break; }
 			success=cBuilder.AirportMaker(newTile, airporttype);
 			if (success)	{ newStation=newTile; break; }
 					else	if (cTileTools.terraformCost.HasItem(999995))
@@ -284,22 +290,30 @@ if (!helipadonly)
 		local solver=cBuilder.AirportBestPlace_EvaluateHill(solverlist, air_x, air_y);
 		if (solver.len() == 0)	{ DWarn("Nothing to do, we can't find any solve to build the airport",1,"BuildAirStation"); }
 					else	{
-						if (airportUpgrade && !oldAirport_Remove)
-									{
-									AIAirport.RemoveAirport(oldAirport_Location);
-									oldAirport_Remove=true;
-									DInfo("Removing old airport : "+oldAirport_ID,1,"BuildAirStation");
-									}
-						newStation=cBuilder.AirportBestPlace_BuildFromSolve(solver, air_x, air_y, airporttype);
-						if (cTileTools.terraformCost.HasItem(999999))
+						for (local tt=0; tt < 5; tt++)
 							{
-							needMoney=cTileTools.terraformCost.GetValue(999999);
-							cTileTools.terraformCost.RemoveItem(999999);
+							if (airportUpgrade && !oldAirport_Remove)
+								{
+								oldAirport_Remove=AIAirport.RemoveAirport(oldAirport_Location);
+								DInfo("Removing old airport : "+oldAirport_ID,1,"BuildAirStation");
+								if (oldAirport_Remove)	break;
+								}
+							INSTANCE.Sleep(5);
+							}
+						if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; }
+						if (!needTime)
+							{
+							newStation=cBuilder.AirportBestPlace_BuildFromSolve(solver, air_x, air_y, airporttype);
+							if (cTileTools.terraformCost.HasItem(999999))
+								{
+								needMoney=cTileTools.terraformCost.GetValue(999999);
+								cTileTools.terraformCost.RemoveItem(999999);
+								}
 							}
 						}
 		}
 	}
-success= (newStation != -1);
+success= (newStation != -1 && !needTime);
 if (helipadonly)	success=true;
 if (!success)
 	{
@@ -371,7 +385,7 @@ if (success)
 		return heliloc;
 		}
 	}
-if (!oldAirport_Remove)	INSTANCE.builder.CriticalError=true;
+if (!needTime)	INSTANCE.builder.CriticalError=true;
 return -1;
 }
 
@@ -502,6 +516,7 @@ function cBuilder::AirportAcceptBigPlanes(airportID)
 {
 if (airportID==null)	return false;
 local airport=cStation.GetStationObject(airportID);
+if (airport == null)	return false;
 if (!airport.specialType)	return false;
 if (airport.specialType == AIAirport.AT_SMALL)	return false;
 return true;

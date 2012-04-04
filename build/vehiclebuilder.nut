@@ -309,17 +309,12 @@ local power=AIEngine.GetPower(engine);
 local speed=AIEngine.GetMaxSpeed(engine);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
-//local extraprize=1;
-//if (!AIEngine.HasPowerOnRail(engine, rtype))	extraprize=2; // twice its price as we need switching railtype and it cost us
 if (power<=0)	return 9999999;
 if (speed<=0)	return 9999999;
 local eff=0;
 local rawidx=(power*speed) / 100;
 if (cheap)	eff=(100000+ (price+(lifetime*runningcost))) / rawidx.tointeger();
-//	else	eff=1000000-(rawidx);
-//eff=(100000+ ( (price*extraprize)+(lifetime*runningcost) ) ) / rawidx.tointeger();
 	else	eff=(200000 - rawidx);
-//print("bug eff="+eff+" cheap="+cheap+" rid="+rawidx+" spd="+speed+" pow="+power+" prize="+price);
 return eff;
 }
 

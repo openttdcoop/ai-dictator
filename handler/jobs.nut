@@ -130,8 +130,7 @@ function cJobs::Save()
 	}
 
 function cJobs::GetUID()
-// Create a UID for a job, if not in database, add the job to database
-// This also update JobIndexer and parentID
+// Create a UID and parentID for a job
 // Return the UID for that job
 	{
 	local uID=null;
@@ -366,7 +365,6 @@ function cJobs::EstimateCost()
 							engineprice+=cEngine.GetPrice(engine);
 							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
 							if (rtype==-1)	rtype=null;
-print("select train as job "+cEngine.GetName(engine));
 							}
 			money+=engineprice;
 			money+=(8*clean);
@@ -418,7 +416,6 @@ function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
 	if (road_type == AIVehicle.VT_AIR && cargo_id != cCargo.GetPassengerCargo()) return;
 	// only pass for aircraft, we will randomize if pass or mail later
 	if (cargo_id == cCargo.GetMailCargo()) return; // disable mail for anyone it sucks to do mail
-	// only do mail with trucks
 	if (!src_istown && AIIndustry.IsBuiltOnWater(srcID))
 		{
 		if (road_type!=AIVehicle.VT_AIR && road_type!=AIVehicle.VT_WATER) return;
@@ -623,6 +620,10 @@ function cJobs::UpdateDoableJobs()
 		if (doable && !myjob.source_istown)
 			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
 		// not doable if the industry no longer exist
+		if (doable && myjob.source_istown && DictatorAI.GetSetting("allowedjob") == 1)	doable=false;
+		// not doable if town jobs is not allow
+		if (doable && !myjob.source_istown && DictatorAI.GetSetting("allowedjob") == 2)	doable=false;
+		// not doable if industry jobs is not allow
 		if (doable)	{
 				switch (myjob.roadType)
 					{

@@ -187,7 +187,6 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 {
 local allstations=AIStationList(AIStation.STATION_ANY);
 if (onlythisone != null)	allstations.KeepValue(onlythisone);
-print("BREAK check route :");
 foreach (stationID, dummy in allstations)
 	{
 	local stobj=cStation.GetStationObject(stationID);
@@ -510,17 +509,14 @@ function cBuilder::BridgeUpgrader()
 			// only upgrade our or town bridge
 			if (thatbridge.owner == -1 && justOne)	continue;
 			// don't upgrade all bridges in one time, we're kind but we're not l'abbé Pierre!
-			local speederBridge=AIBridgeList_Length(thatbridge.length);
-			speederBridge.Valuate(AIBridge.GetMaxSpeed);
-			speederBridge.KeepAboveValue(neededSpeed); // Keep only ones faster
-			speederBridge.Sort(AIList.SORT_BY_VALUE, true);
+			local speederBridge=cBridge.GetCheapBridgeID(btype, thatbridge.length, false);
 			local oldbridge=AIBridge.GetName(thatbridge.bridgeID);
-			if (!speederBridge.IsEmpty())
+			if (speederBridge != -1)
 				{
-				local nbridge=AIBridge.GetName(speederBridge.Begin());
-				local nspeed=AIBridge.GetMaxSpeed(speederBridge.Begin());
-				INSTANCE.bank.RaiseFundsBy(AIBridge.GetPrice(speederBridge.Begin(),thatbridge.length));
-				if (AIBridge.BuildBridge(btype, speederBridge.Begin(), thatbridge.firstside, thatbridge.otherside))
+				local nbridge=AIBridge.GetName(speederBridge);
+				local nspeed=AIBridge.GetMaxSpeed(speederBridge);
+				INSTANCE.bank.RaiseFundsBy(AIBridge.GetPrice(speederBridge,thatbridge.length));
+				if (AIBridge.BuildBridge(btype, speederBridge, thatbridge.firstside, thatbridge.otherside))
 					{
 					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0,"cBuilder::BridgeUpgrader");
 					if (thatbridge.owner==-1)	justOne=true;

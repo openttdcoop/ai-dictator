@@ -56,7 +56,7 @@ function cCarrier::ChooseRailCouple(cargo, rtype=null)
 // AIList() on error
 {
 local couple=AIList();
-local engine=ChooseRailEngine(rtype, cargo);
+local engine=ChooseRailEngine(rtype, cargo, true); // pickup a valid engine, even we can't build it
 AIController.Sleep(1);
 if (engine==null)	return AIList();
 if (rtype==null)	rtype=cCarrier.GetRailTypeNeedForEngine(engine);
@@ -110,11 +110,9 @@ if (!cheap)
 		local price=AIEngine.GetPrice(engID);
 		if (!cBanker.CanBuyThat(price))	vehlist.RemoveItem(engID);
 		}
-//foreach (engid, eff in vehlist)	print("name="+cEngine.GetName(engid)+" eff="+eff+" price="+AIEngine.GetPrice(engid));
 local veh = null;
 if (vehlist.IsEmpty())	DWarn("Cannot find a train engine for that rail type",1,"cCarrier::ChooseRailEngine");
 			else	veh=vehlist.Begin();
-//if (veh != null)	print("Selected train engine "+AIEngine.GetName(veh)+" speed:"+AIEngine.GetMaxSpeed(veh));
 return veh;
 }
 
@@ -211,7 +209,6 @@ local locotype=null;
 if (trainID==null)
 	{
 	locotype=INSTANCE.carrier.ChooseRailEngine(road.source.specialType, road.cargoID);
-print("locotype="+locotype+" name="+AIEngine.GetName(locotype));
 	if (locotype==null)	return -1;
 	}
 else	locotype=AIVehicle.GetEngineType(trainID);
@@ -395,6 +392,12 @@ do	{
 			DInfo("Cannot add any trains anymore as one of the station cannot handle one more",1,"cCarrier::AddWagon");
 			return true;
 			}
+		foreach (veh, dummy in vehlist)
+			if (cCarrier.ToDepotList.HasItem(veh) && cCarrier.ToDepotList.GetValue(veh) == DepotAction.SIGNALUPGRADE)
+				{
+				DInfo("Cannot add any trains while we're upgrading signals",1,"cCarrier::AddWagon");
+				return true;
+				}
 		DInfo("Adding a new engine to create a train",0,"cCarrier::AddWagon");
 		depotID=cRoute.GetDepot(uid); // because previous CanAddTrainToStation could have move it
 		local stop=false;

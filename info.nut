@@ -19,7 +19,7 @@
    function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
-   function GetVersion()       { return 155; }
+   function GetVersion()       { return 156; }
    function MinVersionToLoad() { return 1; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
@@ -49,6 +49,20 @@
 	});
 
     AddLabels("fairlevel", {_0 = "Lazy", _1 = "Opportunist", _2 = "Dictator"});
+
+    AddSetting({name = "allowedjob",
+	 description = "What tasks the AI can handle",
+	 min_value = 0,
+	 max_value = 2,
+	 easy_value = 0,
+	 medium_value = 0,
+	 hard_value = 0,
+	 custom_value = 0,
+	 flags = AICONFIG_INGAME
+	});
+
+    AddLabels("allowedjob", {_0 = "Industry & Town", _1 = "Only Industry", _2 = "Only Town"});
+
 
 	AddSetting({
 		name = "use_train",

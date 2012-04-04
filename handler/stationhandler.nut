@@ -20,7 +20,7 @@ static	function GetStationObject(stationID)
 		return stationID in cStation.stationdatabase ? cStation.stationdatabase[stationID] : null;
 		}
 
-	stationID		= null;	// id of industry/town
+	stationID		= null;	// id of station
 	stationType		= null;	// AIStation.StationType
 	specialType		= null;	// for boat = nothing
 						// for trains = AIRail.RailType
@@ -30,7 +30,7 @@ static	function GetStationObject(stationID)
 	maxsize		= null; 	// maximum size a station could be
 	locations		= null;	// locations of station tiles
 						// for road, item=tile location, value = front tile location
-						// for airport: tiles locations (nothing yet use until we add support for any airport type)
+						// for airport: nothing
 						// for train:
 						// 0: station_infos
 						// 1: entry_in tile where we should find the entry that lead to the station
@@ -67,6 +67,7 @@ static	function GetStationObject(stationID)
 	moneyUpgrade	= null;	// money we need for upgrading the station
 	name			= null;	// station name
 	platforms		= null;	// railstation platforms AIList, item=fronttileplaformentry, value: 1=useable 0=closed
+	max_trains		= null;	// it's the number of maximum trains the station could handle
 	station_tiles	= null;	// railstation tiles own by the station, value=1 entry or 0 exit
 
 /* train station are made like that:
@@ -82,15 +83,15 @@ bit5 alt train line fire done
 	constructor()
 		{ // * are saved variables
 		stationID		= null;	// *
-		stationType		= null;	// *
+		stationType		= null;
 		specialType		= null;	// *
 		size			= 1;    	// *
-		maxsize		= 1;    	// *
+		maxsize		= 1;
 		locations		= AIList(); // *
 		depot			= -1;		// *
 		cargo_produce	= AIList();
 		cargo_accept	= AIList();
-		radius		= 0;		// *
+		radius		= 0;
 		vehicle_count	= 0;	
 		vehicle_max		= 0;
 		vehicle_capacity	= AIList();
@@ -99,7 +100,8 @@ bit5 alt train line fire done
 		moneyUpgrade	= 0;
 		name			= null;
 		platforms		= AIList(); // * item= platform location, value=bit0 for entry, bit1 for exit on/off
-		station_tiles	= AIList();	// *
+		max_trains		= 0;
+		station_tiles	= AIList();
 		}
 }
 
@@ -751,10 +753,10 @@ local start=thatstation.GetLocation();
 local end=thatstation.locations.GetValue(17);
 local topLeftPlatform=start;
 local topRightPlatform=start;
-PutSign(start,"SS");
+/*PutSign(start,"SS");
 PutSign(end,"SE");
 PutSign(start+frontTile,"cs");
-PutSign(end+backTile,"ce");
+PutSign(end+backTile,"ce");*/
 // search up
 while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
 	{
@@ -770,7 +772,7 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 			if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
 										else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
-		PutSign(lookup+start+frontTile,value);
+		//PutSign(lookup+start+frontTile,value);
 		}
 	lookup+=leftTile;
 	}
@@ -790,16 +792,60 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 			if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
 										else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
-		PutSign(lookup+start+frontTile,value);
+		//PutSign(lookup+start+frontTile,value);
 		}
 	lookup+=rightTile;
 	}
-DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms",2,"cStation::DefinePlatforms");
+local goodPlatforms=AIList();
+goodPlatforms.AddList(thatstation.platforms);
+if (thatstation.owner.Count() == 0)
+	goodPlatforms.RemoveValue(0);	// no one own it yet, we just validate a platform if its rail in front is built
+else	{
+//	local mainOwner=cRoute.GetRouteObject(thatstation.owner.Begin());
+//	if (mainOwner == null)	{ DError("Cannot get station owner route "+thatstation.owner.Begin(),1,"cStation.DefinePlatform"); return false; }
+	local runTarget=cStation.RailStationGetRunnerTarget(thatstation.stationID);
+	PutSign(runTarget,"Checker");
+	foreach (platidx, openclose in goodPlatforms)
+		{
+		local value=0;
+		if (runTarget == -1)	break;
+		if ((openclose & 1) == 1 && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=value | 1;
+																else	value=value & ~1;
+		if ((openclose & 2) == 2 && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=value | 2;
+																else	value=value & ~2;
+		thatstation.platforms.SetValue(platidx, value);
+		if (value == 0)	goodPlatforms.RemoveItem(platidx); // not so true if we connect both side of a station, but good for now
+		}	
+	}
+DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2,"cStation::DefinePlatforms");
 thatstation.size=thatstation.platforms.Count();
+thatstation.max_trains=goodPlatforms.Count();
 thatstation.locations.SetValue(20,topLeftPlatform);
 thatstation.locations.SetValue(21,topRightPlatform);
-PutSign(topLeftPlatform,"NL");
-PutSign(topRightPlatform,"NR");
+//PutSign(topLeftPlatform,"NL");
+//PutSign(topRightPlatform,"NR");
+}
+
+function cStation::RailStationGetRunnerTarget(runnerID)
+// return the tile location where we could use RoadRunner for checks
+// this is the rail entry or exit from the main or secondary track, depending what the station can handle
+// -1 on error
+{
+local thatstation=cStation.GetStationObject(runnerID);
+if (thatstation == null || thatstation.owner.Count()==0)	return -1;
+local mainOwner=cRoute.GetRouteObject(thatstation.owner.Begin());
+if (mainOwner == null)	return -1;
+local primary=(mainOwner.source_stationID == runnerID);
+if (primary)
+	{
+	if (mainOwner.source_RailEntry)	return thatstation.locations.GetValue(4);
+						else	return thatstation.locations.GetValue(3);
+	}
+else	{
+	if (mainOwner.target_RailEntry)	return thatstation.locations.GetValue(2);
+						else	return thatstation.locations.GetValue(1);
+	}
+return -1;
 }
 
 function cStation::GetPlatformFrontTile(platform, useEntry)

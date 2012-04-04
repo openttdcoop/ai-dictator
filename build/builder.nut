@@ -385,7 +385,7 @@ if (INSTANCE.route.status==1)
 		}
 	INSTANCE.route.status=2;
 	}
-if (INSTANCE.route.status==2)
+if (INSTANCE.route.status==2) // change to add check against station is valid
 	{
 	if (INSTANCE.route.source_stationID==null)
 			{

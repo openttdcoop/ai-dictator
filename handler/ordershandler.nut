@@ -198,6 +198,7 @@ local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(idx);
 local homedepot = null;
 if (road != null)	homedepot=road.GetDepot(idx);
+local prevDest=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 AIOrder.UnshareOrders(veh);
 INSTANCE.carrier.VehicleOrdersReset(veh);
 if (homedepot == null || !cStation.IsDepot(homedepot))
@@ -280,11 +281,11 @@ if (road != null)
 		if (road.target_stationID == null)	break;
 		if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)
 			{
-			if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) == AIStation.GetLocation(road.target_stationID) || AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) == AIStation.GetLocation(road.source_stationID))
+			if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != prevDest)
 				{
 				AIOrder.SkipToOrder(veh, jjj+1);
-				break;
 				}
+			else	{ AIOrder.SkipToOrder(veh, jjj+1); break; }
 			}
 		else	if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != AIStation.GetLocation(road.target_stationID))
 				{

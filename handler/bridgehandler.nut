@@ -14,7 +14,7 @@
 class cBridge extends AIBridge
 {
 static	bridgedatabase = {};
-static	BridgeList = AIList();	// list of bridge, item bridgeUID value=owner
+static	BridgeList = AIList();		// list of bridge, item bridgeUID value=owner
 static	function GetBridgeObject(bridgeUID)
 		{
 		return bridgeUID in cBridge.bridgedatabase ? cBridge.bridgedatabase[bridgeUID] : null;
@@ -191,4 +191,40 @@ function cBridge::IsRailBridge(bUID)
 	local cobj=cBridge.Load(bUID);
 	if (cBridge.IsBridgeTile(cobj.firstside) && AITile.HasTransportType(cobj.firstside, AITile.TRANSPORT_RAIL))	return true;
 	return false;
+	}
+
+function cBridge::GetCheapBridgeID(btype, length, needresult=true)
+// return a bridge ID to build a bridge of that size and type at needed speed
+	{
+	local needSpeed=INSTANCE.carrier.speed_MaxTrain;
+	if (btype == AIVehicle.VT_ROAD)	needSpeed=INSTANCE.carrier.speed_MaxRoad;
+	if (needSpeed == 0)
+		{
+		local vehlist=AIEngineList(btype);
+		vehlist.Valuate(AIEngine.GetMaxSpeed);
+		vehlist.KeepAboveValue(1); // remove 0 speed engines
+		vehlist.Sort(AIList.SORT_BY_VALUE, true);
+		if (!vehlist.IsEmpty()) needSpeed=vehlist.GetValue(vehlist.Begin());
+		}
+	local blist=AIBridgeList_Length(length);
+	blist.Valuate(AIBridge.GetMaxSpeed);
+	blist.KeepAboveValue(needSpeed);
+	if (blist.IsEmpty() && needresult)	blist=AIBridgeList_Length(length);
+	blist.Sort(AIList.SORT_BY_VALUE, true);
+	if (blist.IsEmpty())	return -1;
+				else	return blist.Begin();
+	}
+
+function cBridge::BridgeDiscovery()
+// Use when loading a game to discover all bridges in the game and save ones we own
+	{
+	DInfo("Looking for our bridges, game may get frozen for some times on huge maps, be patient",0,"cBridge::BridgeDiscovery");
+	INSTANCE.Sleep(10);
+	local allmap=AITileList();
+	local maxTile=AIMap.GetTileIndex(AIMap.GetMapSizeX()-2, AIMap.GetMapSizeY()-2);
+	allmap.AddRectangle(AIMap.GetTileIndex(1,1), maxTile);
+	allmap.Valuate(AITile.GetOwner);
+	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+	allmap.KeepValue(weare);
+	allmap.Valuate(cBridge.IsBridgeTile);
 	}

@@ -33,9 +33,10 @@ enum DepotAction {
 	UPGRADE=1,		// to upgrade a vehicle
 	REPLACE=2,		// to replace a vehicle, well this should also upgrade it
 	CRAZY=3,		// to get a big amount of money
-	REMOVEROUTE=4,		// to remove a route
+	REMOVEROUTE=4,	// to remove a route
 	LINEUPGRADE=5,	// to upgrade a train line to a newer railtype
 	SIGNALUPGRADE=6,	// when a station need build signal on rails
+	WAITING=7,		// wait at depot: it's a state to ignore that vehicle already in depot, not to send it and wait at depot
 	ADDWAGON=1000	// to add a train or wagons to a route
 }
 
@@ -134,7 +135,6 @@ class DictatorAI extends AIController
 	} 
  }
  
- 
 function DictatorAI::Start()
 {
 	::INSTANCE <- this;
@@ -144,8 +144,10 @@ function DictatorAI::Start()
 	DInfo("DicatorAI started.",0,"main");
 	AICompany.SetAutoRenewStatus(false);
 	cEngine.EngineCacheInit();
+	route.RouteInitNetwork();
 	if (loadedgame) 
 		{
+		cBridge.BridgeDiscovery();
 		bank.SaveMoney();
 		jobs.PopulateJobs();
 		LoadingGame();
@@ -161,11 +163,9 @@ function DictatorAI::Start()
 	 else {
 		AIInit();
 		bank.SaveMoney();
-		route.RouteInitNetwork();
 		jobs.PopulateJobs();
-		for (local i=0; i < 3; i++)	jobs.RawJobHandling();
-		// feed the ai with some jobs to start play with
-		safeStart=0;
+		jobs.RawJobHandling();
+		safeStart=3;
 		}
 	bank.Update();
 	while(true)
@@ -175,7 +175,6 @@ function DictatorAI::Start()
 		DWarn("Running the AI in debug mode slowdown the AI and can do random issues !!!",1,"main");
 		bank.CashFlow();
 		this.ClearSignsALL();
-		//builder.ShowStationCapacity();
 		if (bank.canBuild)
 				{
 				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
@@ -195,7 +194,6 @@ function DictatorAI::Start()
 								else	DInfo("Construction of route "+cRoute.RouteGetName(builder.building_route)+" is at phase "+route.status,1,"main");
 					if (builder.building_route!=-1)
 						{
-						//bank.RaiseFundsBy(jobs_obj.moneyToBuild);
 						builder.TryBuildThatRoute();
 						this.checkHQ();
 						}
@@ -203,8 +201,6 @@ function DictatorAI::Start()
 				}
 		bank.CashFlow();
 		eventManager.HandleEvents();
-		//builder.QuickTasks();
-		//builder.ShowBlackList();
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(10);
 		builder.WeeklyChecks();
@@ -236,41 +232,26 @@ local table =
 	routes = null,
 	stations = null,
 	vehicle = null,
-	cargo = null,
 	busyroute = null,
-	virtualgroup = null,
-	dbstation = null,
-	dbroute = null,
-	dbvehicle = null,
-	bridgeID = null,
+	virtualpass = null,
+	virtualmail = null,
 	}
-
-DInfo("Saving game... "+cRoute.database.len()+" routes, "+cStation.stationdatabase.len()+" stations",0,"Save");
 local all_stations=[];
 local all_routes=[];
 local all_vehicle=[];
-local all_bridge=[];
 local temparray=[];
 
 // routes
 foreach (obj in cRoute.database)
 	{
-	all_routes.push(obj.UID);
-	all_routes.push(obj.sourceID);
-	all_routes.push(obj.source_istown);
-	all_routes.push(obj.targetID);
-	all_routes.push(obj.target_istown);
+	if (obj.UID < 2 || obj.UID == null)	continue; // don't save virtual route
 	all_routes.push(obj.route_type);
-	all_routes.push(obj.station_type);
-	all_routes.push(obj.isWorking);
 	all_routes.push(obj.status);
 	all_routes.push(obj.groupID);
 	all_routes.push(obj.source_stationID);
 	all_routes.push(obj.target_stationID);
-	all_routes.push(obj.cargoID);
 	all_routes.push(obj.primary_RailLink);
 	all_routes.push(obj.secondary_RailLink);
-	all_routes.push(obj.twoway);
 	all_routes.push(obj.source_RailEntry);
 	all_routes.push(obj.target_RailEntry);
 	}
@@ -278,19 +259,13 @@ foreach (obj in cRoute.database)
 foreach(obj in cStation.stationdatabase)
 	{
 	all_stations.push(obj.stationID);
-	all_stations.push(obj.stationType);
 	all_stations.push(obj.specialType);
 	all_stations.push(obj.size);
-	all_stations.push(obj.maxsize);
 	all_stations.push(obj.depot);
-	all_stations.push(obj.radius);
 	temparray=ListToArray(obj.locations);
 	all_stations.push(temparray.len());
 	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
 	temparray=ListToArray(obj.platforms);
-	all_stations.push(temparray.len());
-	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
-	temparray=ListToArray(obj.station_tiles);
 	all_stations.push(temparray.len());
 	for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
 	}
@@ -303,37 +278,28 @@ foreach (obj in cTrain.vehicledatabase)
 	all_vehicle.push(obj.src_useEntry);
 	all_vehicle.push(obj.dst_useEntry);
 	all_vehicle.push(obj.stationbit);
-	all_vehicle.push(obj.full);
 	}
-// bridges
-foreach (bridgeUID, owner in cBridge.BridgeList)	all_bridge.push(cBridge.GetLocation(bridgeUID));
-
-table.bridgeID=all_bridge;
-table.cargo=cargo_favorite;
 table.routes=all_routes;
 table.stations=all_stations;
 table.vehicle=all_vehicle;
 table.busyroute=builder.building_route;
-table.virtualgroup=cRoute.VirtualAirGroup[0];
-table.dbstation=cStation.stationdatabase.len();
-table.dbroute=cRoute.database.len();
-table.dbvehicle=cTrain.vehicledatabase.len();
-DInfo("Saving done...",0,"Save");
+local netair=cRoute.VirtualAirGroup[0];
+table.virtualpass=netair;
+netair=cRoute.VirtualAirGroup[1];
+table.virtualmail=netair;
+print("Saving game... "+cRoute.database.len()+" routes, "+cStation.stationdatabase.len()+" stations");
 return table;
 }
  
 function DictatorAI::Load(version, data)
 {
 DInfo("Loading a saved game with DictatorAI version "+version,0,"Load");
-if ("cargo" in data) cargo_favorite=data.cargo;
 if ("routes" in data) bank.canBuild=data.routes;
 if ("stations" in data) bank.unleash_road=data.stations;
 if ("busyroute" in data) builder.building_route=data.busyroute;
-if ("dbstation" in data) OneMonth=data.dbstation;
-if ("dbroute" in data) OneWeek=data.dbroute;
 if ("vehicle" in data)	SixMonth=data.vehicle;
-if ("dbvehicle" in data)	TwelveMonth=data.dbvehicle;
-if ("bridgeID" in data)	bank.mincash=data.bridgeID;
+if ("virtualmail" in data)	TwelveMonth=data.virtualmail;
+if ("virtualpass" in data)	bank.mincash=data.virtualpass;
 bank.busyRoute=version;
 loadedgame = true;
 }

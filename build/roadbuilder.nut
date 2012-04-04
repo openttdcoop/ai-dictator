@@ -23,7 +23,7 @@ function MyRoadPF::_Cost(path, new_tile, new_direction, self)
 }
 function MyRoadPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
 {
-	return 1.1*::RoadPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+	return 1.4*::RoadPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
 }
 
 function MyRoadPF::_GetTunnelsBridges(last_node, cur_node, bridge_dir)
@@ -58,12 +58,11 @@ class MyRailPF extends RailPathFinder {
 function MyRailPF::_Cost(path, new_tile, new_direction, self)
 {
 	local cost = ::RailPathFinder._Cost(path, new_tile, new_direction, self);
-//	if (AITile.HasTransportType(new_tile, AITile.TRANSPORT_ROAD)) cost += self._cost_level_crossing;
 	return cost;
 }
 function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
 {
-	return 1.5*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+	return 1.4*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
 }
 
 function cBuilder::CanBuildRoadStation(tile, direction)
@@ -661,10 +660,13 @@ while (path != null)
 			if (parpar != null)
 				{
 				// check for small up/down hills correction
-				if ((AITile.GetSlope(par.GetTile())+AITile.GetSlope(path.GetTile()))==15)
+				local targetTile=path.GetTile();
+				local parTile=par.GetTile();
+				local equal= (AITile.GetMinHeight(parTile) == AITile.GetMinHeight(targetTile));
+				if (equal && AITile.GetSlope(parTile) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT)
 					{
 					DInfo("Smoothing land to build road",1,"ConstructRoadROAD");
-					cTileTools.TerraformLevelTiles(path.GetTile(), parpar.GetTile());
+					cTileTools.TerraformLevelTiles(targetTile, parpar.GetTile());
 					}
 				}
 
@@ -745,10 +747,11 @@ while (path != null)
 						}
 					}
 			 	else	{
-					local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
-					bridgelist.Valuate(AIBridge.GetPrice,AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1 );
-					bridgelist.Sort(AIList.SORT_BY_VALUE,true);
-					if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgelist.Begin(), path.GetTile(), par.GetTile()))
+					local bridgeID = cBridge.GetCheapBridgeID(AIVehicle.VT_ROAD, AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
+//					local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
+//					bridgelist.Valuate(AIBridge.GetPrice,AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1 );
+//					bridgelist.Sort(AIList.SORT_BY_VALUE,true);
+					if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgeID, path.GetTile(), par.GetTile()))
 						{
 						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1,"ConstructRoadROAD");
 						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
@@ -1106,13 +1109,6 @@ local valid=false;
 local direction=null;
 local found=(source == target);
 local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
-/*if (road_type == AIVehicle.VT_RAIL)
-	{
-	directions.push(AIMap.GetTileIndex(1, 1));
-	directions.push(AIMap.GetTileIndex(1, -1));
-	directions.push(AIMap.GetTileIndex(-1, -1));
-	directions.push(AIMap.GetTileIndex(-1, 1));
-	}*/
 foreach (voisin in directions)
 	{
 	direction=source+voisin;
@@ -1123,7 +1119,6 @@ foreach (voisin in directions)
 		// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
 		// if we are connect to someone, i reset "source" to be "someone" and continue
 		local guessTile=null;	
-//print("********* tunnel!");
 		foreach (where in directions)
 			{
 			if (road_type == AIVehicle.VT_ROAD)
@@ -1143,7 +1138,7 @@ foreach (voisin in directions)
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; } 
 	if (valid)	walkedtiles.AddItem(direction,0);
-	if (valid && INSTANCE.debug)	PutSign(direction,"*");
+	//if (valid && INSTANCE.debug)	PutSign(direction,"*");
 	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
 	if (!found && valid)	found=INSTANCE.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
 	if (found) return found;

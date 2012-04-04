@@ -66,8 +66,11 @@ function cPathfinder::GetUID(source, target)
 function cPathfinder::InfoSign(msg)
 // Update the sign and recreate it if need
 	{
-	if (AISign.IsValidSign(this.signHandler))	AISign.SetName(this.signHandler, msg);
-							else	this.signHandler=AISign.BuildSign(this.target[1],msg);
+	local loc=-1;
+	if (AISign.IsValidSign(this.signHandler))	loc=AISign.GetLocation(this.signHandler);
+	if (loc != this.target[1])	loc=-1;
+	if (loc != -1)	AISign.SetName(this.signHandler, msg);
+			else	this.signHandler=AISign.BuildSign(this.target[1],msg);
 	}
 
 function cPathfinder::AdvanceTask(UID)

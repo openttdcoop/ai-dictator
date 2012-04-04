@@ -44,7 +44,7 @@ static	function GetTrainObject(vehicleID)
 		src_useEntry	= null;	// *
 		dst_useEntry	= null;	// *
 		stationbit		= 0;		// *
-		full			= false;	// *
+		full			= false;
 		wagonPrice		= 0;
 		lastdepotvisit	= 0;
 		}
@@ -110,7 +110,6 @@ function cTrain::DeleteVehicle(vehID)
 		if (AIVehicle.IsValidVehicle(vehID))	atrain=cTrain.Load(vehID); // if invalid cTrain.Load would call DeleteVehicle and infinite loop
 								else	{ atrain=cTrain(); atrain.vehicleID=vehID; }
 		DInfo("Removing train "+cCarrier.VehicleGetName(vehID)+" from database",2,"cTrain::DeleteVehicle");
-print("station1="+atrain.srcStationID+" stationdest="+atrain.dstStationID);
 		local taker=((atrain.stationbit & 1) == 1);
 		if (atrain.srcStationID != null)	cStation.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID);
 		taker=((atrain.stationbit & 2) == 2);
