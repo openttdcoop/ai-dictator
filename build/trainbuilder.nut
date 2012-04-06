@@ -200,7 +200,7 @@ testRefit=null;
 return vehID;
 }
 
-function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
+function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength, extraEngine)
 // Add a train or add wagons to an existing train
 {
 local road=cRoute.GetRouteObject(uid);
@@ -220,6 +220,12 @@ local pullerID=null;
 if (trainID==null)	pullerID=INSTANCE.carrier.CreateTrainsEngine(locotype, depot, road.cargoID);
 			else	pullerID=trainID;
 if (pullerID==-1)	{ DError("Cannot create the train engine "+AIEngine.GetName(locotype),1,"cCarrier::AddNewTrain"); return -1; }
+if (extraEngine)
+	{
+	local xengine=INSTANCE.carrier.CreateTrainsEngine(locotype, depot, road.cargoID);
+	if (xengine==-1)	{ DInfo("Cannot add an extra engine to that train, will redo later",1,"cCarrier::AddNewTrain"); return false; }
+			else	{ AIVehicle.MoveWagon(xengine, 0, pullerID, AIVehicle.GetNumWagons(pullerID) - 1); return true; }
+	}
 local another=null; // use to get a new wagonID, but this one doesn't need to be buy
 PutSign(depot,"Depot");
 local wagonlist = AIEngineList(AIVehicle.VT_RAIL);
@@ -404,7 +410,7 @@ do	{
 		while (!stop)
 			{
 			stop=true;
-			tID=INSTANCE.carrier.AddNewTrain(uid, null, 0, depotID, stationLen);
+			tID=INSTANCE.carrier.AddNewTrain(uid, null, 0, depotID, stationLen, false);
 			if (AIVehicle.IsValidVehicle(tID))
 				{
 				AIGroup.MoveVehicle(road.groupID, tID);
@@ -419,24 +425,32 @@ do	{
 			else	if (tID==-2)	stop=false; // loop so we pickup another loco engine
 						else	giveup=true;
 			}
+		if (stop)	numTrains++;
 		}
+
 	if (AIVehicle.IsValidVehicle(tID) && AIVehicle.GetState(tID) == AIVehicle.VS_IN_DEPOT && !giveup)
 		{ // now we can add wagons to it
 		local beforesize=cCarrier.GetNumberOfWagons(tID);
 		depotID=AIVehicle.GetLocation(tID);
-		INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
-		if (numTrains > 1 || beforesize+wagonNeed < 5)	tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen);
+//		INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
+		local freightlimit=cCargo.IsFreight(road.cargoID);
+		if (freightlimit > -1 && !cTrain.IsFreight(tID) && beforesize+wagonNeed > freightlimit)
+				{
+print("need freight");
+				if (INSTANCE.carrier.AddNewTrain(uid, tID, 0, depotID, stationLen, true))
+					{
+					cTrain.SetExtraEngine(tID);
+					}
+				}
+		if (numTrains > 1 || beforesize+wagonNeed < 5)	tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen, false);
 					else	{
 						local newwagon=4-beforesize;
-						tID=INSTANCE.carrier.AddNewTrain(uid, tID, newwagon, depotID, stationLen);
+						tID=INSTANCE.carrier.AddNewTrain(uid, tID, newwagon, depotID, stationLen, false);
 						processTrains.push(-1);
-								DInfo("Starting "+cCarrier.VehicleGetName(tID)+"...",0,"cCarrier::AddWagon");
-		cTrain.SetDepotVisit(tID);
-		AIVehicle.StartStopVehicle(tID);
-INSTANCE.Sleep(40);
+						numTrains++;
 			print("will add "+newwagon+" to this train and create another one with "+(wagonNeed-newwagon));
 						}
-print("BREAK");
+print("BREAK TRAINPROCESS");
 		if (AIVehicle.IsValidVehicle(tID))
 			{
 			local newwagon=cCarrier.GetNumberOfWagons(tID)-beforesize;
@@ -456,6 +470,8 @@ print("BREAK");
 				cTrain.SetFull(tID,true);
 				}
 			cTrain.Update(tID);
+			cCarrier.TrainExitDepot(tID);
+			cTrain.SetDepotVisit(tID);
 			}
 		}
 print("BREAK "+processTrains.len()+" giveup="+giveup);
@@ -464,7 +480,7 @@ print("BREAK "+processTrains.len()+" giveup="+giveup);
 //foreach (veh, dummy in vehlist)	AIGroup.MoveVehicle(road.groupID, veh); // failure because out of money, but the loco was create, in default group
 road.RouteUpdateVehicle();
 // and now just let them run again
-vehlist=AIVehicleList_Group(road.groupID);
+/*vehlist=AIVehicleList_Group(road.groupID);
 vehlist.Valuate(AIVehicle.GetState);
 vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
 foreach (train, dummy in vehlist)
@@ -481,7 +497,7 @@ foreach (train, dummy in vehlist)
 		AIVehicle.StartStopVehicle(train);
 		}
 	AIController.Sleep(1);
-	}
+	}*/
 return !giveup;
 }
 

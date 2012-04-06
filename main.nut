@@ -147,7 +147,7 @@ function DictatorAI::Start()
 	route.RouteInitNetwork();
 	if (loadedgame) 
 		{
-		cBridge.BridgeDiscovery();
+		//cBridge.BridgeDiscovery();
 		bank.SaveMoney();
 		jobs.PopulateJobs();
 		LoadingGame();

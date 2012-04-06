@@ -32,6 +32,7 @@ static	function GetTrainObject(vehicleID)
 	full			= null; 	// set to true if train cannot have more wagons attach to it
 	wagonPrice		= null;	// price to buy a new wagon for that train
 	lastdepotvisit	= null;	// record last time that train was in a depot
+	extraengine		= null;	// true if we have two engines
 	
 	constructor()
 		{ // * are saved variables
@@ -47,6 +48,7 @@ static	function GetTrainObject(vehicleID)
 		full			= false;
 		wagonPrice		= 0;
 		lastdepotvisit	= 0;
+		extraengine		= false;
 		}
 }
 
@@ -170,3 +172,16 @@ function cTrain::SetDepotVisit(vehID)
 	train.lastdepotvisit=AIDate.GetCurrentDate();
 	}
 
+function cTrain::SetExtraEngine(vehID)
+// set the extra engine flag of a train
+	{
+	local train=cTrain.Load(vehID);
+	train.extraengine=true;
+	}
+
+function cTrain::IsFreight(vehID)
+// return the extraengine state
+	{
+	local train=cTrain.Load(vehID);
+	return train.extraengine;
+	}

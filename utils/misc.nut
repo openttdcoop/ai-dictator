@@ -410,7 +410,7 @@ function LoadSaveGame()
 		obj.maxsize=1;
 		if (obj.stationType == AIStation.STATION_BUS_STOP || obj.stationType == AIStation.STATION_TRUCK_STOP)	obj.maxsize=INSTANCE.carrier.road_max;
 		if (obj.stationType == AIStation.STATION_TRAIN)	obj.maxsize=INSTANCE.carrier.rail_max;
-		i=nextitem;
+		i=nextitem+counter;
 		iter++;
 		if (saveit)	obj.StationSave();
 		}
@@ -523,6 +523,7 @@ function LoadSaveGame()
 		i+=5;
 		cTrain.vehicledatabase[obj.vehicleID] <- obj;
 		cTrain.Update(obj.vehicleID);
+		iter++;
 		}
 	DInfo("Found "+iter+" trains.",0,"LoadSaveGame");
 	local planelist=AIVehicleList_Group(INSTANCE.bank.mincash); // restore the network aircraft

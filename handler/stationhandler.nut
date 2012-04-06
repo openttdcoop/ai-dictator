@@ -753,6 +753,7 @@ local start=thatstation.GetLocation();
 local end=thatstation.locations.GetValue(17);
 local topLeftPlatform=start;
 local topRightPlatform=start;
+local usable=false;
 /*PutSign(start,"SS");
 PutSign(end,"SE");
 PutSign(start+frontTile,"cs");
@@ -765,12 +766,25 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
 		local value=thatstation.platforms.GetValue(lookup+start);
-		if (cTileTools.CanUseTile(lookup+start+frontTile,thatstation.stationID))
-			if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
-										else	value=value & ~1;
-		if (cTileTools.CanUseTile(lookup+end+backTile,thatstation.stationID))
-			if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
-										else	value=value & ~2;
+		usable=AIRail.IsRailTile(lookup+start+frontTile);
+		if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.stationID);
+		if (usable)
+			{
+			local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
+			usable=((rtrack & direction) == direction);
+			}
+		if (usable)	value=value | 1;
+			else	value=value & ~1;
+
+		usable=AIRail.IsRailTile(lookup+end+backTile);
+		if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.stationID);
+		if (usable)
+			{
+			local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
+			usable=((rtrack & direction) == direction);
+			}
+		if (usable)	value=value | 2;
+			else	value=value & ~2;
 		thatstation.platforms.SetValue(lookup+start,value);
 		//PutSign(lookup+start+frontTile,value);
 		}
@@ -785,12 +799,26 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
 		local value=thatstation.platforms.GetValue(lookup+start);
-		if (cTileTools.CanUseTile(lookup+start+frontTile,thatstation.stationID))
-			if (AIRail.IsRailTile(lookup+start+frontTile))	value=value | 1;
-										else	value=value & ~1;
-		if (cTileTools.CanUseTile(lookup+end+backTile,thatstation.stationID))
-			if (AIRail.IsRailTile(lookup+end+backTile))	value=value | 2;
-										else	value=value & ~2;
+		usable=AIRail.IsRailTile(lookup+start+frontTile);
+		if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.stationID);
+		if (usable)
+			{
+			local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
+			usable=((rtrack & direction) == direction);
+			}
+		if (usable)	value=value | 1;
+			else	value=value & ~1;
+
+		usable=AIRail.IsRailTile(lookup+end+backTile);
+		if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.stationID);
+		if (usable)
+			{
+			local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
+			usable=((rtrack & direction) == direction);
+			}
+		if (usable)	value=value | 2;
+			else	value=value & ~2;
+
 		thatstation.platforms.SetValue(lookup+start,value);
 		//PutSign(lookup+start+frontTile,value);
 		}

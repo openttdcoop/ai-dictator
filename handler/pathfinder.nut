@@ -80,6 +80,7 @@ function cPathfinder::AdvanceTask(UID)
 	local maxStep=20;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);
+print("stoptask="+pftask.UID+" status="+pftask.status+" subtask="+pftask.r_source+":"+pftask.r_target);
 	switch (pftask.status)
 		{
 		case	-1:

@@ -17,6 +17,7 @@
 class cCargo
 	{
 static	primaryCargo=[null,null]; // 0 for passenger, 1 for mail
+
 	constructor()	{ }
 	}
 
@@ -51,4 +52,16 @@ function cCargo::IsCargoForTown(cargo)
 	return true;
 	}
 
+function cCargo::IsFreight(cargoID)
+// Return -1 if !AICargo.IsFreight
+// else return number of wagons need to add an extra engine depending on system setting
+{
+local level=AIGameSettings.GetValue("freight_trains");
+if (level == 1)	return -1; // no need to handle freight then
+local freightlimit= 8 - level;
+if (freightlimit < 3)	freightlimit=2; // minimum 2 wagons
+print("freightlimit="+freightlimit);
+if (AICargo.IsFreight(cargoID))	return freightlimit;
+return -1;
+}
 

@@ -221,14 +221,13 @@ if (path == null)	smallerror=-2;
 switch (status)
 	{
 	case	0:	// still pathfinding
-	return false;
+	return 0;
 	case	-1:	// failure
-		INSTANCE.builder.CriticalError=true;
-	return false;
+	return -1;
 	case	2:	// succeed
-	return true;
+	return 1;
 	case	3:	// waiting child to end
-	return false;
+	return 0;
 	}
 // 1 is non covered as it's end of pathfinding, and should call us to build
 INSTANCE.bank.RaiseFundsBigTime();
@@ -390,7 +389,7 @@ else	{ // we cannot get smallerror==-1 because on -1 it always return, so limit 
 				{
 				//DInfo("Pathfinder helper task "+source+" succeed !",1,"cBuilder::BuildRoadRail");
 				cPathfinder.CloseTask(mytask.source, mytask.target);
-				mytask=cPathfinder.GetPathfinderObject(source);
+				mytask=cPathfinder.GetPathfinderObject(source); print("now mytask="+mytask+" src="+source);
 				}
 			}
 		}
@@ -542,9 +541,10 @@ do	{
 				PutSign(dstlink,"d");
 				PutSign(srcpos,"S");
 				PutSign(srclink,"s");*/
-				if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], srcUseEntry, srcStation.stationID))
+				local result=INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], srcUseEntry, srcStation.stationID);
+				if (result != 1)
 					{
-					if (INSTANCE.builder.CriticalError)	cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
+					if (result == -1)	cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 					return false;
 					}
 				else	retry=false;
@@ -1220,9 +1220,10 @@ if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTa
 		PutSign(dstlink,"d");
 		PutSign(srcpos,"S");
 		PutSign(srclink,"s");*/
-		if (!INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target.stationID))
+		local result=INSTANCE.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], road.target_RailEntry, road.target.stationID);
+		if (result != 1)
 			{
-			if (INSTANCE.builder.CriticalError)
+			if (result == -1)
 				{
 				DError("We cannot build the alternate track for that station ",1,"RailStationGrow");
 				closeIt=true;
@@ -1230,7 +1231,6 @@ if ( road != null && !road.secondary_RailLink && (trainEntryDropper+trainEntryTa
 						else	cStation.RailStationCloseExit(road.target_stationID);
 				cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 				closeIt=true;
-				INSTANCE.builder.CriticalError=false;
 				}
 			else	return false;
 			// lack money, still pathfinding... just wait to retry later nothing to do
@@ -1294,10 +1294,11 @@ if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker 
 		}
 	foreach (vehicle, dummy in vehlistRestart)
 		{
+		/*
 		INSTANCE.carrier.TrainSetOrders(vehicle);
 		INSTANCE.Sleep(5);
-		while (AIVehicle.GetState(vehicle) != AIVehicle.VS_RUNNING)	{ AIVehicle.StartStopVehicle(vehicle); INSTANCE.Sleep(10); }
-		INSTANCE.carrier.ToDepotList.RemoveItem(vehicle);
+		while (AIVehicle.GetState(vehicle) != AIVehicle.VS_RUNNING)	{ AIVehicle.StartStopVehicle(vehicle); INSTANCE.Sleep(10); }*/
+		cCarrier.TrainExitDepot(vehID);
 		}
 	}
 
@@ -1726,6 +1727,19 @@ function cBuilder::StationKillDepot(tile)
 // Just because we need to remove the depot at tile, and retry to make sure we can
 {
 if (!AIRail.IsRailDepotTile(tile))	return;
+local vehlist=AIVehicleList();
+vehlist.Valuate(AIVehicle.GetState);
+vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
+vehlist.Valuate(AIVehicle.GetLocation);
+vehlist.KeepValue(tile);
+if (!vehlist.IsEmpty())	DInfo("Restarting trains at depot "+tile+" so we can remove it",1,"StationKillDepot");
+foreach (veh, dummy in vehlist)
+	{
+	DInfo("Starting "+cCarrier.VehicleGetName(veh)+"...",0,"cCarrier::AddWagon");
+	cTrain.SetDepotVisit(veh);
+	AIVehicle.StartStopVehicle(veh);
+	INSTANCE.Sleep(40);
+	}
 for (local i=0; i < 10; i++)
 	{
 	if (AITile.DemolishTile(tile))	return;
@@ -1808,8 +1822,14 @@ while (path != null)
 		if (AIRail.GetSignalType(tilesource,tilefront) != AIRail.SIGNALTYPE_NONE)	ignoreit=true;
 		if (cBridge.IsBridgeTile(tilesource) || AITunnel.IsTunnelTile(tilesource))	ignoreit=true;
 		if (ignoreit)	{ cc=0; prev=tile; continue; }
-		if (AIRail.BuildSignal(tilesource,tilefront, AIRail.SIGNALTYPE_NORMAL))	{ cc=0; max_signals_distance=3; }
-			else { PutSign(tile,"!"); DError("Error building signal ",1,"SignalBuilder"); max_signals_distance++; allsuccess=false; return false; }
+		if (AIRail.BuildSignal(tilesource,tilefront, AIRail.SIGNALTYPE_NORMAL))	{ cc=0; }
+			else	{
+				PutSign(tile,"!");
+				local smallerror=cBuilder.EasyError(AIError.GetLastError());
+				DError("Error building signal ",1,"SignalBuilder");
+				//max_signals_distance++;
+				if (smallerror == -1)	return false;
+				}
 		}
 	AIController.Sleep(1);
 	cc++;

@@ -662,3 +662,19 @@ foreach (i, dummy in tlist)
 	}
 }
 
+function cCarrier::TrainExitDepot(vehID)
+// release a train that was in depot, setting its order, starting it and moving it to the best station
+{
+if (!AIVehicle.GetVehicleType(vehID) == AIVehicle.VT_RAIL || !AIVehicle.GetState(vehID) == AIVehicle.VS_IN_DEPOT) return;
+local loaded=cCarrier.VehicleGetCargoLoad(vehID);
+print("loaded with "+loaded);
+DInfo("Starting "+cCarrier.VehicleGetName(vehID)+"...",0,"cCarrier::AddWagon");
+INSTANCE.carrier.TrainSetOrders(vehID);
+if (loaded > 0)	AIOrder.SkipToOrder(vehID, 1);
+		else	AIOrder.SkipToOrder(vehID, 0);
+AIVehicle.StartStopVehicle(vehID);
+if (INSTANCE.carrier.ToDepotList.HasItem(vehID))	INSTANCE.carrier.ToDepotList.RemoveItem(vehID);
+INSTANCE.Sleep(40);
+if (AIVehicle.GetState(vehID) != AIVehicle.VS_RUNNING)	AIVehicle.StartStopVehicle(vehID);
+}
+
