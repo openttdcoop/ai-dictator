@@ -153,6 +153,7 @@ for (local z=0; z < numengine; z++)
 function cCarrier::GetWagonsInGroup(groupID)
 // return number of wagons present in the group
 {
+if (groupID == null)	return 0;
 local vehlist=AIVehicleList_Group(groupID);
 local total=0;
 foreach (veh, dummy in vehlist)	total+=cCarrier.GetNumberOfWagons(veh);
@@ -432,7 +433,6 @@ do	{
 		{ // now we can add wagons to it
 		local beforesize=cCarrier.GetNumberOfWagons(tID);
 		depotID=AIVehicle.GetLocation(tID);
-//		INSTANCE.carrier.TrainSetOrders(tID); // called or not, it need proper orders
 		local freightlimit=cCargo.IsFreight(road.cargoID);
 		if (freightlimit > -1 && !cTrain.IsFreight(tID) && beforesize+wagonNeed > freightlimit)
 				{
@@ -494,7 +494,7 @@ foreach (train, dummy in vehlist)
 	else	{
 		DInfo("Starting "+cCarrier.VehicleGetName(train)+"...",0,"cCarrier::AddWagon");
 		cTrain.SetDepotVisit(train);
-		AIVehicle.StartStopVehicle(train);
+		cCarrier.StartVehicle(train);
 		}
 	AIController.Sleep(1);
 	}*/

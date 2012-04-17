@@ -6,10 +6,32 @@ His ai page is there : http://www.tt-forums.net/viewtopic.php?f=65&t=44809&sid=3
 
 Some code also comes from AdmiralAI by Yexo : see http://www.tt-forums.net/viewtopic.php?f=65&t=38057&sid=91f3acf3ecc6ff5aecaea6ad8b08e81a
 
-You need openttd 1.5 to run this AI.
+You need openttd 1.1.5 to run this AI.
 
 
+About the AI options:
+- Use trains for anything:
+There's a flag in newgrf that answer if a train can pull certain type of cargo, ie: you can tell a TGV is not able to carry coal cargo, with that set, you won't see a TGV train pulling coal (and that flag for this example should tell the TGV could only pull passengers cargo to met real life usage).
+There's also flags to tell what wagons could be attach to what loco engine : so you can allow wagonX for TGV and not wagonY for it: this way TGV could only be use with wagonX.
+Now here's the deal, some newGRF have the "puller flag" (i don't know its name for newGRF, but for AI it's get thru CanPullCargo) set, but not the "wagon allowed" flag set <--
+Why? Well, it's about newGRF author's choice : if he have set the "puller" flag but not the "wagons allowed" flag, it will tell the game that the TGV can pull any wagons, as long as they are passengers wagon. If it doesn't set the "puller" flag but set the "wagons allowed" flag, it won't tell what cargo could be handle but disallow any wagons except ones he has allow to use, kinda the same, except openttd and AI cannot guess what will be the set of allowed cargo to be handle. A bad implementation in my opinion.
+And if he has set the "puller" flag + a set of "wagons allowed", he restrict the game/ai/user to only use those set : so if anyone made a passenger cargo that is better/bigger/faster than the ones he have allow, we couldn't use them as they aren't in the "wagons allowed" set.
+So best choice, still in my opinion, for an engine newGRF author would be: set the "puller" flag to tell what the engine should pull, but don't set any wagons flag so we then could use any type of wagon that respect the "puller" flag setting, and so, some newer wagons made by another newGRF author. Nice.
 
+Now the AI with this option OFF: the AI will read the "puller" flag and respect the newGRF author choices made: if he doesn't allow coal cargo, then the AI won't use that cargo with that engine: now your TGV won't pull coal, but only pull passengers (assuming the "puller" flag is set to passengers only).
+And with that option ON, the AI will discard the "puller" flag, and try each wagons it can find to see if we can use them with the engine : now you can have a TGV pulling coal, that might not be what player would like for real life or aesthetics playing, but for economy (as set in openttd) the TGV is certainly a faster engine than others engine that have their "puller" flag set to use coal, and you endup with a better train. That's what human player also do in game, using a TGV because it's a faster/better engine to pull a cargo that isn't its natural choice at first.
 
+- Upgrade AI & towns bridges:
+If set to OFF it's easy, the AI will only take care of its briges, when set to ON the AI will also take care of town briges the AI (or others players) use, so the AI will upgrade these town bridges for the benefits of everyone. As the AI may not use a bridge but will upgrade it for others, in economical point of view, it's a pure lost of money, but from an aesthetical or real life playing, the AI is kind to help others players or AI (without a bridge upgrade function) and the town by allowing better speed on bridges.
 
+- Use Trains, buses, aircrafts... :
+This doesn't prevent the AI from using them, but it prevent the AI from building new tasks that will use them : so if the AI have an aircraft task running, and you disable aircraft for the AI, the AI won't make any new task using aircrafts, but will still handle the ones already made : buying aircrafts for it, upgrading aircrafts... anything to made the task keep going.
+
+- Alter how the AI act with others :
+Many internals paramaters depend on those options, but to sum up the Dictator mode allow the AI to do anything to battle against others, while the lazzy mode restrict the AI to be kind (like not building anything if someone is doing the job already) and set some hard settings for the AI (disallowing terraforming)... Well, the AI will be a bit stupid, playing the hard way and fairer with anyone, making it far easier to battle against it.
+
+- What tasks the AI can handle :
+* Industry & Town: both allow, see bellow
+* Industry Only : the AI will be allow to build task that imply taking cargo from an industry and carry it to another industry or town. Industry->Industry or Industry->Town
+* Town Only : the AI will be allow to build tasks that imply taking cargo from a town and carry it to another town. Town->Town
 

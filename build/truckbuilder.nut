@@ -113,7 +113,7 @@ if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
 	}
 AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(vehID);
-if (!AIVehicle.StartStopVehicle(vehID)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateRoadVehicle"); }
+if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateRoadVehicle"); }
 local topspeed=AIEngine.GetMaxSpeed(AIVehicle.GetEngineType(vehID));
 if (INSTANCE.carrier.speed_MaxRoad < topspeed)
 	{

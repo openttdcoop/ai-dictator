@@ -341,7 +341,7 @@ if (AIVehicle.IsValidVehicle(new_vehID))
 	local newenginename=INSTANCE.carrier.VehicleGetName(new_vehID);
 	AIGroup.MoveVehicle(road.groupID,new_vehID);
 	DInfo("Vehicle "+oldenginename+" replace with "+newenginename,0,"cCarrier::VehicleUpgradeEngine");
-	AIVehicle.StartStopVehicle(new_vehID); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
+	cCarrier.StartVehicle(new_vehID); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
 	INSTANCE.carrier.VehicleBuildOrders(road.groupID,false); // need to build its orders
 	}
 if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
@@ -606,7 +606,8 @@ foreach (i, dummy in tlist)
 			{
 			DInfo("I don't know the reason why "+name+" is at depot, restarting it",1,"cCarrier::VehicleWaitingInDepot");
 			cCarrier.TrainSetOrders(i);
-			if (AIVehicle.GetState(i)!=AIVehicle.VS_RUNNING)	{ AIVehicle.StartStopVehicle(i); continue; }
+			cCarrier.StartVehicle(i);
+			continue;
 			}
 		else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1,"cCarrier::VehicleWaitingInDepot");
 		}
@@ -646,9 +647,7 @@ foreach (i, dummy in tlist)
 			if (waittimer > 199)
 				{
 				DInfo("Vehicle "+name+" has wait enough, releasing it to the wild",1,"cCarrier::VehicleIsWaitingInDepot");
-				INSTANCE.carrier.ToDepotList.RemoveItem(i);
-				cCarrier.TrainSetOrders(i);
-				if (AIVehicle.GetState(i)!=AIVehicle.VS_RUNNING)	AIVehicle.StartStopVehicle(i);
+				cCarrier.TrainExitDepot(i);
 				}
 		break;
 		case	DepotAction.SIGNALUPGRADE:
@@ -672,9 +671,52 @@ DInfo("Starting "+cCarrier.VehicleGetName(vehID)+"...",0,"cCarrier::AddWagon");
 INSTANCE.carrier.TrainSetOrders(vehID);
 if (loaded > 0)	AIOrder.SkipToOrder(vehID, 1);
 		else	AIOrder.SkipToOrder(vehID, 0);
-AIVehicle.StartStopVehicle(vehID);
+cCarrier.StartVehicle(vehID);
 if (INSTANCE.carrier.ToDepotList.HasItem(vehID))	INSTANCE.carrier.ToDepotList.RemoveItem(vehID);
-INSTANCE.Sleep(40);
-if (AIVehicle.GetState(vehID) != AIVehicle.VS_RUNNING)	AIVehicle.StartStopVehicle(vehID);
+}
+
+function cCarrier::StartVehicle(vehID)
+// This try to make sure we will start the vehicle and not stop it because of the weak cCarrier.StartVehicle function
+{
+if (!AIVehicle.IsValidVehicle(vehID))	return false;
+local	wait=true;
+while (AIVehicle.GetState(vehID) == AIVehicle.VS_BROKEN)	INSTANCE.Sleep(15);
+local i=0;
+local maxspeed=4000;
+while (wait)
+	{ // wait to see if its speed remain at 0
+	local speed=AIVehicle.GetCurrentSpeed(vehID);
+	if (speed == 0 || speed < maxspeed || AIVehicle.GetState(vehID)==AIVehicle.VS_STOPPED)	{ INSTANCE.Sleep(5); i++; maxspeed=speed; }
+															else	return false;
+	if (i > 4)	wait=false;
+	}
+if ((AIVehicle.GetState(vehID) != AIVehicle.VS_STOPPED || AIVehicle.GetState(vehID) != AIVehicle.VS_IN_DEPOT) && AIVehicle.StartStopVehicle(vehID))
+	{
+	DInfo("Starting "+cCarrier.VehicleGetName(vehID)+"...",0,"cCarrier::StartVehicle");
+	return true;
+	}
+return false; // crash/invalid...
+}
+
+function cCarrier::StopVehicle(vehID)
+// Try to stop a vehicle that is running, and not restart it...
+{
+local	wait=true;
+local i=0;
+while (wait)
+	{ // wait to see if its speed remain >0
+	local speed=AIVehicle.GetCurrentSpeed(vehID);
+	local state=AIVehicle.GetState(vehID);
+	if (state == AIVehicle.VS_CRASHED || state == AIVehicle.VS_INVALID)	return false;
+	if (speed > 0 || state == AIVehicle.VS_AT_STATION || state == AIVehicle.VS_IN_DEPOT)	{ INSTANCE.Sleep(5); i++; }
+	if (state == AIVehicle.VS_BROKEN)	i=0; // wait until broken status is remove
+	if (i > 4)	wait=false;
+	}
+if ((AIVehicle.GetState(vehID) == AIVehicle.VS_RUNNING || AIVehicle.GetState(vehID) == AIVehicle.VS_AT_STATION) && AIVehicle.StartStopVehicle(vehID))
+	{
+	DInfo("Stoping "+cCarrier.VehicleGetName(vehID)+"...",0,"cCarrier::StopVehicle");
+	return true;
+	}
+return false;
 }
 

@@ -76,11 +76,10 @@ function cPathfinder::InfoSign(msg)
 function cPathfinder::AdvanceTask(UID)
 // Advance the pathfinding search
 	{
-	local maxTimer=450;	// maximum time put on pathfinding a path
-	local maxStep=20;		// maximum time put on a try
+	local maxTimer=400;	// maximum time put on pathfinding a path
+	local maxStep=10;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);
-print("stoptask="+pftask.UID+" status="+pftask.status+" subtask="+pftask.r_source+":"+pftask.r_target);
 	switch (pftask.status)
 		{
 		case	-1:
@@ -162,13 +161,13 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 	pftask.useEntry=entrance;
 	pftask.stationID=station;
 	pftask.pathHandler= MyRailPF();
-	pftask.pathHandler.cost.bridge_per_tile = 90;
-	pftask.pathHandler.cost.tunnel_per_tile = 75;
+	pftask.pathHandler.cost.bridge_per_tile = 70;
+	pftask.pathHandler.cost.tunnel_per_tile = 70;
 	pftask.pathHandler.cost.turn = 200;
 	pftask.pathHandler.cost.max_bridge_length=30;
 	pftask.pathHandler.cost.max_tunnel_length=30;
-	pftask.pathHandler.cost.tile=80;
-	pftask.pathHandler.cost.slope=250;
+	pftask.pathHandler.cost.tile=70;
+	pftask.pathHandler.cost.slope=80;
 	pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 	DInfo("New pathfinder task : "+pftask.UID,1,"cPathfinder::CreateNewTask");
 	cPathfinder.database[pftask.UID] <- pftask;

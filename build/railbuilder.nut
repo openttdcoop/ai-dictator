@@ -212,6 +212,11 @@ switch (error)
 return -2;
 }
 
+function cBuilder::RoadSmoother(path)
+{
+
+}
+
 function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 {
 local status=cPathfinder.GetStatus(head1, head2, useEntry, stationID);
@@ -289,9 +294,15 @@ while (path != null && smallerror==0)
 		 else {
 			// check for small up/down hills correction
 			local targetTile=path.GetTile();
-			local equal= (AITile.GetMinHeight(prev) == AITile.GetMinHeight(targetTile));
-			if (!equal)	equal = (AITile.GetMaxHeight(prev) == AITile.GetMaxHeight(targetTile));
-			if (equal && AITile.GetSlope(prev) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT)
+			print("prevprev="+AITile.GetSlope(prevprev)+"("+AITile.GetMinHeight(prevprev)+","+AITile.GetMaxHeight(prevprev)+")"+" prev="+AITile.GetSlope(prev)+"("+AITile.GetMinHeight(prev)+","+AITile.GetMaxHeight(prev)+")"+" targetTile="+AITile.GetSlope(targetTile)+"("+AITile.GetMinHeight(targetTile)+","+AITile.GetMaxHeight(targetTile)+")");
+		//	local equal= (AITile.GetMinHeight(prev) == AITile.GetMinHeight(targetTile));
+			//if (!equal)	equal = (AITile.GetMaxHeight(prev) == AITile.GetMaxHeight(targetTile));
+			local smooth=false;
+			if (AITile.GetSlope(prevprev) == AITile.SLOPE_FLAT && AITile.GetMaxHeight(targetTile) < AITile.GetMaxHeight(prev) && AITile.GetMaxHeight(prev) > AITile.GetMaxHeight(prevprev))	{ smooth=true; print("should smooth going up"); }
+			if (AITile.GetSlope(prevprev) == AITile.SLOPE_FLAT && AITile.GetMinHeight(targetTile) >  AITile.GetMinHeight(prev) && AITile.GetMinHeight(prev) < AITile.GetMinHeight(prevprev))	{ smooth=true; print("should smooth going down"); }
+
+//			if (false && equal && AITile.GetSlope(prev) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT && AITile.GetSlope(prevprev) == AITile.SLOPE_FLAT)
+			if (false)
 				{
 				DInfo("Smoothing land to build rails",1,"BuildRoadRAIL");
 				cTileTools.TerraformLevelTiles(prevprev, targetTile);
@@ -427,50 +438,58 @@ local dstEntryLoc=cStation.GetRailStationFrontTile(true, cStation.GetLocation(ds
 local srcExitLoc=cStation.GetRailStationFrontTile(false, cStation.GetLocation(src), src);
 local dstExitLoc=cStation.GetRailStationFrontTile(false, cStation.GetLocation(dst), dst);
 
-if ( (!srcEntry && !srcExit) || (!dstEntry && !dstExit) )
+local srcStation=cStation.GetStationObject(src);
+local dstStation=cStation.GetStationObject(dst);
+if ( srcStation==null || dstStation==null || (!srcEntry && !srcExit) || (!dstEntry && !dstExit) )
 	{
 	DInfo("That station have its entry and exit closed. No more connections could be made with it",1,"FindStationEntryToExitPoint");
 	return [];
 	}
+local srcEntryBuild=(srcStation.locations.GetValue(11) != -1); // because if we have build it and it is still open, we must use that point, even if it's not the shortest path
+local srcExitBuild=(srcStation.locations.GetValue(13) != -1);  // else we may prefer another point that would be shorter, leaving that entry/exit built for nothing
+local dstEntryBuild=(dstStation.locations.GetValue(12) != -1);
+local dstExitBuild=(dstStation.locations.GetValue(14) != -1);
+print("srcEntryBuild="+srcEntryBuild+" srcExitBuild="+srcExitBuild+" dstEntryBuild="+dstEntryBuild+" dstExitBuild="+dstExitBuild);
 local best=100000000000;
-local bestsrc=0;
-local bestdst=0;
-local check=0;
+local bestsrc=-1;
+local bestdst=-1;
+local check=-1;
 local srcFlag=0;
 local dstFlag=0; // use to check if we're connect to entry(1) or exit(0)
 
-if (srcEntry)
+if (srcEntry && !srcExitBuild)
 	{
 	if (dstExit)
 		{
 		check = AIMap.DistanceManhattan(srcEntryLoc,dstExitLoc);
-		if (check < best)	{ best=check; bestsrc=srcEntryLoc; bestdst=dstExitLoc; }
+		if (check < best && !dstEntryBuild)	{ best=check; bestsrc=srcEntryLoc; bestdst=dstExitLoc; }
 		}
 		DInfo("distance="+check+" bestsrc="+bestsrc+" bestdst="+bestdst,2,"FindStationEntryToExit");
 	if (dstEntry)
 		{
 		check = AIMap.DistanceManhattan(srcEntryLoc,dstEntryLoc);
-		if (check < best)	{ best=check; bestsrc=srcEntryLoc; bestdst=dstEntryLoc; }
+		if (check < best && !dstExitBuild)	{ best=check; bestsrc=srcEntryLoc; bestdst=dstEntryLoc; }
 		}
 		DInfo("distance="+check+" bestsrc="+bestsrc+" bestdst="+bestdst,2,"FindStationEntryToExit");
 	}
-if (srcExit)
+if (srcExit && !srcEntryBuild)
 	{
 	if (dstEntry)
 		{
 		check = AIMap.DistanceManhattan(srcExitLoc,dstEntryLoc);
-		if (check < best)	{ best=check; bestsrc=srcExitLoc; bestdst=dstEntryLoc; }
+		if (check < best && !dstExitBuild)	{ best=check; bestsrc=srcExitLoc; bestdst=dstEntryLoc; }
 		}
 	DInfo("distance="+check+" bestsrc="+bestsrc+" bestdst="+bestdst,2,"FindStationEntryToExit");
 	if (dstExit)
 		{
 		check = AIMap.DistanceManhattan(srcExitLoc,dstExitLoc); 
-		if (check < best)	{ best=check; bestsrc=srcExitLoc; bestdst=dstExitLoc; }
+		if (check < best && !dstEntryBuild)	{ best=check; bestsrc=srcExitLoc; bestdst=dstExitLoc; }
 		}
 	DInfo("distance="+check+" bestsrc="+bestsrc+" bestdst="+bestdst,2,"FindStationEntryToExit");
 	}
 // Now we know where to build our roads
 local bestWay=[];
+if (check == -1) return [];
 if (bestsrc == srcEntryLoc)	srcFlag=1;
 if (bestdst == dstEntryLoc)	dstFlag=1;
 bestWay.push(bestsrc);
@@ -536,6 +555,7 @@ do	{
 			dstpos=dstlink+cStation.GetRelativeTileBackward(dstStation.stationID, dstUseEntry);
 			if (mainowner==-1)
 				{
+
 				DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos+" srclink="+srclink+" dstlink="+dstlink,2,"CreateStationConnection");
 				/*PutSign(dstpos,"D");
 				PutSign(dstlink,"d");
@@ -1294,11 +1314,7 @@ if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker 
 		}
 	foreach (vehicle, dummy in vehlistRestart)
 		{
-		/*
-		INSTANCE.carrier.TrainSetOrders(vehicle);
-		INSTANCE.Sleep(5);
-		while (AIVehicle.GetState(vehicle) != AIVehicle.VS_RUNNING)	{ AIVehicle.StartStopVehicle(vehicle); INSTANCE.Sleep(10); }*/
-		cCarrier.TrainExitDepot(vehID);
+		cCarrier.TrainExitDepot(vehicle);
 		}
 	}
 
@@ -1737,7 +1753,7 @@ foreach (veh, dummy in vehlist)
 	{
 	DInfo("Starting "+cCarrier.VehicleGetName(veh)+"...",0,"cCarrier::AddWagon");
 	cTrain.SetDepotVisit(veh);
-	AIVehicle.StartStopVehicle(veh);
+	cCarrier.StartVehicle(veh);
 	INSTANCE.Sleep(40);
 	}
 for (local i=0; i < 10; i++)

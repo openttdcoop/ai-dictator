@@ -570,7 +570,7 @@ function LoadingGame()
 	if (!trlist.IsEmpty())
 		{
 		DInfo("Restarting stopped trains");
-		foreach (veh, dummy in trlist)	AIVehicle.StartStopVehicle(veh);
+		foreach (veh, dummy in trlist)	cCarrier.StartVehicle(veh);
 		}
 	local alltowns=AITownList();
 	foreach (townID, dummy in alltowns)

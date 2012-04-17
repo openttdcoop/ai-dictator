@@ -12,7 +12,6 @@
  *
 **/
 
-
 function cCarrier::VehicleOrderSkipCurrent(veh)
 // Skip the current order and go to the next one
 {
@@ -220,7 +219,7 @@ if (homedepot == null || !cStation.IsDepot(homedepot))
 		}
 	if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_ROAD)
 		{
-		if (AIVehicle.GetState(veh)==AIVehicle.VS_RUNNING)	AIVehicle.StartStopVehicle(veh);
+		cCarrier.StopVehicle(veh);
 		// first stop it from running everywhere
 		vehloc=AIVehicle.GetLocation(veh); // now that the vehicle is stopped
 		local possibleplace=cTileTools.GetTilesAroundPlace(AIVehicle.GetLocation(veh),100);
@@ -241,8 +240,8 @@ if (homedepot == null || !cStation.IsDepot(homedepot))
 			homedepot=cBuilder.BuildRoadDepotAtTile(vehloc);
 			if (homedepot==-1)	homedepot==null;
 			}
-		if (AIVehicle.GetState(veh)==AIVehicle.VS_STOPPED)	AIVehicle.StartStopVehicle(veh);
 		if (homedepot==null)	return;
+		cCarrier.StartVehicle(veh);
 		}
 	}
 if (road != null && road.source_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocation(road.source_stationID), AIOrder.AIOF_NONE);

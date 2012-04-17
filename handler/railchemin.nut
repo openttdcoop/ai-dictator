@@ -18,6 +18,7 @@ function cRoute::DutyOnRailsRoute(uid)
 local firstveh=false;
 local road=cRoute.GetRouteObject(uid);
 // no checks, as this is call after DutyOnRoute checks
+if (road == null || !road.isWorking)	return;
 local maxveh=0;
 INSTANCE.carrier.highcostTrain=0;
 local cargoid=road.cargoID;

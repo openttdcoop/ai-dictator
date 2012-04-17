@@ -34,10 +34,10 @@ while (AIEventController.IsEventWaiting())
 	switch (eventType)
 		{
 		case AIEvent.AI_ET_TOWN_FOUNDED:
-			event = AIEventTownFounded(event);
+			event = AIEventTownFounded.Convert(event);
 			local town = event.GetTownID();
 			DInfo("New town found ! "+AITown.GetName(town),0,"HandleEvents");
-			INSTANCE.jobs.AddNewIndustryOrTown(industry, true);
+			INSTANCE.jobs.AddNewIndustryOrTown(town, true);
 		break;
 		case AIEvent.AI_ET_COMPANY_BANKRUPT:
 			foreach (uid, dummy in cRoute.RouteIndexer)	INSTANCE.builder.RouteIsDamage(uid);

@@ -60,9 +60,30 @@ function MyRailPF::_Cost(path, new_tile, new_direction, self)
 	local cost = ::RailPathFinder._Cost(path, new_tile, new_direction, self);
 	return cost;
 }
+/*
 function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
 {
 	return 1.4*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+}*/
+
+function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
+{
+	local min_cost = self._max_cost;
+	/* As estimate we multiply the lowest possible cost for a single tile with
+	 *  with the minimum number of tiles we need to traverse. */
+	foreach (tile in goal_tiles) {
+		local dx = abs(AIMap.GetTileX(cur_tile) - AIMap.GetTileX(tile[0]));
+		local dy = abs(AIMap.GetTileY(cur_tile) - AIMap.GetTileY(tile[0]));
+		//min_cost = min(min_cost, min(dx, dy) * self._cost_diagonal_tile * 2 + (max(dx, dy) - min(dx, dy)) * self._cost_tile);
+		local thatmul=0;
+		if (AITile.GetSlope(cur_tile) == AITile.SLOPE_FLAT)	thatmul=self._cost_tile;
+										else	thatmul=self._cost_slope;
+		min_cost= max(dx, dy)*thatmul*1.4; // the Chebyshev_distance
+		min_cost= max(dx, dy)*self._cost_tile*2;
+//print("original min="+min_cost);
+//print("chebby = "+max(dx, dy)*self._cost_diagonal_tile);
+	}
+	return min_cost;
 }
 
 function cBuilder::CanBuildRoadStation(tile, direction)
@@ -475,6 +496,7 @@ local good=true;
 local space="        ";
 local correction=false;
 local temp=null;
+local minGood=false;
 if (repair.route_type != AIVehicle.VT_ROAD)	return false; // only check road type
 DInfo("Checking route health of "+cRoute.RouteGetName(repair.UID),1,"cBuilder::CheckRoadHealth");
 // check stations for trouble
@@ -534,8 +556,7 @@ if (good)
 ClearSignsALL();
 
 // check the road itself from source to destination
-if (good)
-	{
+
 	msg=space+"Connection from source station to target station : "
 	local one = repair.source.GetRoadStationEntry();
 	local two = repair.target.GetRoadStationEntry();
@@ -545,11 +566,11 @@ if (good)
 		INSTANCE.builder.BuildRoadROAD(one, two);
 		if (!INSTANCE.builder.RoadRunner(one, two, AIVehicle.VT_ROAD))
 			{ msg+=error_error; good=false; }
-		else	{ msg+=error_repair; }
+		else	{ msg+=error_repair; minGood=true; }
 		DInfo(msg,1);
 		}
-	else	{ DInfo(msg+"Working",1,"cBuilder::CheckRoadHealth"); }
-	}
+	else	{ DInfo(msg+"Working",1,"cBuilder::CheckRoadHealth"); minGood=true; }
+
 
 // the source depot
 msg=space+"Source Depot "+repair.source.depot+" is ";
@@ -637,7 +658,7 @@ if (good)
 		}
 	}
 ClearSignsALL();
-return good;
+return minGood;
 }
 
 function cBuilder::ConstructRoadROAD(path)
