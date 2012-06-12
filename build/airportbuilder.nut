@@ -29,7 +29,7 @@ if (firstroute == null || station == null)	{ DInfo("Found an airport attach to n
 if (firstroute.source_stationID == stationid)	{ start=true; townid=firstroute.sourceID; }
 							else	{ start=false; townid=firstroute.targetID; }
 local now=AIDate.GetCurrentDate();
-if (now - station.lastUpdate < 40) // wait 40 days before each trys
+if (now - station.lastUpdate < 120) // wait 40 days before each trys
 	{
 	DInfo("We try to upgrade that airport not so long ago, giving up",1,"AirportNeedUpgrade");
 	return false;
@@ -48,6 +48,7 @@ local ourloc=0;
 local ournoise=AIAirport.GetNoiseLevelIncrease(station.locations.Begin(),airporttype);
 DInfo("Town rating = "+townrating+" noiselevel="+noiselevel,2);
 cTileTools.SeduceTown(townid,AITown.TOWN_RATING_GOOD);
+townrating=AITown.GetRating(townid,AICompany.COMPANY_SELF);
 if (townrating < AITown.TOWN_RATING_GOOD)
 	{ DInfo("Cannot upgrade airport, too dangerous with our current rating with this town.",1); station.lastUpdate+=70; return false; }
 local cost=AIAirport.GetPrice(airporttype);

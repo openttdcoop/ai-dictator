@@ -54,7 +54,7 @@ if (firstveh == -1)	{ DError("Cannot create the vehicle "+veh,2,"cCarrier::Creat
 // as thir engine is the fastest always
 local firstorderflag = null;
 local secondorderflag = null;
-secondorderflag = AIOrder.AIOF_NONE;
+secondorderflag = AIOrder.OF_NONE;
 AIOrder.AppendOrder(firstveh, srcplace, secondorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 AIGroup.MoveVehicle(road.groupID, firstveh);
@@ -73,14 +73,17 @@ local vehengine=AIVehicle.GetEngineType(vehicle);
 return vehlist.HasItem(vehengine);
 }
 
-function cCarrier::ChooseAircraft(cargo,airtype=0)
+function cCarrier::ChooseAircraft(cargo, distance, airtype=0)
 // build an aircraft base on cargo
+// distance is now need because of newGRF distance limit for aircraft
 // airtype = 0=efficiency, 1=best, 2=chopper
-// We can endup with 5+ different type of aircrafts running
+// We can endup with 7+ different type of aircrafts running, now even more because of distance limit in newGRF :/
 {
 local vehlist = AIEngineList(AIVehicle.VT_AIR);
 vehlist.Valuate(AIEngine.IsBuildable);
 vehlist.KeepValue(1);
+//vehlist.Valuate(AIEngine.GetMaximumOrderDistance);
+//vehlist.KeepValue(distance); // Add for newGRF distance limit
 local passCargo=cCargo.GetPassengerCargo();
 vehlist.Valuate(AIEngine.CanRefitCargo, passCargo);
 vehlist.KeepValue(1);
@@ -144,6 +147,7 @@ switch (airtype)
 	break;
 	}
 if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), special, true); // set top engine for aircraft
+if (!vehlist.IsEmpty())	print("aircraft="+cEngine.GetName(vehlist.Begin())+" r_dist="+distance+" r_distSQ="+(distance*distance)+" e_dist="+AIEngine.GetMaximumOrderDistance(vehlist.Begin()));
 return (vehlist.IsEmpty()) ? null : vehlist.Begin();
 }
 
@@ -156,7 +160,7 @@ local modele=AircraftType.EFFICIENT;
 if (road.route_type == RouteType.AIRNET || road.route_type == RouteType.AIRNETMAIL)	modele=AircraftType.BEST; // top speed/capacity for network
 if (road.source.specialType == AIAirport.AT_SMALL || road.target.specialType == AIAirport.AT_SMALL)	modele+=20;
 if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER; // need a chopper
-local veh = INSTANCE.carrier.ChooseAircraft(road.cargoID,modele);
+local veh = INSTANCE.carrier.ChooseAircraft(road.cargoID, road.distance, modele);
 return veh;
 }
 

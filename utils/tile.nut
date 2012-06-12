@@ -640,7 +640,7 @@ local testing=null;
 local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 if (curRating >= needRating || curRating == AITown.TOWN_RATING_NONE)	return true;
 local counter=0;
-while (good && curRating < needRating && counter < 2)
+while (good && curRating < needRating && counter < 1)
 	{
 	if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))	good=AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
 	DInfo("Offering money to "+AITown.GetName(townID)+" = "+good+" nowrate="+curRating+" targetrate="+needRating,2,"TownBriber");
@@ -658,6 +658,25 @@ function cTileTools::SeduceTown(townID, needRating)
 {
 local towntiles=cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID),200);
 local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
+
+local testtiles=AITileList();
+testtiles.AddList(towntiles);
+testtiles.Valuate(AITile.IsWithinTownInfluence, townID);
+testtiles.KeepValue(1);
+local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+foreach (tiles, dummy in testtiles)
+	{
+	testtiles.SetValue(tiles,0);
+	if (AITile.GetClosestTown(tiles)==townID)	testtiles.SetValue(tiles,1);
+//	if (AITile.IsWithinTownInfluence(tiles, townID))	testtiles.SetValue(tiles,2);
+	//if (AITile.GetTownAuthority(tiles)==townID)	testtiles.SetValue(tiles,3);
+	if (!AITile.IsBuildable(tiles))	testtiles.SetValue(tiles,0);
+	}
+testtiles.RemoveValue(0);
+print("test size="+testtiles.Count());
+showLogic(testtiles);
+INSTANCE.NeedDelay(200);
+
 towntiles.Valuate(AITile.IsWithinTownInfluence,townID);
 towntiles.KeepValue(1);
 towntiles.Valuate(AITile.IsBuildable);
@@ -684,12 +703,12 @@ if (curRating == AITown.TOWN_RATING_APPALLING && needclean > 0)
 	treeon.KeepTop(needclean);
 	foreach (tile, dummy in treeon) AITile.DemolishTile(tile); // if we lack money to remove the tree we will fail anyway
 	}
-
+if (cTileTools.TownBriber(townID, needRating))	return true;
 towntiles.Valuate(AITile.HasTreeOnTile);
 towntiles.KeepValue(0);
 towntiles.Valuate(AITile.GetDistanceManhattanToTile, AITown.GetLocation(townID));
 towntiles.Sort(AIList.SORT_BY_VALUE, true);
-if (cTileTools.TownBriber(townID, needRating))	return true;
+towntiles.KeepTop(150); // limit to 150 tiles per try
 local totalTree=0;
 local totalspent=0;
 local tiledone=0;

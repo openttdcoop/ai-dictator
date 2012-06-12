@@ -341,6 +341,12 @@ switch (INSTANCE.route.route_type)
 						else	success=true;
 		if (success)	buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
 		if (success==-1)	success=null;
+		if (INSTANCE.route.source_stationID != null && INSTANCE.route.rail_type == null && AIStation.IsValidStation(INSTANCE.route.source_stationID))
+			{ // make sure we set rails as the first station and not like the ones detect from the train
+			INSTANCE.route.rail_type=AIRail.GetRailType(AIStation.GetLocation(INSTANCE.route.source_stationID));
+			buildWithRailType=INSTANCE.route.rail_type;
+			}
+		DInfo("Building using "+buildWithRailType+" rail type",2,"TryBuildThatRoute");
 	break;
 	case	RouteType.ROAD:
 		success=INSTANCE.carrier.ChooseRoadVeh(INSTANCE.route.cargoID);
@@ -357,7 +363,7 @@ switch (INSTANCE.route.route_type)
 	case	RouteType.CHOPPER:
 		local modele=AircraftType.EFFICIENT;
 		if (!INSTANCE.route.source_istown)	modele=AircraftType.CHOPPER;
-		success=INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, modele);
+		success=INSTANCE.carrier.ChooseAircraft(INSTANCE.route.cargoID, INSTANCE.route.distance, modele);
 	break;
 	}
 if (!success)

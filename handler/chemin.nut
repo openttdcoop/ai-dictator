@@ -32,6 +32,8 @@ INSTANCE.route.VirtualMailCopy();
 function cRoute::VirtualAirNetworkUpdate()
 // update our list of airports that are in the air network
 {
+local virtroad=cRoute.GetRouteObject(0); // 0 is always the passenger one
+virtroad.distance=0;
 local towns=AITownList();
 towns.Valuate(AITown.GetPopulation);
 towns.RemoveBelowValue(INSTANCE.carrier.AIR_NET_CONNECTOR);
@@ -80,6 +82,14 @@ virtualpath.Clear();
 INSTANCE.carrier.VirtualAirRoute.clear(); // don't try reassign a static variable!
 foreach (towns, dummy in pairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
 foreach (towns, dummy in impairlist)	INSTANCE.carrier.VirtualAirRoute.push(AIStation.GetLocation(validairports.GetValue(towns)));
+local lastdistance=AITile.GetDistanceManhattanToTile(INSTANCE.carrier.VirtualAirRoute[0], INSTANCE.carrier.VirtualAirRoute[INSTANCE.carrier.VirtualAirRoute.len()-1]);
+for (local i=0; i < INSTANCE.carrier.VirtualAirRoute.len(); i++)
+	{
+	local step=0;
+	if (i == 0)	step = lastdistance;
+		else	step = AITile.GetDistanceManhattanToTile(INSTANCE.carrier.VirtualAirRoute[i], INSTANCE.carrier.VirtualAirRoute[i-1]);
+	if (virtroad.distance < step)	virtroad.distance=step; // setup newGRF distance limit
+	}
 local vehlist=AIList();
 local maillist=AIVehicleList_Group(INSTANCE.route.GetVirtualAirMailGroup());
 local passlist=AIVehicleList_Group(INSTANCE.route.GetVirtualAirPassengerGroup());
@@ -114,7 +124,7 @@ if (INSTANCE.carrier.VirtualAirRoute.len() > 1)
 			}
 		}
 
-DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+ cCarrier.VirtualAirRoute.len(),1,"VirtualAirNetworkUpdate");
+DInfo("NETWORK -> Airnetwork route length is now : "+INSTANCE.carrier.VirtualAirRoute.len()+" Airports: "+ cCarrier.VirtualAirRoute.len()+" max distance="+virtroad.distance,1,"VirtualAirNetworkUpdate");
 INSTANCE.route.RouteUpdateAirPath();
 INSTANCE.carrier.AirNetworkOrdersHandler();
 }
@@ -148,6 +158,7 @@ function cRoute::DutyOnAirNetwork()
 // handle the traffic for the aircraft network
 {
 if (INSTANCE.carrier.VirtualAirRoute.len()<2) return;
+local virtroad=cRoute.GetRouteObject(0);
 local vehlist=AIList();
 local passengerID=cCargo.GetPassengerCargo();
 local maillist=AIVehicleList_Group(INSTANCE.route.GetVirtualAirMailGroup());
@@ -158,9 +169,9 @@ local onecapacity=0;
 local age=0;
 local vehneed=0;
 local vehnumber=maillist.Count()+passlist.Count();
-DInfo("NETWORK: Aircrafts in network: "+vehnumber,1,"DutyOnAirNetwork");
-local futurveh=INSTANCE.carrier.ChooseAircraft(cCargo.GetMailCargo(),AircraftType.BEST); // this check force to discover new engine for the virtual mail network
-futurveh=INSTANCE.carrier.ChooseAircraft(passengerID,AircraftType.BEST);
+DInfo("NETWORK: Aircrafts in network: "+vehnumber+" max dist: "+virtroad.distance,1,"DutyOnAirNetwork");
+local futurveh=INSTANCE.carrier.ChooseAircraft(cCargo.GetMailCargo(), virtroad.distance, AircraftType.BEST); // force discovery of new engine for the virtual mail network
+futurveh=INSTANCE.carrier.ChooseAircraft(passengerID, virtroad.distance, AircraftType.BEST);
 if (futurveh == null)	return; // when aircrafts are disable, return null
 if (vehlist.IsEmpty())
 	{
@@ -296,7 +307,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		break;
 		}
 	road.source.UpdateStationInfos();
-	DInfo("Route "+cRoute.RouteGetName(uid),2,"DutyOnRoute");
+	DInfo("Route "+cRoute.RouteGetName(uid)+" distance "+road.distance,2,"DutyOnRoute");
 	local vehneed=0;
 	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
 	local vehonroute=road.vehicle_count;

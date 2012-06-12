@@ -33,34 +33,34 @@ while (AIEventController.IsEventWaiting())
 	DInfo("New event incoming: "+eventType,2,"HandleEvents");
 	switch (eventType)
 		{
-		case AIEvent.AI_ET_TOWN_FOUNDED:
+		case AIEvent.ET_TOWN_FOUNDED:
 			event = AIEventTownFounded.Convert(event);
 			local town = event.GetTownID();
 			DInfo("New town found ! "+AITown.GetName(town),0,"HandleEvents");
 			INSTANCE.jobs.AddNewIndustryOrTown(town, true);
 		break;
-		case AIEvent.AI_ET_COMPANY_BANKRUPT:
+		case AIEvent.ET_COMPANY_BANKRUPT:
 			foreach (uid, dummy in cRoute.RouteIndexer)	INSTANCE.builder.RouteIsDamage(uid);
 			// in case someone disapears, set a route health check for all routes
 		break;
-		case AIEvent.AI_ET_INDUSTRY_OPEN:
+		case AIEvent.ET_INDUSTRY_OPEN:
 			event = AIEventIndustryOpen.Convert(event);
 			local industry = event.GetIndustryID();
 			cJobs.RawJobAdd(industry,false);
 			DInfo("New industry "+AIIndustry.GetName(industry),0,"HandleEvents");
 		break;
-		case AIEvent.AI_ET_INDUSTRY_CLOSE:
+		case AIEvent.ET_INDUSTRY_CLOSE:
 			event = AIEventIndustryClose.Convert(event);
 			local industry = event.GetIndustryID();
 			DInfo("Industry "+AIIndustry.GetName(industry)+" is closing !",0,"HandleEvents");
 			cJobs.RawJobDelete(industry, false)
 		break;
-		case AIEvent.AI_ET_COMPANY_NEW:
+		case AIEvent.ET_COMPANY_NEW:
 			event = AIEventCompanyNew.Convert(event);
 			local company = AICompany.GetName(event.GetCompanyID());
 			DInfo("Welcome "+company,0);
 		break;
-		case AIEvent.AI_ET_ENGINE_PREVIEW:
+		case AIEvent.ET_ENGINE_PREVIEW:
 			event = AIEventEnginePreview.Convert(event);
 			if (event.AcceptPreview()) 
 				{
@@ -68,13 +68,13 @@ while (AIEventController.IsEventWaiting())
 				}
 		INSTANCE.carrier.CheckOneVehicleOfGroup(true);
 		break;
-		case AIEvent.AI_ET_ENGINE_AVAILABLE:
+		case AIEvent.ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
 			DInfo("New engine available: " + cEngine.GetName(engine),0,"HandleEvents");
 		INSTANCE.carrier.CheckOneVehicleOfGroup(true);
 		break;
-		case AIEvent.AI_ET_VEHICLE_CRASHED:
+		case AIEvent.ET_VEHICLE_CRASHED:
 			local vehicle = null;
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
@@ -85,10 +85,10 @@ while (AIEventController.IsEventWaiting())
 			if (engineID != null)	cEngine.RabbitUnset(engineID);
 			INSTANCE.carrier.VehicleSellAndDestroyRoute(vehicle); // try to see if the crash vehicle was going to remove a route
 		break;
-		case AIEvent.AI_ET_VEHICLE_WAITING_IN_DEPOT:
+		case AIEvent.ET_VEHICLE_WAITING_IN_DEPOT:
 			INSTANCE.carrier.VehicleIsWaitingInDepot();
 		break;
-		case AIEvent.AI_ET_VEHICLE_LOST:
+		case AIEvent.ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
 			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, not a good news",0,"HandleEvents");
@@ -97,7 +97,7 @@ while (AIEventController.IsEventWaiting())
 			local rcheck=INSTANCE.carrier.VehicleFindRouteIndex(vehicle);
 			INSTANCE.builder.RouteIsDamage(rcheck);
 		break;
-		case AIEvent.AI_ET_VEHICLE_UNPROFITABLE:
+		case AIEvent.ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
 			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot",0,"HandleEvents");
@@ -106,7 +106,7 @@ while (AIEventController.IsEventWaiting())
 			INSTANCE.builder.RouteIsDamage(INSTANCE.carrier.VehicleFindRouteIndex(vehicle));
 			INSTANCE.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;
-		case AIEvent.AI_ET_COMPANY_IN_TROUBLE:
+		case AIEvent.ET_COMPANY_IN_TROUBLE:
 			event = AIEventCompanyInTrouble.Convert(event);
 			local company = event.GetCompanyID();
 			local action="";

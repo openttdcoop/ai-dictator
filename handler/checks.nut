@@ -142,7 +142,7 @@ foreach (i, dummy in airID)
 		local percent=INSTANCE.carrier.VehicleGetLoadingPercent(i);
 		//DInfo("Vehicle "+i+" load="+percent,2);
 		local orderflags=AIOrder.GetOrderFlags(i, AIOrder.ORDER_CURRENT);
-		local order_full=( (orderflags & AIOrder.AIOF_FULL_LOAD_ANY) == AIOrder.AIOF_FULL_LOAD_ANY);
+		local order_full=( (orderflags & AIOrder.OF_FULL_LOAD_ANY) == AIOrder.OF_FULL_LOAD_ANY);
 		if (percent > 4 && percent < 90 && order_full)
 			{ // we have a vehicle with more than 20% cargo in it
 			INSTANCE.carrier.VehicleOrderSkipCurrent(i);

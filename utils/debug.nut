@@ -17,7 +17,7 @@ function PutSign(place,msg)
 {
 if (!INSTANCE.debug) return;
 if (DictatorAI.GetSetting("debug") < 3) return;
-if (place != null) AISign.BuildSign(place,msg);
+if (place != null) AISign.BuildSign(place,msg.tostring());
 }
 
 function ClearSignsALL()

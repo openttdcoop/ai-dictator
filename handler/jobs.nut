@@ -231,7 +231,7 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	if (myjob.source_istown)
 		{
 		myjob.cargoAmount=AITown.GetLastMonthProduction(myjob.sourceID, myjob.cargoID);
-		myjob.foule=AITown.GetLastMonthTransported(myjob.sourceID, myjob.cargoID);
+		myjob.foule=AITown.GetLastMonthSupplied(myjob.sourceID, myjob.cargoID);
 		if (myjob.target_istown)
 			{
 			local average=AITown.GetLastMonthProduction(myjob.targetID, myjob.cargoID);
@@ -240,7 +240,7 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 					if (average < myjob.cargoAmount)	myjob.cargoAmount=average;
 					}
 					else	myjob.cargoAmount=(myjob.cargoAmount+average) / 2 ; // average towns pop, help find best route
-			myjob.foule+=AITown.GetLastMonthTransported(myjob.targetID, myjob.cargoID);
+			myjob.foule+=AITown.GetLastMonthSupplied(myjob.targetID, myjob.cargoID);
 			}
 		}
 	else	{ // industry
@@ -390,7 +390,7 @@ function cJobs::EstimateCost()
 		case	AIVehicle.VT_AIR:
 			// 2 vehicle + 2 airports
 			engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIR);
-			if (engine==-1)	engine=INSTANCE.carrier.ChooseAircraft(this.cargoID,AircraftType.EFFICIENT);
+			if (engine==-1)	engine=INSTANCE.carrier.ChooseAircraft(this.cargoID, this.distance, AircraftType.EFFICIENT);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;

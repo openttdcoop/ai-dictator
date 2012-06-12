@@ -94,9 +94,9 @@ while (!confirm)
 	AIController.Sleep(1);
 	}
 
-local firstorderflag = AIOrder.AIOF_NON_STOP_INTERMEDIATE;
+local firstorderflag = AIOrder.OF_NON_STOP_INTERMEDIATE;
 local secondorderflag = firstorderflag;
-if (!road.twoway)	{ firstorderflag+=AIOrder.AIOF_FULL_LOAD_ANY; secondorderflag=AIOrder.AIOF_NO_LOAD; }
+if (!road.twoway)	{ firstorderflag+=AIOrder.OF_FULL_LOAD_ANY; secondorderflag=AIOrder.OF_NO_LOAD; }
 AIGroup.MoveVehicle(road.groupID, vehID);
 if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
 	{ // detect IsArticulated bug

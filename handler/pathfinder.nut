@@ -102,20 +102,20 @@ function cPathfinder::AdvanceTask(UID)
 		{
 		check = pftask.pathHandler.FindPath(maxTimer);
 		_counter++; pftask.timer++;
-		pftask.InfoSign("Pathfinding... "+pftask.timer);
+		pftask.InfoSign("Pathfinding "+pftask.UID+"... "+pftask.timer);
 		}
 	if (check != null && check != false)
 		{
 		DInfo("Pathfinder task "+pftask.UID+" found a path",1,"cPathfinder::AdvanceTask");
 		pftask.status=1;
-		pftask.InfoSign("Pathfinding... found");
+		pftask.InfoSign("Pathfinding "+pftask.UID+"... found");
 		pftask.solve=check;
 		return;
 		}
 	if (check == null || pftask.timer > maxTimer)
 		{
 		DInfo("Pathfinder task "+pftask.UID+" failure",1,"cPathfinder::AdvanceTask");
-		pftask.InfoSign("Pathfinding... failure");
+		pftask.InfoSign("Pathfinding "+pftask.UID+"... failure");
 		pftask.status=-1;
 		}
 	}

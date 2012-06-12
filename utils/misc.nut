@@ -492,6 +492,12 @@ function LoadSaveGame()
 			cRoute.database[obj.UID] <- obj;
 			if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
 			obj.RouteCheckEntry(); // re-enable the link to stations
+			if (obj.source_entry && AIStation.IsValidStation(obj.source_stationID))
+				{
+				obj.rail_type=AIRail.GetRailType(AIStation.GetLocation(obj.source_stationID));
+				obj.RouteSetDistance();
+print("aircraft= route dist="+obj.distance);
+				}
 			if (obj.groupID != null)	cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
 			if (!obj.source_entry || !obj.target_entry)	continue;
 			obj.source.cargo_produce.AddItem(obj.cargoID,0);

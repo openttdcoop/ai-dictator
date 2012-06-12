@@ -53,7 +53,7 @@ if (numorders != cCarrier.VirtualAirRoute.len())
 	for (local i=0; i < INSTANCE.carrier.VirtualAirRoute.len(); i++)
 		{
 		local destination=INSTANCE.carrier.VirtualAirRoute[i];
-		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.AIOF_NONE))
+		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.OF_NONE))
 			{ DError("Aircraft network order refuse",2,"AirNetworkOrdersHandler"); }
 		}
 	if (numorders > 0)
@@ -119,16 +119,16 @@ local dstplace=null;
 switch (road.route_type)
 	{
 	case AIVehicle.VT_ROAD:
-		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		if (!road.twoway) { oneorder+=AIOrder.AIOF_FULL_LOAD_ANY; twoorder+=AIOrder.AIOF_NO_LOAD; }
+		oneorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+		twoorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+		if (!road.twoway) { oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
 	case AIVehicle.VT_RAIL:
-		oneorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		twoorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-		if (!road.twoway)	{ oneorder+=AIOrder.AIOF_FULL_LOAD_ANY; twoorder+=AIOrder.AIOF_NO_LOAD; }
+		oneorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+		twoorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+		if (!road.twoway)	{ oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
 		srcplace = AIStation.GetLocation(road.source.stationID);
 		dstplace = AIStation.GetLocation(road.target.stationID);
 	break;
@@ -136,14 +136,14 @@ switch (road.route_type)
 	case RouteType.AIRMAIL:
 	case RouteType.SMALLAIR:
 	case RouteType.SMALLMAIL:
-		oneorder=AIOrder.AIOF_NONE;
-		twoorder=AIOrder.AIOF_NONE;
+		oneorder=AIOrder.OF_NONE;
+		twoorder=AIOrder.OF_NONE;
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
 	case AIVehicle.VT_WATER:
-		oneorder=AIOrder.AIOF_FULL_LOAD_ANY;
-		twoorder=AIOrder.AIOF_FULL_LOAD_ANY;
+		oneorder=AIOrder.OF_FULL_LOAD_ANY;
+		twoorder=AIOrder.OF_FULL_LOAD_ANY;
 		srcplace= AIStation.GetLocation(road.source.stationID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
@@ -153,8 +153,8 @@ switch (road.route_type)
 		return true;
 	break;
 	case RouteType.CHOPPER:
-		oneorder=AIOrder.AIOF_NONE;
-		twoorder=AIOrder.AIOF_NONE;
+		oneorder=AIOrder.OF_NONE;
+		twoorder=AIOrder.OF_NONE;
 		srcplace= AIIndustry.GetHeliportLocation(road.sourceID);
 		dstplace= AIStation.GetLocation(road.target.stationID);
 	break;
@@ -244,15 +244,15 @@ if (homedepot == null || !cStation.IsDepot(homedepot))
 		cCarrier.StartVehicle(veh);
 		}
 	}
-if (road != null && road.source_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocation(road.source_stationID), AIOrder.AIOF_NONE);
+if (road != null && road.source_stationID != null)	AIOrder.AppendOrder(veh, AIStation.GetLocation(road.source_stationID), AIOrder.OF_NONE);
 local orderindex=0;
 if (homedepot != null)
 	{
-	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
-	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
-	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 	}
 // Adding depot orders 3 time, so we should endup with at least 3 orders minimum to avoid get caught again by orders check
@@ -261,15 +261,15 @@ if (road != null && road.target_stationID != null)
 	{
 	local mainstation=AIStation.GetLocation(road.target_stationID);
 	if (INSTANCE.carrier.AircraftIsChopper(veh))	mainstation=AIStation.GetLocation(road.source_stationID);
-	AIOrder.AppendOrder(veh, mainstation, AIOrder.AIOF_NONE);
+	AIOrder.AppendOrder(veh, mainstation, AIOrder.OF_NONE);
 	}
 if (homedepot != null)
 	{
-	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
-	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
-	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.AIOF_STOP_IN_DEPOT))
+	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
 	}
 
@@ -349,9 +349,9 @@ if (uid==null)	{ DError("Cannot find uid for that train",1,"cCarrier::TrainSetOr
 local road=cRoute.GetRouteObject(uid);
 if (road==null)	return false;
 DInfo("Append orders to "+cCarrier.VehicleGetName(trainID),2,"cCarrier::TrainSetOrder");
-local firstorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-local secondorder=AIOrder.AIOF_NON_STOP_INTERMEDIATE;
-if (!road.twoway)	{ firstorder+=AIOrder.AIOF_FULL_LOAD_ANY; secondorder=AIOrder.AIOF_NO_LOAD; }
+local firstorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+local secondorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+if (!road.twoway)	{ firstorder+=AIOrder.OF_FULL_LOAD_ANY; secondorder=AIOrder.OF_NO_LOAD; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), firstorder))
 	{ DError(cCarrier.VehicleGetName(trainID)+" refuse first order",2,"cCarrier::TrainSetOrder"); return false; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), secondorder))

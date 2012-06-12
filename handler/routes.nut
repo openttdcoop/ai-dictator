@@ -41,6 +41,8 @@ static	function GetRouteObject(UID)
 	vehicle_count	= null;	// numbers of vehicle using it
 	route_type		= null;	// type of vehicle using that route (It's enum RouteType)
 	station_type	= null;	// type of station (it's AIStation.StationType)
+	rail_type		= null;	// type of rails in use, same as the first working station done
+	distance		= null;	// farest distance from source station to target station
 	isWorking		= null;	// true if the route is working
 	status		= null;	// current status of the route
 						// 0 - need a destination pickup
@@ -78,6 +80,8 @@ static	function GetRouteObject(UID)
 		vehicle_count	= 0;
 		route_type		= null;		// *
 		station_type	= null;
+		rail_type		= null;
+		distance		= 0;
 		isWorking		= false;
 		status		= 0;			// *
 		groupID		= null;		// *
@@ -106,6 +110,18 @@ function cRoute::GetVirtualAirPassengerGroup()
 // return the groupID for the passenger virtual air group
 	{
 	return cRoute.VirtualAirGroup[0];
+	}
+
+function cRoute::RouteSetDistance()
+// setup a route distance
+	{
+	local a, b= -1;
+	if (this.source != null)	a=this.source_location;
+	if (this.target != null)	b=this.target_location;
+	if (this.source_stationID != null && AIStation.IsValidStation(source_stationID))	a=AIStation.GetLocation(source_stationID);
+	if (this.target_stationID != null && AIStation.IsValidStation(target_stationID))	b=AIStation.GetLocation(target_stationID);
+	if (a > -1 && b > -1)	this.distance=AITile.GetDistanceManhattanToTile(a,b);
+				else	this.distance=0;
 	}
 
 function cRoute::RouteCheckEntry()
@@ -234,6 +250,7 @@ function cRoute::RouteDone()
 		this.target.cargo_accept.AddItem(this.cargoID,0);
 		this.target.cargo_produce.AddItem(this.cargoID,0);
 		}
+	this.RouteSetDistance();
 	}
 
 function cRoute::RouteSave()
@@ -342,10 +359,11 @@ function cRoute::CreateNewRoute(UID)
 		}
 	this.isWorking = false;
 	this.status = 0;
-	if (this.source_istown)	source_location=AITown.GetLocation(this.sourceID);
-				else	source_location=AIIndustry.GetLocation(this.sourceID);
-	if (this.target_istown)	target_location=AITown.GetLocation(this.targetID);
-				else	target_location=AIIndustry.GetLocation(this.targetID);
+	if (this.source_istown)	this.source_location=AITown.GetLocation(this.sourceID);
+				else	this.source_location=AIIndustry.GetLocation(this.sourceID);
+	if (this.target_istown)	this.target_location=AITown.GetLocation(this.targetID);
+				else	this.target_location=AIIndustry.GetLocation(this.targetID);
+	this.RouteSetDistance();
 	this.RouteBuildGroup();
 	this.RouteSave();
 	}
@@ -367,6 +385,7 @@ function cRoute::VirtualMailCopy()
 	mailRoute.target_location=passRoute.target_location;
 	mailRoute.source_istown=passRoute.source_istown;
 	mailRoute.target_istown=passRoute.target_istown;
+	mailRoute.distance=passRoute.distance;
 	mailRoute.RouteCheckEntry();
 	}
 
@@ -385,6 +404,7 @@ function cRoute::RouteInitNetwork()
 	passRoute.station_type = AIStation.STATION_AIRPORT;
 	passRoute.status=100;
 	passRoute.vehicle_count=0;
+	passRoute.RouteSetDistance(); // a dummy distance start value
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
 	passRoute.groupID=n;
 	cRoute.SetRouteGroupName(passRoute.groupID, 0, 0, true, true, passRoute.cargoID, true);

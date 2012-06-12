@@ -448,7 +448,7 @@ print("need freight");
 						tID=INSTANCE.carrier.AddNewTrain(uid, tID, newwagon, depotID, stationLen, false);
 						processTrains.push(-1);
 						numTrains++;
-			print("will add "+newwagon+" to this train and create another one with "+(wagonNeed-newwagon));
+			print("will add "+newwagon+" wagons to this train and create another one with "+(wagonNeed-newwagon));
 						}
 print("BREAK TRAINPROCESS");
 		if (AIVehicle.IsValidVehicle(tID))

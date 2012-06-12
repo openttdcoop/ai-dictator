@@ -160,7 +160,9 @@ function cBridge::GetBridgeID(bUID)
 function cBridge::GetMaxSpeed(bUID)
 // return the max speed of a bridge
 	{
-	return AIBridge.GetMaxSpeed(cBridge.GetBridgeID(bUID));
+	local bID=cBridge.GetBridgeID(bUID);
+	if (bID != null)	return AIBridge.GetMaxSpeed(bID);
+	return 0;
 	}
 
 function cBridge::IsBridgeTile(tile)

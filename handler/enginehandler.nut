@@ -253,10 +253,10 @@ function cEngine::EngineCacheInit()
 	DInfo("Caching engines: "+engList.Count(),0,"");
 	foreach (engID, dummy in engList)	local dum=cEngine.GetName(engID);
 	// Init common aircraft usage: normal passenger and mail + small passenger and mail
-	cCarrier.ChooseAircraft(cCargo.GetPassengerCargo(), 0);
-	cCarrier.ChooseAircraft(cCargo.GetMailCargo(), 0);
-	cCarrier.ChooseAircraft(cCargo.GetPassengerCargo(), 20);
-	cCarrier.ChooseAircraft(cCargo.GetMailCargo(), 20);
+	//cCarrier.ChooseAircraft(cCargo.GetPassengerCargo(), 100, 0);
+//	cCarrier.ChooseAircraft(cCargo.GetMailCargo(), 100, 0);
+//	cCarrier.ChooseAircraft(cCargo.GetPassengerCargo(), 100, 20);
+//	cCarrier.ChooseAircraft(cCargo.GetMailCargo(), 100, 20);
 	}
 
 function cEngine::SetBestEngine(EUID, engineID)
