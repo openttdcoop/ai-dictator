@@ -155,8 +155,8 @@ foreach (veh, dummy in airlist)	AIGroup.MoveVehicle(cRoute.GetVirtualAirPassenge
 	DInfo("Tagging jobs in use",0,"LoadingGame");
 	foreach (jobID, dummy in cJobs.jobIndexer)
 		{
-		local ajob=cJobs.GetJobObject(jobID);
-		if (ajob==null)	continue;
+		local ajob=cJobs.Load(jobID);
+		if (!ajob)	continue;
 		ajob.isUse=true;
 		}
 }
@@ -471,8 +471,8 @@ function LoadSaveGame()
 			if (cJobs.jobDoable.HasItem(idx))	continue;
 								else	{ // that's a new job, must be the one we seek
 									cJobs.jobDoable.AddItem(idx,0);
-									local thatjob=cJobs.GetJobObject(idx);
-									if (thatjob == null)	{ saveit=true; continue; } // ie: dual job will not be create and so == null there
+									local thatjob=cJobs.Load(idx);
+									if (!thatjob)	{ saveit=true; continue; } // ie: dual job will not be create and so == null there
 									thatjob.isUse=true;
 									obj.UID=thatjob.UID;
 									break;

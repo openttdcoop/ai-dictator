@@ -12,7 +12,7 @@
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
-
+/*
 class cRoute extends cClass
 	{
 static	database = {};
@@ -102,7 +102,7 @@ static	function GetRouteObject(UID)
 		this.ClassName = "cRoute";
 		}
 	}
-
+*/
 function cRoute::GetVirtualAirMailGroup()
 // return the groupID for the mail virtual air group
 	{
@@ -329,8 +329,8 @@ function cRoute::RouteGetName(uid)
 function cRoute::CreateNewRoute(UID)
 // Create and add to database a new route with informations taken from cJobs
 	{
-	local jobs=cJobs.GetJobObject(UID);
-	if (jobs == null) return; // workaround to loading savegame where the jobs has disapears
+	local jobs=cJobs.Load(UID);
+	if (!jobs) return; // workaround to loading savegame where the jobs has disapears
 	jobs.isUse = true;
 	this.UID = jobs.UID;
 	this.sourceID = jobs.sourceID;

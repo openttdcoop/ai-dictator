@@ -134,5 +134,4 @@ if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInf
 local veh=AIVehicleList();
 if (veh.IsEmpty())	{ DInfo("Forcing build: We have 0 vehicle running !"); bank.canBuild=true; } // we have 0 vehicles force a build
 DInfo("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehnextprice="+carrier.vehnextprice,1);
-bank.canBuild=false;
 }

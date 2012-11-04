@@ -21,10 +21,6 @@ class cProcess extends cClass
 {
 static	database = {};
 static	statueTown = AIList();			// list of towns we use, for statues, decrease everytime a statue is there
-static	targetTown = AIList();			// List of towns we use as target to drop/take passenger/mail by bus & aircraft
-//static	Process_CargoAccepting = AIList();	// list of process that accept a cargo type, value=bitset cargoID
-//static	Process_CargoProducing = AIList();	// list of process that produce a cargo type, value=bitset cargoID
-
 
 static	function GetProcessObject(UID)
 		{
@@ -41,7 +37,6 @@ static	function GetProcessObject(UID)
 	Tracking		= null;	// True to track cargo infos about that industry
 	ScoreRating		= null;	// Score by rating for towns only
 	ScoreProduction	= null;	// Score by production
-	ScoreBonus		= null;	// Bonus to production score
 	Score			= null;	// Total score
 
 
@@ -104,7 +99,6 @@ function cProcess::AddNewProcess(_id, _istown)
 	p.CargoAccept=AIList();
 	p.ScoreRating=1;
 	p.ScoreProduction=0;
-	p.ScoreBonus=1;
 	p.CargoCheckSupply();
 	p.UpdateScore();
 	p.Save();
@@ -129,6 +123,7 @@ function cProcess::DeleteProcess(uid=null)
 {
 	local obj=cProcess.Load(uid);
 	if (!obj)	return false;
+	DInfo("Removing process #"+uid+" from database",2);
 	delete cProcess.database[uid];
 }
 
@@ -144,7 +139,19 @@ function cProcess::UpdateScoreRating(uid=null)
 				if (rate == AITown.TOWN_RATING_NONE)	rate=AITown.TOWN_RATING_GOOD;
 				obj.ScoreRating = 500 - (100 * rate);
 				}
-			else	obj.ScoreRating = 500 - (100 * AIIndustry.GetAmountOfStationsAround(obj.ID));
+			else	switch (INSTANCE.fairlevel)
+				{	
+				case	0:
+					obj.ScoreRating= 500 - (500 * AIIndustry.GetAmountOfStationsAround(obj.ID));	// give up when 1 station is present
+				break;
+				case	1:
+					obj.ScoreRating= 500 - (250 * AIIndustry.GetAmountOfStationsAround(obj.ID));	// give up when 2 stations are there
+				break;
+				case	2:
+					obj.ScoreRating= 500 - (100 * AIIndustry.GetAmountOfStationsAround(obj.ID));	// give up after 5 stations
+				break;
+				}
+if (obj.ScoreRating < 0)	obj.ScoreRating=0;
 }
 
 function cProcess::UpdateScoreProduction(uid=null)

@@ -34,64 +34,65 @@ class cBanker extends cClass
 
 
 function cBanker::GetLoanValue(money)
+// return amount to loan to have enough money
 {
-local i=0;
-local loanStep=AICompany.GetLoanInterval();
-while (money > 0) { i++; money-=loanStep; }
-i--;
-return (i*loanStep);	
+	local i=0;
+	local loanStep=AICompany.GetLoanInterval();
+	while (money > 0) { i++; money-=loanStep; }
+	i--;
+	return (i*loanStep);	
 }
 
 function cBanker::RaiseFundsTo(money)
 {
-local toloan = AICompany.GetLoanAmount() + money;
-local curr=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-local success=true;
-if (curr > money) success=true;
-		else	success=AICompany.SetMinimumLoanAmount(toloan);
-if (!success)	{ // can't get what we need, raising to what we could do so
-			DInfo("Cannot raise money to "+money+". Raising money to max we can",2);
-			toloan=AICompany.GetMaxLoanAmount();
-			success=AICompany.SetMinimumLoanAmount(toloan);
-			}
-return success;
+	local toloan = AICompany.GetLoanAmount() + money;
+	local curr=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	local success=true;
+	if (curr > money) success=true;
+			else	success=AICompany.SetMinimumLoanAmount(toloan);
+	if (!success)	{ // can't get what we need, raising to what we could do so
+				DInfo("Cannot raise money to "+money+". Raising money to max we can",2);
+				toloan=AICompany.GetMaxLoanAmount();
+				success=AICompany.SetMinimumLoanAmount(toloan);
+				}
+	return success;
 }
 
 function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
-local max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
-if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 2000000)	INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
-// Don't use the loan if we have plenty cash
+	local max=(AICompany.GetMaxLoanAmount()*80/100)-AICompany.GetLoanAmount();
+	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 2000000)	INSTANCE.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
+	// Don't use the loan if we have plenty cash
 }
 
 function cBanker::CanBuyThat(money)
 // return true if we can spend money
 {
-local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
-local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
-if (cash >= money)	return true;
-			else	return false;
+	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
+	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
+	if (cash >= money)	return true;
+				else	return false;
 }
 
 function cBanker::GetMaxMoneyAmount()
 // return the max amount of cash we could raise
 {
-local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
-local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
-return cash;
+	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
+	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
+	return cash;
 }
 
 function cBanker::SaveMoney()
 // lower loan max to save money
 {
-local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-local balance=AICompany.GetBankBalance(weare);
-DInfo("Saving our money",0);
-local canrepay=cBanker.GetLoanValue(balance);
-local newLoan=AICompany.GetLoanAmount()-canrepay;
-if (newLoan <=0) newLoan=0;
-AICompany.SetMinimumLoanAmount(newLoan);
+	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+	local balance=AICompany.GetBankBalance(weare);
+	DInfo("Saving our money",0);
+	local canrepay=cBanker.GetLoanValue(balance);
+	local newLoan=AICompany.GetLoanAmount()-canrepay;
+	if (newLoan <=0) newLoan=0;
+	AICompany.SetMinimumLoanAmount(newLoan);
 }
 
 function cBanker::RaiseFundsBy(money)

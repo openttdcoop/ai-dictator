@@ -136,11 +136,11 @@ function DictatorAI::Start()
 				if (builder.building_route != -1)
 					{
 					builder.DumpTopJobs();
-					jobs_obj=cJobs.GetJobObject(builder.building_route);
+					jobs_obj=cJobs.Load(builder.building_route);
 					route=cRoute.GetRouteObject(builder.building_route);
 					if (route == null)	{
 									route=cRoute();
-									if (jobs_obj==null)	builder.building_route=-1;
+									if (!jobs_obj)	builder.building_route=-1;
 												else	{
 													route.CreateNewRoute(builder.building_route);
 													DInfo("Creating a new route : "+cRoute.RouteGetName(builder.building_route),0,"main");

@@ -58,7 +58,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventIndustryClose.Convert(event);
 			local industry = event.GetIndustryID();
 			DInfo("Industry "+AIIndustry.GetName(industry)+" is closing !",0);
-			cJobs.DeleteJob(industry); // remove any job ref
+			cJobs.DeleteIndustry(industry); // remove any job ref
 		break;
 		case AIEvent.ET_COMPANY_NEW:
 			event = AIEventCompanyNew.Convert(event);
