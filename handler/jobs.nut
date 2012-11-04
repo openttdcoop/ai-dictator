@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -17,7 +18,7 @@
 
 
 
-class cJobs
+class cJobs extends cClass
 {
 static	database = {};
 static	jobIndexer = AIList();	// this list have all UID in the database, value = date of last refresh for that UID infos
@@ -25,10 +26,8 @@ static	jobDoable = AIList();	// same as upper, but only doable ones, value = ran
 static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
 static	TRANSPORT_DISTANCE=[60,150,250, 40,100,150, 60,120,250, 90,250,500];
 static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
-static	statueTown = AIList();	// list of towns we use, for statues, decrease everytime a statue is there
-static	rawJobs = AIList();	// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
-static	targetTown = AIList();	// List of towns we use as target to drop/take passenger/mail by bus & aircraft
 static	badJobs=AIList();		// List of jobs we weren't able to do
+static	rawJobs=AIList();		// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
 
 
 static	function GetJobObject(UID)
@@ -36,10 +35,8 @@ static	function GetJobObject(UID)
 		return UID in cJobs.database ? cJobs.database[UID] : null;
 		}
 
-	sourceID		= null;	// id of industry/town
-	source_location	= null;	// location of source
-	targetID		= null;	// id of industry/town
-	target_location 	= null;	// location of target
+	sourceObject	= null;	// source process object
+	targetObject	= null;	// target process object
 	cargoID		= null;	// cargo id
 	roadType		= null;	// AIVehicle.RoadType
 	UID			= null;	// a UID for the job
@@ -50,18 +47,15 @@ static	function GetJobObject(UID)
 	distance		= null;	// distance from source to target
 	moneyToBuild	= null;	// money need to build the job
 	moneyGains		= null;	// money we should grab from doing the job
-	source_istown	= null;	// if source is a town
-	target_istown	= null;	// if target is a town
 	isdoable		= null;	// true if we can actually do that job (if isUse -> false)
 	ranking		= null;	// our ranking system
 	foule			= null;	// number of opponent/stations near it
 
 	constructor()
 		{
-		sourceID		= null;
-		source_location	= null;
-		targetID		= null;
-		target_location	= null;
+		this.ClassName	= "cJobs";
+		sourceObject	= null;
+		targetObject	= null;
 		cargoID		= null;
 		roadType		= null;
 		UID			= null;
@@ -72,8 +66,6 @@ static	function GetJobObject(UID)
 		distance		= 0;
 		moneyToBuild	= 0;
 		moneyGains		= 0;
-		source_istown	= false;
-		target_istown	= false;
 		isdoable		= true;
 		ranking		= 0;
 		foule			= 0;
@@ -93,7 +85,7 @@ function cJobs::CheckLimitedStatus()
 	local oldmax=distanceLimits[1];
 	local testLimitChange= GetTransportDistance(AIVehicle.VT_RAIL, false, INSTANCE.bank.unleash_road); // get max distance a train could do
 	if (oldmax != distanceLimits[1])
-	DInfo("Distance limit status change to "+INSTANCE.bank.unleash_road,2,"CheckLimitedStatus");
+	DInfo("Distance limit status change to "+INSTANCE.bank.unleash_road,2);
 	}
 
 function cJobs::Save()
@@ -101,29 +93,33 @@ function cJobs::Save()
 	{
 	local dualrouteavoid=cJobs();
 	dualrouteavoid.UID=null;
-	dualrouteavoid.sourceID=this.targetID;
-	dualrouteavoid.targetID=this.sourceID;
+	dualrouteavoid.sourceObject = this.targetObject; // swap source and target
+	dualrouteavoid.targetObject = this.sourceObject;
+//	dualrouteavoid.sourceID=this.targetObject.ID;
+//	dualrouteavoid.targetID=this.sourceObject.ID;
 	dualrouteavoid.roadType=this.roadType;
 	dualrouteavoid.cargoID=this.cargoID;
-	dualrouteavoid.source_istown=this.target_istown;
-	dualrouteavoid.target_istown=this.source_istown;
+//	dualrouteavoid.source_istown=this.targetObject.IsTown;
+//	dualrouteavoid.target_istown=this.sourceObject.IsTown;
 	dualrouteavoid.GetUID();
 	if (dualrouteavoid.UID in database) // this remove cases where Paris->Nice(pass/bus) Nice->Paris(pass/bus)
 		{
-		DInfo("Job "+this.UID+" is a dual route. Dropping job",2,"Jobs::Save");
+		DInfo("Job "+this.UID+" is a dual route. Dropping job",2);
 		dualrouteavoid=null;
 		return ;
 		}
 	dualrouteavoid=null;
-	local jobinfo=AICargo.GetCargoLabel(this.cargoID)+"-"+cRoute.RouteTypeToString(this.roadType)+" "+this.distance+"m from ";
-	if (this.source_istown)	jobinfo+=AITown.GetName(this.sourceID);
-				else	jobinfo+=AIIndustry.GetName(this.sourceID);
+	local jobinfo=cCargo.GetCargoLabel(this.cargoID)+"-"+cRoute.RouteTypeToString(this.roadType)+" "+this.distance+"m from ";
+	jobinfo+=this.sourceObject.Name;
+//	if (this.sourceObject.IsTown)	jobinfo+=AITown.GetName(this.sourceID);
+//				else	jobinfo+=AIIndustry.GetName(this.sourceID);
 	jobinfo+=" to ";
-	if (this.target_istown)	jobinfo+=AITown.GetName(this.targetID);
-				else	jobinfo+=AIIndustry.GetName(this.targetID);
-	if (this.UID in database)	DInfo("Job "+this.UID+" already in database",2,"Jobs::Save");
+//	if (this.target_istown)	jobinfo+=AITown.GetName(this.targetID);
+//				else	jobinfo+=AIIndustry.GetName(this.targetID);
+	jobinfo+=this.targetObject.Name;
+	if (this.UID in database)	DInfo("Job "+this.UID+" already in database",2);
 		else	{
-			DInfo("Adding job "+this.UID+" ("+parentID+") to job database: "+jobinfo,2,"Jobs::Save");
+			DInfo("Adding job #"+this.UID+" ("+parentID+") to job database: "+jobinfo,2);
 			database[this.UID] <- this;
 			jobIndexer.AddItem(this.UID, 0);
 			}
@@ -135,14 +131,14 @@ function cJobs::GetUID()
 	{
 	local uID=null;
 	local parentID = null;
-	if (this.UID == null && this.sourceID != null && this.targetID != null && this.cargoID != null && this.roadType != null)
+	if (this.UID == null && this.sourceObject.ID != null && this.targetObject.ID != null && this.cargoID != null && this.roadType != null)
 			{
 			local v1=this.roadType+1;
 			local v2=(this.cargoID+10);
-			local v3=(this.targetID+100);
-			if (this.target_istown)	v3+=1000;
-			local v4=(this.sourceID+10000);
-			if (this.source_istown) v4+=4000;
+			local v3=(this.targetObject.ID+100);
+			if (this.targetObject.IsTown)	v3+=1000;
+			local v4=(this.sourceObject.ID+10000);
+			if (this.sourceObject.IsTown) v4+=4000;
 			parentID= v4+(this.cargoID+1);
 			if (this.roadType == AIVehicle.VT_AIR)	parentID = v4+(this.cargoID+100);
 			if (this.roadType == AIVehicle.VT_ROAD && this.cargoID == cCargo.GetPassengerCargo())
@@ -189,7 +185,7 @@ function cJobs::RankThisJob()
 		// passenger or mail by road or aircraft
 		{
 		local drank= ( (10*valuerank) / 100) * cJobs.targetTown.GetValue(this.targetID);
-		DInfo("Downranking because target town is already handle : loose "+drank,2,"RankThisJob");
+		DInfo("Downranking because target town is already handle : loose "+drank,2);
 		valuerank-= drank; // add 10% penalty for each station we find
 		if (valuerank < 1)	valuerank=1;
 		}
@@ -201,8 +197,9 @@ function cJobs::RankThisJob()
 function cJobs::RefreshValue(jobID, updateCost=false)
 // refresh the datas from object
 	{
-	if (cJobs.IsInfosUpdate(jobID))	{ DInfo("JobID: "+jobID+" infos are fresh",2,"RefreshValue"); return null; }
-						else	{ DInfo("JobID: "+jobID+" refreshing infos",2,"RefreshValue"); }
+return; // TODO: fixme
+	if (cJobs.IsInfosUpdate(jobID))	{ DInfo("JobID: "+jobID+" infos are fresh",2); return null; }
+						else	{ DInfo("JobID: "+jobID+" refreshing infos",2); }
 	cJobs.jobIndexer.SetValue(jobID,AIDate.GetCurrentDate());
 	if (jobID == 0 || jobID == 1)	return null; // don't refresh virtual routes
 	local myjob = cJobs.GetJobObject(jobID);
@@ -219,9 +216,9 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		cJobs.RawJobDelete(myjob.targetID,false);
 		}
 
-	if (badind)
+	if (badind) //TODO: handle called from route
 		{
-		DInfo("Removing bad industry from the job pool: "+myjob.UID,0,"RefreshValue");
+		DInfo("Removing bad industry from the job pool: "+myjob.UID,0);
 		local deadroute=cRoute.GetRouteObject(myjob.UID);
 		if (deadroute != null)	deadroute.RouteIsNotDoable();
 		}
@@ -266,13 +263,13 @@ function cJobs::IsInfosUpdate(jobID)
 function cJobs::RefreshAllValue()
 // refesh datas of all jobs objects
 	{
-	DInfo("Collecting jobs infos, will take time...",0,"RefreshALLValue");
+	DInfo("Collecting jobs infos, will take time...",0);
 	local curr=0;
 	local needRefresh=AIList();
 	needRefresh.AddList(cJobs.jobIndexer);
 	needRefresh.Valuate(cJobs.IsInfosUpdate);
 	needRefresh.KeepValue(0); // only keep ones that need refresh
-	DInfo("Need refresh: "+needRefresh.Count()+"/"+cJobs.jobIndexer.Count(),1,"RefreshValue");
+	DInfo("Need refresh: "+needRefresh.Count()+"/"+cJobs.jobIndexer.Count(),1);
 	foreach (item, jdate in needRefresh)
 		{
 		cJobs.RefreshValue(item);
@@ -324,8 +321,8 @@ function cJobs::GetNextJob()
 // Return the next job UID to do, -1 if we have none to do
 	{
 	local smallList=QuickRefresh();
-	if (smallList.IsEmpty())	{ DInfo("Can't find any good jobs to do",1,"GetNextJob"); return -1; }
-					else	{ DInfo("Doable jobs: "+smallList.Count(),1,"GetNextJob"); }
+	if (smallList.IsEmpty())	{ DInfo("Can't find any good jobs to do",1); return -1; }
+					else	{ DInfo("Doable jobs: "+smallList.Count(),1); }
 	return smallList.Begin();
 	}
 
@@ -342,7 +339,7 @@ function cJobs::EstimateCost()
 		case	AIVehicle.VT_ROAD:
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
 			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
-			if (engine==-1)	engine=INSTANCE.carrier.ChooseRoadVeh(this.cargoID);
+			if (engine==-1)	engine=INSTANCE.main.vehicle.ChooseRoadVeh(this.cargoID);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	{ engineprice=500000000; INSTANCE.use_road=false; }
 			money+=engineprice;
@@ -356,14 +353,14 @@ function cJobs::EstimateCost()
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 			local rtype=null;
 			engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
-			if (engine==-1)	engine=INSTANCE.carrier.ChooseRailEngine(null,this.cargoID, true);
+			if (engine==-1)	engine=INSTANCE.main.vehicle.ChooseRailEngine(null,this.cargoID, true);
 			if (engine==-1)	{ engineprice=500000000; 	INSTANCE.use_train=false; }
 						else	{
 							/*engineprice+=cEngine.GetPrice(engine.Begin());
 							engineprice+=2*cEngine.GetPrice(engine.GetValue(engine.Begin()));
-							rtype=cCarrier.GetRailTypeNeedForEngine(engine.Begin());*/
+							rtype=cmain.vehicle.GetRailTypeNeedForEngine(engine.Begin());*/
 							engineprice+=cEngine.GetPrice(engine);
-							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
+							rtype=cmain.vehicle.GetRailTypeNeedForEngine(engine);
 							if (rtype==-1)	rtype=null;
 							}
 			money+=engineprice;
@@ -390,7 +387,7 @@ function cJobs::EstimateCost()
 		case	AIVehicle.VT_AIR:
 			// 2 vehicle + 2 airports
 			engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIR);
-			if (engine==-1)	engine=INSTANCE.carrier.ChooseAircraft(this.cargoID, this.distance, AircraftType.EFFICIENT);
+			if (engine==-1)	engine=INSTANCE.main.vehicle.ChooseAircraft(this.cargoID, this.distance, AircraftType.EFFICIENT);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000000;
 			money+=engineprice*2;
@@ -400,39 +397,7 @@ function cJobs::EstimateCost()
 		}
 	this.moneyToBuild=money;
 	this.cargoValue=AICargo.GetCargoIncome(this.cargoID, this.distance, daystransit);
-	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+this.cargoValue,2,"EstimateCost");
-	}
-
-function cJobs::CreateNewJob(srcID, tgtID, src_istown, cargo_id, road_type)
-// Create a new Job
-	{
-	local newjob=cJobs();
-	newjob.sourceID = srcID;
-	newjob.targetID = tgtID;
-	newjob.source_istown = src_istown;
-	// filters unwanted jobs
-	if (road_type==AIVehicle.VT_WATER)	return;
-	// disable any boat jobs
-	if (road_type == AIVehicle.VT_AIR && cargo_id != cCargo.GetPassengerCargo()) return;
-	// only pass for aircraft, we will randomize if pass or mail later
-	if (cargo_id == cCargo.GetMailCargo()) return; // disable mail for anyone it sucks to do mail
-	if (!src_istown && AIIndustry.IsBuiltOnWater(srcID))
-		{
-		if (road_type!=AIVehicle.VT_AIR && road_type!=AIVehicle.VT_WATER) return;
-		// only aircraft & boat to do platforms
-		}
-
-	newjob.target_istown = cCargo.IsCargoForTown(cargo_id);
-	if (newjob.source_istown)	newjob.source_location=AITown.GetLocation(srcID);
-			else		newjob.source_location=AIIndustry.GetLocation(srcID);
-	if (newjob.target_istown)	newjob.target_location=AITown.GetLocation(tgtID);
-			else		newjob.target_location=AIIndustry.GetLocation(tgtID);
-	newjob.distance=AITile.GetDistanceManhattanToTile(newjob.source_location, newjob.target_location);
-	newjob.roadType=road_type;
-	newjob.cargoID=cargo_id;
-	newjob.GetUID();
-	newjob.Save();
-	INSTANCE.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount, foule values, must be call after GetUID
+	DInfo("moneyToBuild="+this.moneyToBuild+" Income: "+this.cargoValue,2);
 	}
 
 function cJobs::GetTransportDistance(transport_type, get_min, limited)
@@ -463,46 +428,6 @@ function cJobs::GetTransportDistance(transport_type, get_min, limited)
 	return toret;
 	}
 
-function cJobs::GetJobTarget(src_id, cargo_id, src_istown)
-// return an AIList with all possibles destinations, values are location
-	{
-	local retList=AIList();
-	local srcloc=null;
-	local rmax=cJobs.GetTransportDistance(0,false,false); // just to make sure min&max are init
-	if (src_istown)	srcloc=AITown.GetLocation(src_id);
-			else	srcloc=AIIndustry.GetLocation(src_id);
-	if (cCargo.IsCargoForTown(cargo_id))
-		{
-		retList=AITownList();
-		retList.Valuate(AITown.GetPopulation);
-		retList.Sort(AIList.SORT_BY_VALUE,false);
-		//retList.KeepTop(30);
-		retList.Valuate(AITown.GetDistanceManhattanToTile, srcloc);
-		retList.KeepBetweenValue(distanceLimits[0], rmax);
-		retList.Valuate(AITown.GetLocation);
-		}
-	else	{
-		retList=AIIndustryList_CargoAccepting(cargo_id);
-		retList.Valuate(AIIndustry.GetDistanceManhattanToTile, srcloc);
-		retList.KeepBetweenValue(distanceLimits[0], rmax);
-		retList.Valuate(AIIndustry.GetLocation);
-		}
-	return retList;
-	}
-
-function cJobs::GetJobSourceCargoList(src_id, src_istown)
-// Return a list of all cargos produce at source
-	{
-	local cargoList=AIList();
-	if (src_istown)
-		{
-		cargoList.AddItem(cCargo.GetPassengerCargo(), 1);
-		cargoList.AddItem(cCargo.GetMailCargo(), 1);
-		}
-	else	cargoList=AICargoList_IndustryProducing(src_id);
-	return cargoList;
-	}
-
 function cJobs::GetTransportList(distance)
 // Return a list of transport we can use
 	{
@@ -526,8 +451,7 @@ function cJobs::GetTransportList(distance)
 	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(1,2*v_road); }
 	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(0,1*v_train); }
 	if (goal >= air_mindistance && goal <= air_maxdistance)		{ tweaklist.AddItem(3,4*v_air); }
-	//if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(2,3*v_boat); }
-	// disabling boat jobs, we're far from making boat yet
+	//if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(2,3*v_boat); } TODO: fixme boat
 	tweaklist.RemoveValue(0);
 	return tweaklist;
 	}
@@ -561,7 +485,7 @@ function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
 	INSTANCE.jobs.CheckLimitedStatus();
-	DInfo("Analysing the job pool",0,"cJobs::UpdateDoableJobs");
+	DInfo("Analysing the task pool",0);
 	local parentListID=AIList();
 	INSTANCE.jobs.jobDoable.Clear();
 	local topair=0;
@@ -611,7 +535,7 @@ function cJobs::UpdateDoableJobs()
 		if (doable)
 			if (parentListID.HasItem(myjob.parentID))
 				{
-				DInfo("Job already done by parent job ! First pass filter",2,"UpdateDoableJobs");
+				DInfo("Job already done by parent job ! First pass filter",2);
 				doable=false;
 				//cJobs.jobIndexer.RemoveItem(id);
 				//cJobs.DeleteJob(id)
@@ -665,43 +589,93 @@ function cJobs::UpdateDoableJobs()
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
 			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
 		local myjob=cJobs.GetJobObject(jobID);
-		local airValid=(cJobs.CostTopJobs[AIVehicle.VT_AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]) || INSTANCE.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR]) && INSTANCE.use_air);
-		local trainValid=(cJobs.CostTopJobs[AIVehicle.VT_RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_RAIL]) || INSTANCE.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_RAIL]) && INSTANCE.use_train);
+		local airValid=(cJobs.CostTopJobs[AIVehicle.VT_AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]) || INSTANCE.main.vehicle.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR]) && INSTANCE.use_air);
+		local trainValid=(cJobs.CostTopJobs[AIVehicle.VT_RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_RAIL]) || INSTANCE.main.vehicle.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_RAIL]) && INSTANCE.use_train);
 		if (myjob.roadType == AIVehicle.VT_ROAD && (airValid || trainValid))	cJobs.jobDoable.RemoveItem(jobID);
 			// disable because we have funds to build an aircraft or a rail job
 
 		if (parentListID.HasItem(myjob.parentID))
 			{
-			DInfo("Job already done by parent job ! Second pass filter",2,"UpdateDoableJobs");
+			DInfo("Job already done by parent job ! Second pass filter",2);
 			cJobs.jobDoable.RemoveItem(jobID);
 			//cJobs.jobIndexer.RemoveItem(jobID);
 			//cJobs.DeleteJob(jobID);
 			}
 		}
 	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
-	DInfo(INSTANCE.jobs.jobIndexer.Count()+" jobs found",2,"UpdateDoableJobs");
-	DInfo(INSTANCE.jobs.jobDoable.Count()+" jobs doable",2,"UpdateDoableJobs");
+	DInfo(INSTANCE.jobs.jobIndexer.Count()+" jobs found",2);
+	DInfo(INSTANCE.jobs.jobDoable.Count()+" jobs doable",2);
+	}
+
+function cJobs::GetJobTarget(src_id, cargo_id, src_istown, srcloc)
+// return an AIList with all possibles destinations, return values are manhattan distance from srcloc
+	{
+	local retList=AIList();
+	local rmax=cJobs.GetTransportDistance(0,false,false); // just to make sure min&max are init
+	if (cCargo.IsCargoForTown(cargo_id))
+		{
+		retList=AITownList();
+		retList.Valuate(AITown.GetPopulation);
+		retList.Sort(AIList.SORT_BY_VALUE,false);
+		retList.Valuate(AITown.GetDistanceManhattanToTile, srcloc);
+		retList.KeepBetweenValue(distanceLimits[0], rmax);
+		//retList.Valuate(AITown.GetLocation);
+		}
+	else	{
+		retList=AIIndustryList_CargoAccepting(cargo_id);
+		retList.Valuate(AIIndustry.GetDistanceManhattanToTile, srcloc);
+		retList.KeepBetweenValue(distanceLimits[0], rmax);
+	//	retList.Valuate(AIIndustry.GetLocation);
+		}
+	return retList;
+	}
+
+function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
+// Create a new Job
+	{
+	local newjob=cJobs();
+	newjob.sourceObject = cProcess.Load(srcUID);
+	if (cCargo.IsCargoForTown(cargo_id))	dstID=cProcess.GetUID(dstID, true);
+	newjob.targetObject = cProcess.Load(dstID);
+//	newjob.sourceID = srcID;
+//	newjob.targetID = tgtID;
+//	newjob.source_istown = src_istown;
+	// filters unwanted jobs
+	if (road_type==AIVehicle.VT_WATER)	return;
+	// disable any boat jobs
+	if (road_type == AIVehicle.VT_AIR && cargo_id != cCargo.GetPassengerCargo()) return;
+	// only pass for aircraft, we will randomize if pass or mail later
+	if (!newjob.sourceObject.IsTown && AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && road_type != AIVehicle.VT_AIR && road_type != AIVehicle.VT_WATER) return;
+	// only aircraft & boat to do platforms
+
+	newjob.distance = _distance;
+	newjob.roadType = road_type;
+	newjob.cargoID = cargo_id;
+	newjob.GetUID();
+	newjob.Save();
+	INSTANCE.main.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount, foule values, must be call after GetUID
 	}
 
 function cJobs::AddNewIndustryOrTown(industryID, istown)
 // Add a new industry/town job: this will add all possibles jobs doable with it (transport type + all cargos)
 	{
-	local position=0;
-	if (istown)	position=AITown.GetLocation(industryID);
-		else	position=AIIndustry.GetLocation(industryID);
-	local cargoList=cJobs.GetJobSourceCargoList(industryID, istown);
-	foreach (cargoid, cargodummy in cargoList)
+	local p_uid = cProcess.GetUID(industryID, istown);
+	local p = cProcess.Load(p_uid);
+	if (!p)	return;
+	local position=p.Location;
+	local cargoList=p.CargoProduce;
+	cargoList.RemoveItem(cCargo.GetMailCargo());
+	// Remove the mail cargo, it's too poor for anyone except trucks, but this add more trucks/bus to town that are already too crowd.
+	foreach (cargoid, amount in cargoList)
 		{
-		local targetList=cJobs.GetJobTarget(industryID, cargoid, istown);
-		foreach (destination, locations in targetList)
+		local targetList=cJobs.GetJobTarget(p.ID, cargoid, p.IsTown, p.Location); // find where we could transport it
+		foreach (destination, distance in targetList)
 			{
-			distance=AITile.GetDistanceManhattanToTile(position, locations)
-			// now find possible ways to transport that
-			local transportList=GetTransportList(distance);
+			local transportList=GetTransportList(distance);	// find possible ways to transport that
 			foreach (transtype, dummy2 in transportList)
 				{
 				this.UID=null;
-				cJobs.CreateNewJob(industryID, destination, istown, cargoid, transtype);
+				cJobs.CreateNewJob(p.UID, destination, cargoid, transtype, distance);
 				::AIController.Sleep(1);
 				}
 			}
@@ -710,129 +684,83 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 	}
 
 function cJobs::DeleteJob(uid)
-// Remove a job from our job pool
+// Remove all job references
 	{
-	if (uid in cJobs.database)
-		{
-		DInfo("Removing job #"+uid+" from database",2,"DeleteJob");
-		delete cJobs.database[uid];
-		cJobs.jobIndexer.RemoveItem(uid);
-		cJobs.jobDoable.RemoveItem(uid);
-		cJobs.badJobs.RemoveItem(uid);
-		}
+	DInfo("Removing job #"+uid+" from database",2);
+	if (uid in cJobs.database)	delete cJobs.database[uid];
+	if (cJobs.jobIndexer.HasItem(uid))	cJobs.jobIndexer.RemoveItem(uid);
+	if (cJobs.jobDoable.HasItem(uid))	cJobs.jobDoable.RemoveItem(uid);
+	if (cJobs.badJobs.HasItem(uid))	cJobs.badJobs.RemoveItem(uid);
+	cJobs.RawJob_Delete(uid);
+	cProcess.DeleteProcess(uid);
 	}
 
 function cJobs::RawJobHandling()
 // Find a raw Job and add possible jobs from it to jobs database
 	{
-	local jfilter=AIList();
-	jfilter.AddList(cJobs.rawJobs);
-	jfilter.RemoveValue(0); // keep only one not done yet
-	local stilltodo=jfilter.Count();
-	//jfilter.Valuate(AIBase.RandItem); // randomize remain entries
-	jfilter.KeepTop(1); //make one only
-	if (jfilter.IsEmpty())	{
-					DInfo("All raw jobs have been process",2,"RawJobHandling");
-					/*if (cJobs.jobDoable.Count()==0)
-						{ // try to reset undoable jobs to a doable status
-						DInfo("Resetting undoable jobs",2,"RawJobHandling");
-						foreach (uid, dummy in cJobs.badJobs)
-							{
-							local job=cJobs.GetJobObject(uid);
-							if (job == null)	{ cJobs.badJobs.RemoveItem(uid); continue; }
-							if (!job.isUse && !job.isdoable)	job.isdoable=true;
-							AIController.Sleep(1);
-							}
-						}*/
-					}
-				else	foreach (jid, dummyValue in jfilter)
-						{
-						local realID=jid;
-						local isTown=(realID >= 10000) ? true : false;
-						if (isTown)	realID-=10000;
-						cJobs.AddNewIndustryOrTown(realID,isTown);
-						::AIController.Sleep(1);
-						cJobs.rawJobs.SetValue(jid,0); // mark it done
-						}
-	DInfo("rawJobs to do: "+stilltodo+" / "+cJobs.rawJobs.Count(),1,"RawJobHandling");
+	if (cJobs.rawJobs.IsEmpty())	return;
+	local p = cProcess.Load(cJobs.rawJobs.Begin());
+	cJobs.AddNewIndustryOrTown(p.ID, p.IsTown);
+	cJobs.RawJob_Delete(p.UID);
+	if (cJobs.rawJobs.IsEmpty())	DInfo("All raw jobs have been process",1);
+					else	DInfo("rawJobs still to do: "+cJobs.rawJobs.Count());
 	}
 
-function cJobs::RawJobDelete(ID, isTown)
-// Remove industry or town to rawJob database
+function cJobs::RawJob_Delete(UID)
+// Remove process from rawJob list
 	{
-	if (ID == null)	return;
-	local seekID=ID;
-	if (isTown)	seekID+=10000;
-	if (cJobs.rawJobs.HasItem(seekID))
-		{
-		cJobs.rawJobs.RemoveItem(seekID);
-		DInfo("Removing industry from rawJob database "+seekID,1,"cJobs::RawJobDelete");
-		}
+	if (cJobs.rawJobs.HasItem(UID))	cJobs.rawJobs.RemoveItem(UID);
 	}
 
-function cJobs::RawJobAdd(ID, isTown)
-// Add industry or town to rawJob database
+function cJobs::RawJob_Add(UID)
+// Add a process to rawJob list
 	{
-	local value=1;
-	if (isTown)	ID+=10000;
-	if (cJobs.rawJobs.HasItem(ID))	value=cJobs.rawJobs.GetValue(ID);
-						else	cJobs.rawJobs.AddItem(ID,1);
-	if (isTown)	value=AITown.GetLastMonthProduction(ID-10000,cCargo.GetPassengerCargo());
-		else	{
-			local cargolist=AICargoList();
-			foreach (crg, dummy in cargolist)
-				{
-				local amount=AIIndustry.GetLastMonthProduction(ID, crg);
-				if (amount > value)	value=amount;
-				}
-			}
-	cJobs.rawJobs.SetValue(ID, value);
+	local p = cProcess.Load(UID);
+	if (!p)	return;
+	cJobs.rawJobs.AddItem(p.UID, p.Score);
 	}
 
 function cJobs::PopulateJobs()
 // Find towns and industries and add any jobs we could do with them
 {
-local indjobs=AIIndustryList();
-local townjobs=AITownList();
+local cargoList=AICargoList();
+local alljob=AIList();
+DInfo("Finding all industries & towns jobs...",0);
+foreach (cargoid, _ in cargoList)
+	{
+	local prod=cProcess.GetProcessList_ProducingCargo(cargoid);
+	DInfo("Production of "+cCargo.GetCargoLabel(cargoid)+" : "+prod.Count(),1);
+	alljob.AddList(prod);
+	}
 local curr=0;
-DInfo("Finding all industries & towns jobs...",0,"PopulateJobs");
-foreach (ID, dummy in indjobs)
+foreach (uid, _ in alljob)
 	{
-	cJobs.RawJobAdd(ID,false);
+	cJobs.RawJob_Add(uid);
 	curr++;
 	if (curr % 18 == 0)
 		{
-		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Industry");
+		DInfo(curr+" / "+alljob.Count(),0);
 		INSTANCE.Sleep(1);
 		}
 	}
-foreach (ID, dummy in townjobs)
-	{
-	cJobs.RawJobAdd(ID,true);
-	curr++;
-	if (curr % 18 == 0)
-		{
-		DInfo(curr+" / "+(indjobs.Count()+townjobs.Count()),0,"PopulateJobs:Town");
-		INSTANCE.Sleep(1);
-		}
-	}
+cJobs.rawJobs.Sort(AIList.SORT_BY_VALUE, false);
 }
 
 function cJobs::CheckTownStatue()
 // check if can add a statue to the town
 	{
 	if (INSTANCE.fairlevel==0)	return; // no action if we play easy
-	DInfo(cJobs.statueTown.Count()+" towns to build statue found.",1,"CheckTownStatue");
-	foreach (townID, dummy in cJobs.statueTown)
+	DInfo(cProcess.statueTown.Count()+" towns to build statue found.",1);
+	foreach (townID, dummy in cProcess.statueTown)
 		{
 		if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BUILD_STATUE))
 			{
-			if (AITown.HasStatue(townID))	{ cJobs.statueTown.RemoveItem(townID);	continue; }
+			if (AITown.HasStatue(townID))	{ cProcess.statueTown.RemoveItem(townID);	continue; }
 			AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BUILD_STATUE);
 			if (AITown.HasStatue(townID))
 				{
-				DInfo("Built a statue at "+AITown.GetName(townID),0,"CheckTownStatue");
-				cJobs.statueTown.RemoveItem(townID);
+				DInfo("Built a statue at "+AITown.GetName(townID),0);
+				cProcess.statueTown.RemoveItem(townID);
 				}
 			}
 		INSTANCE.Sleep(1);

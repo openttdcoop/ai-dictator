@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -119,7 +120,7 @@ do
 		}
 	else	{ tilelist.Sort(AIList.SORT_BY_VALUE, false); }
 	showLogic(tilelist); 
-	ClearSignsALL();
+	ClearSigns();
 	foreach (tile, dummy in tilelist)
 		{
 		// find where that point is compare to its source for the station
@@ -178,7 +179,7 @@ do
 		}
 	buildmode++;
 	} while (!success && buildmode!=5);
-ClearSignsALL();
+ClearSigns();
 
 if (!success) 
 	{
@@ -1116,7 +1117,7 @@ local entry_build=(se_IN != -1 || se_OUT != -1);
 local exit_build=(sx_IN != -1 || sx_OUT != -1);
 DInfo("Entry build="+entry_build+" - exit build="+exit_build,2,"RailStationGrow");
 DInfo("se_in="+se_IN+" se_out="+se_OUT+" sx_in="+sx_IN+" sx_out="+sx_OUT+" closeit="+closeIt+" useEntry="+useEntry,2,"RailStationGrow");
-ClearSignsALL();
+ClearSigns();
 
 foreach (platform, status in thatstation.platforms)
 	{
@@ -1203,7 +1204,7 @@ for (local hh=0; hh < 2; hh++)
 		thatstation.RailStationClaimTile(platfront,staID);
 		//INSTANCE.NeedDelay(100);
 		}
-	ClearSignsALL();									
+	ClearSigns();									
 	} // hh loop
 thatstation.DefinePlatform();
 
@@ -1295,7 +1296,7 @@ if (road!=null && road.secondary_RailLink && (trainEntryDropper+trainEntryTaker 
 			}
 		else	{ DInfo("... not all signals were built",2,"RailStationGrow"); }
 		}
-	ClearSignsALL();
+	ClearSigns();
 	if (road.source_RailEntry)
 			srcpos=road.source.locations.GetValue(2);
 		else	srcpos=road.source.locations.GetValue(4);
@@ -1547,16 +1548,17 @@ foreach (tracks, value in trackMap)
 return railmask;
 }
 
-function cBuilder::AreRailTilesConnected(tilefrom, tileto)
+function cBuilder::AreRailTilesConnected(tilefrom, tileto, stricttype=true)
 // Look at tilefront and build rails to connect that tile to its neightbourg tiles that are us with rails
 // tilefrom, tileto : tiles to check
 // return true if you can walk from tilefrom to tileto
+// stricttype : true to only allow walking same railtype, false allow walking on different railtype
 {
 local atemp=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 if (AITile.GetOwner(tilefrom) != atemp)	return false; // not own by us
 if (AITile.GetOwner(tileto) != atemp)		return false; // not own by us
 atemp=AIRail.GetRailType(tilefrom);
-if (AIRail.GetRailType(tileto) != atemp)	return false; // not same railtype
+if (AIRail.GetRailType(tileto) != atemp && stricttype)	return false; // not same railtype
 local NE = 1; // we will use them as bitmask
 local	SW = 2;
 local	NW = 4;

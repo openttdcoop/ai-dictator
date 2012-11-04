@@ -1,16 +1,18 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
+
 class cStation
 {
 static	stationdatabase = {};
@@ -511,7 +513,7 @@ else	{ // NE_SW
 	frontTile=AIMap.GetTileIndex(-1,0);
 	backTile=AIMap.GetTileIndex(1,0);
 	}
-ClearSignsALL();
+ClearSigns();
 local exitpos=null;
 PutSign(entrypos,"Start");
 local scanner=entrypos;
@@ -525,7 +527,7 @@ thatstation.locations.SetValue(17,exitpos);
 thatstation.locations.SetValue(18,direction);
 thatstation.locations.SetValue(19,stalenght);
 thatstation.DefinePlatform();
-ClearSignsALL();
+ClearSigns();
 }
 
 function cStation::GetRailStationFrontTile(entry, platform, stationID=null)
@@ -555,7 +557,7 @@ if (direction==AIRail.RAILTRACK_NE_SW)
 if (entry)	frontTile=start;
 	else	frontTile=end;
 PutSign(frontTile,"Front="+entry);
-ClearSignsALL();
+ClearSigns();
 return frontTile;
 }
 

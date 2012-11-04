@@ -1,16 +1,18 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
+
 class cBridge extends AIBridge
 {
 static	bridgedatabase = {};
@@ -220,13 +222,9 @@ function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 function cBridge::BridgeDiscovery()
 // Use when loading a game to discover all bridges in the game and save ones we own
 	{
-	DInfo("Looking for our bridges, game may get frozen for some times on huge maps, be patient",0,"cBridge::BridgeDiscovery");
-	INSTANCE.Sleep(10);
-	local allmap=AITileList();
-	local maxTile=AIMap.GetTileIndex(AIMap.GetMapSizeX()-2, AIMap.GetMapSizeY()-2);
-	allmap.AddRectangle(AIMap.GetTileIndex(1,1), maxTile);
-	allmap.Valuate(AITile.GetOwner);
-	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-	allmap.KeepValue(weare);
-	allmap.Valuate(cBridge.IsBridgeTile);
+	INSTANCE.Sleep(1);
+	local allmap=AIList();
+	allmap.AddList(cRoute.WorldTiles);
+	INSTANCE.Sleep(1);
+	allmap.Valuate(cBridge.IsBridgeTile); // enough to just valuate them, bridge will get catch
 	}

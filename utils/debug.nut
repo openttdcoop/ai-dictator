@@ -1,44 +1,51 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
 
-function PutSign(place,msg)
+class cDebug extends cClass
+{
+	constructor()	{ this.ClassName="debug"; }
+}
+
+function cDebug::PutSign(place,msg)
 // put a sign at place
 {
-if (!INSTANCE.debug) return;
-if (DictatorAI.GetSetting("debug") < 3) return;
-if (place != null) AISign.BuildSign(place,msg.tostring());
+	if (!INSTANCE.debug) return;
+	if (DictatorAI.GetSetting("debug") < 3) return;
+	if (place != null) AISign.BuildSign(place,msg.tostring());
 }
 
-function ClearSignsALL()
+function cDebug::ClearSigns()
 // this just clear any signs we can
 {
-if (!INSTANCE.debug)	return;
-if (DictatorAI.GetSetting("debug") < 3) return;
-local sweeper=AISignList();
-//DInfo("Removing Signs ! "+sweeper.Count(),2,"ClearSignsALL");
-AIController.Sleep(20);
-foreach (i, dummy in sweeper)	{ AISign.RemoveSign(dummy); AISign.RemoveSign(i); }
+	if (!INSTANCE.debug)	return;
+	if (DictatorAI.GetSetting("debug") < 3) return;
+	local sweeper=AISignList();
+	sweeper.Valuate(AISign.GetLocation);
+	sweeper.RemoveValue(INSTANCE.main.SCP.SCPTile);
+	AIController.Sleep(20);
+	foreach (i, dummy in sweeper)	{ AISign.RemoveSign(i); }
 }
 
-function showLogic(item)
+function cDebug::showLogic(item)
 // this will draw sign with item so we see item influence
 {
-if (!INSTANCE.debug) return;
-foreach (i, dummy in item)
-	{
-	PutSign(i,dummy);
-	}
+	if (!INSTANCE.debug) return;
+	foreach (i, dummy in item)
+		{
+		PutSign(i,dummy);
+		}
 }
 
 function cBuilder::DumpRoute(idx=null)

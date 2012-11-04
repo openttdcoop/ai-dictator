@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -37,6 +38,8 @@ virtroad.distance=0;
 local towns=AITownList();
 towns.Valuate(AITown.GetPopulation);
 towns.RemoveBelowValue(INSTANCE.carrier.AIR_NET_CONNECTOR);
+DInfo("NETWORK > Found "+towns.Count()+" towns for network",1,"VirtualAirNetworkUpdate");
+if (towns.Count()<2)	return; // give up
 local airports=AIStationList(AIStation.STATION_AIRPORT);
 foreach (airID, dummy in airports)
 	{
@@ -60,6 +63,7 @@ foreach (airport_id, location in airports)
 		virtualpath.AddItem(check, towns.GetValue(check));
 		}
 	}
+if (virtualpath.IsEmpty())	return;
 virtualpath.Sort(AIList.SORT_BY_VALUE, false);
 // now validairports = only airports where towns population is > AIR_NET_CONNECTOR, value is airportid
 // and virtualpath the town where those airports are, value = population of those towns

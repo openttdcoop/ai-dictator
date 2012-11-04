@@ -1,42 +1,26 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
 
-function sliceString(a)
-{
-local t=20;
-if ((a == null) || (a.len() <= 0)) return "NULL!";
-if (a.len() >t) { t=a.slice(0,t-1); }
-return a;
-}
+class cMisc
+	{
+	constructor()
+		{
+		}
+	}
 
-function getLastName(who)
-{
-local names = ["Castro", "Mussolini", "Lenin", "Stalin", "Batista", "Jong", "Mugabe", "Al-Bashir", "Milosevic",
-	"Bonaparte", "Caesar", "Tse-Tung"];
-if (who == 666) { who = AIBase.RandRange(12) };
-return names[who];
-}
-
-function getFirstName(who)
-{
-local names = ["Fidel", "Benito", "Vladamir", "Joseph", "Fulgencio", "Kim", "Robert", "Omar", "Slobodan",
-	"Napoleon", "Julius", "Mao"];
-if (who == 666) { who = AIBase.RandRange(12) };
-return names[who];
-}
-
-function PickCompanyName(who)
+function cMisc::PickCompanyName(who)
 {
 local nameo = ["Last", "For the", "Militia", "Revolution", "Good", "Bad", "Evil"];
 local namet = ["Hope", "People", "Corporation", "Money", "Dope", "Cry", "Shot", "War", "Battle", "Fight"];
@@ -44,50 +28,81 @@ local x = 0; local y = 0;
 if (who == 666)  { x = AIBase.RandRange(7); y = AIBase.RandRange(10); }
 	else	 { x = who; y = who; }
 return nameo[x]+" "+namet[y]+" (DictatorAI)"; 
-
 }
 
-function DInfo(putMsg,debugValue=0,func="unkown")
-// just output AILog message depending on debug level
+function cMisc::SetPresident()
 {
-local debugState = DictatorAI.GetSetting("debug");
-if (debugState > 0)	func+="-> ";
-			else	func="";
-if (debugValue <= debugState )
-	{
-	AILog.Info(func+putMsg);
-	}
+	local myName = "Krinn's Company";
+	local FinalName = myName;
+	FinalName = cMisc.PickCompanyName(666);
+	AICompany.SetName(FinalName);
+	AICompany.SetPresidentGender(AICompany.GENDER_MALE);
+	DInfo("We're now "+FinalName,0);
+	local randomPresident = 666;
+	if (DictatorAI.GetSetting("PresidentName")) { randomPresident = AIBase.RandRange(12); }
+	local lastrand = "";
+	local nickrand = cMisc.getFirstName(randomPresident);
+	lastrand = nickrand + " "+ cMisc.getLastName(randomPresident);
+	DInfo(lastrand+" will rules the company with an iron fist",0);
+	AICompany.SetPresidentName(lastrand);
 }
 
-function DError(putMsg,debugValue=1,func="unkown")
-// just output AILog message depending on debug level
+function cMisc::getLastName(who)
 {
-local debugState = DictatorAI.GetSetting("debug");
-debugValue=1; // force error message to always appears when debug is on
-if (debugState > 0)	func+="-> ";
-			else	func="";
-if (debugValue <= debugState )
-	{
-	AILog.Error(func+putMsg+" Error:"+AIError.GetLastErrorString());
-	}
+local names = ["Castro", "Mussolini", "Lenin", "Stalin", "Batista", "Jong", "Mugabe", "Al-Bashir", "Milosevic",
+	"Bonaparte", "Caesar", "Tse-Tung"];
+if (who == 666) { who = AIBase.RandRange(12) };
+return names[who];
 }
 
-function DWarn(putMsg, debugValue=1,func="unkown")
-// just output AILog message depending on debug level
+function cMisc::getFirstName(who)
 {
-local debugState = DictatorAI.GetSetting("debug");
-if (debugState > 0)	func+="-> ";
-			else	func="";
-if (debugValue <= debugState )
-	{
-	AILog.Warning(func+putMsg);
-	}
+local names = ["Fidel", "Benito", "Vladamir", "Joseph", "Fulgencio", "Kim", "Robert", "Omar", "Slobodan",
+	"Napoleon", "Julius", "Mao"];
+if (who == 666) { who = AIBase.RandRange(12) };
+return names[who];
 }
 
-function ShowTick()
+function cMisc::SetBit(value, bitset)
+// Set the bit in value
 {
-DInfo("ShowTick-> "+this.GetTick(),2);
+	value = value | (1 << bitset);
+	return value;
 }
+
+function cMisc::ClearBit(value, bitset)
+// Clear a bit in value
+{
+	value = value & ~(1 << bitset);
+	return value;
+}
+
+function cMisc::ToggleBit(value, bitset)
+// Set/unset bit in value
+{
+	value = value ^ (1 << bitset);
+	return value;
+}
+
+function cMisc::CheckBit(value, bitset)
+// return true/false if bit is set in value
+{
+//print ("? "+(value & (1 << bitset))+" bitset="+bitset);
+	return ((value & (1 << bitset)) != 0);
+}
+
+/*function GetCurrentGoalCallback(message, self)
+{
+print("Received answer goal with ");
+for (local i=0; i < message.Data.len(); i++)	print(" Goal #"+i+" - "+message.Data[i]);
+local goal_to_do=AIList();
+if (message.Data[3] < message.Data[2])	goal_to_do.AddItem(message.Data[1],0);
+if (message.Data[6] < message.Data[5])	goal_to_do.AddItem(message.Data[4],0);
+if (message.Data[9] < message.Data[8])	goal_to_do.AddItem(message.Data[7],0);
+if (goal_to_do.IsEmpty())	return;
+INSTANCE.SetCargoFavorite(goal_to_do.Begin());
+}
+
 
 function checkHQ()
 {
@@ -107,31 +122,7 @@ new.RemoveTop(item_num);
 return new.Begin();
 }
 
-function AIGetCargoFavorite()
-{
-local crglist=AICargoList();
-cargo_favorite=AIBase.RandRange(crglist.Count());
-cargo_favorite=ListGetItem(crglist, cargo_favorite);
-DInfo("We will promote "+AICargo.GetCargoLabel(cargo_favorite),0,"AIGetCargoFavorite");
-}
 
-function AIInit()
-{
-local myName = "Krinn's Company";
-local FinalName = myName;
-FinalName = PickCompanyName(666);
-AICompany.SetName(FinalName);
-AICompany.SetPresidentGender(AICompany.GENDER_MALE);
-DInfo("We're now "+FinalName,0,"AIInit");
-local randomPresident = 666;
-if (DictatorAI.GetSetting("PresidentName")) { randomPresident = AIBase.RandRange(12); }
-local lastrand = "";
-local nickrand = getFirstName(randomPresident);
-lastrand = nickrand + " "+ getLastName(randomPresident);
-DInfo(lastrand+" will rules the company with an iron fist",0,"AIInit");
-AICompany.SetPresidentName(lastrand);
-AIGetCargoFavorite();
-}
 
 function OldSaveWarn()
 // Just output a warning for old savegame format
@@ -150,16 +141,16 @@ function ConvertOldSave()
 {
 local airlist=AIVehicleList_DefaultGroup(AIVehicle.VT_AIR);
 foreach (veh, dummy in airlist)	AIGroup.MoveVehicle(cRoute.GetVirtualAirPassengerGroup(), veh);
-	DInfo("Registering our routes",0,"LoadingGame");
-	foreach (routeUID, dummy in cRoute.RouteIndexer)
+	DInfo("Registering our main.route.",0,"LoadingGame");
+	foreach (main.route.ID, dummy in cRoute.RouteIndexer)
 		{
-		local aroute=cRoute.GetRouteObject(routeUID);
-		if (aroute==null)	continue;
-		if (aroute.UID < 2)	continue;
-		if (!aroute.isWorking)	continue;
-		local rt=aroute.route_type;
+		local amain.route.cRoute.GetRouteObject(main.route.ID);
+		if (amain.route.=null)	continue;
+		if (amain.route.UID < 2)	continue;
+		if (!amain.route.isWorking)	continue;
+		local rt=amain.route.main.route.type;
 		if (rt > AIVehicle.VT_AIR)	rt=AIVehicle.VT_AIR;
-		cJobs.CreateNewJob(aroute.sourceID, aroute.targetID, aroute.source_istown, aroute.cargoID, rt);
+		cJobs.CreateNewJob(amain.route.sourceID, amain.route.targetID, amain.route.source_istown, amain.route.cargoID, rt);
 		}
 	DInfo("Tagging jobs in use",0,"LoadingGame");
 	foreach (jobID, dummy in cJobs.jobIndexer)
@@ -202,27 +193,27 @@ function LoadOldSave()
 		}
 	DInfo(iter+" stations found.",0,"main");
 	DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1,"main");
-	DInfo("Restoring routes",0,"main");
+	DInfo("Restoring main.route.",0,"main");
 	iter=0;
-	local all_routes=bank.canBuild;
-	for (local i=0; i < all_routes.len(); i++)
+	local all_main.route.=bank.canBuild;
+	for (local i=0; i < all_main.route..len(); i++)
 		{
 		local obj=cRoute();
-		obj.UID=all_routes[i];
-		obj.sourceID=all_routes[i+1];
-		obj.source_location=all_routes[i+2];
-		obj.source_istown=all_routes[i+3];
-		obj.targetID=all_routes[i+4];
-		obj.target_location=all_routes[i+5];
-		obj.target_istown=all_routes[i+6];
-		obj.route_type=all_routes[i+7];
-		obj.station_type=all_routes[i+8];
-		obj.isWorking=all_routes[i+9];
-		obj.status=all_routes[i+10];
-		obj.groupID=all_routes[i+11];
-		obj.source_stationID=all_routes[i+12];
-		obj.target_stationID=all_routes[i+13];
-		obj.cargoID=all_routes[i+14];
+		obj.UID=all_main.route.[i];
+		obj.sourceID=all_main.route.[i+1];
+		obj.source_location=all_main.route.[i+2];
+		obj.source_istown=all_main.route.[i+3];
+		obj.targetID=all_main.route.[i+4];
+		obj.target_location=all_main.route.[i+5];
+		obj.target_istown=all_main.route.[i+6];
+		obj.main.route.type=all_main.route.[i+7];
+		obj.station_type=all_main.route.[i+8];
+		obj.isWorking=all_main.route.[i+9];
+		obj.status=all_main.route.[i+10];
+		obj.groupID=all_main.route.[i+11];
+		obj.source_stationID=all_main.route.[i+12];
+		obj.target_stationID=all_main.route.[i+13];
+		obj.cargoID=all_main.route.[i+14];
 		i+=14;
 		iter++;
 		if (obj.UID > 1)	// don't save old virtual network
@@ -234,7 +225,7 @@ function LoadOldSave()
 			else	if (AIGroup.IsValidGroup(obj.groupID))	AIGroup.DeleteGroup(obj.groupID);
 		obj.RouteCheckEntry(); // re-enable the link to stations
 		if (obj.UID > 1)
-			{ // don't try this one virtual routes
+			{ // don't try this one virtual main.route.
 			if (obj.source_entry)
 				{
 				obj.source.cargo_produce.AddItem(obj.cargoID,0);
@@ -245,12 +236,12 @@ function LoadOldSave()
 				obj.target.cargo_produce.AddItem(obj.cargoID,0);
 				obj.target.cargo_accept.AddItem(obj.cargoID,0);
 				}
-			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
+			if (obj.main.route.type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
 		obj.RouteUpdateVehicle();
 		}
 	cRoute.RouteRebuildIndex();
-	DInfo(iter+" routes found.",0,"main");
+	DInfo(iter+" main.route. found.",0,"main");
 	DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2,"main");
 	ConvertOldSave();
 }
@@ -293,42 +284,42 @@ function Load154()
 		}
 	DInfo(iter+" stations found.",0,"LoadSaveGame");
 	DInfo("base size: "+bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1,"LoadSaveGame");
-	DInfo("Restoring routes",0,"LoadSaveGame");
+	DInfo("Restoring main.route.",0,"LoadSaveGame");
 	iter=0;
-	local all_routes=bank.canBuild;
-	for (local i=0; i < all_routes.len(); i++)
+	local all_main.route.=bank.canBuild;
+	for (local i=0; i < all_main.route..len(); i++)
 		{
 		local obj=cRoute();
-		obj.UID=all_routes[i];
-		obj.sourceID=all_routes[i+1];
-		obj.source_istown=all_routes[i+2];
+		obj.UID=all_main.route.[i];
+		obj.sourceID=all_main.route.[i+1];
+		obj.source_istown=all_main.route.[i+2];
 		if (obj.UID > 1)	// don't try this on virtual network
 			{ 
 			if (obj.source_istown)	obj.source_location=AITown.GetLocation(obj.sourceID);
 						else	obj.source_location=AIIndustry.GetLocation(obj.sourceID);
 			}
-		obj.targetID=all_routes[i+3];
-		obj.target_istown=all_routes[i+4];
+		obj.targetID=all_main.route.[i+3];
+		obj.target_istown=all_main.route.[i+4];
 		if (obj.UID > 1)
 			{
 			if (obj.target_istown)	obj.target_location=AITown.GetLocation(obj.targetID);
 						else	obj.target_location=AIIndustry.GetLocation(obj.targetID);
 			}
-		obj.route_type=all_routes[i+5];
-		obj.station_type=all_routes[i+6];
-		obj.isWorking=all_routes[i+7];
-		obj.status=all_routes[i+8];
-		obj.groupID=all_routes[i+9];
-		obj.source_stationID=all_routes[i+10];
-		obj.target_stationID=all_routes[i+11];
-		obj.cargoID=all_routes[i+12];
-		obj.primary_RailLink=all_routes[i+13];
-		obj.secondary_RailLink=all_routes[i+14];
-		obj.twoway=all_routes[i+15];
+		obj.main.route.type=all_main.route.[i+5];
+		obj.station_type=all_main.route.[i+6];
+		obj.isWorking=all_main.route.[i+7];
+		obj.status=all_main.route.[i+8];
+		obj.groupID=all_main.route.[i+9];
+		obj.source_stationID=all_main.route.[i+10];
+		obj.target_stationID=all_main.route.[i+11];
+		obj.cargoID=all_main.route.[i+12];
+		obj.primary_RailLink=all_main.route.[i+13];
+		obj.secondary_RailLink=all_main.route.[i+14];
+		obj.twoway=all_main.route.[i+15];
 		if (!revision)	i+=15;
 				else	{ // newer savegame from 155
-					obj.source_RailEntry=all_routes[i+16];
-					obj.target_RailEntry=all_routes[i+17];
+					obj.source_RailEntry=all_main.route.[i+16];
+					obj.target_RailEntry=all_main.route.[i+17];
 					i+=17;
 					}
 		iter++;
@@ -341,7 +332,7 @@ function Load154()
 			else	if (obj.groupID!=null && AIGroup.IsValidGroup(obj.groupID))	AIGroup.DeleteGroup(obj.groupID);
 		obj.RouteCheckEntry(); // re-enable the link to stations
 		if (obj.UID > 1)
-			{ // don't try this one virtual routes
+			{ // don't try this one virtual main.route.
 			if (obj.source_entry)
 				{
 				obj.source.cargo_produce.AddItem(obj.cargoID,0);
@@ -352,11 +343,11 @@ function Load154()
 				obj.target.cargo_produce.AddItem(obj.cargoID,0);
 				obj.target.cargo_accept.AddItem(obj.cargoID,0);
 				}
-			if (obj.route_type >= RouteType.AIR)	obj.RouteAirportCheck();
+			if (obj.main.route.type >= RouteType.AIR)	obj.RouteAirportCheck();
 			}
 		//obj.RouteUpdateVehicle();
 		}
-	DInfo(iter+" routes found.",0,"LoadSaveGame");
+	DInfo(iter+" main.route. found.",0,"LoadSaveGame");
 	DInfo("base size: "+bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2,"LoadSaveGame");
 	DInfo("Restoring trains",0,"LoadSaveGame");
 	local all_trains=SixMonth;
@@ -408,29 +399,29 @@ function LoadSaveGame()
 		for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
 		obj.platforms=ArrayToList(temparray);
 		obj.maxsize=1;
-		if (obj.stationType == AIStation.STATION_BUS_STOP || obj.stationType == AIStation.STATION_TRUCK_STOP)	obj.maxsize=INSTANCE.carrier.road_max;
-		if (obj.stationType == AIStation.STATION_TRAIN)	obj.maxsize=INSTANCE.carrier.rail_max;
+		if (obj.stationType == AIStation.STATION_BUS_STOP || obj.stationType == AIStation.STATION_TRUCK_STOP)	obj.maxsize=INSTANCE.main.vehicle.road_max;
+		if (obj.stationType == AIStation.STATION_TRAIN)	obj.maxsize=INSTANCE.main.vehicle.rail_max;
 		i=nextitem+counter;
 		iter++;
 		if (saveit)	obj.StationSave();
 		}
 	DInfo("Found "+iter+" stations.",0,"LoadSaveGame");
-	local all_routes=bank.canBuild;
-	DInfo("...Restoring routes",0,"LoadSaveGame");
+	local all_main.route.=bank.canBuild;
+	DInfo("...Restoring main.route.",0,"LoadSaveGame");
 	iter=0;
-	for (local i=0; i < all_routes.len(); i++)
+	for (local i=0; i < all_main.route..len(); i++)
 		{
 		saveit=true;
 		local obj=cRoute();
-		obj.route_type=all_routes[i+0];
-		obj.status=all_routes[i+1];
-		obj.groupID=all_routes[i+2];
-		obj.source_stationID=all_routes[i+3];
-		obj.target_stationID=all_routes[i+4];
-		obj.primary_RailLink=all_routes[i+5];
-		obj.secondary_RailLink=all_routes[i+6];
-		obj.source_RailEntry=all_routes[i+7];
-		obj.target_RailEntry=all_routes[i+8];
+		obj.main.route.type=all_main.route.[i+0];
+		obj.status=all_main.route.[i+1];
+		obj.groupID=all_main.route.[i+2];
+		obj.source_stationID=all_main.route.[i+3];
+		obj.target_stationID=all_main.route.[i+4];
+		obj.primary_RailLink=all_main.route.[i+5];
+		obj.secondary_RailLink=all_main.route.[i+6];
+		obj.source_RailEntry=all_main.route.[i+7];
+		obj.target_RailEntry=all_main.route.[i+8];
 		i+=8;
 		iter++;
 		local gname=AIGroup.GetName(obj.groupID);
@@ -448,7 +439,7 @@ function LoadSaveGame()
 		workstr=workstr.slice(1);
 		obj.targetID=workstr.tointeger();
 		obj.twoway=false;
-		switch (obj.route_type)
+		switch (obj.main.route.type)
 			{
 			case	RouteType.RAIL:
 				obj.station_type=AIStation.STATION_TRAIN;
@@ -471,7 +462,7 @@ function LoadSaveGame()
 			break;
 			}
 		obj.isWorking=(obj.status==100);
-		local jrt=obj.route_type;
+		local jrt=obj.main.route.type;
 		local crg=obj.cargoID;
 		if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
 		cJobs.CreateNewJob(obj.sourceID, obj.targetID, obj.source_istown, crg, jrt); // recreate the job with the infos we knows
@@ -490,13 +481,13 @@ function LoadSaveGame()
 		if (saveit && obj.UID != null)
 			{
 			cRoute.database[obj.UID] <- obj;
-			if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
+			if (obj.UID>1 && obj.target_istown && obj.main.route.type != RouteType.WATER && obj.main.route.type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
 			obj.RouteCheckEntry(); // re-enable the link to stations
 			if (obj.source_entry && AIStation.IsValidStation(obj.source_stationID))
 				{
 				obj.rail_type=AIRail.GetRailType(AIStation.GetLocation(obj.source_stationID));
 				obj.RouteSetDistance();
-print("aircraft= route dist="+obj.distance);
+print("aircraft= main.route.dist="+obj.distance);
 				}
 			if (obj.groupID != null)	cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
 			if (!obj.source_entry || !obj.target_entry)	continue;
@@ -512,7 +503,7 @@ print("aircraft= route dist="+obj.distance);
 			DInfo("Proccess... "+cRoute.RouteGetName(obj.UID),0,"LoadSaveGame");
 			}
 		}
-	DInfo("Found "+iter+" routes.",0,"LoadSaveGame");
+	DInfo("Found "+iter+" main.route..",0,"LoadSaveGame");
 	DInfo("Restoring trains",0,"LoadSaveGame");
 	local all_trains=SixMonth;
 	iter=0;
@@ -557,7 +548,7 @@ function LoadingGame()
 		grouplist.RemoveItem(cRoute.VirtualAirGroup[1]);
 		foreach (grp, dummy in grouplist)	AIGroup.DeleteGroup(grp);
 		local vehlist=AIVehicleList();
-		foreach (veh, dummy in vehlist)	{ cCarrier.VehicleOrdersReset(veh); INSTANCE.carrier.VehicleMaintenance_Orders(veh); }
+		foreach (veh, dummy in vehlist)	{ cCarrier.VehicleOrdersReset(veh); INSTANCE.main.vehicle.VehicleMaintenance_Orders(veh); }
 		}
 	OneWeek=0;
 	OneMonth=0;
@@ -581,5 +572,5 @@ function LoadingGame()
 	local alltowns=AITownList();
 	foreach (townID, dummy in alltowns)
 		if (AITown.GetRating(townID, AICompany.COMPANY_SELF) != AITown.TOWN_RATING_NONE)	cJobs.statueTown.AddItem(townID,0);
-	INSTANCE.builder.CheckRouteStationStatus();
-}
+	INSTANCE.main.builder.CheckRouteStationStatus();
+}*/

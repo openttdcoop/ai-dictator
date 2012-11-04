@@ -1,23 +1,24 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
 
-class cBanker
+class cBanker extends cClass
 	{
 	canBuild= null;		// true if we can build new route
 	unleash_road = null;	// true to build big road, false for small size
 	mincash=null;
-	busyRoute=null;		// true if we are still busy handling a route, we need false to build new route
+	busyRoute=null;		// true if we are still busy handling a main.route. we need false to build new route
 	basePrice=null;		// it's just a base price cost to remove a rock tile
 	
 	constructor()
@@ -27,29 +28,10 @@ class cBanker
 		mincash=10000;
 		busyRoute=false;
 		basePrice=0;
+		this.ClassName="cBanker";
 		}
 	}
 
-function cBanker::Update()
-{
-local ourLoan=AICompany.GetLoanAmount();
-local maxLoan=AICompany.GetMaxLoanAmount();
-local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-local goodcash=INSTANCE.bank.mincash*cBanker.GetInflationRate();
-if (goodcash < INSTANCE.bank.mincash) goodcash=INSTANCE.bank.mincash;
-if (ourLoan==0 && cash>=INSTANCE.bank.mincash)	INSTANCE.bank.unleash_road=true;
-if (cash < goodcash)	{ INSTANCE.bank.canBuild=false; }
-if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ INSTANCE.bank.canBuild=true; }
-if (maxLoan > 2000000 && ourLoan > 0 && cRoute.RouteIndexer.Count() > 6)
-		{ DInfo("Trying to repay loan",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; } // wait to repay loan
-local veh=AIVehicleList();
-if (INSTANCE.bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; }
-if (INSTANCE.builddelay)	{ DInfo("Delaying build: we lack a bit of funds for construction : "+INSTANCE.buildTimer,1,"cBanker::Update"); INSTANCE.bank.canBuild=false; }
-if (INSTANCE.carrier.vehnextprice >0 && !cBanker.CanBuyThat(INSTANCE.carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade",1,"cBanker::Update"); INSTANCE.bank.canBuild=false; }
-local veh=AIVehicleList();
-if (veh.IsEmpty())	{ DInfo("Forcing build: We have 0 vehicle running !"); INSTANCE.bank.canBuild=true; } // we have 0 vehicles force a build
-DInfo("canBuild="+INSTANCE.bank.canBuild+" unleash="+INSTANCE.bank.unleash_road+" building_route="+INSTANCE.builder.building_route+" warTreasure="+INSTANCE.carrier.warTreasure+" vehnextprice="+INSTANCE.carrier.vehnextprice,1,"cBanker::Update");
-}
 
 function cBanker::GetLoanValue(money)
 {
@@ -68,7 +50,7 @@ local success=true;
 if (curr > money) success=true;
 		else	success=AICompany.SetMinimumLoanAmount(toloan);
 if (!success)	{ // can't get what we need, raising to what we could do so
-			DInfo("Cannot raise money to "+money+". Raising money to max we can",2,"cBanker::RaiseFundsTo");
+			DInfo("Cannot raise money to "+money+". Raising money to max we can",2);
 			toloan=AICompany.GetMaxLoanAmount();
 			success=AICompany.SetMinimumLoanAmount(toloan);
 			}
@@ -105,7 +87,7 @@ function cBanker::SaveMoney()
 {
 local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 local balance=AICompany.GetBankBalance(weare);
-DInfo("Saving our money",0,"cBanker::SaveMoney");
+DInfo("Saving our money",0);
 local canrepay=cBanker.GetLoanValue(balance);
 local newLoan=AICompany.GetLoanAmount()-canrepay;
 if (newLoan <=0) newLoan=0;
@@ -135,11 +117,10 @@ function cBanker::PayLoan()
 
 function cBanker::CashFlow()
 {
-INSTANCE.bank.PayLoan();
-local goodcash=INSTANCE.bank.mincash;
-if (goodcash < INSTANCE.bank.mincash) goodcash=INSTANCE.bank.mincash;
-INSTANCE.bank.RaiseFundsTo(goodcash);
-INSTANCE.bank.Update();
+	this.PayLoan();
+	local goodcash=this.mincash;
+	if (goodcash < this.mincash)	goodcash=this.mincash;
+	this.RaiseFundsTo(goodcash);
 }
 
 function cBanker::GetInflationRate()

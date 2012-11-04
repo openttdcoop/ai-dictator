@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -18,106 +19,106 @@
 
 function cBuilder::WeeklyChecks()
 {
-local week=AIDate.GetCurrentDate();
-if (week - INSTANCE.OneWeek < 7)	return false;
-INSTANCE.OneWeek=AIDate.GetCurrentDate();
-DInfo("Weekly checks run...",1,"Checks");
-INSTANCE.builder.RoadStationsBalancing();
+	local week=AIDate.GetCurrentDate();
+	if (week - INSTANCE.OneWeek < 7)	return false;
+	INSTANCE.OneWeek=AIDate.GetCurrentDate();
+	DInfo("Weekly checks run...",1);
+	INSTANCE.main.builder.RoadStationsBalancing();
 }
 
 function cBuilder::MonthlyChecks()
 {
-local month=AIDate.GetMonth(AIDate.GetCurrentDate());
-if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++; }
+	local month=AIDate.GetMonth(AIDate.GetCurrentDate());
+	if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++; }
 					else	return false;
-DInfo("Montly checks run...",1,"Checks");
-INSTANCE.route.VirtualAirNetworkUpdate();
-INSTANCE.builder.RouteNeedRepair();
-if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
-if (INSTANCE.buildTimer == 2) // delaying a build for 2 months
-	{
-	INSTANCE.builddelay=false;
-	INSTANCE.buildTimer=0;
-	}
-INSTANCE.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
-INSTANCE.carrier.VehicleMaintenance();
-INSTANCE.route.DutyOnRoute();
-if (INSTANCE.SixMonth == 2)	INSTANCE.builder.BoostedBuys();
-if (INSTANCE.SixMonth == 2)	INSTANCE.builder.BridgeUpgrader();
-if (INSTANCE.SixMonth == 6)	INSTANCE.builder.HalfYearChecks();
+	DInfo("Montly checks run...",1);
+	INSTANCE.main.route.VirtualAirNetworkUpdate();
+	INSTANCE.main.builder.RouteNeedRepair();
+	if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
+	if (INSTANCE.buildTimer == 2) // delaying a build for 2 months
+		{
+		INSTANCE.builddelay=false;
+		INSTANCE.buildTimer=0;
+		}
+	INSTANCE.main.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
+	INSTANCE.main.carrier.VehicleMaintenance();
+	INSTANCE.main.carrier.DutyOnRoute();
+	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BoostedBuys();
+	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BridgeUpgrader();
+	if (INSTANCE.SixMonth == 6)	INSTANCE.main.builder.HalfYearChecks();
 }
 
 function cBuilder::HalfYearChecks()
 {
-INSTANCE.SixMonth=0;
-INSTANCE.TwelveMonth++;
-DInfo("Half year checks run...",1,"Checks");
-if (cCarrier.VirtualAirRoute.len() > 1) 
-	{
-	local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
-	local passlist=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
-	local totair=maillist.Count()+passlist.Count();
-	DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0,"Checks");
-	}
-if (INSTANCE.TwelveMonth == 2)	INSTANCE.builder.YearlyChecks();
-local stationList=AIList();	// check for no more working station if cargo disapears...
-stationList.AddList(AIStationList(AIStation.STATION_ANY));
-foreach (stationID, dummy in stationList)
-	{
-	INSTANCE.Sleep(1);
-	cStation.CheckCargoHandleByStation(stationID);
-	}
-if (cCarrier.ToDepotList.IsEmpty())	INSTANCE.carrier.vehnextprice=0; // avoid strange result from vehicle crash...
+	INSTANCE.SixMonth=0;
+	INSTANCE.TwelveMonth++;
+	DInfo("Half year checks run...",1);
+	if (cCarrier.VirtualAirRoute.len() > 1) 
+		{
+		local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
+		local passlist=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
+		local totair=maillist.Count()+passlist.Count();
+		DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
+		}
+	if (INSTANCE.TwelveMonth == 2)	INSTANCE.main.builder.YearlyChecks();
+	local stationList=AIList();	// check for no more working station if cargo disapears...
+	stationList.AddList(AIStationList(AIStation.STATION_ANY));
+	foreach (stationID, dummy in stationList)
+		{
+		INSTANCE.Sleep(1);
+		cStation.CheckCargoHandleByStation(stationID);
+		}
+	if (cCarrier.ToDepotList.IsEmpty())	INSTANCE.main.carrier.vehnextprice=0; // avoid strange result from vehicle crash...
 }
 
 function cBuilder::RouteIsDamage(idx)
 // Set the route idx as damage
 {
-local road=cRoute.GetRouteObject(idx);
-if (road == null) return;
-if (road.route_type != AIVehicle.VT_ROAD)	return;
-if (!road.isWorking)	return;
-if (!INSTANCE.route.RouteDamage.HasItem(idx))	INSTANCE.route.RouteDamage.AddItem(idx,0);
+	local road=cRoute.GetRouteObject(idx);
+	if (road == null) return;
+	if (road.route_type != AIVehicle.VT_ROAD)	return;
+	if (!road.isWorking)	return;
+	if (!INSTANCE.main.route.RouteDamage.HasItem(idx))	INSTANCE.main.route.RouteDamage.AddItem(idx,0);
 }
 
 function cBuilder::RouteNeedRepair()
 {
-DInfo("Damage routes: "+INSTANCE.route.RouteDamage.Count(),1,"RouteNeedRepair");
-if (INSTANCE.route.RouteDamage.IsEmpty()) return;
-local deletethatone=-1;
-local runLimit=2; // number of routes to repair per run
-foreach (routes, dummy in INSTANCE.route.RouteDamage)
-	{
-	runLimit--;
-	local trys=dummy;
-	trys++;
-	DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1,"RouteNeedRepair");
-	local test=INSTANCE.builder.CheckRoadHealth(routes);
-	if (test)	INSTANCE.route.RouteDamage.SetValue(routes, -1)
-		else	INSTANCE.route.RouteDamage.SetValue(routes, trys);
-	if (trys >= 12)	{ deletethatone=routes }
-	if (runLimit <= 0)	break;
-	}
-INSTANCE.route.RouteDamage.RemoveValue(-1);
-if (deletethatone != -1)
-	{
-	local trys=cRoute.GetRouteObject(deletethatone);
-	trys.RouteIsNotDoable();
-	}
+	DInfo("Damage routes: "+INSTANCE.route.RouteDamage.Count(),1);
+	if (INSTANCE.main.route.RouteDamage.IsEmpty()) return;
+	local deletethatone=-1;
+	local runLimit=2; // number of routes to repair per run
+	foreach (routes, dummy in INSTANCE.main.route.RouteDamage)
+		{
+		runLimit--;
+		local trys=dummy;
+		trys++;
+		DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1);
+		local test=INSTANCE.main.CheckRoadHealth(routes);
+		if (test)	INSTANCE.main.route.RouteDamage.SetValue(routes, -1)
+			else	INSTANCE.main.route.RouteDamage.SetValue(routes, trys);
+		if (trys >= 12)	{ deletethatone=routes }
+		if (runLimit <= 0)	break;
+		}
+	INSTANCE.main.route.RouteDamage.RemoveValue(-1);
+	if (deletethatone != -1)
+		{
+		local trys=cRoute.GetRouteObject(deletethatone);
+		trys.RouteIsNotDoable();
+		}
 }
 
 function cBuilder::YearlyChecks()
 {
-INSTANCE.TwelveMonth=0;
-DInfo("Yearly checks run...",1,"Checks");
-
-INSTANCE.builder.CheckRouteStationStatus();
-INSTANCE.jobs.CheckTownStatue();
-INSTANCE.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
-INSTANCE.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
-INSTANCE.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
+	INSTANCE.TwelveMonth=0;
+	DInfo("Yearly checks run...",1);
+	INSTANCE.main.builder.CheckRouteStationStatus();
+	INSTANCE.main.jobs.CheckTownStatue();
+	INSTANCE.main.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
+	INSTANCE.main.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
+	INSTANCE.main.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
 }
 
+/*
 function cBuilder::AirportStationsBalancing()
 // Look at airport for busy loading and if busy & some waiting force the aircraft to move on
 {
@@ -152,7 +153,7 @@ foreach (i, dummy in airID)
 		}
 	}
 }
-
+*/
 function cBuilder::GetCargoListProduceAtTile(tile)
 // return list of cargo that tile is producing
 {

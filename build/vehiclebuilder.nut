@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -13,7 +14,7 @@
 **/
 
 // generic vehicle building functions
-
+/*
 class cCarrier
 {
 static	AirportTypeLimit=[6, 10, 2, 16, 30, 5, 6, 60, 8]; // limit per airport type
@@ -67,7 +68,7 @@ static	function GetVehicleObject(vehicleID)
 		}
 }
 
-
+*/
 function cCarrier::VehicleGetCargoType(veh)
 // return cargo type the vehicle is handling
 {

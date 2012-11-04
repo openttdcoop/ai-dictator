@@ -12,4 +12,21 @@
  *
 **/
 
+class cRailAnalyzer
+{
+static	RailList = AIList();		// list of rails, item=tile index, value=owner route or -1 if none own it
+
+	railUID		= null;	// it's tile index
+	ownerRoute		= null;	// the companyID of the owner of the bridge
+	
+	constructor()
+		{
+		}
+}
+
+function cRailAnalyzer::FindRailOwner(tilelist)
+// find all rails owner from the tilelist of rails provide
+{
+
+}
 

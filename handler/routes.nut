@@ -1,23 +1,25 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
  *
 **/
 
-class cRoute
+class cRoute extends cClass
 	{
 static	database = {};
 static	RouteIndexer = AIList();	// list all UID of routes we are handling
 static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
 static	RouteDamage = AIList(); 	// list of routes that need repairs
+static	WorldTiles = AIList();		// tiles we own, hard to get
 static	VirtualAirGroup = [-1,-1,0];	// [0]=networkpassenger groupID, [1]=networkmail groupID [2]=total capacity of aircrafts in network
 
 static	function GetRouteObject(UID)
@@ -97,6 +99,7 @@ static	function GetRouteObject(UID)
 		primary_RailLink	= false;		// *
 		secondary_RailLink= false;		// *
 		twoway		= false;
+		this.ClassName = "cRoute";
 		}
 	}
 
@@ -161,7 +164,7 @@ function cRoute::RouteAirportCheck(uid=null)
 	if (road.UID > 1 && (!cBuilder.AirportAcceptBigPlanes(road.source_stationID) || !cBuilder.AirportAcceptBigPlanes(road.target_stationID)))	road.route_type+=4;
 	// adding 4 to met small AIR or MAIL
 	if (!road.source_istown)	road.route_type=RouteType.CHOPPER;
-	if (oldtype != road.route_type)	{ DInfo("Changing aircraft type for route "+cRoute.RouteGetName(road.UID),1,"RouteAirportCheck"); }
+	if (oldtype != road.route_type)	{ DInfo("Changing aircraft type for route "+cRoute.RouteGetName(road.UID),1); }
 	}
 
 function cRoute::RouteUpdateVehicle()
@@ -221,7 +224,7 @@ function cRoute::RouteBuildGroup()
 	local rtype=this.route_type;
 	if (rtype >= RouteType.AIR)	rtype=RouteType.AIR;
 	local gid = AIGroup.CreateGroup(rtype);
-	if (!AIGroup.IsValidGroup(gid))	{ DError("Cannot create the group, this is serious error, please report it!",0,"cRoute::RouteBuildGroup()"); return; }
+	if (!AIGroup.IsValidGroup(gid))	{ DError("Cannot create the group, this is serious error, please report it!",0); return; }
 	this.groupID = gid;
 	cRoute.SetRouteGroupName(this.groupID, this.sourceID, this.targetID, this.source_istown, this.target_istown, this.cargoID, false);
 	if (this.groupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(this.groupID, this.UID);
@@ -256,9 +259,9 @@ function cRoute::RouteDone()
 function cRoute::RouteSave()
 // save that route to the database
 	{
-	if (this.UID in database)	DInfo("Route "+this.UID+" is already in database",2,"cRoute::RouteSave");
+	if (this.UID in database)	DInfo("Route "+this.UID+" is already in database",2);
 			else		{
-					DInfo("Adding route "+this.UID+" to the route database",2,"cRoute::RouteSave");
+					DInfo("Adding route "+this.UID+" to the route database",2);
 					database[this.UID] <- this;
 					RouteIndexer.AddItem(this.UID, 1);
 					}
@@ -354,7 +357,7 @@ function cRoute::CreateNewRoute(UID)
 			local randcargo=AIBase.RandRange(100);
 			if (randcargo >70)	{ this.cargoID=cCargo.GetMailCargo(); this.route_type=RouteType.SMALLMAIL; }
 						else	{ this.cargoID=cCargo.GetPassengerCargo(); this.route_type=RouteType.SMALLAIR; }
-			DInfo("Airport work, choosen : "+randcargo+" "+AICargo.GetCargoLabel(this.cargoID),1,"CreateNewRoute");
+			DInfo("Airport work, choosen : "+randcargo+" "+AICargo.GetCargoLabel(this.cargoID),1);
 		break;
 		}
 	this.isWorking = false;
@@ -444,7 +447,7 @@ function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way, in 2 steps, next step is RouteUndoableFreeOfVehicle()
 	{
 	if (this.UID < 2)	return; // don't touch virtual routes
-	DInfo("Marking route "+cRoute.RouteGetName(this.UID)+" undoable !!!",1,"RouteIsNotDoable");
+	DInfo("Marking route "+cRoute.RouteGetName(this.UID)+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
 	this.isWorking=false;
 	this.RouteCheckEntry();
@@ -465,7 +468,7 @@ function cRoute::RouteUndoableFreeOfVehicle()
 	local uidsafe = this.UID;
 	if (this.UID in cRoute.database)
 		{
-		DInfo("ROUTE -> Removing route "+this.UID+" from database",1,"RouteIsNotDoable");
+		DInfo("ROUTE -> Removing route "+this.UID+" from database",1);
 		cRoute.RouteIndexer.RemoveItem(this.UID);
 		cRoute.RouteDamage.RemoveItem(this.UID);
 		delete cRoute.database[this.UID];
@@ -479,7 +482,7 @@ function cRoute::CreateNewStation(start)
 	local scheck=this.source_stationID;
 	if (!start)	scheck=this.target_stationID;
 	if (!AIStation.IsValidStation(scheck))
-		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1,"cRoute::CreateNewStation"); }
+		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1); }
 	local station=cStation();
 	station.stationID=scheck;
 	station.InitNewStation();
@@ -521,7 +524,7 @@ function cRoute::GetDepot(uid, source=0)
 // return -1 on errors
 	{
 	local road=cRoute.GetRouteObject(uid);
-	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::GetDepot"); return -1; }
+	if (road==null)	{ DError("Invalid uid : "+uid,2); return -1; }
 	local sdepot=-1;
 	local tdepot=-1;
 	if (road.source != null && road.source instanceof cStation)	sdepot=road.source.depot;
@@ -560,8 +563,8 @@ function cRoute::GetDepot(uid, source=0)
 		if (source==0 || source==2)	if (cStation.IsDepot(tdepot))	return tdepot;
 		if (road.route_type == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
 		}
-	if (source==0)	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have any valid depot !",2,"cRoute::GetDepot");
-			else	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have the request depoted ! source="+source,2,"cRoute::GetDepot");
+	if (source==0)	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have any valid depot !",2);
+			else	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have the request depoted ! source="+source,2);
 	return -1;
 	}
 
@@ -571,8 +574,8 @@ function cRoute::AddTrain(uid, vehID)
 // vehID: the train ID to add
 	{
 	local road=cRoute.GetRouteObject(uid);
-	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID: "+vehID,2,"cRoute::AddTrain"); return -1; }
-	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::AddTrain"); return -1; }
+	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID: "+vehID,2); return -1; }
+	if (road==null)	{ DError("Invalid uid : "+uid,2); return -1; }
 	cTrain.TrainSetStation(vehID, road.source_stationID, true, road.source_RailEntry, true); // train load at station
 	cTrain.TrainSetStation(vehID, road.target_stationID, false, road.target_RailEntry, road.twoway); // if twoway train load at station, else if will only drop
 	// hmmm, choices: a two way route == 2 taker that are also dropper train
@@ -588,10 +591,27 @@ function cRoute::CanAddTrainToStation(uid)
 // return false when the station cannot handle it
 	{
 	local road=cRoute.GetRouteObject(uid);
-	if (road==null)	{ DError("Invalid uid : "+uid,2,"cRoute::CanAddTrainToStation"); return -1; }
+	if (road==null)	{ DError("Invalid uid : "+uid,2); return -1; }
 	local canAdd=true;
-	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1,"cRoute::CanAddTrainToStation");
+	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1);
 	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
 	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
 	return canAdd;
 	}
+
+function cRoute::DiscoverWorldTiles()
+// look at the map and discover what we own, use after loading
+{
+	DInfo("Looking for our properties, game may get frozen for some times on huge maps, be patient",0);
+	local allmap=AITileList();
+	local maxTile=AIMap.GetTileIndex(AIMap.GetMapSizeX()-2, AIMap.GetMapSizeY()-2);
+	INSTANCE.Sleep(1);
+	allmap.AddRectangle(AIMap.GetTileIndex(1,1), maxTile);
+	INSTANCE.Sleep(1);
+	allmap.Valuate(AITile.GetOwner);
+	INSTANCE.Sleep(1);
+	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+	allmap.KeepValue(weare);
+	cRoute.WorldTiles.AddList(allmap);
+}
+

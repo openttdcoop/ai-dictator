@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -405,13 +406,13 @@ local randomTile=AITileList();
 randomTile.AddList(workTileList);
 randomTile.Sort(AIList.SORT_BY_VALUE, false);
 showLogic(randomTile);
-ClearSignsALL();
+ClearSigns();
 randomTile.KeepTop(6);
 foreach (tile, dummy in randomTile)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
 workTileList.Clear();
 workTileList.AddList(randomTile);
 showLogic(workTileList);
-ClearSignsALL();
+ClearSigns();
 local templist=AITileList();
 local solveIndex=0;
 foreach (tileFrom, tileTo in workTileList)
@@ -421,7 +422,7 @@ foreach (tileFrom, tileTo in workTileList)
 showLogic(templist);
 PutSign(tileFrom,"F"); PutSign(tileTo,"T");
 	local solve=cTileTools.TerraformHeightSolver(templist);
-ClearSignsALL();
+ClearSigns();
 	solve.RemoveValue(0); // discard no solve
 	local bf, bt, bs, bp=null;
 	bp=99999999999999;
@@ -442,7 +443,7 @@ ClearSignsALL();
 		allsolve.push(bp);
 		}
 	}
-ClearSignsALL();
+ClearSigns();
 DInfo("Total solves found: "+solveIndex,1,"AirportBestPlace_EvaluateHill");
 return allsolve;
 }

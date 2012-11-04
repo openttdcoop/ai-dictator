@@ -13,17 +13,18 @@
  *
 **/
 
+require("class/version.nut");
 
  class DictatorAI extends AIInfo 
  {
    function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
    function GetDescription()   { return "a (should be) competitive AI."; }
-   function GetVersion()       { return 156; }
+   function GetVersion()       { return SELF_VERSION; }
    function MinVersionToLoad() { return 1; }
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
-   function GetShortName()     { return "DCTR"; }
+   function GetShortName()     { return SELF_SHORTNAME; }
    function GetAPIVersion()    { return "1.2"; }
    
    function GetSettings() {
@@ -126,6 +127,16 @@
 	AddSetting({
 		name = "upgrade_townbridge",
 		description = "Upgrade AI & towns bridges (better for aesthetics & opponents) / Upgrade only AI bridges, (better for economy)",
+		easy_value = 1,
+		medium_value = 1,
+		hard_value = 1,
+		custom_value = 1,
+		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+	});
+
+	AddSetting({
+		name = "allow_scp",
+		description = "Allow DictatorAI to play with GoalScript using SCP",
 		easy_value = 1,
 		medium_value = 1,
 		hard_value = 1,

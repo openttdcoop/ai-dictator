@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -468,7 +469,7 @@ if (path != null && path != false)
 	return path;
 	}
 else	{
-	ClearSignsALL();
+	ClearSigns();
 	DInfo("Pathfinding failed.",1);
 	INSTANCE.builder.CriticalError=true;
 	return false;
@@ -527,7 +528,7 @@ if (good)
 		}
 	}
 
-ClearSignsALL();
+ClearSigns();
 
 // target station
 correction=false;
@@ -553,7 +554,7 @@ if (good)
 		}
 	}
 
-ClearSignsALL();
+ClearSigns();
 
 // check the road itself from source to destination
 
@@ -639,7 +640,7 @@ if (good)
 			DInfo(msg,1,"cBuilder::CheckRoadHealth");
 			}
 		else	{ DInfo(msg+"Working",1,"cBuilder::CheckRoadHealth"); }
-		ClearSignsALL();
+		ClearSigns();
 		}
 	foreach (tile, front in repair.target.locations)
 		{
@@ -654,10 +655,10 @@ if (good)
 			DInfo(msg,1,"cBuilder::CheckRoadHealth");
 			}
 		else	{ DInfo(msg+"Working",1,"cBuilder::CheckRoadHealth"); }
-		ClearSignsALL();
+		ClearSigns();
 		}
 	}
-ClearSignsALL();
+ClearSigns();
 return minGood;
 }
 
@@ -1087,7 +1088,7 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 		}
 	}
 else	{
-	INSTANCE.bank.RaiseFundsBigTime(); ClearSignsALL();
+	INSTANCE.bank.RaiseFundsBigTime(); ClearSigns();
 	DInfo("Road info: "+tile+" direction"+direction+" type="+stationtype+" mod="+newstation,2);
 	PutSign(tile,"s"); PutSign(direction,"c");
 	success=AIRoad.BuildRoadStation(tile, direction, stationtype, newstation);
@@ -1159,7 +1160,7 @@ foreach (voisin in directions)
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; } 
 	if (valid)	walkedtiles.AddItem(direction,0);
-	//if (valid && INSTANCE.debug)	PutSign(direction,"*");
+	if (valid && INSTANCE.debug)	PutSign(direction,"+");
 	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
 	if (!found && valid)	found=INSTANCE.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
 	if (found) return found;

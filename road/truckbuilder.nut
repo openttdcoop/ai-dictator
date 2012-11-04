@@ -1,11 +1,12 @@
 /* -*- Mode: C++; tab-width: 6 -*- */ 
 /**
  *    This file is part of DictatorAI
+ *    (c) krinn@chez.com
  *
  *    It's free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
  *    the Free Software Foundation, either version 2 of the License, or
- *    (at your option) any later version.
+ *    any later version.
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
@@ -29,9 +30,9 @@ if (engineID == null)	return -1;
 if (!AIEngine.IsValidEngine(engineID))	return -1;
 local price=cEngine.GetPrice(engineID);
 INSTANCE.bank.RaiseFundsBy(price);
-if (!INSTANCE.bank.CanBuyThat(price))	DWarn("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1,"cCarrier::CreateRoadEngine");
+if (!INSTANCE.bank.CanBuyThat(price))	DWarn("We lack money to buy "+AIEngine.GetName(engineID)+" : "+price,1);
 local vehID=AIVehicle.BuildVehicle(depot, engineID);
-if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Failure to buy "+AIEngine.GetName(engineID),1,"cCarrier::CreateRoadEngine"); return -1; }
+if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Failure to buy "+AIEngine.GetName(engineID),1); return -1; }
 INSTANCE.carrier.vehnextprice-=price;
 if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
 cEngine.Update(vehID);
@@ -39,7 +40,7 @@ cEngine.Update(vehID);
 local testRefit=AIAccounting();
 if (!AIVehicle.RefitVehicle(vehID, cargoID))
 	{
-	DError("We fail to refit the engine, maybe we run out of money ?",1,"cCarrier::CreateRoadEngine");
+	DError("We fail to refit the engine, maybe we run out of money ?",1);
 	AIVehicle.SellVehicle(vehID);
 	}
 else	{
@@ -58,14 +59,14 @@ local srcplace = road.source.locations.Begin();
 local dstplace = road.target.locations.Begin();
 local cargoid= road.cargoID;
 local engineID = INSTANCE.carrier.ChooseRoadVeh(cargoid);
-if (engineID==null)	{ DWarn("Cannot find any vehicle to transport that cargo",1,"cCarrier::CreateRoadVehicle"); return -2; }
+if (engineID==null)	{ DWarn("Cannot find any vehicle to transport that cargo",1); return -2; }
 local homedepot = cRoute.GetDepot(roadidx);
 local altplace=(road.vehicle_count > 0 && road.vehicle_count % 2 != 0 && road.cargoID == cCargo.GetPassengerCargo());
 if (altplace && road.target.depot != null)	homedepot = road.target.depot;
 if (!cStation.IsDepot(homedepot))
 	{
 	INSTANCE.builder.RouteIsDamage(roadidx);
-	DError("Route "+cRoute.RouteGetName(road.UID)+" depot is not valid, adding route to repair task.",1,"cCarrier::CreateRoadVehicle");
+	DError("Route "+cRoute.RouteGetName(road.UID)+" depot is not valid, adding route to repair task.",1);
 	return false;
 	}
 local vehID=null;
@@ -76,9 +77,9 @@ while (!confirm)
 	{
 	vehID=INSTANCE.carrier.CreateRoadEngine(engineID, homedepot, cargoid);
 	if (AIVehicle.IsValidVehicle(vehID))
-		DInfo("Just brought a new road vehicle: "+cCarrier.VehicleGetName(vehID),0,"cCarrier::CreateRoadVehicle");
+		DInfo("Just brought a new road vehicle: "+cCarrier.VehicleGetName(vehID),0);
 	else	{
-		DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2,"cCarrier::CreateRoadVehicle");
+		DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2);
 		lackMoney=(vehID==-2);
 		}
 	another=INSTANCE.carrier.ChooseRoadVeh(cargoid);
@@ -86,7 +87,7 @@ while (!confirm)
 				else	engineID=another;
 	if (lackMoney)
 		{
-		DWarn("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(engineID),1,"cCarrier::CreateRoadVehicle");
+		DWarn("Find some road vehicle, but we lack money to buy it "+cEngine.GetName(engineID),1);
 		return -2;
 		}
 	//INSTANCE.NeedDelay(60);
@@ -100,7 +101,7 @@ if (!road.twoway)	{ firstorderflag+=AIOrder.OF_FULL_LOAD_ANY; secondorderflag=AI
 AIGroup.MoveVehicle(road.groupID, vehID);
 if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
 	{ // detect IsArticulated bug
-	DInfo("Vehicle "+cCarrier.VehicleGetName(vehID)+" refuse order !",1,"cCarrier::CreateRoadVehicle");
+	DInfo("Vehicle "+cCarrier.VehicleGetName(vehID)+" refuse order !",1);
 	local checkstation=AIStation.GetStationID(srcplace);
 	local checkengine=AIVehicle.GetEngineType(vehID);
 	local checktype=AIEngine.GetVehicleType(checkengine);
@@ -113,11 +114,11 @@ if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
 	}
 AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
 if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(vehID);
-if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateRoadVehicle"); }
+if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle:",2); }
 local topspeed=AIEngine.GetMaxSpeed(AIVehicle.GetEngineType(vehID));
 if (INSTANCE.carrier.speed_MaxRoad < topspeed)
 	{
-	DInfo("Setting maximum speed for road vehicle to "+topspeed,0,"cCarrier::CreateRoadVehicle");
+	DInfo("Setting maximum speed for road vehicle to "+topspeed,0);
 	INSTANCE.carrier.speed_MaxRoad=topspeed;
 	}
 return true;
@@ -144,8 +145,8 @@ vehlist.Valuate(AIEngine.CanRefitCargo, cargoid);
 vehlist.KeepValue(1);
 vehlist.Valuate(cEngine.GetCapacity, cargoid);
 vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
-if (INSTANCE.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, cargoid, true);
-					else	vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
+if (INSTANCE.main.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, cargoid, true);
+						else	vehlist.Valuate(cCarrier.GetEngineEfficiency, cargoid);
 vehlist.Sort(AIList.SORT_BY_VALUE,true);
 //DInfo("Selected bus/truck : "+AIEngine.GetName(vehlist.Begin())+" eff: "+vehlist.GetValue(vehlist.Begin()),1,"cCarrier::ChooseRoadVeh");
 if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), cargoid, true); // set top engine for trucks
