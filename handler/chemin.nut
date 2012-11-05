@@ -311,7 +311,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		break;
 		}
 	road.source.UpdateStationInfos();
-	DInfo("Route "+cRoute.RouteGetName(uid)+" distance "+road.distance,2,"DutyOnRoute");
+	DInfo("Route "+cRoute.RouteGetName(uid)+" distance "+road.distance,2);
 	local vehneed=0;
 	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
 	local vehonroute=road.vehicle_count;

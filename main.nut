@@ -159,9 +159,9 @@ function DictatorAI::Start()
 		AIController.Sleep(1);
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(1);
-		//main.builder.WeeklyChecks();
+		main.builder.WeeklyChecks();
 		AIController.Sleep(1);
-		//main.builder.MonthlyChecks();
+		main.builder.MonthlyChecks();
 		AIController.Sleep(1);
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(1);

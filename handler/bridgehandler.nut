@@ -54,7 +54,7 @@ function cBridge::GetBridgeUID(tile)
 // Return the bridge UID (our internal ID) from that tile
 	{
 	local validstart=cBridge.IsValidTile(tile);
-	if (!validstart)	{ DError("This is not a bridge",2,"cBridge::GetBridgeUID"); return null; }
+	if (!validstart)	{ DError("This is not a bridge",2); return null; }
 	return 0-( (tile+1)*(AIBridge.GetOtherBridgeEnd(tile)+1) );
 	}
 
@@ -73,8 +73,8 @@ function cBridge::Save()
 	this.bridgeID=AIBridge.GetBridgeID(this.firstside);
 	cBridge.bridgedatabase[this.bridgeUID] <- this;
 	cBridge.BridgeList.AddItem(this.bridgeUID,this.owner);
-	DInfo("Adding "+AIBridge.GetName(this.bridgeID)+" at "+this.firstside+" to cBridge database",2,"cBridge::Save");
-	DInfo("List of known bridges : "+(cBridge.bridgedatabase.len()),1,"cBridge::Save");
+	DInfo("Adding "+AIBridge.GetName(this.bridgeID)+" at "+this.firstside+" to cBridge database",2);
+	DInfo("List of known bridges : "+(cBridge.bridgedatabase.len()),1);
 	}
 
 function cBridge::Load(bUID)
@@ -107,7 +107,7 @@ function cBridge::CheckBridge()
 	local validend=cBridge.IsValidTile(this.otherside);
 	if (!validstart || !validend)
 		{
-		DInfo("Bridge infos aren't valid anymore, bridge has moved ?",2,"cBridge::CheckBridge");
+		DInfo("Bridge infos aren't valid anymore, bridge has moved ?",2);
 		cBridge.DeleteBridge(this.bridgeUID);
 		}
 	}
