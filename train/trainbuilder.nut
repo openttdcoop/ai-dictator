@@ -175,15 +175,15 @@ local vehID=AIVehicle.BuildVehicle(depot, engineID);
 if (vehID==AIVehicle.VEHICLE_INVALID)
 		{
 		DInfo("Failure to buy "+AIEngine.GetName(engineID)+" at "+depot+" err: "+AIError.GetLastErrorString(),1);
-		INSTANCE.carrier.highcostTrain=price;
+		INSTANCE.main.carrier.highcostTrain=price;
 		return -1;
 		}
 	else	{
 		DInfo("New "+cCarrier.VehicleGetName(vehID)+" created with "+AIEngine.GetName(engineID),1);
 		if (AIVehicle.IsValidVehicle(vehID))	cEngine.Update(vehID);
-		INSTANCE.carrier.vehnextprice-=price;
-		if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
-		INSTANCE.carrier.highcostTrain=price;
+		INSTANCE.main.carrier.vehnextprice-=price;
+		if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
+		INSTANCE.main.carrier.highcostTrain=price;
 		}
 // get & set refit cost
 local testRefit=AIAccounting();
@@ -210,21 +210,21 @@ if (road==null)	return -1;
 local locotype=null;
 if (trainID==null)
 	{
-	locotype=INSTANCE.carrier.ChooseRailEngine(road.source.specialType, road.cargoID);
+	locotype=INSTANCE.main.carrier.ChooseRailEngine(road.source.specialType, road.cargoID);
 	if (locotype==null)	return -1;
 	}
 else	locotype=AIVehicle.GetEngineType(trainID);
-local wagontype=INSTANCE.carrier.ChooseRailWagon(road.cargoID, road.source.specialType, locotype);
+local wagontype=INSTANCE.main.carrier.ChooseRailWagon(road.cargoID, road.source.specialType, locotype);
 if (wagontype==null)	return -1;
 local confirm=false;
 local wagonID=null;
 local pullerID=null;
-if (trainID==null)	pullerID=INSTANCE.carrier.CreateTrainsEngine(locotype, depot, road.cargoID);
+if (trainID==null)	pullerID=INSTANCE.main.carrier.CreateTrainsEngine(locotype, depot, road.cargoID);
 			else	pullerID=trainID;
 if (pullerID==-1)	{ DError("Cannot create the train engine "+AIEngine.GetName(locotype),1); return -1; }
 if (extraEngine)
 	{
-	local xengine=INSTANCE.carrier.CreateTrainsEngine(locotype, depot, road.cargoID);
+	local xengine=INSTANCE.main.carrier.CreateTrainsEngine(locotype, depot, road.cargoID);
 	if (xengine==-1)	{ DInfo("Cannot add an extra engine to that train, will redo later",1); return false; }
 			else	{ AIVehicle.MoveWagon(xengine, 0, pullerID, AIVehicle.GetNumWagons(pullerID) - 1); return true; }
 	}
@@ -255,7 +255,7 @@ while (!confirm)
 		AIVehicle.SellVehicle(pullerID); // sell the train loco engine on failure to buy a wagon before returning
 		return -1;
 		}
-	else	wagonID=INSTANCE.carrier.CreateTrainsEngine(wagontype, depot, road.cargoID);
+	else	wagonID=INSTANCE.main.carrier.CreateTrainsEngine(wagontype, depot, road.cargoID);
 		// now that the wagon is create, we know its capacity with any cargo
 	if (wagonID==-1)
 		{
@@ -306,7 +306,7 @@ while (!confirm)
 //INSTANCE.NeedDelay(100);
 for (local i=0; i < wagonNeed; i++)
 	{
-	local nwagonID=INSTANCE.carrier.CreateTrainsEngine(wagontype, depot, road.cargoID);
+	local nwagonID=INSTANCE.main.carrier.CreateTrainsEngine(wagontype, depot, road.cargoID);
 	//INSTANCE.NeedDelay(70);
 	if (nwagonID!=-1)
 		{
@@ -368,14 +368,14 @@ do	{
 	tID=processTrains.pop();
 	if (AIVehicle.IsValidVehicle(tID) && AIVehicle.GetState(tID) != AIVehicle.VS_IN_DEPOT)
 		{ // call that train to depot
-		if (INSTANCE.carrier.ToDepotList.HasItem(tID))
+		if (INSTANCE.main.carrier.ToDepotList.HasItem(tID))
 			{
 			DInfo("Updating number of wagons need for "+cCarrier.VehicleGetName(tID)+" to "+wagonNeed,1);
-			INSTANCE.carrier.ToDepotList.SetValue(tID, DepotAction.ADDWAGON+wagonNeed);
+			INSTANCE.main.carrier.ToDepotList.SetValue(tID, DepotAction.ADDWAGON+wagonNeed);
 			if (AIOrder.GetOrderCount(tID)<3)
 				{
-				INSTANCE.carrier.ToDepotList.RemoveItem(tID);
-				INSTANCE.carrier.VehicleSendToDepot(tID, DepotAction.ADDWAGON+wagonNeed);
+				INSTANCE.main.carrier.ToDepotList.RemoveItem(tID);
+				INSTANCE.main.carrier.VehicleSendToDepot(tID, DepotAction.ADDWAGON+wagonNeed);
 				}
 			}
 		else	{
@@ -386,10 +386,10 @@ do	{
 				return true;
 				}
 			DInfo("Sending a train to depot to add "+wagonNeed+" more wagons",1);
-			INSTANCE.carrier.VehicleSendToDepot(tID, DepotAction.ADDWAGON+wagonNeed);
+			INSTANCE.main.carrier.VehicleSendToDepot(tID, DepotAction.ADDWAGON+wagonNeed);
 			local wagonID=AIVehicle.GetWagonEngineType(tID,1);
 			if (AIEngine.IsValidEngine(wagonID))
-				INSTANCE.carrier.vehnextprice+=(wagonNeed*AIEngine.GetPrice(wagonID));
+				INSTANCE.main.carrier.vehnextprice+=(wagonNeed*AIEngine.GetPrice(wagonID));
 			}
 		return true;
 		}
@@ -412,16 +412,16 @@ do	{
 		while (!stop)
 			{
 			stop=true;
-			tID=INSTANCE.carrier.AddNewTrain(uid, null, 0, depotID, stationLen, false);
+			tID=INSTANCE.main.carrier.AddNewTrain(uid, null, 0, depotID, stationLen, false);
 			if (AIVehicle.IsValidVehicle(tID))
 				{
 				AIGroup.MoveVehicle(road.groupID, tID);
 				local topspeed=AIEngine.GetMaxSpeed(AIVehicle.GetEngineType(tID));
 				cRoute.AddTrain(uid, tID);
-				if (INSTANCE.carrier.speed_MaxTrain < topspeed)
+				if (INSTANCE.main.carrier.speed_MaxTrain < topspeed)
 					{
 					DInfo("Setting maximum speed for trains to "+topspeed+"km/h",0);
-					INSTANCE.carrier.speed_MaxTrain=topspeed;
+					INSTANCE.main.carrier.speed_MaxTrain=topspeed;
 					}
 				}
 			else	if (tID==-2)	stop=false; // loop so we pickup another loco engine
@@ -438,15 +438,15 @@ do	{
 		if (freightlimit > -1 && !cTrain.IsFreight(tID) && beforesize+wagonNeed > freightlimit)
 				{
 print("need freight");
-				if (INSTANCE.carrier.AddNewTrain(uid, tID, 0, depotID, stationLen, true))
+				if (INSTANCE.main.carrier.AddNewTrain(uid, tID, 0, depotID, stationLen, true))
 					{
 					cTrain.SetExtraEngine(tID);
 					}
 				}
-		if (numTrains > 1 || beforesize+wagonNeed < 5)	tID=INSTANCE.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen, false);
+		if (numTrains > 1 || beforesize+wagonNeed < 5)	tID=INSTANCE.main.carrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen, false);
 					else	{
 						local newwagon=4-beforesize;
-						tID=INSTANCE.carrier.AddNewTrain(uid, tID, newwagon, depotID, stationLen, false);
+						tID=INSTANCE.main.carrier.AddNewTrain(uid, tID, newwagon, depotID, stationLen, false);
 						processTrains.push(-1);
 						numTrains++;
 			print("will add "+newwagon+" wagons to this train and create another one with "+(wagonNeed-newwagon));

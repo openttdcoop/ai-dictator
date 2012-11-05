@@ -200,8 +200,8 @@ function cBridge::IsRailBridge(bUID)
 function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 // return a bridge ID to build a bridge of that size and type at needed speed
 	{
-	local needSpeed=INSTANCE.carrier.speed_MaxTrain;
-	if (btype == AIVehicle.VT_ROAD)	needSpeed=INSTANCE.carrier.speed_MaxRoad;
+	local needSpeed=INSTANCE.main.carrier.speed_MaxTrain;
+	if (btype == AIVehicle.VT_ROAD)	needSpeed=INSTANCE.main.carrier.speed_MaxRoad;
 	if (needSpeed == 0)
 		{
 		local vehlist=AIEngineList(btype);

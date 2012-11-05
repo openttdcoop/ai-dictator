@@ -38,7 +38,7 @@ function cBuilder::IsCriticalError()
 		{
 		case AIError.ERR_NOT_ENOUGH_CASH:
 			INSTANCE.main.builder.CriticalError=false;
-			INSTANCE.bank.RaiseFundsBigTime();
+			INSTANCE.main.bank.RaiseFundsBigTime();
 			return true;
 		break;
 		case AIError.ERR_NONE:

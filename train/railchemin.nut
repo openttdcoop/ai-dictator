@@ -21,10 +21,10 @@ local road=cRoute.GetRouteObject(uid);
 // no checks, as this is call after DutyOnRoute checks
 if (road == null || !road.isWorking)	return;
 local maxveh=0;
-INSTANCE.carrier.highcostTrain=0;
+INSTANCE.main.carrier.highcostTrain=0;
 local cargoid=road.cargoID;
 local railtype=road.source.specialType;
-local futur_engine=INSTANCE.carrier.ChooseRailWagon(cargoid, railtype, null);
+local futur_engine=INSTANCE.main.carrier.ChooseRailWagon(cargoid, railtype, null);
 local futur_engine_capacity=1;
 if (futur_engine != null)	futur_engine_capacity=cEngine.GetCapacity(futur_engine);
 				else	return;
@@ -32,7 +32,7 @@ road.source.UpdateStationInfos();
 DInfo("After station update",2,"DutyOnRailsRoute");
 local vehneed=0;
 if (road.vehicle_count == 0)	{ firstveh=true; }
-local vehonroute=INSTANCE.carrier.GetWagonsInGroup(road.groupID);
+local vehonroute=INSTANCE.main.carrier.GetWagonsInGroup(road.groupID);
 local cargowait=0;
 local capacity=0;
 local dual=road.source_istown; // we need to check both side if source is town we're on a dual route (pass or mail)
@@ -67,6 +67,6 @@ if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
 DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+" firstveh="+firstveh,2,"DutyOnRailsRoute");
 //if (firstveh)	vehneed=1;
 if (vehneed > 0)
-	if (!INSTANCE.carrier.AddWagon(uid,vehneed))	INSTANCE.bank.busyRoute=true;
+	if (!INSTANCE.main.carrier.AddWagon(uid,vehneed))	INSTANCE.main.bank.busyRoute=true;
 }
 

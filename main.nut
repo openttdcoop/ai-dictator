@@ -275,7 +275,7 @@ function DictatorAI::BuildHQ(centre)
 		if (AICompany.BuildCompanyHQ(tile))
 			{
 			local name = AITown.GetName(AITile.GetClosestTown(tile));
-			DInfo("Built company headquarters near " + name,0,"BuildHQ");
+			DInfo("Built company headquarters near " + name,0);
 			return;
 			}
 		AIController.Sleep(1);

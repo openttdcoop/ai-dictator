@@ -148,8 +148,8 @@ function cRoute::RouteDone()
 	this.status=100;
 	this.isWorking=true;
 	this.RouteSave();
-	if (this.source_istown)	cJobs.statueTown.AddItem(this.sourceID,0);
-	if (this.target_istown)	cJobs.statueTown.AddItem(this.targetID,0);
+	if (this.source_istown)	cProcess.statueTown.AddItem(this.sourceID,0);
+	if (this.target_istown)	cProcess.statueTown.AddItem(this.targetID,0);
 	this.RouteAirportCheck();
 	if (this.UID>1 && this.target_istown && this.route_type != RouteType.WATER && this.route_type != RouteType.RAIL && (this.cargoID==cCargo.GetPassengerCargo() || this.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(this.targetID);
 	this.RouteCheckEntry();
@@ -359,7 +359,7 @@ function cRoute::RouteIsNotDoable()
 	cJobs.JobIsNotDoable(this.UID);
 	this.isWorking=false;
 	this.RouteCheckEntry();
-	if (!INSTANCE.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ this.RouteUndoableFreeOfVehicle(); }
+	if (!INSTANCE.main.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ this.RouteUndoableFreeOfVehicle(); }
 	}
 
 function cRoute::RouteUndoableFreeOfVehicle()
@@ -370,8 +370,8 @@ function cRoute::RouteUndoableFreeOfVehicle()
 	local stadst=this.target_stationID;
 	this.RouteReleaseStation(stasrc);
 	this.RouteReleaseStation(stadst);
-	INSTANCE.builder.DeleteStation(this.UID, stasrc);
-	INSTANCE.builder.DeleteStation(this.UID, stadst);
+	INSTANCE.main.builder.DeleteStation(this.UID, stasrc);
+	INSTANCE.main.builder.DeleteStation(this.UID, stadst);
 	if (this.groupID != null)	{ AIGroup.DeleteGroup(this.groupID); cRoute.GroupIndexer.RemoveItem(this.groupID); }
 	local uidsafe = this.UID;
 	if (this.UID in cRoute.database)
@@ -409,7 +409,7 @@ function cRoute::RouteReleaseStation(stationid)
 		this.source_stationID = null;
 		this.status=1;
 		this.isWorking=false;
-		INSTANCE.builder.building_route=this.UID;
+		INSTANCE.main.builder.building_route=this.UID;
 		}
 	if (this.target_stationID == stationid)
 		{
@@ -418,11 +418,11 @@ function cRoute::RouteReleaseStation(stationid)
 		this.target_stationID = null;
 		this.status=1;
 		this.isWorking=false;
-		INSTANCE.builder.building_route=this.UID;
+		INSTANCE.main.builder.building_route=this.UID;
 		}
 	this.RouteCheckEntry();
-	if (INSTANCE.route.RouteDamage.HasItem(this.UID))	INSTANCE.route.RouteDamage.RemoveItem(this.UID);
-	INSTANCE.builddelay=false; INSTANCE.bank.canBuild=true;
+	if (INSTANCE.main.route.RouteDamage.HasItem(this.UID))	INSTANCE.main.route.RouteDamage.RemoveItem(this.UID);
+	INSTANCE.builddelay=false; INSTANCE.main.bank.canBuild=true;
 	}
 
 function cRoute::GetDepot(uid, source=0)

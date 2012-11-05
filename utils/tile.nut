@@ -217,8 +217,8 @@ tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	
 	{
-	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"1");
-	//PutSign(returntile,"X");
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"1");
+	//cDebug.PutSign(returntile,"X");
 	return returntile;
 	}
 // tile is @ topright of the rectangle
@@ -237,8 +237,8 @@ tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	
 	{
-	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"2");
-	//PutSign(returntile,"X");
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"2");
+	//cDebug.PutSign(returntile,"X");
 	return returntile;
 	}
 // tile is @ lowerleft of the rectangle
@@ -257,8 +257,8 @@ tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	
 	{
-	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"3");
-	//PutSign(returntile,"X");
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"3");
+	//cDebug.PutSign(returntile,"X");
 	return returntile;
 	}
 // tile is @ lowerright of the rectangle
@@ -277,8 +277,8 @@ tilelist.KeepValue(1);
 after=tilelist.Count();
 if (after==before)	
 	{
-	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"4");
-	//PutSign(returntile,"X");
+	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"4");
+	//cDebug.PutSign(returntile,"X");
 	return returntile;
 	}
 
@@ -316,7 +316,7 @@ foreach (itile, idummy in ignoreList)
 	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
 	}
 tilelist.KeepValue(1);
-//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"1");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"1");
 after=tilelist.Count();
 if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 // tile is @ topright of the rectangle
@@ -332,7 +332,7 @@ foreach (itile, idummy in ignoreList)
 	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
 	}
 tilelist.KeepValue(1);
-//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"2");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"2");
 after=tilelist.Count();
 if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 // tile is @ lowerleft of the rectangle
@@ -348,7 +348,7 @@ foreach (itile, idummy in ignoreList)
 	if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
 	}
 tilelist.KeepValue(1);
-//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"3");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"3");
 after=tilelist.Count();
 if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 // tile is @ lowerright of the rectangle
@@ -365,7 +365,7 @@ foreach (itile, idummy in ignoreList)
 	}
 tilelist.KeepValue(1);
 after=tilelist.Count();
-//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	PutSign(tile,"4");
+//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"4");
 if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
 return -1;
 }
@@ -386,7 +386,7 @@ local compSlope=AITile.GetComplementSlope(slope);
 if (srcL == wantedHeight && srcH == wantedHeight)	return generror;
 if (!INSTANCE.terraform)
 	{
-	DInfo("AI terraforming is disable, failure",1,"ShapeTile");
+	DInfo("AI terraforming is disable, failure",1);
 	return true;
 	}
 do	{
@@ -398,7 +398,7 @@ do	{
 		{
 		slope-=AITile.SLOPE_STEEP;
 		compSlope=AITile.GetComplementSlope(slope);
-		DInfo("Tile: "+tile+" Removing SteepSlope",2,"ShapeTile");
+		DInfo("Tile: "+tile+" Removing SteepSlope",2);
 		AITile.RaiseTile(tile,compSlope);
 		error=AIError.GetLastError();
 		if (error != AIError.ERR_NONE)	generror=true;
@@ -409,7 +409,7 @@ do	{
 		if (evaluateOnly)	return false;
 		}
 	//DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2,"ShapeTile");
-	PutSign(tile,"!");
+	cDebug.PutSign(tile,"!");
 	INSTANCE.Sleep(1);
 	if ((srcH < wantedHeight || srcL < wantedHeight) && !generror)
 		{
@@ -446,12 +446,12 @@ function cTileTools::CheckLandForConstruction(tile, width, height, ignoreList=AI
 // Check the tiles area for construction, look if tiles are clear, and flatten the land if need
 // return -1 on failure, on success the tile where to drop a construction (upper left tile)
 {
-PutSign(tile,"?");
+cDebug.PutSign(tile,"?");
 local newTile=cTileTools.IsBuildableRectangle(tile, width, height, ignoreList);
 if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))	return newTile;
 local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
-INSTANCE.bank.RaiseFundsBigTime();
+INSTANCE.main.bank.RaiseFundsBigTime();
 cTileTools.TerraformLevelTiles(newTile, tileTo);
 INSTANCE.NeedDelay(20);
 if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))		return newTile;
@@ -464,7 +464,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 {
 local tlist=AITileList();
 tlist.AddRectangle(tileFrom, tileTo);
-if (tlist.IsEmpty())	DInfo("No tiles to work with !",3,"TerraformLevelTiles");
+if (tlist.IsEmpty())	DInfo("No tiles to work with !",3);
 local Solve=cTileTools.TerraformHeightSolver(tlist);
 Solve.RemoveValue(0); // discard failures
 local bestOrder=AIList();
@@ -476,7 +476,7 @@ foreach (level, prize in bestOrder)
 	}
 bestOrder.Sort(AIList.SORT_BY_VALUE, true);
 local money=-1;
-foreach (solution, prize in bestOrder)	DInfo("solve: "+solution+" prize: "+prize,3,"TerraformLevelTiles");
+foreach (solution, prize in bestOrder)	DInfo("solve: "+solution+" prize: "+prize,3);
 if (!Solve.IsEmpty())
 	{
 	foreach (solution, prize in bestOrder)
@@ -484,7 +484,7 @@ if (!Solve.IsEmpty())
 		local direction=Solve.GetValue(solution);
 		if (!cBanker.CanBuyThat(prize))
 			{
-			DInfo("Stopping action. We won't have enought money to succeed",3,"TerraformLevelTiles");
+			DInfo("Stopping action. We won't have enought money to succeed",3);
 			cTileTools.terraformCost.AddItem(999999,prize);
 			break;
 			}
@@ -493,12 +493,12 @@ if (!Solve.IsEmpty())
 					else	money=cTileTools.TerraformDoAction(tlist, solution, false, false);	
 		if (money != -1)
 			{
-			DInfo("Success, we spent "+money+" credits for the operation",3,"TerraformLevelTiles");
+			DInfo("Success, we spent "+money+" credits for the operation",3);
 			return true;
 			}
 		}
 	}
-DInfo("Fail",3,"TerraformLevelTiles");
+DInfo("Fail",3);
 return false;
 }
 
@@ -527,7 +527,7 @@ foreach (tile, max in tTile)
 	}
 testrun=null;
 moneyNeed=costs.GetCosts();	
-DInfo("predict failure : "+error+" Money need="+moneyNeed,3,"TerraformDoAction");
+DInfo("predict failure : "+error+" Money need="+moneyNeed,3);
 if (error)	moneyNeed=-1;
 if (evaluate)	return moneyNeed;
 costs.ResetCosts();
@@ -540,13 +540,13 @@ if (!error)
 		}
 	}
 moneySpend=costs.GetCosts();
-DInfo("spent "+moneySpend+" money",3,"TerraformDoAction");
+DInfo("spent "+moneySpend+" money",3);
 if (!error)
 	{
-	DInfo("flatten successfuly land at level : "+wantedHeight,3,"TerraformDoAction");
+	DInfo("flatten successfuly land at level : "+wantedHeight,3);
 	return moneySpend;
 	}
-DInfo("fail flatten land at level : "+wantedHeight,3,"TerraformDoAction");
+DInfo("fail flatten land at level : "+wantedHeight,3);
 return -1;
 }
 
@@ -561,7 +561,7 @@ function cTileTools::TerraformHeightSolver(tlist)
 {
 if (tlist.IsEmpty())	
 	{
-	DInfo("doesn't find any tiles to work on!",3,"TerraformHeightSolver");
+	DInfo("doesn't find any tiles to work on!",3);
 	return AIList();
 	}
 local maxH=tlist;
@@ -587,7 +587,7 @@ local h_firstitem=1000;
 local l_firstitem=1000;
 local Solve=AIList();
 local terratrys=0;
-DInfo("Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),3,"cTileTools::TerraformSolver");
+DInfo("Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),3);
 do	{
 	h_firstitem=cellHCount.Begin();
 	l_firstitem=cellLCount.Begin();
@@ -596,19 +596,19 @@ do	{
 			HeightIsLow=true;
 			currentHeight=l_firstitem;
 			cellLCount.RemoveItem(l_firstitem);
-			DInfo("Trying lowering tiles level to "+currentHeight,3,"cTileTools::TerraformSolver");
+			DInfo("Trying lowering tiles level to "+currentHeight,3);
 			}
 	else		{
 			HeightIsLow=false;
 			currentHeight=h_firstitem;
 			cellHCount.RemoveItem(h_firstitem);
-			DInfo("Trying raising tiles level to "+currentHeight,3,"cTileTools::TerraformSolver");
+			DInfo("Trying raising tiles level to "+currentHeight,3);
 			}
 	// Now we have determine what low or high height we need to reach by priority (most tiles first, with a pref to lower height)
 	terratrys++;
 	if (currentHeight == 0) // not serious to build at that level
 		{
-		DInfo("Water level detect !",3,"cTileTools::TerraformSolver");
+		DInfo("Water level detect !",3);
 		Solve.AddItem(0,0);
 		continue;
 		}
@@ -617,7 +617,7 @@ do	{
 	money=cTileTools.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);
 	if (money != -1)
 			{
-			DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,3,"cTileTools::TerraformSolver");
+			DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,3);
 			if (money == 0)	money=1; // in case no money is need, we still ask 1 credit, else we will mistake as a failure
 			if (HeightIsLow)	money=0-money; // force negative to lower tile
 			}
@@ -628,7 +628,7 @@ do	{
 			}
 		else	Solve.AddItem(currentHeight,money);
 	} while (cellHCount.Count() > 0 && cellLCount.Count() > 0); // loop until both lists are empty
-DInfo("Solver has search "+terratrys+" time",3,"cTileTools::TerraformSolver");
+DInfo("Solver has search "+terratrys+" time",3);
 return Solve;
 }
 
@@ -643,7 +643,7 @@ local counter=0;
 while (good && curRating < needRating && counter < 1)
 	{
 	if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))	good=AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
-	DInfo("Offering money to "+AITown.GetName(townID)+" = "+good+" nowrate="+curRating+" targetrate="+needRating,2,"TownBriber");
+	DInfo("Offering money to "+AITown.GetName(townID)+" = "+good+" nowrate="+curRating+" targetrate="+needRating,2);
 	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 	counter++;
 	INSTANCE.Sleep(70);
@@ -690,7 +690,7 @@ savetiles.KeepValue(0);
 local town_name=AITown.GetName(townID);
 // 1 -> 2 = 293 trees
 // 2 -> 3 = 417 trees
-DInfo("Town: "+town_name+" rating: "+curRating+" free tiles="+savetiles.Count(),2,"cTileTools::SeduceTown");
+DInfo("Town: "+town_name+" rating: "+curRating+" free tiles="+savetiles.Count(),2);
 local needclean=0;
 if (curRating >= needRating)	return true;
 if (savetiles.Count() < 140)	needclean=140-savetiles.Count();
@@ -719,7 +719,7 @@ foreach (tile, dummy in towntiles)
 	do	{
 		good=AITile.PlantTree(tile);
 		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
-		INSTANCE.bank.RaiseFundsBy(1000);
+		INSTANCE.main.bank.RaiseFundsBy(1000);
 //		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
 		//AIController.Sleep(1);
 		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>5000));
@@ -730,7 +730,7 @@ local endop="Success !";
 curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
 if (!good && curRating < needRating)	endop="Failure.";
 						else	good=true;
-DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count()+" needtree:"+totalTree,1,"cTileTools::SeduceTown");
+DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count()+" needtree:"+totalTree,1);
 return good;
 }
 

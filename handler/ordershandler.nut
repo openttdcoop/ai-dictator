@@ -37,7 +37,7 @@ allgroup.AddList(passgroup);
 allgroup.Valuate(AIVehicle.GetState);
 foreach (vehicle, dummy in allgroup)
 	{ // if vehicle is in our todepotlist, it's going to depot for something, so set it as in depot -> it will be remove from list
-	if (INSTANCE.carrier.ToDepotList.HasItem(vehicle))	allgroup.SetValue(vehicle,AIVehicle.VS_IN_DEPOT);
+	if (INSTANCE.main.carrier.ToDepotList.HasItem(vehicle))	allgroup.SetValue(vehicle,AIVehicle.VS_IN_DEPOT);
 	INSTANCE.Sleep(1);
 	}
 allgroup.KeepValue(AIVehicle.VS_RUNNING);
@@ -51,11 +51,11 @@ foreach (vehicle, dummy in allgroup)	allgroup.SetValue(vehicle, AIOrder.GetOrder
 local numorders=AIOrder.GetOrderCount(rabbit);
 if (numorders != cCarrier.VirtualAirRoute.len())
 	{
-	for (local i=0; i < INSTANCE.carrier.VirtualAirRoute.len(); i++)
+	for (local i=0; i < INSTANCE.main.carrier.VirtualAirRoute.len(); i++)
 		{
-		local destination=INSTANCE.carrier.VirtualAirRoute[i];
+		local destination=INSTANCE.main.carrier.VirtualAirRoute[i];
 		if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.OF_NONE))
-			{ DError("Aircraft network order refuse",2,"AirNetworkOrdersHandler"); }
+			{ DError("Aircraft network order refuse",2); }
 		}
 	if (numorders > 0)
 		{
@@ -79,7 +79,7 @@ function cCarrier::VehicleOrdersReset(veh)
 while (AIOrder.GetOrderCount(veh) > 0)
 	{
 	if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, 0)))
-		{ DError("Cannot remove orders ",2,"VehicleOrdersReset"); break; }
+		{ DError("Cannot remove orders ",2); break; }
 	}
 }
 
@@ -108,7 +108,7 @@ filterveh.Valuate(AIOrder.GetOrderCount);
 filterveh.KeepValue(2); // only a 2 orders vehicle is valid for us
 if (filterveh.IsEmpty())	orderReset=true; // no vehicle with valid orders is usable as sharing target
 				else	veh=filterveh.Begin();
-local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
+local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(idx);
 if (road == null)	return false;
 if (!road.source_entry)	return false;
@@ -150,7 +150,7 @@ switch (road.route_type)
 	break;
 	case RouteType.AIRNET:
 	case RouteType.AIRNETMAIL: // it's the air network
-		INSTANCE.carrier.AirNetworkOrdersHandler();
+		INSTANCE.main.carrier.AirNetworkOrdersHandler();
 		return true;
 	break;
 	case RouteType.CHOPPER:
@@ -161,14 +161,14 @@ switch (road.route_type)
 	break;
 	}
 if (srcplace == null || dstplace == null) return false;
-DInfo("Setting orders for route "+cRoute.RouteGetName(idx),2,"VehicleBuildOrders");
+DInfo("Setting orders for route "+cRoute.RouteGetName(idx),2);
 if (orderReset)
 	{
-	INSTANCE.carrier.VehicleOrdersReset(veh);
+	INSTANCE.main.carrier.VehicleOrdersReset(veh);
 	if (!AIOrder.AppendOrder(veh, srcplace, oneorder))
-		{ DError("First order refuse",2,"VehicleBuildOrders"); }
+		{ DError("First order refuse",2); }
 	if (!AIOrder.AppendOrder(veh, dstplace, twoorder))
-		{ DError("Second order refuse",2,"VehicleBuildOrders"); }
+		{ DError("Second order refuse",2); }
 	}
 vehlist.RemoveItem(veh);
 foreach (vehicle, dummy in vehlist)	AIOrder.ShareOrders(vehicle, veh);
@@ -194,13 +194,13 @@ function cCarrier::VehicleSetDepotOrder(veh)
 // set all orders of the vehicle to force it going to a depot
 {
 if (veh == null)	return;
-local idx=INSTANCE.carrier.VehicleFindRouteIndex(veh);
+local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
 local road=cRoute.GetRouteObject(idx);
 local homedepot = null;
 if (road != null)	homedepot=road.GetDepot(idx);
 local prevDest=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 AIOrder.UnshareOrders(veh);
-INSTANCE.carrier.VehicleOrdersReset(veh);
+INSTANCE.main.carrier.VehicleOrdersReset(veh);
 if (homedepot == null || !cStation.IsDepot(homedepot))
 	{
 	local vehloc=AIVehicle.GetLocation(veh);
@@ -215,7 +215,7 @@ if (homedepot == null || !cStation.IsDepot(homedepot))
 			airports.Valuate(AIStation.GetDistanceManhattanToTile, vehloc);
 			airports.Sort(AIList.SORT_BY_VALUE, true); // closest one
 			homedepot=AIAirport.GetHangarOfAirport(AIStation.GetLocation(airports.Begin()));
-			DInfo("Sending a lost aircraft "+cCarrier.VehicleGetName(veh)+" to the closest airport hangar found at "+homedepot,1,"cCarrier::VehicleSetDepotOrder");
+			DInfo("Sending a lost aircraft "+cCarrier.VehicleGetName(veh)+" to the closest airport hangar found at "+homedepot,1);
 			}
 		}
 	if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_ROAD)
@@ -233,11 +233,11 @@ if (homedepot == null || !cStation.IsDepot(homedepot))
 		if (!depottile.IsEmpty())
 			{
 			foreach (depotloc, dummy in depottile)
-				if (INSTANCE.builder.RoadRunner(vehloc, depotloc, AIVehicle.VT_ROAD))
-					{ homedepot=depotloc; DInfo("Sending "+cCarrier.VehicleGetName(veh)+" to a backup depot we found near it",1,"cCarrier::VehicleSetDepotOrder"); break; }
+				if (INSTANCE.main.builder.RoadRunner(vehloc, depotloc, AIVehicle.VT_ROAD))
+					{ homedepot=depotloc; DInfo("Sending "+cCarrier.VehicleGetName(veh)+" to a backup depot we found near it",1); break; }
 			}
 		else	{
-			DInfo("Trying to build a depot to sent "+cCarrier.VehicleGetName(veh)+" there",1,"cCarrier::VehicleSetDepotOrder");
+			DInfo("Trying to build a depot to sent "+cCarrier.VehicleGetName(veh)+" there",1);
 			homedepot=cBuilder.BuildRoadDepotAtTile(vehloc);
 			if (homedepot==-1)	homedepot==null;
 			}
@@ -250,28 +250,28 @@ local orderindex=0;
 if (homedepot != null)
 	{
 	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
-		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+		{ DError("Vehicle refuse goto source depot order",2); }
 	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
-		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+		{ DError("Vehicle refuse goto source depot order",2); }
 	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
-		{ DError("Vehicle refuse goto source depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+		{ DError("Vehicle refuse goto source depot order",2); }
 	}
 // Adding depot orders 3 time, so we should endup with at least 3 orders minimum to avoid get caught again by orders check
 if (road != null && road.target_entry && cStation.IsDepot(road.target.depot))	homedepot=road.target.depot;
 if (road != null && road.target_stationID != null)
 	{
 	local mainstation=AIStation.GetLocation(road.target_stationID);
-	if (INSTANCE.carrier.AircraftIsChopper(veh))	mainstation=AIStation.GetLocation(road.source_stationID);
+	if (INSTANCE.main.carrier.AircraftIsChopper(veh))	mainstation=AIStation.GetLocation(road.source_stationID);
 	AIOrder.AppendOrder(veh, mainstation, AIOrder.OF_NONE);
 	}
 if (homedepot != null)
 	{
 	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
-		{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+		{ DError("Vehicle refuse goto destination depot order",2); }
 	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
-		{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+		{ DError("Vehicle refuse goto destination depot order",2); }
 	if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
-		{ DError("Vehicle refuse goto destination depot order",2,"cCarrier::VehicleSetDepotOrder"); }
+		{ DError("Vehicle refuse goto destination depot order",2); }
 	}
 
 if (road != null)
@@ -290,18 +290,18 @@ if (road != null)
 		else	if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != AIStation.GetLocation(road.target_stationID))
 				{
 				AIOrder.SkipToOrder(veh, jjj+1);
-				//DInfo("Sending vehicle "+INSTANCE.carrier.VehicleGetName(veh)+" to destination station",1,"cCarrier::VehicleSetDepotOrder");		
+				//DInfo("Sending vehicle "+INSTANCE.main.carrier.VehicleGetName(veh)+" to destination station",1,"cCarrier::VehicleSetDepotOrder");		
 				break;
 				}
 		}
-DInfo("Setting depot order for vehicle "+INSTANCE.carrier.VehicleGetName(veh),2,"cCarrier::VehicleSetDepotOrder");
+DInfo("Setting depot order for vehicle "+INSTANCE.main.carrier.VehicleGetName(veh),2);
 }
 
 function cCarrier::VehicleOrderIsValid(vehicle,orderpos)
 // Really check if a vehicle order is valid
 {
 // for now i just disable orders check for chopper, find a better fix if this trouble us later
-local chopper=INSTANCE.carrier.AircraftIsChopper(vehicle);
+local chopper=INSTANCE.main.carrier.AircraftIsChopper(vehicle);
 if (chopper) return true;
 
 local ordercount=AIOrder.GetOrderCount(vehicle);
@@ -345,18 +345,18 @@ return true;
 function cCarrier::TrainSetOrders(trainID)
 // Set orders for a train
 {
-local uid=INSTANCE.carrier.VehicleFindRouteIndex(trainID);
-if (uid==null)	{ DError("Cannot find uid for that train",1,"cCarrier::TrainSetOrders"); return false; }
+local uid=INSTANCE.main.carrier.VehicleFindRouteIndex(trainID);
+if (uid==null)	{ DError("Cannot find uid for that train",1); return false; }
 local road=cRoute.GetRouteObject(uid);
 if (road==null)	return false;
-DInfo("Append orders to "+cCarrier.VehicleGetName(trainID),2,"cCarrier::TrainSetOrder");
+DInfo("Append orders to "+cCarrier.VehicleGetName(trainID),2);
 local firstorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
 local secondorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
 if (!road.twoway)	{ firstorder+=AIOrder.OF_FULL_LOAD_ANY; secondorder=AIOrder.OF_NO_LOAD; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), firstorder))
-	{ DError(cCarrier.VehicleGetName(trainID)+" refuse first order",2,"cCarrier::TrainSetOrder"); return false; }
+	{ DError(cCarrier.VehicleGetName(trainID)+" refuse first order",2); return false; }
 if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), secondorder))
-	{ DError(cCarrier.VehicleGetName(trainID)+" refuse second order",2,"cCarrier::TrainSetOrder"); return false; }
+	{ DError(cCarrier.VehicleGetName(trainID)+" refuse second order",2); return false; }
 return true;
 }
 

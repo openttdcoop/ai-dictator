@@ -18,14 +18,14 @@ function cCarrier::CreateAircraftEngine(engineID, depot)
 // return -1 on error
 {
 local price=cEngine.GetPrice(engineID);
-INSTANCE.bank.RaiseFundsBy(price);
+INSTANCE.main.bank.RaiseFundsBy(price);
 local vehID=AIVehicle.BuildVehicle(depot, engineID);
 if (!AIVehicle.IsValidVehicle(vehID))	{
-							DError("Cannot create the air vehicle ",2,"cCarrier::CreateAircraftEngine");
+							DError("Cannot create the air vehicle ",2);
 							return -1;
 							}
-INSTANCE.carrier.vehnextprice-=price;
-if (INSTANCE.carrier.vehnextprice < 0)	INSTANCE.carrier.vehnextprice=0;
+INSTANCE.main.carrier.vehnextprice-=price;
+if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
 return vehID;
 }
 
@@ -43,14 +43,14 @@ local cargoid = road.cargoID;
 //DInfo("srcplace="+srcplace+" dstplace="+dstplace,2);
 //PutSign(srcplace,"Route "+routeidx+" Source Airport ");
 //PutSign(dstplace,"Route "+routeidx+" Destination Airport");
-local veh = INSTANCE.carrier.GetAirVehicle(routeidx);
+local veh = INSTANCE.main.carrier.GetAirVehicle(routeidx);
 if (veh == null)
-	{ DError("Cannot pickup an aircraft",1,"cCarrier::CreateAirVehicle"); return false; }
+	{ DError("Cannot pickup an aircraft",1); return false; }
 local price = AIEngine.GetPrice(veh);
-INSTANCE.bank.RaiseFundsBy(price);
+INSTANCE.main.bank.RaiseFundsBy(price);
 local firstveh = cCarrier.CreateAircraftEngine(veh, homedepot);
-if (firstveh == -1)	{ DError("Cannot create the vehicle "+veh,2,"cCarrier::CreateAirVehicle"); return false; }
-			else	{ DInfo("Just brought a new aircraft: "+cCarrier.VehicleGetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),0,"cCarrier::CreateAirVehicle"); }
+if (firstveh == -1)	{ DError("Cannot create the vehicle "+veh,2); return false; }
+			else	{ DInfo("Just brought a new aircraft: "+cCarrier.VehicleGetName(firstveh)+" "+AIEngine.GetName(AIVehicle.GetEngineType(firstveh)),0); }
 // no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
 // as thir engine is the fastest always
 local firstorderflag = null;
@@ -59,8 +59,8 @@ secondorderflag = AIOrder.OF_NONE;
 AIOrder.AppendOrder(firstveh, srcplace, secondorderflag);
 AIOrder.AppendOrder(firstveh, dstplace, secondorderflag);
 AIGroup.MoveVehicle(road.groupID, firstveh);
-if (altplace)	INSTANCE.carrier.VehicleOrderSkipCurrent(firstveh);
-if (!cCarrier.StartVehicle(firstveh)) { DError("Cannot start the vehicle:",2,"cCarrier::CreateAirVehicle"); }
+if (altplace)	INSTANCE.main.carrier.VehicleOrderSkipCurrent(firstveh);
+if (!cCarrier.StartVehicle(firstveh)) { DError("Cannot start the vehicle:",2); }
 return true;
 }
 
@@ -161,7 +161,7 @@ local modele=AircraftType.EFFICIENT;
 if (road.route_type == RouteType.AIRNET || road.route_type == RouteType.AIRNETMAIL)	modele=AircraftType.BEST; // top speed/capacity for network
 if (road.source.specialType == AIAirport.AT_SMALL || road.target.specialType == AIAirport.AT_SMALL)	modele+=20;
 if (road.route_type == RouteType.CHOPPER)	modele=AircraftType.CHOPPER; // need a chopper
-local veh = INSTANCE.carrier.ChooseAircraft(road.cargoID, road.distance, modele);
+local veh = INSTANCE.main.carrier.ChooseAircraft(road.cargoID, road.distance, modele);
 return veh;
 }
 

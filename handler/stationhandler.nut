@@ -13,7 +13,7 @@
  *
 **/
 
-class cStation
+class cStation extends cClass
 {
 static	stationdatabase = {};
 static	VirtualAirports = AIList();	// stations in the air network as item, value=towns
@@ -137,13 +137,13 @@ function cStation::UpdateCargos(stationID=null)
 			{
 			local waiting=AIStation.GetCargoWaiting(thatstation.stationID, cargo);
 			thatstation.cargo_produce.SetValue(cargo, waiting);
-			DInfo("CARGOS-> Station "+cStation.StationGetName(thatstation.stationID)+" produce "+AICargo.GetCargoLabel(cargo)+" with "+waiting+" units",2,"cStation::UpdateCargos");
+			DInfo("CARGOS-> Station "+cStation.StationGetName(thatstation.stationID)+" produce "+AICargo.GetCargoLabel(cargo)+" with "+waiting+" units",2);
 			}
 		if (thatstation.cargo_accept.HasItem(cargo))
 			{
 			local rating=AIStation.GetCargoRating(thatstation.stationID, cargo);
 			thatstation.cargo_accept.SetValue(cargo, rating);
-			DInfo("CARGOS-> Station "+cStation.StationGetName(thatstation.stationID)+" accept "+AICargo.GetCargoLabel(cargo)+" with "+rating+" rating",2,"cStation::UpdateCargos");
+			DInfo("CARGOS-> Station "+cStation.StationGetName(thatstation.stationID)+" accept "+AICargo.GetCargoLabel(cargo)+" with "+rating+" rating",2);
 			}
 		INSTANCE.Sleep(1);
 		}
@@ -168,7 +168,7 @@ function cStation::UpdateCapacity(stationID=null)
 		foreach (veh, cap in tvehlist)	newcap+=cap;
 		allcargos.SetValue(cargoID, newcap);
 		if (newcap != thatstation.vehicle_capacity.GetValue(cargoID))
-			DInfo("Station "+thatstation.name+" new total capacity set to "+newcap+" for "+AICargo.GetCargoLabel(cargoID),2,"cStation::UpdateCapacity");
+			DInfo("Station "+thatstation.name+" new total capacity set to "+newcap+" for "+AICargo.GetCargoLabel(cargoID),2);
 		INSTANCE.Sleep(1);
 		}
 	thatstation.vehicle_capacity.Clear()
@@ -202,10 +202,10 @@ function cStation::StationSave()
 // Save the station in the database
 	{
 	if (this.stationID in cStation.stationdatabase)
-		{ DInfo("Station #"+this.stationID+" already in database "+cStation.stationdatabase.len(),2,"cStation::StationSave"); }
+		{ DInfo("Station #"+this.stationID+" already in database "+cStation.stationdatabase.len(),2); }
 	else	{
 		this.StationSetName();
-		DInfo("Adding station : "+this.name+" to station database",2,"cStation::StationSave");
+		DInfo("Adding station : "+this.name+" to station database",2);
 		cStation.stationdatabase[this.stationID] <- this;
 		}
 	}
@@ -218,7 +218,7 @@ function cStation::CanUpgradeStation()
 	switch (this.stationType)
 		{
 		case	AIStation.STATION_DOCK:
-			this.vehicle_max=INSTANCE.carrier.water_max;
+			this.vehicle_max=INSTANCE.main.carrier.water_max;
 			return false;
 		break;
 		case	AIStation.STATION_TRAIN:
@@ -233,12 +233,12 @@ function cStation::CanUpgradeStation()
 			local townID=AIAirport.GetNearestTown(AIStation.GetLocation(this.stationID), this.specialType);
 			local townpop=AITown.GetPopulation(townID);
 			if (newairport > this.specialType && !vehlist.IsEmpty() && townpop >= (newairport*200))
-				{ canupgrade=true; DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2,"cStation::CanUpgradeStation"); }
+				{ canupgrade=true; DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2); }
 			if (this.locations.Count()==1)	return false; // plaforms have 1 size only
 			return canupgrade;
 		break;
 		default: // bus or truck
-			this.vehicle_max=this.size*INSTANCE.carrier.road_upgrade;
+			this.vehicle_max=this.size*INSTANCE.main.carrier.road_upgrade;
 			if (this.size >= this.maxsize)	return false;
 								else	return true;
 		break;		
@@ -340,12 +340,12 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 			}
 		if (!valid_produce && thatstation.cargo_produce.HasItem(cargo_id))
 			{
-			DInfo("Station "+thatstation.name+" no longer produce "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation");
+			DInfo("Station "+thatstation.name+" no longer produce "+AICargo.GetCargoLabel(cargo_id),1);
 			thatstation.cargo_produce.RemoveItem(cargo_id);
 			}
 		if (!valid_accept && thatstation.cargo_accept.HasItem(cargo_id))
 			{
-			DInfo("Station "+thatstation.name+" no longer accept "+AICargo.GetCargoLabel(cargo_id),1,"CheckCargoHandleByStation");
+			DInfo("Station "+thatstation.name+" no longer accept "+AICargo.GetCargoLabel(cargo_id),1);
 			thatstation.cargo_accept.RemoveItem(cargo_id);
 			}
 		INSTANCE.Sleep(1);
@@ -360,7 +360,7 @@ function cStation::DeleteStation(stationid)
 		local statprop=cStation.GetStationObject(stationid);
 		if (statprop.owner.Count() == 0) // no more own by anyone
 			{
-			DInfo("Removing station #"+stationid+" from station database",1,"cStation::DeleteStation");
+			DInfo("Removing station #"+stationid+" from station database",1);
 			foreach (tile, dummy in statprop.station_tiles)	{ cTileTools.UnBlackListTile(tile); }
 			delete cStation.stationdatabase[stationid];
 			cStation.VirtualAirports.RemoveItem(stationid);
@@ -381,7 +381,7 @@ function cStation::ClaimOwner(uid)
 	if (!this.owner.HasItem(uid))
 		{
 		this.owner.AddItem(uid,1);
-		DInfo("Route #"+uid+" claims station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1,"cStation::ClaimOwner");
+		DInfo("Route #"+uid+" claims station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
 		this.UpdateStationInfos()
 		}
 	}
@@ -392,7 +392,7 @@ function cStation::OwnerReleaseStation(uid)
 	if (this.owner.HasItem(uid))
 		{
 		this.owner.RemoveItem(uid);
-		DInfo("Route #"+uid+" release station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1,"cStation::OwnerReleaseStation");
+		DInfo("Route #"+uid+" release station #"+this.stationID+". "+this.owner.Count()+" routes are sharing it",1);
 		this.UpdateStationInfos();
 		/*if (this.owner.IsEmpty())
 			{
@@ -414,14 +414,14 @@ function cStation::CheckAirportLimits()
 	{
 	if (!AIStation.IsValidStation(this.stationID) || !AIStation.HasStationType(this.stationID, AIStation.STATION_AIRPORT))
 		{
-		DWarn("Invalid airport station ID",1,"CheckAirportLimits");
+		DWarn("Invalid airport station ID",1);
 		return; // it happen if the airport is moved and now invalid
 		}
 	locations=cTileTools.FindStationTiles(AIStation.GetLocation(this.stationID));
 	this.specialType=AIAirport.GetAirportType(this.locations.Begin());
 	if (this.specialType == 255)
 		{
-		DWarn("Invalid airport type at "+this.locations.Begin(),1,"CheckAirportLimits");
+		DWarn("Invalid airport type at "+this.locations.Begin(),1);
 		PutSign(this.locations.Begin(),"INVALID AIRPORT TYPE !");
 		INSTANCE.NeedDelay(50);
 		return;
@@ -430,10 +430,10 @@ function cStation::CheckAirportLimits()
 	this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
 	local virtualized=cStation.IsStationVirtual(this.stationID);
 	// get out of airnetwork if the network is too poor
-	local rawlimit=INSTANCE.carrier.AirportTypeLimit[this.specialType];
-	DInfo("rawlimit="+rawlimit+" type="+this.specialType,1,"CheckAirportLimits");
+	local rawlimit=INSTANCE.main.carrier.AirportTypeLimit[this.specialType];
+	DInfo("rawlimit="+rawlimit+" type="+this.specialType,1);
 	this.vehicle_max=rawlimit;
-	if (virtualized)	this.vehicle_max=INSTANCE.carrier.airnet_max * rawlimit;
+	if (virtualized)	this.vehicle_max=INSTANCE.main.carrier.airnet_max * rawlimit;
 			else	if (this.vehicle_max > rawlimit)	this.vehicle_max=rawlimit;
 	}
 
@@ -441,7 +441,7 @@ function cStation::InitNewStation()
 // Autofill most values for a station. stationID must be set
 // Should not be call as-is, cRoute.CreateNewStation is there for that task
 	{
-	if (this.stationID == null)	{ DWarn("Bad station id : null",1,"InitNewStation"); return; }
+	if (this.stationID == null)	{ DWarn("Bad station id : null",1); return; }
 	this.stationType = cStation.FindStationType(this.stationID);
 	local loc=AIStation.GetLocation(this.stationID);
 	this.locations=cTileTools.FindStationTiles(loc);
@@ -452,7 +452,7 @@ function cStation::InitNewStation()
 		{
 		case	AIStation.STATION_TRAIN:
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
-			this.maxsize=INSTANCE.carrier.rail_max; this.size=1;
+			this.maxsize=INSTANCE.main.carrier.rail_max; this.size=1;
 			this.locations=AIList();
 			for (local zz=0; zz < 23; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
 			for (local zz=7; zz < 11; zz++)	this.locations.SetValue(zz,0);
@@ -464,7 +464,7 @@ function cStation::InitNewStation()
 		break;
 		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
-			this.maxsize=INSTANCE.carrier.road_max;
+			this.maxsize=INSTANCE.main.carrier.road_max;
 			this.size=locations.Count();
 			if (AIRoad.HasRoadType(locations.Begin(), AIRoad.ROADTYPE_ROAD))
 				this.specialType=AIRoad.ROADTYPE_ROAD;	// set road type the station use
@@ -477,7 +477,7 @@ function cStation::InitNewStation()
 			this.specialType=AIAirport.GetAirportType(this.locations.Begin());
 			this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
 			this.depot=AIAirport.GetHangarOfAirport(loc);
-			DInfo("Airport size: "+this.locations.Count(),2,"InitNewStation");
+			DInfo("Airport size: "+this.locations.Count(),2);
 		break;
 		}
 	this.vehicle_count=0;
@@ -521,7 +521,7 @@ while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; PutS
 exitpos=scanner+frontTile;
 PutSign(exitpos,"End");
 thatstation.StationGetName();
-DInfo("Station "+thatstation.StationGetName()+" depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1,"cStation::GetRailStationMiscInfo");
+DInfo("Station "+thatstation.StationGetName()+" depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1);
 thatstation.locations.SetValue(16,entrypos);
 thatstation.locations.SetValue(17,exitpos);
 thatstation.locations.SetValue(18,direction);
@@ -568,8 +568,8 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 local entry=thatstation.locations.GetValue(0);
-if ((entry & 1) == 1)	{ DInfo("Station "+thatstation.StationGetName()+" entry is open",2,"cStation::IsRailStationEntryOpen"); return true; }
-DInfo("Station "+thatstation.StationGetName()+" entry is CLOSE",2,"cStation::IsRailStationEntryOpen");
+if ((entry & 1) == 1)	{ DInfo("Station "+thatstation.StationGetName()+" entry is open",2); return true; }
+DInfo("Station "+thatstation.StationGetName()+" entry is CLOSE",2);
 return false;
 }
 
@@ -580,8 +580,8 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 local exit=thatstation.locations.GetValue(0);
-if ((exit & 2) == 2)	{ DInfo("Station "+thatstation.StationGetName()+" exit is open",2,"cStation::IsRailStationExitOpen"); return true; }
-DInfo("Station "+thatstation.StationGetName()+" exit is CLOSE",2,"cStation::IsRailStationExitOpen");
+if ((exit & 2) == 2)	{ DInfo("Station "+thatstation.StationGetName()+" exit is open",2); return true; }
+DInfo("Station "+thatstation.StationGetName()+" exit is CLOSE",2);
 return false;
 }
 
@@ -594,7 +594,7 @@ if (stationID==null)	thatstation=this;
 local entry=thatstation.locations.GetValue(0);
 entry=entry ^ 1;
 thatstation.locations.SetValue(0, entry);
-DInfo("Closing the entry of station "+thatstation.StationGetName(),1,"RailStationCloseEntry");
+DInfo("Closing the entry of station "+thatstation.StationGetName(),1);
 }
 
 function cStation::RailStationCloseExit(stationID=null)
@@ -606,7 +606,7 @@ if (stationID==null)	thatstation=this;
 local exit=thatstation.locations.GetValue(0);
 exit=exit ^ 2;
 thatstation.locations.SetValue(0, exit);
-DInfo("Closing the exit of station "+thatstation.StationGetName(),1,"RailStationCloseExit");
+DInfo("Closing the exit of station "+thatstation.StationGetName(),1);
 }
 
 function cStation::RailStationSetPrimarySignalBuilt(stationID=null)
@@ -640,7 +640,7 @@ if (stationID==null)	thatstation=this;
 local exit=thatstation.locations.GetValue(0);
 if ((exit & 16) == 16)	
 	{
-	DInfo("Station "+thatstation.StationGetName()+" signals are built on primary track",2,"cStation::IsRailStationPrimarySignalBuilt");
+	DInfo("Station "+thatstation.StationGetName()+" signals are built on primary track",2);
 	return true;
 	}
 return false;
@@ -655,7 +655,7 @@ if (stationID==null)	thatstation=this;
 local exit=thatstation.locations.GetValue(0);
 if ((exit & 32) == 32)
 	{
-	DInfo("Station "+thatstation.StationGetName()+" signals are built on secondary track",2,"cStation::IsRailStationSecondarySignalBuilt");
+	DInfo("Station "+thatstation.StationGetName()+" signals are built on secondary track",2);
 	return true;
 	}
 return false;
@@ -718,7 +718,7 @@ function cStation::IsPlatformOpen(platformID, useEntry)
 // check if a platform entry or exit is usable
 {
 local platindex=cStation.GetPlatformIndex(platformID);
-if (platindex==-1)	{ DError("Bad platform index",1,"IsPlatformOpen"); return false; }
+if (platindex==-1)	{ DError("Bad platform index",1); return false; }
 local stationID=AIStation.GetStationID(platformID);
 local thatstation=cStation.GetStationObject(stationID);
 local statusbit=thatstation.platforms.GetValue(platindex);
@@ -847,7 +847,7 @@ else	{
 		if (value == 0)	goodPlatforms.RemoveItem(platidx); // not so true if we connect both side of a station, but good for now
 		}	
 	}
-DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2,"cStation::DefinePlatforms");
+DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2);
 thatstation.size=thatstation.platforms.Count();
 thatstation.max_trains=goodPlatforms.Count();
 thatstation.locations.SetValue(20,topLeftPlatform);
@@ -898,8 +898,8 @@ function cStation::GetPlatformIndex(platform, useEntry=true)
 {
 local stationID=AIStation.GetStationID(platform);
 local thatstation=cStation.GetStationObject(stationID);
-if (thatstation==null)	{ DError("Invalid platform : "+platform,2,"cStation::GetPlatformIndex"); return -1; }
-if (thatstation.stationType!=AIStation.STATION_TRAIN)	{ DError("Not a rail station",1,"cStation::GetPlatformIndex"); return -1; }
+if (thatstation==null)	{ DError("Invalid platform : "+platform,2); return -1; }
+if (thatstation.stationType!=AIStation.STATION_TRAIN)	{ DError("Not a rail station",1); return -1; }
 local platX=AIMap.GetTileX(platform);
 local platY=AIMap.GetTileY(platform);
 local staX=0;
@@ -926,7 +926,7 @@ function cStation::GetRelativeDirection(stationID, dirswitch)
 // return -1 on error
 {
 local loc=AIStation.GetLocation(stationID);
-if (!AIRail.IsRailStationTile(loc))	{ DError("Not a rail station tile",2,"cStation::GetRelativeDirection"); return -1; }
+if (!AIRail.IsRailStationTile(loc))	{ DError("Not a rail station tile",2); return -1; }
 local dir=AIRail.GetRailStationDirection(loc);
 local left, right, forward, backward = null;
 if (dir==AIRail.RAILTRACK_NW_SE)
@@ -1012,7 +1012,7 @@ local crossing=0;
 local direction=thatstation.GetRailStationDirection();
 if (useEntry)	crossing=thatstation.locations.GetValue(5);
 		else	crossing=thatstation.locations.GetValue(6);
-if (crossing < 0)	{ DError("Crossing isn't define yet",2,"cBuilder::PlatformConnectors"); return -1; }
+if (crossing < 0)	{ DError("Crossing isn't define yet",2); return -1; }
 local goalTile=0;
 if (direction==AIRail.RAILTRACK_NE_SW)
 		goalTile=AIMap.GetTileIndex(AIMap.GetTileX(crossing),AIMap.GetTileY(frontTile));
@@ -1033,7 +1033,7 @@ function cStation::RailStationClaimTile(tile, useEntry, stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	{ DError("Invalid stationID:"+stationID,2,"cStation::RailStationClaimTile"); return -1; }
+if (thatstation == null)	{ DError("Invalid stationID:"+stationID,2); return -1; }
 local value=0;
 if (useEntry)	value=1;
 thatstation.station_tiles.AddItem(tile,value);
@@ -1053,7 +1053,7 @@ removelist.AddList(thatstation.station_tiles);
 local value=0;
 if (useEntry)	value=1;
 removelist.KeepValue(value);
-DInfo("Removing "+removelist.Count()+" tiles own by "+thatstation.name,2,"RailStationDeleteEntrance");
+DInfo("Removing "+removelist.Count()+" tiles own by "+thatstation.name,2);
 foreach (tile, dummy in removelist)
 	{ AITile.DemolishTile(tile); thatstation.station_tiles.RemoveItem(tile); cTileTools.UnBlackListTile(tile) }
 }
@@ -1067,7 +1067,7 @@ function cStation::StationAddTrain(taker, useEntry, stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	{ DError("Invalid stationID "+stationID,1,"cStation::StationAddTrain"); return -1; }
+if (thatstation == null)	{ DError("Invalid stationID "+stationID,1); return -1; }
 local ted=thatstation.locations.GetValue(7);
 local txd=thatstation.locations.GetValue(8);
 local tet=thatstation.locations.GetValue(9);
@@ -1085,7 +1085,7 @@ thatstation.locations.SetValue(7, ted);
 thatstation.locations.SetValue(8, txd);
 thatstation.locations.SetValue(9, tet);
 thatstation.locations.SetValue(10, txt);
-DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" add a new train: taker="+taker+" useEntry="+useEntry,2,"cStation::StationAddTrain");
+DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" add a new train: taker="+taker+" useEntry="+useEntry,2);
 }
 
 function cStation::StationRemoveTrain(taker, useEntry, stationID=null)
@@ -1094,7 +1094,7 @@ function cStation::StationRemoveTrain(taker, useEntry, stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	{ DError("Invalid stationID "+stationID,1,"cStation::StationRemoveTrain"); return -1; }
+if (thatstation == null)	{ DError("Invalid stationID "+stationID,1); return -1; }
 local ted=thatstation.locations.GetValue(7);
 local txd=thatstation.locations.GetValue(8);
 local tet=thatstation.locations.GetValue(9);
@@ -1116,6 +1116,6 @@ thatstation.locations.SetValue(7, ted);
 thatstation.locations.SetValue(8, txd);
 thatstation.locations.SetValue(9, tet);
 thatstation.locations.SetValue(10, txt);
-DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" remove train: taker="+taker+" useEntry="+useEntry,2,"cStation::StationRemoveTrain");
+DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" remove train: taker="+taker+" useEntry="+useEntry,2);
 }
 
