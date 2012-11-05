@@ -124,7 +124,7 @@ function cJobs::RankThisJob()
 	if (dstTown && cJobs.targetTown.HasItem(this.targetObject.ID) && (this.roadType==AIVehicle.VT_AIR || this.roadType==AIVehicle.VT_ROAD) && (this.cargoID == cCargo.GetPassengerCargo() || this.cargoID == cCargo.GetMailCargo()))
 		// passenger or mail transport by road or aircraft to that target already
 		{
-		local drank= ( (10 * valuerank) / 100) * cJobs.targetTown.GetValue(this.targetID);
+		local drank= ( (10 * valuerank) / 100) * cJobs.targetTown.GetValue(this.targetObject.ID);
 		DInfo("Downranking because target town is already handle : Lost "+drank,2);
 		valuerank -= drank; // add 10% penalty for each time we have use that town as target, to avoid reuse a town too much
 		}

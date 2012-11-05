@@ -15,7 +15,7 @@
 
 class cDebug extends cClass
 {
-	constructor()	{ this.ClassName="debug"; }
+	constructor()	{ this.ClassName="cDebug"; }
 }
 
 function cDebug::PutSign(place,msg)

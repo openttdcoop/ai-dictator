@@ -406,13 +406,13 @@ local randomTile=AITileList();
 randomTile.AddList(workTileList);
 randomTile.Sort(AIList.SORT_BY_VALUE, false);
 cDebug.showLogic(randomTile);
-ClearSigns();
+cDebug.ClearSigns();
 randomTile.KeepTop(6);
 foreach (tile, dummy in randomTile)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
 workTileList.Clear();
 workTileList.AddList(randomTile);
 cDebug.showLogic(workTileList);
-ClearSigns();
+cDebug.ClearSigns();
 local templist=AITileList();
 local solveIndex=0;
 foreach (tileFrom, tileTo in workTileList)
@@ -422,7 +422,7 @@ foreach (tileFrom, tileTo in workTileList)
 cDebug.showLogic(templist);
 cDebug.PutSign(tileFrom,"F"); cDebug.PutSign(tileTo,"T");
 	local solve=cTileTools.TerraformHeightSolver(templist);
-ClearSigns();
+cDebug.ClearSigns();
 	solve.RemoveValue(0); // discard no solve
 	local bf, bt, bs, bp=null;
 	bp=99999999999999;
@@ -443,7 +443,7 @@ ClearSigns();
 		allsolve.push(bp);
 		}
 	}
-ClearSigns();
+cDebug.ClearSigns();
 DInfo("Total solves found: "+solveIndex,1);
 return allsolve;
 }

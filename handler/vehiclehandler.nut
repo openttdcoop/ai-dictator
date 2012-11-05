@@ -310,7 +310,7 @@ if (road == null)	return;
 local homedepot=cRoute.GetDepot(idx);
 if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
 DInfo("Upgrading using depot at "+homedepot,2);
-PutSign(homedepot,"D");
+cDebug.PutSign(homedepot,"D");
 local money=0;
 local oldenginename=INSTANCE.main.carrier.VehicleGetName(vehID);
 switch (vehtype)
