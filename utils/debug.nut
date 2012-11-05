@@ -44,7 +44,7 @@ function cDebug::showLogic(item)
 	if (!INSTANCE.debug) return;
 	foreach (i, dummy in item)
 		{
-		PutSign(i,dummy);
+		cDebug.PutSign(i,dummy);
 		}
 }
 

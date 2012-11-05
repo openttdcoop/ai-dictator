@@ -128,7 +128,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 // Create an airport for our route at start/destination
 {
 local road=null;
-if (routeID==null)	road=INSTANCE.route;
+if (routeID==null)	road=INSTANCE.main.route;
 		else		road=cRoute.GetRouteObject(routeID);
 if (road==null)	return -1;
 local townname="none";
@@ -204,7 +204,7 @@ if (oldAirport_ID != null)
 		oldAirport_Height=AIAirport.GetAirportHeight(oldAirport_Type);
 		ignoreList=cTileTools.FindStationTiles(oldAirport_Location);
 		oldAirport_Noise=AIAirport.GetNoiseLevelIncrease(oldAirport_Location, oldAirport_Type);
-		showLogic(ignoreList);
+		cDebug.showLogic(ignoreList);
 		DInfo("Found an old airport in town : we will upgrade it",1);
 		if (!AIAirport.IsValidAirportType(oldAirport_Type))	DWarn("Old airport type is no more buildable, this is highly dangerous !!!",0);
 		}
@@ -257,13 +257,13 @@ if (!helipadonly)
 	tilelist.RemoveBelowValue(8);
 	foreach (tile, dummy in tilelist)
 		{
-		PutSign(tile,".");
+		cDebug.PutSign(tile,".");
 		local newTile=-1;
 		if (cTileTools.IsAreaFlat(tile, air_x, air_y))	newTile=tile;
 		if (newTile != -1)
 			{
 			DInfo("Found a flat area to try at "+newTile,1);
-			PutSign(newTile,"*");
+			cDebug.PutSign(newTile,"*");
 			for (local tt=0; tt < 5; tt++)
 				{
 				if (airportUpgrade && !oldAirport_Remove)
@@ -405,13 +405,13 @@ if (workTileList.IsEmpty())	return [];
 local randomTile=AITileList();
 randomTile.AddList(workTileList);
 randomTile.Sort(AIList.SORT_BY_VALUE, false);
-showLogic(randomTile);
+cDebug.showLogic(randomTile);
 ClearSigns();
 randomTile.KeepTop(6);
 foreach (tile, dummy in randomTile)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
 workTileList.Clear();
 workTileList.AddList(randomTile);
-showLogic(workTileList);
+cDebug.showLogic(workTileList);
 ClearSigns();
 local templist=AITileList();
 local solveIndex=0;
@@ -419,8 +419,8 @@ foreach (tileFrom, tileTo in workTileList)
 	{
 	templist.Clear();
 	templist.AddRectangle(tileFrom, tileTo);
-showLogic(templist);
-PutSign(tileFrom,"F"); PutSign(tileTo,"T");
+cDebug.showLogic(templist);
+cDebug.PutSign(tileFrom,"F"); cDebug.PutSign(tileTo,"T");
 	local solve=cTileTools.TerraformHeightSolver(templist);
 ClearSigns();
 	solve.RemoveValue(0); // discard no solve
@@ -483,7 +483,7 @@ foreach (index, prize in bestSolve)
 	updown=(realprize < 0);
 	local templist=AITileList();
 	templist.AddRectangle(tileFrom, tileTo);
-	PutSign(tileFrom,"?");
+	cDebug.PutSign(tileFrom,"?");
 	if (!cBanker.CanBuyThat(abs(realprize)))
 		{
 		DInfo("Skipping that solve. We won't have enough money to succeed",1);

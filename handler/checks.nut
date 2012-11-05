@@ -93,7 +93,7 @@ function cBuilder::RouteNeedRepair()
 		local trys=dummy;
 		trys++;
 		DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1);
-		local test=INSTANCE.main.CheckRoadHealth(routes);
+		local test=INSTANCE.main.builder.CheckRoadHealth(routes);
 		if (test)	INSTANCE.main.route.RouteDamage.SetValue(routes, -1)
 			else	INSTANCE.main.route.RouteDamage.SetValue(routes, trys);
 		if (trys >= 12)	{ deletethatone=routes }

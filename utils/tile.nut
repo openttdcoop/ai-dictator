@@ -674,7 +674,7 @@ foreach (tiles, dummy in testtiles)
 	}
 testtiles.RemoveValue(0);
 print("test size="+testtiles.Count());
-showLogic(testtiles);
+cDebug.showLogic(testtiles);
 INSTANCE.NeedDelay(200);
 
 towntiles.Valuate(AITile.IsWithinTownInfluence,townID);

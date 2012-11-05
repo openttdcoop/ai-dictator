@@ -187,7 +187,8 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		myjob.cargoAmount=myjob.sourceObject.CargoProduce.GetValue(myjob.cargoID);
 		}
 	if (updateCost)	myjob.EstimateCost();
-	myjob.RankThisJob();
+	if (myjob.cargoAmount < 1)	myjob.ranking = 0;
+					else	myjob.RankThisJob();
 	::AIController.Sleep(1);
 	}
 

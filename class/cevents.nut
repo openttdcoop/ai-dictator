@@ -71,35 +71,35 @@ while (AIEventController.IsEventWaiting())
 				{
 				DInfo("New engine available for preview: " + event.GetName(),0);
 				}
-		print("fix me event engine_preview"); //INSTANCE.main.vehicle.CheckOneVehicleOfGroup(true);
+		print("fix me event engine_preview"); //INSTANCE.main.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
 			DInfo("New engine available: " + cEngine.GetName(engine),0);
-		print("fixme new engine event"); //INSTANCE.main.vehicle.CheckOneVehicleOfGroup(true);
+		print("fixme new engine event"); //INSTANCE.main.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.ET_VEHICLE_CRASHED:
 			local vehicle = null;
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
-			DInfo("Vehicle "+INSTANCE.main.vehicle.VehicleGetName(vehicle)+" has crashed!!!",0);
+			DInfo("Vehicle "+INSTANCE.main.carrier.VehicleGetName(vehicle)+" has crashed!!!",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			local engineID=AIVehicle.GetEngineType(vehicle);
-			INSTANCE.main.vehicle.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
+			INSTANCE.main.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
 			if (engineID != null)	cEngine.RabbitUnset(engineID);
-			INSTANCE.main.vehicle.VehicleSellAndDestroyRoute(vehicle); // try to see if the crash vehicle was going to remove a route
+			INSTANCE.main.carrier.VehicleSellAndDestroyRoute(vehicle); // try to see if the crash vehicle was going to remove a route
 		break;
 		case AIEvent.ET_VEHICLE_WAITING_IN_DEPOT:
-			INSTANCE.main.vehicle.VehicleIsWaitingInDepot();
+			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
 		break;
 		case AIEvent.ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
 			print("fixme event vehicle_lost"); //DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, not a good news",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) return;
-			//INSTANCE.main.vehicle.VehicleMaintenance_Orders(vehicle);
-			//local rcheck=INSTANCE.main.vehicle.VehicleFindRouteIndex(vehicle);
+			//INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
+			//local rcheck=INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle);
 			//INSTANCE.main.builder.RouteIsDamage(rcheck);
 		break;
 		case AIEvent.ET_VEHICLE_UNPROFITABLE:
@@ -107,9 +107,9 @@ while (AIEventController.IsEventWaiting())
 			local vehicle = event.GetVehicleID();
 			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) return;
-			INSTANCE.main.vehicle.VehicleMaintenance_Orders(vehicle);
-			INSTANCE.main.main.builder.RouteIsDamage(INSTANCE.main.vehicle.VehicleFindRouteIndex(vehicle));
-			INSTANCE.main.vehicle.VehicleSendToDepot(vehicle, DepotAction.SELL);
+			INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
+			INSTANCE.main.main.builder.RouteIsDamage(INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle));
+			INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;
 		case AIEvent.ET_COMPANY_IN_TROUBLE:
 			event = AIEventCompanyInTrouble.Convert(event);
@@ -133,14 +133,14 @@ while (AIEventController.IsEventWaiting())
 				vehlist.Sort(AIList.SORT_BY_VALUE,false);
 				foreach (vehicle, profit in vehsell)
 					{ // sell all non profitable vehicles
-					INSTANCE.main.vehicle.VehicleSendToDepot(vehicle, DepotAction.SELL);
+					INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 					}
 				foreach (vehicle, value in vehlist)
 					{
 					do	{
-						INSTANCE.main.vehicle.VehicleSendToDepot(vehicle, DepotAction.SELL);
+						INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 						AIController.Sleep(150);
-						INSTANCE.main.vehicle.VehicleIsWaitingInDepot();
+						INSTANCE.main.carrier.VehicleIsWaitingInDepot();
 						} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);
 					}
 				}

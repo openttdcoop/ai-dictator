@@ -146,7 +146,7 @@ function DictatorAI::Start()
 													DInfo("Creating a new route : "+cRoute.RouteGetName(main.builder.building_route),0);
 													}
 									}
-								else	DInfo("Construction of route "+cRoute.RouteGetName(main.builder.building_route)+" is at phase "+route.status,1);
+								else	DInfo("Construction of route "+cRoute.RouteGetName(main.builder.building_route)+" is at phase "+main.route.status,1);
 					if (main.builder.building_route != -1)
 						{
 						main.builder.TryBuildThatRoute();
@@ -175,14 +175,14 @@ function DictatorAI::Start()
 
 function DictatorAI::Stop()
 {
-	DInfo("DictatorAI is stopped",0,"main");
+	DInfo("DictatorAI is stopped",0);
 	ClearSigns();
 }
 
 function DictatorAI::NeedDelay(delay=30)
 {
 	if (!debug)	return;
-	DInfo("We are waiting: "+delay,2,"NeedDelay");
+	DInfo("We are waiting: "+delay,2);
 	::AIController.Sleep(delay);
 } 
 
@@ -243,7 +243,7 @@ function DictatorAI::Save()
 	table.routes=all_routes;
 	table.stations=all_stations;
 	table.vehicle=all_vehicle;
-	table.busyroute=builder.building_route;
+	table.busyroute=main.builder.building_route;
 	local netair=cRoute.VirtualAirGroup[0];
 	table.virtualpass=netair;
 	netair=cRoute.VirtualAirGroup[1];
@@ -255,13 +255,13 @@ function DictatorAI::Save()
 function DictatorAI::Load(version, data)
 {
 	DInfo("Loading a saved game with DictatorAI version "+version,0,"Load");
-	if ("routes" in data) bank.canBuild=data.routes;
-	if ("stations" in data) bank.unleash_road=data.stations;
-	if ("busyroute" in data) builder.building_route=data.busyroute;
+	if ("routes" in data) main.bank.canBuild=data.routes;
+	if ("stations" in data) main.bank.unleash_road=data.stations;
+	if ("busyroute" in data) main.builder.building_route=data.busyroute;
 	if ("vehicle" in data)	SixMonth=data.vehicle;
 	if ("virtualmail" in data)	TwelveMonth=data.virtualmail;
-	if ("virtualpass" in data)	bank.mincash=data.virtualpass;
-	bank.busyRoute=version;
+	if ("virtualpass" in data)	main.bank.mincash=data.virtualpass;
+	main.bank.busyRoute=version;
 	loadedgame = true;
 }
 

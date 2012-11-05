@@ -144,7 +144,7 @@ function cEngine::Incompatible(eng1, eng2)
 // mark eng1 incompatible with eng2 (one must be a wagon, other must not)
 	{
 	if ( (!AIEngine.IsWagon(eng1) && !AIEngine.IsWagon(eng2)) || (AIEngine.IsWagon(eng1) && AIEngine.IsWagon(eng2)) )
-		{ DError("One engine must be a wagon and the other must not",1); return false; }
+		{ INSTANCE.DError("One engine must be a wagon and the other must not",1); return false; }
 	local eng1O=cEngine.Load(eng1);
 	local eng2O=cEngine.Load(eng2);
 	eng1O.incompatible.AddItem(eng2,eng1);
@@ -203,7 +203,7 @@ function cEngine::CanPullCargo(engineID, cargoID)
 	{
 	local NicePlay=DictatorAI.GetSetting("use_nicetrain");
 	if (!AIEngine.IsValidEngine(engineID) || !AICargo.IsValidCargo(cargoID) || AIEngine.IsWagon(engineID))
-		{ DError("Preconditions fail engineID="+engineID+" cargoID="+cargoID,2); return false; }
+		{ INSTANCE.DError("Preconditions fail engineID="+engineID+" cargoID="+cargoID,2); return false; }
 	if (!NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
 	local engine=cEngine.Load(engineID);
 	local wagonlist=AIEngineList(AIVehicle.VT_RAIL);
@@ -323,11 +323,11 @@ function cEngine::IsVehicleAtTop(vehID)
 // return -1 if the vehicle doesn't need upgrade
 // return the better engineID if one exist
 	{
-	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Not a valid vehicle",2); return -1; }
+	if (!AIVehicle.IsValidVehicle(vehID))	{ INSTANCE.DError("Not a valid vehicle",2); return -1; }
 	local idx=cCarrier.VehicleFindRouteIndex(vehID);
-	if (idx==null)	{ DError("Fail to find the route in use by this vehicle",2); return -1; }
+	if (idx==null)	{ INSTANCE.DError("Fail to find the route in use by this vehicle",2); return -1; }
 	local road=cRoute.GetRouteObject(idx);
-	if (road == null)	{ DError("Cannot map the route of that vehicle",2); return -1; }
+	if (road == null)	{ INSTANCE.DError("Cannot map the route of that vehicle",2); return -1; }
 	local cargoID=road.cargoID;
 	local vehType=AIVehicle.GetVehicleType(vehID);
 	if (vehType==AIVehicle.VT_AIR)	cargoID=road.route_type;
