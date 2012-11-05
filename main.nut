@@ -132,25 +132,25 @@ function DictatorAI::Start()
 		if (main.SCP.IsAllow())	main.SCP.Check();
 		if (main.bank.canBuild)
 				{
-				if (builder.building_route == -1)	builder.building_route=jobs.GetNextJob();
-				if (builder.building_route != -1)
+				if (main.builder.building_route == -1)	main.builder.building_route=main.jobs.GetNextJob();
+				if (main.builder.building_route != -1)
 					{
-					builder.DumpTopJobs();
-					jobs_obj=cJobs.Load(builder.building_route);
-					route=cRoute.GetRouteObject(builder.building_route);
-					if (route == null)	{
-									route=cRoute();
-									if (!jobs_obj)	builder.building_route=-1;
+					main.builder.DumpTopJobs(); // debug
+					local jobs_obj=cJobs.Load(main.builder.building_route);
+					main.route=cRoute.GetRouteObject(main.builder.building_route);
+					if (main.route == null)	{
+									main.route=cRoute();
+									if (!jobs_obj)	main.builder.building_route=-1;
 												else	{
-													route.CreateNewRoute(builder.building_route);
-													DInfo("Creating a new route : "+cRoute.RouteGetName(builder.building_route),0,"main");
+													main.route.CreateNewRoute(main.builder.building_route);
+													DInfo("Creating a new route : "+cRoute.RouteGetName(main.builder.building_route),0);
 													}
 									}
-								else	DInfo("Construction of route "+cRoute.RouteGetName(builder.building_route)+" is at phase "+route.status,1,"main");
-					if (builder.building_route!=-1)
+								else	DInfo("Construction of route "+cRoute.RouteGetName(main.builder.building_route)+" is at phase "+route.status,1);
+					if (main.builder.building_route != -1)
 						{
-						builder.TryBuildThatRoute();
-						this.checkHQ();
+						main.builder.TryBuildThatRoute();
+						cMisc.checkHQ();
 						}
 					}
 				}

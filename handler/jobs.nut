@@ -33,7 +33,7 @@ function cJobs::TargetTownSet(townID)
 	}
 
 function cJobs::CheckLimitedStatus()
-// Check & set the limited status
+// Check & set the limited status, at early stage we limit the distance to accept a job.
 	{
 	local oldmax=distanceLimits[1];
 	local testLimitChange= GetTransportDistance(AIVehicle.VT_RAIL, false, INSTANCE.main.bank.unleash_road); // get max distance a train could do
@@ -167,12 +167,11 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		}
 	if (myjob.isUse)	return;	// no need to refresh an already done job
 	::AIController.Sleep(1);
-	// foule, moneyGains, ranking & cargoAmount
+	// moneyGains, ranking & cargoAmount
 	myjob.sourceObject.UpdateScore();
 	if (myjob.sourceObject.IsTown)
 		{
 		myjob.cargoAmount=myjob.sourceObject.CargoProduce.GetValue(myjob.cargoID);
-		//myjob.foule=AITown.GetLastMonthSupplied(myjob.sourceID, myjob.cargoID);
 		if (myjob.targetObject.IsTown)
 			{
 			myjob.targetObject.UpdateScore();
@@ -182,12 +181,10 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 					if (average < myjob.cargoAmount)	myjob.cargoAmount=average;
 					}
 				else	myjob.cargoAmount=(myjob.cargoAmount+average) / 2 ; // average towns pop, help find best route
-			//myjob.foule+=AITown.GetLastMonthSupplied(myjob.targetID, myjob.cargoID);
 			}
 		}
 	else	{ // industry
 		myjob.cargoAmount=myjob.sourceObject.CargoProduce.GetValue(myjob.cargoID);
-		//myjob.foule=cRoute.GetAmountOfCompetitorStationAround(myjob.sourceID);
 		}
 	if (updateCost)	myjob.EstimateCost();
 	myjob.RankThisJob();
@@ -232,26 +229,18 @@ function cJobs::QuickRefresh()
 // refresh datas on first 5 doable top jobs
 	{
 	local smallList=AIList();
-	INSTANCE.jobs.UpdateDoableJobs();
+	INSTANCE.main.jobs.UpdateDoableJobs();
 	smallList.AddList(cJobs.jobIndexer);
 	smallList.Valuate(cJobs.IsInfosUpdate);
 	smallList.KeepValue(0); // keep only ones that need refresh
 	smallList.Valuate(AIBase.RandItem);
-	//smallList.Sort(AIList.SORT_BY_VALUE,true);
-	smallList.KeepTop(5);
-	foreach (smallID, dvalue in smallList)	{ INSTANCE.jobs.RefreshValue(smallID, true); }
+	smallList.KeepTop(5); // refresh 5 random jobs that need a refresh
+	foreach (smallID, dvalue in smallList)	{ INSTANCE.main.jobs.RefreshValue(smallID, true); }
 	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
-	/*foreach (item, value in smallList)
-		{ // now remove jobs that we cannot build because of money need for that
-		local j=cJobs.Load(item);
-		if (!j)	return;
-		if (!cBanker.CanBuyThat(j.moneyToBuild))	 { smallList.RemoveItem(item); }
-		}*/
 	smallList.Sort(AIList.SORT_BY_VALUE,false);
-	smallList.KeepTop(5);
+	smallList.KeepTop(5); // Keep 5 top rank job doable
 	if (INSTANCE.safeStart > 0 && smallList.IsEmpty())	INSTANCE.safeStart=0; // disable it if we cannot find any jobs
-	foreach (uid, value in smallList)	INSTANCE.builder.DumpJobs(uid);
 	return smallList;
 	}
 
@@ -321,7 +310,6 @@ function cJobs::EstimateCost()
 		break;
 		case	AIVehicle.VT_WATER: //TODO: fixme boat
 			// 2 vehicle + 2 stations + 2 depot
-//			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
 			engine=null;
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	{ engineprice=500000000; INSTANCE.use_air=false; }
@@ -430,10 +418,10 @@ function cJobs::JobIsNotDoable(uid)
 function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
-	INSTANCE.jobs.CheckLimitedStatus();
+	INSTANCE.main.jobs.CheckLimitedStatus();
 	DInfo("Analysing the task pool",0);
 	local parentListID=AIList();
-	INSTANCE.jobs.jobDoable.Clear();
+	INSTANCE.main.jobs.jobDoable.Clear();
 	local topair=0;
 	local toproad=0;
 	local toprail=0;
@@ -443,9 +431,9 @@ function cJobs::UpdateDoableJobs()
 	cJobs.CostTopJobs[AIVehicle.VT_WATER]=0;
 	cJobs.CostTopJobs[AIVehicle.VT_ROAD]=0;
 	// reset all top jobs
-	foreach (id, value in INSTANCE.jobs.jobIndexer)
+	foreach (id, value in INSTANCE.main.jobs.jobIndexer)
 		{
-		if (id == 0 || id == 1)	continue;
+		if (id == 0 || id == 1)	continue; // ignore virtual
 		local doable=1;
 		local myjob=cJobs.Load(id);
 		if (!myjob)	continue;
@@ -475,7 +463,7 @@ function cJobs::UpdateDoableJobs()
 		if (doable)
 		// not doable if max distance is limited and lower the job distance
 			{
-			local curmax = INSTANCE.jobs.GetTransportDistance(myjob.roadType, false, !INSTANCE.bank.unleash_road);
+			local curmax = INSTANCE.main.jobs.GetTransportDistance(myjob.roadType, false, !INSTANCE.main.bank.unleash_road);
 			if (curmax < myjob.distance)	{ doable=false; }
 			}
 		// not doable if any parent is already in use
@@ -485,12 +473,11 @@ function cJobs::UpdateDoableJobs()
 				DInfo("Job already done by parent job ! First pass filter",2);
 				doable=false;
 				}
-		if (doable && !myjob.source_istown)
-			if (!AIIndustry.IsValidIndustry(myjob.sourceID))	doable=false;
+		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	doable=false;
 		// not doable if the industry no longer exist
-		if (doable && myjob.source_istown && DictatorAI.GetSetting("allowedjob") == 1)	doable=false;
+		if (doable && myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 1)	doable=false;
 		// not doable if town jobs is not allow
-		if (doable && !myjob.source_istown && DictatorAI.GetSetting("allowedjob") == 2)	doable=false;
+		if (doable && !myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 2)	doable=false;
 		// not doable if industry jobs is not allow
 		if (doable)	{
 				switch (myjob.roadType)
@@ -529,13 +516,13 @@ function cJobs::UpdateDoableJobs()
 		// disable as we lack money
 		if (doable)	myjob.jobDoable.AddItem(id, myjob.ranking);
 		}
-	foreach (jobID, rank in INSTANCE.jobs.jobDoable)
+	foreach (jobID, rank in INSTANCE.main.jobs.jobDoable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
 			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
 		local myjob=cJobs.Load(jobID);
 		if (!myjob)	continue;
-		local airValid=(cJobs.CostTopJobs[AIVehicle.VT_AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]) || INSTANCE.main.vehicle.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR]) && INSTANCE.use_air);
-		local trainValid=(cJobs.CostTopJobs[AIVehicle.VT_RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_RAIL]) || INSTANCE.main.vehicle.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_RAIL]) && INSTANCE.use_train);
+		local airValid=(cJobs.CostTopJobs[AIVehicle.VT_AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR]) && INSTANCE.use_air);
+		local trainValid=(cJobs.CostTopJobs[AIVehicle.VT_RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_RAIL]) && INSTANCE.use_train);
 		if (myjob.roadType == AIVehicle.VT_ROAD && (airValid || trainValid))	cJobs.jobDoable.RemoveItem(jobID);
 			// disable because we have funds to build an aircraft or a rail job
 
@@ -545,9 +532,9 @@ function cJobs::UpdateDoableJobs()
 			cJobs.jobDoable.RemoveItem(jobID);
 			}
 		}
-	INSTANCE.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
-	DInfo(INSTANCE.jobs.jobIndexer.Count()+" jobs found",2);
-	DInfo(INSTANCE.jobs.jobDoable.Count()+" jobs doable",2);
+	INSTANCE.main.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
+	DInfo(INSTANCE.main.jobs.jobIndexer.Count()+" jobs found",2);
+	DInfo(INSTANCE.main.jobs.jobDoable.Count()+" jobs doable",2);
 	}
 
 function cJobs::GetJobTarget(src_id, cargo_id, src_istown, srcloc)
@@ -676,7 +663,6 @@ function cJobs::RawJob_Add(pUID)
 	local p = cProcess.Load(pUID);
 	if (!p)	return;
 	cJobs.rawJobs.AddItem(p.UID, p.Score);
-print("Adding #"+pUID+" to task"+cJobs.rawJobs.Count());
 	}
 
 function cJobs::PopulateJobs()

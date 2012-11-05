@@ -13,6 +13,7 @@ require("handler/routes.nut");
 require("handler/pathfinder.nut");
 require("handler/bridgehandler.nut");
 require("build/stationbuilder.nut");
+require("build/builder.nut");
 require("air/airportbuilder.nut");
 require("air/aircraftbuilder.nut");
 require("water/waterbuilder.nut");

@@ -87,9 +87,20 @@ function cMisc::ToggleBit(value, bitset)
 function cMisc::CheckBit(value, bitset)
 // return true/false if bit is set in value
 {
-//print ("? "+(value & (1 << bitset))+" bitset="+bitset);
 	return ((value & (1 << bitset)) != 0);
 }
+
+function cMisc::checkHQ()
+// Check and build our HQ if need
+{
+if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
+	{
+	local townlist = AITownList();
+	townlist.Valuate(AIBase.RandItem);
+	DictatorAI.BuildHQ(townlist.Begin());
+	}
+}
+
 
 /*function GetCurrentGoalCallback(message, self)
 {
@@ -103,16 +114,6 @@ if (goal_to_do.IsEmpty())	return;
 INSTANCE.SetCargoFavorite(goal_to_do.Begin());
 }
 
-
-function checkHQ()
-{
-if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
-	{
-	local townlist = AITownList();
-	townlist.Valuate(AIBase.RandItem);
-	DictatorAI.BuildHQ(townlist.Begin());
-	}
-}
 
 function ListGetItem(list, item_num)
 {
