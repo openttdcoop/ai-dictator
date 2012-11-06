@@ -108,7 +108,7 @@ function cJobs::RankThisJob()
 // rank the current job
 	{
 	local valuerank = this.sourceObject.ScoreProduction * this.cargoValue;
-	if (this.subsidy != null && AISubsidy.IsValidSubsidy(this.subsidy) && !AISubsidy.IsAwarded(this.subsidy))
+	if (this.subsidy)
 		{
 		if (AIGameSettings.IsValid("subsidy_multiplier"))	valuerank=valuerank * AIGameSettings.GetValue("subsidy_multiplier");
 										else	valuerank=valuerank * 2;

@@ -114,7 +114,7 @@ function cBuilder::AirportMaker(tile, airporttype)
 local essai=false;
 if (!cTileTools.SeduceTown(AITile.GetClosestTown(tile),AITown.TOWN_RATING_MEDIOCRE))
 	{
-	DInfo("Town doesn't like us...",1,"AirportMaker");
+	DInfo("Town doesn't like us...",1);
 	cTileTools.terraformCost.AddItem(999995,1); // tell rating is poor
 	}
 INSTANCE.main.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
