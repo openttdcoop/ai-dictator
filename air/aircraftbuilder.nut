@@ -85,6 +85,8 @@ vehlist.Valuate(AIEngine.IsBuildable);
 vehlist.KeepValue(1);
 //vehlist.Valuate(AIEngine.GetMaximumOrderDistance);
 //vehlist.KeepValue(distance); // Add for newGRF distance limit
+vehlist.Valuate(cEngine.IsEngineBlacklist);
+vehlist.KeepValue(0);
 local passCargo=cCargo.GetPassengerCargo();
 vehlist.Valuate(AIEngine.CanRefitCargo, passCargo);
 vehlist.KeepValue(1);

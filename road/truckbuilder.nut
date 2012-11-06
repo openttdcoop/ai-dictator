@@ -107,7 +107,7 @@ if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
 	local checktype=AIEngine.GetVehicleType(checkengine);
 	if (AIStation.IsValidStation(checkstation) && (AIStation.HasStationType(checkstation, AIStation.STATION_BUS_STOP) || AIStation.HasStationType(checkstation, AIStation.STATION_TRUCK_STOP)))
 		{
-		cEngine.BlacklistTruck(checkengine);
+		cEngine.BlacklistEngine(checkengine);
 		cCarrier.VehicleSell(vehID, false);
 		}
 	return false;

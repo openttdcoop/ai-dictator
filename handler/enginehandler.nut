@@ -16,7 +16,7 @@
 class cEngine extends AIEngine
 {
 static	enginedatabase= {};
-static	TruckBlackList=AIList();	// list of truck/bus engines we have blacklist to avoid bug with IsArticalted
+static	EngineBL=AIList();		// list of truck/bus engines we have blacklist to avoid bug with IsArticalted
 static	BestEngineList=AIList();	// list of best engine for a couple engine/cargos, item=EUID, value=best engineID
 
 static	function GetEngineObject(engineID)
@@ -67,6 +67,7 @@ function cEngine::Save()
 	cEngine.enginedatabase[this.engineID] <- this;
 	INSTANCE.DInfo("Adding engine "+this.engineID+" "+this.name+" to cEngine database",2);
 	INSTANCE.DInfo("List of known engines : "+(cEngine.enginedatabase.len()),1);
+	if (AIEngine.GetVehicleType(this.engineID) == AIVehicle.VT_AIR && this.AIEngine.GetMaximumOrderDistance(this.engineID) != 0)	cEngine.BlacklistEngine(this.engineID);
 	}
 
 function cEngine::Load(eID)
@@ -338,13 +339,13 @@ function cEngine::IsVehicleAtTop(vehID)
 function cEngine::IsEngineBlacklist(engineID)
 // return true if the engine is blacklist
 	{
-	return (cEngine.TruckBlackList.HasItem(engineID));
+	return (cEngine.EngineBL.HasItem(engineID));
 	}
 
-function cEngine::BlacklistTruck(engineID)
+function cEngine::BlacklistEngine(engineID)
 // Add a truck/bus as a blacklist engine, handle the IsArticlatedBug
 	{
 	if (cEngine.IsEngineBlacklist(engineID))	return;
-	cEngine.TruckBlackList.AddItem(engineID,0);
-	INSTANCE.DInfo("Adding "+cEngine.GetName(engineID)+" to blacklist engine list",1);
+	cEngine.EngineBL.AddItem(engineID,0);
+	INSTANCE.DInfo("Adding "+cEngine.GetName(engineID)+" to blacklist engine list",0);
 	}

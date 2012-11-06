@@ -156,12 +156,12 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	if (!myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))
 		{
 		badind=true;
-		cJobs.DeleteIndustry(myjob.sourceID,false);
+		cJobs.DeleteIndustry(myjob.sourceObject.ID);
 		}
 	if (!myjob.targetObject.IsTown && !AIIndustry.IsValidIndustry(myjob.targetObject.ID))
 		{
 		badind=true;
-		cJobs.DeleteIndustry(myjob.targetID,false);
+		cJobs.DeleteIndustry(myjob.targetObject.ID);
 		}
 	if (badind)
 		{
