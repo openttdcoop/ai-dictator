@@ -56,7 +56,7 @@ function cCargo::SetCargoFavorite(cargoid = -1)
 		}
 	cargo_favorite=cargoid;
 	cCargo.primaryCargo[2]=cargoid;
-	DInfo("We will now promote "+AICargo.GetCargoLabel(cargo_favorite),0);
+	DInfo("We will now promote "+cCargo.GetCargoLabel(cargo_favorite),0);
 }
 
 function cCargo::GetMailCargo()

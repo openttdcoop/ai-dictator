@@ -100,9 +100,8 @@ function DictatorAI::Start()
 		main.bank.SaveMoney();
 		cRoute.DiscoverWorldTiles();
 		cBridge.BridgeDiscovery();
-		main.jobs.PopulateJobs();
-		scp_manager.Check();
 		LoadingGame();
+		main.jobs.PopulateJobs();
 		local stationList=AIList();	// check for no more working station if cargo disapears...
 		stationList.AddList(AIStationList(AIStation.STATION_ANY));
 		foreach (stationID, dummy in stationList)
@@ -110,16 +109,15 @@ function DictatorAI::Start()
 			cStation.CheckCargoHandleByStation(stationID);
 			}
 		INSTANCE.main.route.VirtualAirNetworkUpdate();
-//		local maptiles=AIList();
-//		maptiles.AddList(cRoute.WorldTiles);
-//		RailFollower.FindRailOwner(maptiles);
-		RailFollower.FindRailOwner(cRoute.WorldTiles);
-		DInfo("...Loading game end",0,"Main");
+//		RailFollower.FindRailOwner(cRoute.WorldTiles);
+		DInfo("...Loading game end",0);
 		}
 	 else {
 		main.bank.SaveMoney();
+		cMisc.SetPresident();
 		main.jobs.PopulateJobs();
 		main.jobs.RawJobHandling();
+
 		safeStart=3;
 		}
 	while(true)
@@ -223,10 +221,10 @@ function DictatorAI::Save()
 		all_stations.push(obj.specialType);
 		all_stations.push(obj.size);
 		all_stations.push(obj.depot);
-		temparray=ListToArray(obj.locations);
+		temparray=cMisc.ListToArray(obj.locations);
 		all_stations.push(temparray.len());
 		for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
-		temparray=ListToArray(obj.platforms);
+		temparray=cMisc.ListToArray(obj.platforms);
 		all_stations.push(temparray.len());
 		for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
 		}
@@ -342,6 +340,7 @@ function DictatorAI::CheckCurrentSettings()
 		use_train=false;
 		use_air=false;
 		}
+use_train=false;
 }
 
 function DictatorAI::DInfo(putMsg,debugValue=0)
@@ -397,30 +396,5 @@ function DictatorAI::DWarn(putMsg, debugValue=1)
 		{
 		AILog.Warning(func+putMsg);
 		}
-}
-
-function DictatorAI::ListToArray(list)
-{
-	local array = [];
-	local templist = AIList();
-	templist.AddList(list);
-	while (templist.Count() > 0) {
-		local arrayitem = [templist.Begin(), templist.GetValue(templist.Begin())];
-		array.append(arrayitem);
-		templist.RemoveTop(1);
-	}
-	return array;
-}
-
-function DictatorAI::ArrayToList(array)
-{
-	local list = AIList();
-	local temparray = [];
-	temparray.extend(array);
-	while (temparray.len() > 0) {
-		local arrayitem = temparray.pop();
-		list.AddItem(arrayitem[0], arrayitem[1]);
-	}	
-	return list;
 }
 

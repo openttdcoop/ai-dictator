@@ -103,7 +103,6 @@ class cMain extends cClass
 function cMain::Init()
 {
 	SCP.Init();
-	cMisc.SetPresident();
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	builder.SetRailType();
 	route.RouteInitNetwork();

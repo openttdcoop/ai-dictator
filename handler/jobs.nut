@@ -215,6 +215,7 @@ function cJobs::RefreshAllValue()
 	local curr=0;
 	local needRefresh=AIList();
 	needRefresh.AddList(cJobs.jobIndexer);
+	needRefresh.RemoveList(cRoute.RouteIndexer); // remove jobs already in use
 	needRefresh.Valuate(cJobs.IsInfosUpdate);
 	needRefresh.KeepValue(0); // only keep ones that need refresh
 	DInfo("Need refresh: "+needRefresh.Count()+"/"+cJobs.jobIndexer.Count(),1);
@@ -237,6 +238,7 @@ function cJobs::QuickRefresh()
 	local smallList=AIList();
 	INSTANCE.main.jobs.UpdateDoableJobs();
 	smallList.AddList(cJobs.jobIndexer);
+	smallList.RemoveList(cRoute.RouteIndexer); // remove jobs already in use
 	smallList.Valuate(cJobs.IsInfosUpdate);
 	smallList.KeepValue(0); // keep only ones that need refresh
 	smallList.Valuate(AIBase.RandItem);

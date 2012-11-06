@@ -45,7 +45,7 @@ function cSCP::WaitReady()
 		if (!this.SCPInstance.CanSpeakWith())	{ AIController.Sleep(1); this.SCPInstance.Check(); }
 								else	return;
 		}
-	//this.GetCurrentGoal();
+	this.GetCurrentGoal();
 }
 
 function cSCP::IsAllow()
@@ -60,9 +60,9 @@ function cSCP::Check()
 
 function cSCP::AddCommandSet()
 {
-	SCPInstance.AddCommand("CurrentGoal", "NoCarGoal", this, cSCP.GetCurrentGoalCallback);
-	//SCPInstance.AddCommand("GSSetting", "NoCarGoal", this, cSCP.ReceivedGSSettingCommand);
-	SCPInstance.AddCommand("GoalCompleted", "NoCarGoal", this, cSCP.GoalComplete);
+	SCPInstance.AddCommand("CurrentGoal", "NoCarGoal", INSTANCE, cSCP.GetCurrentGoalCallback);
+	SCPInstance.AddCommand("GSSetting", "NoCarGoal", INSTANCE, cSCP.ReceivedGSSettingCommand);
+	SCPInstance.AddCommand("GoalCompleted", "NoCarGoal", INSTANCE, cSCP.GoalComplete);
 
 }
 
@@ -74,31 +74,24 @@ function cSCP::GoalComplete(message, self)
 
 function cSCP::GetCurrentGoal()
 {
-print("get current goal");
 	SCPInstance.QueryServer("CurrentGoal", "NoCarGoal", AICompany.ResolveCompanyID(AICompany.COMPANY_SELF));
 }
 
 function cSCP::GetCurrentGoalCallback(message, self)
 {
-	if (goal_callback != null)	goal_callback(message,self);
-	DWarn("GetCurrentGoalCallback is not set");
+	AILog.Info("Receiving goals: ");
+	AILog.Info("Do "+message.Data[2]+" units of "+cCargo.GetCargoLabel(message.Data[1]));
+	AILog.Info("Do "+message.Data[5]+" units of "+cCargo.GetCargoLabel(message.Data[4]));
+	AILog.Info("Do "+message.Data[8]+" units of "+cCargo.GetCargoLabel(message.Data[7]));
+	local goal_to_do=AIList();
+	if (message.Data[3] < message.Data[2])	goal_to_do.AddItem(message.Data[1],0);
+	if (message.Data[6] < message.Data[5])	goal_to_do.AddItem(message.Data[4],0);
+	if (message.Data[9] < message.Data[8])	goal_to_do.AddItem(message.Data[7],0);
+	if (goal_to_do.IsEmpty())	return;
+	self.main.cargo.SetCargoFavorite(goal_to_do.Begin());
 }
 
-function cSCP::SetCurrentGoalCallback(ngoal)
+function cSCP::ReceivedGSSettingCommand(message, self)
 {
-	this.goal_callback = ngoal;
+	print("Received GSSetting Comnand answer");
 }
-
-/*
-function cSCP::GetCurrentGoalCallback(message, self)
-{
-print("Received answer goal with ");
-for (local i=0; i < message.Data.len(); i++)	print(" Goal #"+i+" - "+message.Data[i]);
-local goal_to_do=AIList();
-if (message.Data[3] < message.Data[2])	goal_to_do.AddItem(message.Data[1],0);
-if (message.Data[6] < message.Data[5])	goal_to_do.AddItem(message.Data[4],0);
-if (message.Data[9] < message.Data[8])	goal_to_do.AddItem(message.Data[7],0);
-if (goal_to_do.IsEmpty())	return;
-INSTANCE.SetCargoFavorite(goal_to_do.Begin());
-}
-*/
