@@ -62,11 +62,16 @@ function cJobs::Save()
 	jobinfo+=this.sourceObject.Name;
 	jobinfo+=" to ";
 	jobinfo+=this.targetObject.Name;
+	this.Name=jobinfo;
 	if (this.UID in database)	DInfo("Job "+this.UID+" already in database",2);
 		else	{
 			DInfo("Adding job #"+this.UID+" ("+parentID+") to job database: "+jobinfo,2);
 			database[this.UID] <- this;
-			jobIndexer.AddItem(this.UID, 0);
+			cJobs.jobIndexer.AddItem(this.UID, 0);
+			if (this.sourceObject.IsTown)	cJobs.UIDTown.AddItem(this.UID, this.sourceObject.ID);
+							else	cJobs.UIDIndustry.AddItem(this.UID, this.sourceObject.ID);
+			if (this.targetObject.IsTown)	cJobs.UIDTown.AddItem(this.UID, this.targetObject.ID);
+							else	cJobs.UIDIndustry.AddItem(this.UID, this.targetObject.ID);
 			}
 	}
 
@@ -622,11 +627,16 @@ function cJobs::DeleteJob(uid)
 function cJobs::DeleteIndustry(industry_id)
 // Remove an industry and all jobs using it
 {
-	foreach (object in cJobs.database)
+
+/*	foreach (object in cJobs.database)
 		{
 		if ((!object.sourceObject.IsTown && object.sourceObject.ID == industry_id) || (!object.targetObject.IsTown && object.targetObject.ID == industry_id))	cJobs.DeleteJob(object.UID);
 		AIController.Sleep(1);
-		}
+		}*/
+	local mapping = AIList();
+	mapping.AddList(cJobs.UIDIndustry);
+	mapping.KeepValue(industry_id);
+	foreach (UID, _ in mapping)	cJobs.DeleteJob(UID);
 	cJobs.RawJob_Delete(industry_id);
 	cProcess.DeleteProcess(industry_id);
 }
@@ -712,3 +722,48 @@ function cJobs::CheckTownStatue()
 		INSTANCE.Sleep(1);
 		}
 	}
+
+function cJobs::GetUIDFromSubsidy(subID, onoff)
+{
+	local sourceMapping = AIList();
+	local targetMapping = AIList();
+	local cargoID = AISubsidy.GetCargoType(subID);
+	local sourceIsTown = (AISubsidy.GetSourceType(subID) == AISubsidy.SPT_TOWN);
+	local targetIsTown = (AISubsidy.GetDestinationType(subID) == AISubsidy.SPT_TOWN);
+	local sourceID = AISubsidy.GetSourceIndex(subID);
+	local targetID = AISubsidy.GetDestinationIndex(subID);
+	if (sourceIsTown)	sourceMapping.AddList(cJobs.UIDTown);
+				sourceMapping.AddList(cJobs.UIDIndustry);
+	if (targetIsTown)	targetMapping.AddList(cJobs.UIDTown);
+				targetMapping.AddList(cJobs.UIDIndustry);
+	sourceMapping.KeepValue(sourceID);
+	targetMapping.KeepValue(targetID);
+	if (sourceMapping.IsEmpty() || targetMapping.IsEmpty())	return; // cannot match
+	// ok now let's see if any jobs have both of them
+	foreach (sUID, dummy in sourceMapping)
+		{
+		foreach (tUID, _dummy in targetMapping)
+			{
+			if (sUID == tUID); // if both UID are the same, that job use the source and target we want
+				{
+				local task=cJobs.Load(sUID);
+				if (!task)	continue;
+					else	if (task.cargoID == cargoID)	{
+											task.subsidy=onoff;
+											DInfo("Setting subsidy to "+onoff+" for jobs "+task.Name,1);
+											break;
+											}
+				}
+			}
+		}
+}
+
+function cJobs::SubsidyOn(subID)
+{
+	cJobs.GetUIDFromSubsidy(subID, true);
+}
+
+function cJobs::SubsidyOff(subID)
+{
+	cJobs.GetUIDFromSubsidy(subID, false);
+}

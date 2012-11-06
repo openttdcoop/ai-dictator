@@ -97,7 +97,19 @@ if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
 	{
 	local townlist = AITownList();
 	townlist.Valuate(AIBase.RandItem);
-	DictatorAI.BuildHQ(townlist.Begin());
+	local tilelist = null;
+	tilelist = cTileTools.GetTilesAroundTown(townlist.Begin());
+	tilelist.Valuate(AIBase.RandItem);
+	foreach (tile, dummy in tilelist)
+		{
+		if (AICompany.BuildCompanyHQ(tile))
+			{
+			local name = AITown.GetName(AITile.GetClosestTown(tile));
+			DInfo("Built company headquarters near " + name,0);
+			return;
+			}
+		AIController.Sleep(1);
+		}	
 	}
 }
 

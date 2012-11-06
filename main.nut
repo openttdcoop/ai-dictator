@@ -254,7 +254,7 @@ function DictatorAI::Save()
  
 function DictatorAI::Load(version, data)
 {
-	DInfo("Loading a saved game with DictatorAI version "+version,0,"Load");
+	DInfo("Loading a saved game with DictatorAI version "+version,0);
 	if ("routes" in data) main.bank.canBuild=data.routes;
 	if ("stations" in data) main.bank.unleash_road=data.stations;
 	if ("busyroute" in data) main.builder.building_route=data.busyroute;
@@ -263,23 +263,6 @@ function DictatorAI::Load(version, data)
 	if ("virtualpass" in data)	main.bank.mincash=data.virtualpass;
 	main.bank.busyRoute=version;
 	loadedgame = true;
-}
-
-function DictatorAI::BuildHQ(centre)
-{
-	local tilelist = null;
-	tilelist = cTileTools.GetTilesAroundTown(centre);
-	tilelist.Valuate(AIBase.RandItem);
-	foreach (tile, dummy in tilelist)
-		{
-		if (AICompany.BuildCompanyHQ(tile))
-			{
-			local name = AITown.GetName(AITile.GetClosestTown(tile));
-			DInfo("Built company headquarters near " + name,0);
-			return;
-			}
-		AIController.Sleep(1);
-		}	
 }
 
 function DictatorAI::CheckCurrentSettings()

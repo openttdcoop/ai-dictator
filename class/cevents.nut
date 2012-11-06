@@ -71,13 +71,13 @@ while (AIEventController.IsEventWaiting())
 				{
 				DInfo("New engine available for preview: " + event.GetName(),0);
 				}
-		print("fix me event engine_preview"); //INSTANCE.main.carrier.CheckOneVehicleOfGroup(true);
+			INSTANCE.main.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
 			DInfo("New engine available: " + cEngine.GetName(engine),0);
-		print("fixme new engine event"); //INSTANCE.main.carrier.CheckOneVehicleOfGroup(true);
+			INSTANCE.main.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.ET_VEHICLE_CRASHED:
 			local vehicle = null;
@@ -144,6 +144,22 @@ while (AIEventController.IsEventWaiting())
 						} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);
 					}
 				}
+		break;
+		case	AIEvent.ET_SUBSIDY_OFFER_EXPIRED:
+			local action = AIEventSubsidyOfferExpired.Convert(event);
+			cJobs.SubsidyOff(action.GetSubsidyID());
+		break;
+		case	AIEvent.ET_SUBSIDY_AWARDED:
+			local action = AIEventSubsidyAwarded.Convert(event);
+			cJobs.SubsidyOff(action.GetSubsidyID());
+		break;
+		case	AIEvent.ET_SUBSIDY_EXPIRED:
+			local action = AIEventSubsidyExpired.Convert(event);
+			cJobs.SubsidyOff(action.GetSubsidyID());
+		break;
+		case	AIEvent.ET_SUBSIDY_OFFER:
+			local action = AIEventSubsidyOffer.Convert(event);
+			cJobs.SubsidyOn(action.GetSubsidyID());
 		break;
 		}
 	

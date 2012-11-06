@@ -216,7 +216,7 @@ if (vehneed==0 && AIStation.GetCargoRating(bigairportID, passengerID)<45 && tota
 // one because poor station rating
 if (vehnumber < (cCarrier.VirtualAirRoute.len() / 2))	vehneed=(cCarrier.VirtualAirRoute.len() /2) - vehnumber;
 DInfo("NETWORK: need="+vehneed,1);
-PutSign(bigairportlocation,"Network Airport Reference: "+cargowaiting);
+cDebug.PutSign(bigairportlocation,"Network Airport Reference: "+cargowaiting);
 if (vehneed > 6)	vehneed=6; // limit to 6 aircrafts add per trys
 if (vehneed > 0)
 	{
