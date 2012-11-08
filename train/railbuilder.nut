@@ -153,11 +153,6 @@ do
 			}
 		else	statile=tile;
 		if (statile == -1)	continue; // we have no solve to build a station here
-		if (istown)	
-			{
-			if (start)	cTileTools.SeduceTown(INSTANCE.main.route.sourceID);
-				else	cTileTools.SeduceTown(INSTANCE.main.route.targetID);
-			}
 		success=INSTANCE.main.builder.CreateAndBuildTrainStation(statile, dir);
 		if (!success)
 			{
