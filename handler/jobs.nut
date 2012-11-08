@@ -746,7 +746,7 @@ function cJobs::GetUIDFromSubsidy(subID, onoff)
 		{
 		foreach (tUID, _dummy in targetMapping)
 			{
-			if (sUID == tUID); // if both UID are the same, that job use the source and target we want
+			if (sUID == tUID) // if both UID are the same, that job use the source and target we want
 				{
 				local task=cJobs.Load(sUID);
 				if (!task)	continue;

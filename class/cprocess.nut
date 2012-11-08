@@ -138,7 +138,8 @@ function cProcess::UpdateScoreRating(uid=null)
 				local rate = AITown.GetRating(obj.ID, AICompany.ResolveCompanyID(AICompany.COMPANY_SELF));
 				if (rate == AITown.TOWN_RATING_NONE)	rate=AITown.TOWN_RATING_GOOD;
 				if (rate < AITown.TOWN_RATING_POOR)	rate = 0;
-				obj.ScoreRating = 0 + (100 * rate);
+				obj.ScoreRating = 0 + (80 * rate);
+print("town rate="+rate+" score="+obj.ScoreRating);
 				}
 			else	switch (INSTANCE.fairlevel)
 				{	
@@ -183,6 +184,7 @@ function cProcess::UpdateScore(uid=null)
 	obj.UpdateScoreRating();
 	if (obj.Tracking)	obj.UpdateScoreProduction();
 	obj.Score = obj.ScoreRating * obj.ScoreProduction;
+print("score ="+obj.Score+" rating="+obj.ScoreRating+" prod="+obj.ScoreProduction);
 	if (obj.Score < 0)	obj.Score=0;
 }
 
