@@ -137,7 +137,8 @@ function cProcess::UpdateScoreRating(uid=null)
 	if (obj.IsTown)	{
 				local rate = AITown.GetRating(obj.ID, AICompany.ResolveCompanyID(AICompany.COMPANY_SELF));
 				if (rate == AITown.TOWN_RATING_NONE)	rate=AITown.TOWN_RATING_GOOD;
-				obj.ScoreRating = 500 - (100 * rate);
+				if (rate < AITown.TOWN_RATING_POOR)	rate = 0;
+				obj.ScoreRating = 0 + (100 * rate);
 				}
 			else	switch (INSTANCE.fairlevel)
 				{	

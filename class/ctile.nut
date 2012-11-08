@@ -632,106 +632,64 @@ DInfo("Solver has search "+terratrys+" time",3);
 return Solve;
 }
 
-function cTileTools::TownBriber(townID, needRating)
+function cTileTools::TownBriber(townID)
 // Bribe a town upto getting the neededRating
 {
-local good=true;
-local testing=null;
-local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
-if (curRating >= needRating || curRating == AITown.TOWN_RATING_NONE)	return true;
-local counter=0;
-while (good && curRating < needRating && counter < 1)
-	{
-	if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))	good=AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
-	DInfo("Offering money to "+AITown.GetName(townID)+" = "+good+" nowrate="+curRating+" targetrate="+needRating,2);
-	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
-	counter++;
-	INSTANCE.Sleep(70);
-	}
-return (curRating >= needRating);	
+	if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BRIBE))
+		{
+		DInfo("Offering money to "+AITown.GetName(townID),1);
+		return AITown.PerformTownAction(townID, AITown.TOWN_ACTION_BRIBE);
+		}
+	else	return false;
 }
 
-function cTileTools::SeduceTown(townID, needRating)
-// Fill a tile with trees
+function cTileTools::PlantsTreeAtTown(townID)
+// Plants tree near townID to improve rating
+// Return true if we found any free tiles to work on
+{
+	local towntiles = cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID), 200);
+	towntiles.Valuate(AITile.IsBuildable)
+	towntiles.KeepValue(1);
+	towntiles.Valuate(AITile.IsWithinTownInfluence, townID);
+	towntiles.KeepValue(1);
+	towntiles.Valuate(AITile.HasTreeOnTile);
+	towntiles.KeepValue(0);
+	foreach (tiles, _ in towntiles)	AITile.PlantTree(tiles);
+	return (!towntiles.IsEmpty());
+}
+
+function cTileTools::SeduceTown(townID)
+// Try seduce a town
 // needRating : rating we must reach
 // return true if we reach needRating level with that town
 {
-local towntiles=cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID),200);
-local curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
-
-local testtiles=AITileList();
-testtiles.AddList(towntiles);
-testtiles.Valuate(AITile.IsWithinTownInfluence, townID);
-testtiles.KeepValue(1);
-local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-foreach (tiles, dummy in testtiles)
-	{
-	testtiles.SetValue(tiles,0);
-	if (AITile.GetClosestTown(tiles)==townID)	testtiles.SetValue(tiles,1);
-//	if (AITile.IsWithinTownInfluence(tiles, townID))	testtiles.SetValue(tiles,2);
-	//if (AITile.GetTownAuthority(tiles)==townID)	testtiles.SetValue(tiles,3);
-	if (!AITile.IsBuildable(tiles))	testtiles.SetValue(tiles,0);
-	}
-testtiles.RemoveValue(0);
-print("test size="+testtiles.Count());
-cDebug.showLogic(testtiles);
-INSTANCE.NeedDelay(200);
-
-towntiles.Valuate(AITile.IsWithinTownInfluence,townID);
-towntiles.KeepValue(1);
-towntiles.Valuate(AITile.IsBuildable);
-towntiles.KeepValue(1);
-local savetiles=AIList();
-savetiles.AddList(towntiles);
-local good=true;
-local money=AIAccounting();
-savetiles.Valuate(AITile.HasTreeOnTile);
-savetiles.KeepValue(0);
-local town_name=AITown.GetName(townID);
-// 1 -> 2 = 293 trees
-// 2 -> 3 = 417 trees
-DInfo("Town: "+town_name+" rating: "+curRating+" free tiles="+savetiles.Count(),2);
-local needclean=0;
-if (curRating >= needRating)	return true;
-if (savetiles.Count() < 140)	needclean=140-savetiles.Count();
-if (curRating == AITown.TOWN_RATING_APPALLING && needclean > 0)
-	{ // we need clean some area to get space for our trees
-	local treeon=AIList();
-	treeon.AddList(towntiles);
-	treeon.Valuate(AITile.HasTreeOnTile);
-	treeon.KeepValue(1);
-	treeon.KeepTop(needclean);
-	foreach (tile, dummy in treeon) AITile.DemolishTile(tile); // if we lack money to remove the tree we will fail anyway
-	}
-if (cTileTools.TownBriber(townID, needRating))	return true;
-towntiles.Valuate(AITile.HasTreeOnTile);
-towntiles.KeepValue(0);
-towntiles.Valuate(AITile.GetDistanceManhattanToTile, AITown.GetLocation(townID));
-towntiles.Sort(AIList.SORT_BY_VALUE, true);
-towntiles.KeepTop(150); // limit to 150 tiles per try
-local totalTree=0;
-local totalspent=0;
-local tiledone=0;
-foreach (tile, dummy in towntiles)
-	{
-	if (curRating >= needRating || curRating == AITown.TOWN_RATING_NONE)	break;
-	tiledone++;
+	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+	local curRating = AITown.GetRating(townID, AICompany.COMPANY_SELF);
+	local town_name=AITown.GetName(townID);
+	DInfo("Town: "+town_name+" rating: "+curRating,2);
+	if (curRating == AITown.TOWN_RATING_NONE)
+		{
+		DInfo("Improving town rating at "+town_name+" as they don't know us yet",1);
+		cTileTools.PlantsTreeAtTown(townID);
+		return true;
+		}
+	// plants tree to improve our rating to a town that doesn't know us yet
+	if (!cTileTools.PlantsTreeAtTown(townID))	DInfo("Cannot seduce "+town_name+" anymore with tree.",1);
+	if (AITown.GetRating(townID, weare) >= AITown.TOWN_RATING_POOR)
+			{
+			DInfo("Could get costy for no result to continue seducing "+town_name+", giving up.",1);
+			return false;
+			}
+	local 	keeploop=true;
+	DInfo(	"Trying bribing "+town_name+" as much as we can",1);
 	do	{
-		good=AITile.PlantTree(tile);
-		if (good)	{ totalTree++; totalspent+=AITile.GetBuildCost(AITile.BT_BUILD_TREES); }
-		INSTANCE.main.bank.RaiseFundsBy(1000);
-//		DInfo(town_name+" "+AIError.GetLastErrorString()+" newrate: "+AITown.GetRating(townID, AICompany.COMPANY_SELF)+" baseprice: "+AITile.GetBuildCost(AITile.BT_BUILD_TREES)+" totaltrees: "+totalTree+" money="+totalspent,2,"cTileTools::SeduceTown");
-		//AIController.Sleep(1);
-		} while (good && (AICompany.GetBankBalance(AICompany.COMPANY_SELF)>5000));
-	AIController.Sleep(2);
-	curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);	
-	}
-local endop="Success !";
-curRating=AITown.GetRating(townID, AICompany.COMPANY_SELF);
-if (!good && curRating < needRating)	endop="Failure.";
-						else	good=true;
-DInfo(endop+" "+town_name+" Rate now:"+curRating+" Target Rate:"+needRating+" Funds: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)+" Spend: "+money.GetCosts()+" size: "+towntiles.Count()+" needtree:"+totalTree,1);
-return good;
+		keeploop=(AITown.GetRating(townID, weare) < AITown.TOWN_RATING_POOR);
+		if (keeploop)	keeploop=cTilesTools.TownBriber(townID);
+		if (!keeploop)	DInfo("Result ="+keeploop,2);
+		::AIController.Sleep(10);
+		} while (keeploop);
+	// bad bribe will put us at POOR on failure, goog to keep bribing until we fail then
+	return (AITown.GetRating(townID, weare) >= AITown.TOWN_RATING_POOR);
 }
 
 function cTileTools::IsRemovable(tile)

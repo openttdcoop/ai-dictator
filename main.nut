@@ -100,7 +100,7 @@ function DictatorAI::Start()
 		main.bank.SaveMoney();
 		cRoute.DiscoverWorldTiles();
 		cBridge.BridgeDiscovery();
-		LoadingGame();
+		cLoader.LoadingGame();
 		main.jobs.PopulateJobs();
 		local stationList=AIList();	// check for no more working station if cargo disapears...
 		stationList.AddList(AIStationList(AIStation.STATION_ANY));

@@ -245,8 +245,10 @@ function cRoute::CreateNewRoute(UID)
 	this.UID = jobs.UID;
 	this.sourceID = jobs.sourceObject.ID;
 	this.source_istown = jobs.sourceObject.IsTown;
+	if (this.source_istown)	cTileTools.SeduceTown(this.sourceID);
 	this.targetID = jobs.targetObject.ID;
 	this.target_istown = jobs.targetObject.IsTown;
+	if (this.target_istown)	cTileTools.SeduceTown(this.targetID);
 	this.vehicle_count = 0;
 	this.route_type	= jobs.roadType;
 	this.cargoID = jobs.cargoID;

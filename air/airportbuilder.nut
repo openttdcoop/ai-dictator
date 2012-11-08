@@ -48,8 +48,8 @@ noiselevel=AITown.GetAllowedNoise(townid);
 local ourloc=0;
 local ournoise=AIAirport.GetNoiseLevelIncrease(station.locations.Begin(),airporttype);
 DInfo("Town rating = "+townrating+" noiselevel="+noiselevel,2);
-cTileTools.SeduceTown(townid,AITown.TOWN_RATING_GOOD);
-townrating=AITown.GetRating(townid,AICompany.COMPANY_SELF);
+cTileTools.SeduceTown(townid);
+townrating=AITown.GetRating(townid, AICompany.COMPANY_SELF);
 if (townrating < AITown.TOWN_RATING_GOOD)
 	{ DInfo("Cannot upgrade airport, too dangerous with our current rating with this town.",1); station.lastUpdate+=70; return false; }
 local cost=AIAirport.GetPrice(airporttype);

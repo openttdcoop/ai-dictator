@@ -62,7 +62,7 @@ function cLoader::ConvertOldSave()
 function cLoader::LoadOldSave()
 // loading a savegame with version < 152
 {
-	OldSaveWarn();
+	cLoader.OldSaveWarn();
 	local all_stations=INSTANCE.main.bank.unleash_road;
 	DInfo("Restoring stations",0);
 	local iter=0;
@@ -146,7 +146,7 @@ function cLoader::LoadOldSave()
 
 function cLoader::Load154()
 {
-	OldSaveWarn();
+	cLoader.OldSaveWarn();
 	local all_stations=INSTANCE.main.bank.unleash_road;
 	local revision=false;
 	if (INSTANCE.main.bank.busyRoute == 155)	revision=true;
@@ -266,7 +266,7 @@ function cLoader::Load154()
 	ConvertOldSave();
 }
 
-function LoadSaveGame()
+function cLoader::LoadSaveGame()
 // The latest load function
 	{
 	local all_stations=INSTANCE.main.bank.unleash_road;
@@ -429,13 +429,13 @@ function LoadSaveGame()
 	cRoute.RouteRebuildIndex();
 	}
 
-function LoadingGame()
+function cLoader::LoadingGame()
 {
 	try
 	{
-	if (INSTANCE.main.bank.busyRoute < 152)	LoadOldSave();
-		else	if (INSTANCE.main.bank.busyRoute < 156)	Load154();
-			else	LoadSaveGame();
+	if (INSTANCE.main.bank.busyRoute < 152)	cLoader.LoadOldSave();
+		else	if (INSTANCE.main.bank.busyRoute < 156)	cLoader.Load154();
+			else	cLoader.LoadSaveGame();
 	} catch (e)
 		{
 		AILog.Error("Cannot load that savegame !");
@@ -445,7 +445,7 @@ function LoadingGame()
 		grouplist.RemoveItem(cRoute.VirtualAirGroup[1]);
 		foreach (grp, dummy in grouplist)	AIGroup.DeleteGroup(grp);
 		local vehlist=AIVehicleList();
-		foreach (veh, dummy in vehlist)	{ cCarrier.VehicleOrdersReset(veh); INSTANCE.main.vehicle.VehicleMaintenance_Orders(veh); }
+		foreach (veh, dummy in vehlist)	{ cCarrier.VehicleOrdersReset(veh); INSTANCE.main.carrier.VehicleMaintenance_Orders(veh); }
 		}
 	OneWeek=0;
 	OneMonth=0;
