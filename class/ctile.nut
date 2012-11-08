@@ -684,7 +684,7 @@ function cTileTools::SeduceTown(townID)
 	DInfo(	"Trying bribing "+town_name+" as much as we can",1);
 	do	{
 		keeploop=(AITown.GetRating(townID, weare) < AITown.TOWN_RATING_POOR);
-		if (keeploop)	keeploop=cTilesTools.TownBriber(townID);
+		if (keeploop)	keeploop=cTileTools.TownBriber(townID);
 		if (!keeploop)	DInfo("Result ="+keeploop,2);
 		::AIController.Sleep(10);
 		} while (keeploop);
