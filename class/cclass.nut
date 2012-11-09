@@ -116,21 +116,21 @@ function cMain::Init()
 
 function cMain::CheckAccount()
 {
-local ourLoan = AICompany.GetLoanAmount();
-local maxLoan = AICompany.GetMaxLoanAmount();
-local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-local goodcash = bank.mincash * cBanker.GetInflationRate();
-if (goodcash < bank.mincash) goodcash = bank.mincash;
-if (ourLoan == 0 && cash >= bank.mincash)	bank.unleash_road=true;
-if (cash < goodcash)	{ bank.canBuild=false; }
-if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
-if (maxLoan > 2000000 && ourLoan > 0 && main.route.RouteIndexer.Count() > 6)
+	local ourLoan = AICompany.GetLoanAmount();
+	local maxLoan = AICompany.GetMaxLoanAmount();
+	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	local goodcash = bank.mincash * cBanker.GetInflationRate();
+	if (goodcash < bank.mincash) goodcash = bank.mincash;
+	if (ourLoan == 0 && cash >= bank.mincash)	bank.unleash_road=true;
+	if (cash < goodcash)	{ bank.canBuild=false; }
+	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
+	if (maxLoan > 2000000 && ourLoan > 0 && main.route.RouteIndexer.Count() > 6)
 		{ DInfo("Trying to repay loan",1); bank.canBuild=false; } // wait to repay loan
-local veh=AIVehicleList();
-if (bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle",1); bank.canBuild=false; }
-if (INSTANCE.builddelay)	{ DInfo("Delaying build: we lack a bit of funds for construction : "+INSTANCE.buildTimer,1); bank.canBuild=false; }
-if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade",1); bank.canBuild=false; }
-local veh=AIVehicleList();
-if (veh.IsEmpty())	{ DInfo("Forcing build: We have 0 vehicle running !"); bank.canBuild=true; } // we have 0 vehicles force a build
-DInfo("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehnextprice="+carrier.vehnextprice+" jobSize="+cJobs.jobIndexer.Count(),1);
+	local veh=AIVehicleList();
+	if (bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle",1); bank.canBuild=false; }
+	if (INSTANCE.builddelay)	{ DInfo("Delaying build: we lack a bit of funds for construction : "+INSTANCE.buildTimer,1); bank.canBuild=false; }
+	if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade",1); bank.canBuild=false; }
+	local veh=AIVehicleList();
+	if (veh.IsEmpty())	{ DInfo("Forcing build: We have 0 vehicle running !"); bank.canBuild=true; } // we have 0 vehicles force a build
+	DInfo("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehnextprice="+carrier.vehnextprice+" RemainJobs="+cJobs.jobDoable.Count(),1);
 }
