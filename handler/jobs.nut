@@ -68,10 +68,6 @@ function cJobs::Save()
 			DInfo("Adding job #"+this.UID+" ("+parentID+") to job database: "+jobinfo,2);
 			database[this.UID] <- this;
 			cJobs.jobIndexer.AddItem(this.UID, 0);
-			if (this.sourceObject.IsTown)	cJobs.UIDTown.AddItem(this.UID, this.sourceObject.ID);
-							else	cJobs.UIDIndustry.AddItem(this.UID, this.sourceObject.ID);
-			if (this.targetObject.IsTown)	cJobs.UIDTown.AddItem(this.UID, this.targetObject.ID);
-							else	cJobs.UIDIndustry.AddItem(this.UID, this.targetObject.ID);
 			}
 	}
 
@@ -107,24 +103,21 @@ function cJobs::GetUID()
 function cJobs::RankThisJob()
 // rank the current job
 	{
+	local srcTown = this.sourceObject.IsTown;
+	local dstTown = this.targetObject.IsTown;
 	local valuerank = this.sourceObject.ScoreProduction * this.cargoValue;
+	if (srcTown && dstTown)	valuerank= ((this.sourceObject.ScoreProduction + this.targetObject.ScoreProduction) / 2) * this.cargoValue;
 	if (this.subsidy)
 		{
 		if (AIGameSettings.IsValid("subsidy_multiplier"))	valuerank=valuerank * AIGameSettings.GetValue("subsidy_multiplier");
 										else	valuerank=valuerank * 2;
 		}
 	// grant a bonus to subsidy
-	local srcTown = this.sourceObject.IsTown;
-	local dstTown = this.targetObject.IsTown;
 	local stationrank = this.sourceObject.ScoreRating;
 	// use rating of the source: industry or town
 	if (dstTown)	stationrank = this.targetObject.ScoreRating;
 	// use the rating of target if its a town
-	if (srcTown && dstTown)
-		{
-		if (this.sourceObject.ScoreRating < this.targetObject.ScoreRating)	stationrank = this.targetObject.ScoreRating;
-														stationrank = this.sourceObject.ScoreRating;
-		}
+	if (srcTown && dstTown)	stationrank = min(this.sourceObject.ScoreRating, this.targetObject.ScoreRating);
 	// take the poorest rank out of the two towns
 	if (dstTown && cJobs.targetTown.HasItem(this.targetObject.ID) && (this.roadType==AIVehicle.VT_AIR || this.roadType==AIVehicle.VT_ROAD) && (this.cargoID == cCargo.GetPassengerCargo() || this.cargoID == cCargo.GetMailCargo()))
 		// passenger or mail transport by road or aircraft to that target already
@@ -140,6 +133,9 @@ function cJobs::RankThisJob()
 		}
 	if (valuerank < 1)	valuerank=1;
 	this.ranking = stationrank * valuerank;
+
+//print(this.Name+" srcstationrk="+this.sourceObject.ScoreRating+" dststationrk="+this.targetObject.ScoreRating+" srcprod="+this.sourceObject.ScoreProduction+" dstprod="+this.targetObject.ScoreProduction);
+//print(this.Name+" rank="+this.ranking+" valuerk="+valuerank+" stationrank="+stationrank);
 	}
 
 function cJobs::RefreshValue(jobID, updateCost=false)
@@ -174,26 +170,9 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	::AIController.Sleep(1);
 	// moneyGains, ranking & cargoAmount
 	myjob.sourceObject.UpdateScore();
-	if (myjob.sourceObject.IsTown)
-		{
-		myjob.cargoAmount=myjob.sourceObject.CargoProduce.GetValue(myjob.cargoID);
-		if (myjob.targetObject.IsTown)
-			{
-			myjob.targetObject.UpdateScore();
-			local average=myjob.targetObject.CargoProduce.GetValue(myjob.cargoID);
-			if (average < 60 || myjob.cargoAmount < 60)
-					{ // poor towns makes poor routes, this will add another malus because of that poor town
-					if (average < myjob.cargoAmount)	myjob.cargoAmount=average;
-					}
-				else	myjob.cargoAmount=(myjob.cargoAmount+average) / 2 ; // average towns pop, help find best route
-			}
-		}
-	else	{ // industry
-		myjob.cargoAmount=myjob.sourceObject.CargoProduce.GetValue(myjob.cargoID);
-		}
+	myjob.targetObject.UpdateScore();
 	if (updateCost)	myjob.EstimateCost();
-	if (myjob.cargoAmount < 1)	myjob.ranking = 0;
-					else	myjob.RankThisJob();
+	myjob.RankThisJob();
 	::AIController.Sleep(1);
 	}
 
@@ -587,7 +566,7 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	newjob.cargoID = cargo_id;
 	newjob.GetUID();
 	newjob.Save();
-	INSTANCE.main.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount, foule values, must be call after GetUID
+	INSTANCE.main.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount... must be call after GetUID
 	}
 
 function cJobs::AddNewIndustryOrTown(industryID, istown)
@@ -629,16 +608,11 @@ function cJobs::DeleteJob(uid)
 function cJobs::DeleteIndustry(industry_id)
 // Remove an industry and all jobs using it
 {
-
-/*	foreach (object in cJobs.database)
+	foreach (object in cJobs.database)
 		{
 		if ((!object.sourceObject.IsTown && object.sourceObject.ID == industry_id) || (!object.targetObject.IsTown && object.targetObject.ID == industry_id))	cJobs.DeleteJob(object.UID);
 		AIController.Sleep(1);
-		}*/
-	local mapping = AIList();
-	mapping.AddList(cJobs.UIDIndustry);
-	mapping.KeepValue(industry_id);
-	foreach (UID, _ in mapping)	cJobs.DeleteJob(UID);
+		}
 	cJobs.RawJob_Delete(industry_id);
 	cProcess.DeleteProcess(industry_id);
 }
@@ -726,36 +700,22 @@ function cJobs::CheckTownStatue()
 	}
 
 function cJobs::GetUIDFromSubsidy(subID, onoff)
+// set to onoff the state of subsidy in a job matching the subID subsidy
 {
-	local sourceMapping = AIList();
-	local targetMapping = AIList();
+	if (!AISubsidy.IsValidSubsidy(subID))	return;
 	local cargoID = AISubsidy.GetCargoType(subID);
 	local sourceIsTown = (AISubsidy.GetSourceType(subID) == AISubsidy.SPT_TOWN);
 	local targetIsTown = (AISubsidy.GetDestinationType(subID) == AISubsidy.SPT_TOWN);
 	local sourceID = AISubsidy.GetSourceIndex(subID);
 	local targetID = AISubsidy.GetDestinationIndex(subID);
-	if (sourceIsTown)	sourceMapping.AddList(cJobs.UIDTown);
-				sourceMapping.AddList(cJobs.UIDIndustry);
-	if (targetIsTown)	targetMapping.AddList(cJobs.UIDTown);
-				targetMapping.AddList(cJobs.UIDIndustry);
-	sourceMapping.KeepValue(sourceID);
-	targetMapping.KeepValue(targetID);
-	if (sourceMapping.IsEmpty() || targetMapping.IsEmpty())	return; // cannot match
-	// ok now let's see if any jobs have both of them
-	foreach (sUID, dummy in sourceMapping)
+	foreach (UID, _dummy in cJobs.jobDoable)
 		{
-		foreach (tUID, _dummy in targetMapping)
-			{
-			if (sUID == tUID) // if both UID are the same, that job use the source and target we want
-				{
-				local task=cJobs.Load(sUID);
-				if (!task)	continue;
-					else	if (task.cargoID == cargoID)	{
-											task.subsidy=onoff;
-											DInfo("Setting subsidy to "+onoff+" for jobs "+task.Name,1);
-											break;
-											}
-				}
+		local j = cJobs.Load(UID);
+		if (j.cargoID == cargoID && j.sourceObject.IsTown == sourceIsTown && j.targetObject.IsTown == targetIsTown && j.sourceObject.ID == sourceID && j.targetObject.ID == targetID)
+			{ 
+			j.subsidy=onoff;
+			DInfo("Setting subsidy to "+onoff+" for jobs "+j.Name,1);
+			return;
 			}
 		}
 }

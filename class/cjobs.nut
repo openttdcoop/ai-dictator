@@ -29,8 +29,6 @@ static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
 static	badJobs=AIList();		// List of jobs we weren't able to do
 static	rawJobs=AIList();		// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
 static	targetTown = AIList();	// List of towns we use as target to drop/take passenger/mail by bus & aircraft
-static	UIDTown = AIList();	// map jobsUID with townID (item jobs UID, value=townID): to find what town is use by what job
-static	UIDIndustry= AIList();	// map jobsUID with industryID (item jobs UID, value=industryID): to find what town is use by what job
 
 
 static	function GetJobObject(UID)
@@ -53,7 +51,6 @@ static	function GetJobObject(UID)
 	moneyGains		= null;	// money we should grab from doing the job
 	isdoable		= null;	// true if we can actually do that job (if isUse -> false)
 	ranking		= null;	// our ranking system
-	foule			= null;	// number of opponent/stations near it
 	subsidy		= null;	// the subsity id aiming that job
 
 	constructor()
@@ -75,7 +72,6 @@ static	function GetJobObject(UID)
 		moneyGains		= 0;
 		isdoable		= true;
 		ranking		= 0;
-		foule			= 0;
 		}
 }
 

@@ -34,7 +34,7 @@ static	function GetProcessObject(UID)
 	CargoAccept		= null;	// item=cargoID
 	CargoProduce	= null;	// item=cargoID, value=amount produce
 	IsTown		= null;	// True if it's a town
-	Tracking		= null;	// True to track cargo infos about that industry
+	UpdateDate		= null;	// Date of last refresh
 	ScoreRating		= null;	// Score by rating for towns only
 	ScoreProduction	= null;	// Score by production
 	Score			= null;	// Total score
@@ -94,12 +94,12 @@ function cProcess::AddNewProcess(_id, _istown)
 		p.Location=AIIndustry.GetLocation(_id);
 		}
 	p.Name+="("+p.ID+")";
-	p.Tracking=true;
 	p.CargoProduce=AIList();
 	p.CargoAccept=AIList();
 	p.ScoreRating=1;
 	p.ScoreProduction=0;
 	p.CargoCheckSupply();
+	p.UpdateDate=null;
 	p.UpdateScore();
 	p.Save();
 }
@@ -139,7 +139,6 @@ function cProcess::UpdateScoreRating(uid=null)
 				if (rate == AITown.TOWN_RATING_NONE)	rate=AITown.TOWN_RATING_GOOD;
 				if (rate < AITown.TOWN_RATING_POOR)	rate = 0;
 				obj.ScoreRating = 0 + (80 * rate);
-print("town rate="+rate+" score="+obj.ScoreRating);
 				}
 			else	switch (INSTANCE.fairlevel)
 				{	
@@ -181,11 +180,13 @@ function cProcess::UpdateScore(uid=null)
 {
 	local obj=cProcess.Load(uid);
 	if (!obj)	return false;
+	if (obj.UpdateDate != null && AIDate.GetCurrentDate() - obj.UpdateDate < 7)	{ DInfo("Fresh score for "+obj.Name,2); return false; }
+	DInfo("Update score for "+obj.Name,2);
 	obj.UpdateScoreRating();
-	if (obj.Tracking)	obj.UpdateScoreProduction();
+	obj.UpdateScoreProduction();
 	obj.Score = obj.ScoreRating * obj.ScoreProduction;
-print("score ="+obj.Score+" rating="+obj.ScoreRating+" prod="+obj.ScoreProduction);
 	if (obj.Score < 0)	obj.Score=0;
+	obj.UpdateDate = AIDate.GetCurrentDate();
 }
 
 function cProcess::CargoCheckSupply()

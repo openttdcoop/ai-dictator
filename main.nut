@@ -73,7 +73,6 @@ class DictatorAI extends AIController
    constructor()
    	{
 	::INSTANCE <- this;
-	main = cMain();
 	minRank = 5000;
 	fairlevel = 0;
 	debug = false;
@@ -85,6 +84,7 @@ class DictatorAI extends AIController
 	loadedgame = false;
 	buildTimer=0;
 	safeStart=0;
+	main = cMain();
 	}
  
  }
@@ -151,6 +151,7 @@ function DictatorAI::Start()
 						cMisc.checkHQ();
 						}
 					}
+				else main.builder.DumpTopJobs();
 				}
 		main.bank.CashFlow();
 		main.event.HandleEvents();

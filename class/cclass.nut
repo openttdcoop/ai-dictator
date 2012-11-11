@@ -91,7 +91,6 @@ class cMain extends cClass
 		bank = cBanker();
 		builder = cBuilder();
 		carrier = cCarrier();
-		cEngine.EngineCacheInit();
 		jobs = cJobs();
 		route = cRoute();
 		bridge = cBridge();
@@ -102,6 +101,7 @@ class cMain extends cClass
 
 function cMain::Init()
 {
+	cEngine.EngineCacheInit();
 	SCP.Init();
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
 	builder.SetRailType();
@@ -124,13 +124,18 @@ function cMain::CheckAccount()
 	if (ourLoan == 0 && cash >= bank.mincash)	bank.unleash_road=true;
 	if (cash < goodcash)	{ bank.canBuild=false; }
 	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
-	if (maxLoan > 2000000 && ourLoan > 0 && main.route.RouteIndexer.Count() > 6)
+	if (maxLoan > 2000000 && ourLoan > 0 && route.RouteIndexer.Count() > 6)
 		{ DInfo("Trying to repay loan",1); bank.canBuild=false; } // wait to repay loan
 	local veh=AIVehicleList();
 	if (bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle",1); bank.canBuild=false; }
 	if (INSTANCE.builddelay)	{ DInfo("Delaying build: we lack a bit of funds for construction : "+INSTANCE.buildTimer,1); bank.canBuild=false; }
 	if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade",1); bank.canBuild=false; }
 	local veh=AIVehicleList();
-	if (veh.IsEmpty())	{ DInfo("Forcing build: We have 0 vehicle running !"); bank.canBuild=true; } // we have 0 vehicles force a build
+	if (veh.IsEmpty())
+		{
+		DInfo("Forcing build: We have 0 vehicle running !");
+		bank.canBuild=true;
+		if (cJobs.rawJobs.IsEmpty())	{ DInfo("Hard times going on, unleashing routes"); bank.unleash_road=true; }
+		} // we have 0 vehicles force a build
 	DInfo("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehnextprice="+carrier.vehnextprice+" RemainJobs="+cJobs.jobDoable.Count(),1);
 }

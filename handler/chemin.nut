@@ -356,7 +356,7 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			if (vehneed < 2)	vehneed=2;
 			}
 		else	vehneed=1; // everyones else is block to 1 vehicle
-		if (vehneed > 4)	vehneed=4; // max 4 at a time
+		if (vehneed > 8)	vehneed=8; // max 8 at a time
 		}
 	vehneed=INSTANCE.main.carrier.CanAddNewVehicle(uid, true, vehneed);
 	DInfo("CanAddNewVehicle for source station says "+vehneed,2);
