@@ -608,10 +608,12 @@ function cJobs::DeleteJob(uid)
 function cJobs::DeleteIndustry(industry_id)
 // Remove an industry and all jobs using it
 {
+	local counter=0;
 	foreach (object in cJobs.database)
 		{
 		if ((!object.sourceObject.IsTown && object.sourceObject.ID == industry_id) || (!object.targetObject.IsTown && object.targetObject.ID == industry_id))	cJobs.DeleteJob(object.UID);
-		AIController.Sleep(1);
+		if (counter > 200)	{ counter=0; AIController.Sleep(1); }
+					else	counter++;
 		}
 	cJobs.RawJob_Delete(industry_id);
 	cProcess.DeleteProcess(industry_id);

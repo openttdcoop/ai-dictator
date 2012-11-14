@@ -117,6 +117,7 @@ if (!cTileTools.SeduceTown(AITile.GetClosestTown(tile)))
 	DInfo("Town doesn't like us...",1);
 	cTileTools.terraformCost.AddItem(999995,1); // tell rating is poor
 	}
+print("Cost for airport = "+AIAirport.GetPrice(airporttype));
 INSTANCE.main.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype));
 essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
 if (essai)	DInfo("-> Built an airport at "+tile,1);

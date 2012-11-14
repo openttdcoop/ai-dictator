@@ -643,7 +643,7 @@ function cTileTools::TownBriber(townID)
 	else	return false;
 }
 
-function cTileTools::PlantsTreeAtTown(townID)
+function cTileTools::PlantsTreeAtTown(townID, makeplace=false)
 // Plants tree near townID to improve rating
 // Return true if we found any free tiles to work on
 {
@@ -653,6 +653,12 @@ function cTileTools::PlantsTreeAtTown(townID)
 	towntiles.Valuate(AITile.IsWithinTownInfluence, townID);
 	towntiles.KeepValue(1);
 	towntiles.Valuate(AITile.HasTreeOnTile);
+	if (makeplace)
+		{
+		towntiles.KeepValue(1);
+		foreach (tiles, _ in towntiles)	if (!AITile.DemolishTile(tiles))	return false;
+		return true;
+		}
 	towntiles.KeepValue(0);
 	foreach (tiles, _ in towntiles)	AITile.PlantTree(tiles);
 	return (!towntiles.IsEmpty());
@@ -667,20 +673,17 @@ function cTileTools::SeduceTown(townID)
 	local curRating = AITown.GetRating(townID, AICompany.COMPANY_SELF);
 	local town_name=AITown.GetName(townID);
 	DInfo("Town: "+town_name+" rating: "+curRating,2);
-	if (curRating == AITown.TOWN_RATING_NONE)
-		{
-		DInfo("Improving town rating at "+town_name+" as they don't know us yet",1);
-		cTileTools.PlantsTreeAtTown(townID);
-		return true;
-		}
+	if (curRating == AITown.TOWN_RATING_NONE)	curRating = AITown.TOWN_RATING_GOOD;
 	// plants tree to improve our rating to a town that doesn't know us yet
-	if (!cTileTools.PlantsTreeAtTown(townID))	DInfo("Cannot seduce "+town_name+" anymore with tree.",1);
-	if (AITown.GetRating(townID, weare) >= AITown.TOWN_RATING_POOR)
+	if (curRating >= AITown.TOWN_RATING_POOR)
 			{
+
 			DInfo("Could get costy for no result to continue seducing "+town_name+", giving up.",1);
 			return false;
 			}
 	local 	keeploop=true;
+	if (curRating == AITown.TOWN_RATING_APPALLING)	cTilesTools.PlantsTreeAtTown(townID, true);
+	// clear any trees place to rebuild them later
 	DInfo(	"Trying bribing "+town_name+" as much as we can",1);
 	do	{
 		keeploop=(AITown.GetRating(townID, weare) < AITown.TOWN_RATING_POOR);
@@ -689,6 +692,7 @@ function cTileTools::SeduceTown(townID)
 		::AIController.Sleep(10);
 		} while (keeploop);
 	// bad bribe will put us at POOR on failure, goog to keep bribing until we fail then
+	if (!cTileTools.PlantsTreeAtTown(townID))	DInfo("Cannot seduce "+town_name+" anymore with tree.",1);
 	return (AITown.GetRating(townID, weare) >= AITown.TOWN_RATING_POOR);
 }
 

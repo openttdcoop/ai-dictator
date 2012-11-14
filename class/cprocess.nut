@@ -38,6 +38,7 @@ static	function GetProcessObject(UID)
 	ScoreRating		= null;	// Score by rating for towns only
 	ScoreProduction	= null;	// Score by production
 	Score			= null;	// Total score
+	FailureDate		= null;	// Last date we have building a station and it has fail
 
 
 	constructor()
@@ -101,6 +102,7 @@ function cProcess::AddNewProcess(_id, _istown)
 	p.CargoCheckSupply();
 	p.UpdateDate=null;
 	p.UpdateScore();
+	p.FailureDate = null;
 	p.Save();
 }
 
@@ -186,7 +188,22 @@ function cProcess::UpdateScore(uid=null)
 	obj.UpdateScoreProduction();
 	obj.Score = obj.ScoreRating * obj.ScoreProduction;
 	if (obj.Score < 0)	obj.Score=0;
-	obj.UpdateDate = AIDate.GetCurrentDate();
+	local now = AIDate.GetCurrentDate();
+	obj.UpdateDate = now;
+	if (obj.FailureDate != null)
+		{
+		obj.Score = 0;
+		if (now - obj.FailureDate > 365)	obj.FailureDate=null;
+		}
+}
+
+function cProcess::ZeroProcess()
+// Set the process as bad
+{
+	this.FailureDate = AIDate.GetCurrentDate();
+	this.UpdateDate = null;
+	this.ScoreRating = 0;
+	this.Score = 0;
 }
 
 function cProcess::CargoCheckSupply()

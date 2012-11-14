@@ -367,6 +367,13 @@ function cBuilder::TryBuildThatRoute()
 				{
 				if (INSTANCE.main.route.route_type == RouteType.RAIL)	INSTANCE.main.builder.SetRailType(buildWithRailType);
 				success=INSTANCE.main.builder.BuildStation(true);
+				if (!success && INSTANCE.main.builder.CriticalError)
+					{
+					local id = cProcess.GetUID(INSTANCE.main.route.sourceID, INSTANCE.main.route.source_istown);
+					local p = cProcess.Load(id);
+					if (!p)	{}
+						else	p.ZeroProcess();
+					}
 				}
 			else	{
 				success=true;
@@ -395,6 +402,13 @@ function cBuilder::TryBuildThatRoute()
 					INSTANCE.main.builder.SetRailType(buildWithRailType);
 					}
 				success=INSTANCE.main.builder.BuildStation(false);
+				if (!success && INSTANCE.main.builder.CriticalError)
+					{
+					local id = cProcess.GetUID(INSTANCE.main.route.targetID, INSTANCE.main.route.target_istown);
+					local p = cProcess.Load(id);
+					if (!p)	{}
+						else	p.ZeroProcess();
+					}
 				}
 			else	{
 				success=true;

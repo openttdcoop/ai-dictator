@@ -358,10 +358,13 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 		else	vehneed=1; // everyones else is block to 1 vehicle
 		if (vehneed > 8)	vehneed=8; // max 8 at a time
 		}
-	vehneed=INSTANCE.main.carrier.CanAddNewVehicle(uid, true, vehneed);
-	DInfo("CanAddNewVehicle for source station says "+vehneed,2);
-	vehneed=INSTANCE.main.carrier.CanAddNewVehicle(uid, false, vehneed);
-	DInfo("CanAddNewVehicle for destination station says "+vehneed,2);
+	if (vehneed > 0)
+		{
+		vehneed=INSTANCE.main.carrier.CanAddNewVehicle(uid, true, vehneed);
+		DInfo("CanAddNewVehicle for source station says "+vehneed,2);
+		vehneed=INSTANCE.main.carrier.CanAddNewVehicle(uid, false, vehneed);
+		DInfo("CanAddNewVehicle for destination station says "+vehneed,2);
+		}
 	DInfo("Capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+"/"+maxveh+" firstveh="+firstveh,2);
 	// adding vehicle
 	if (vehneed > 0)
