@@ -13,5 +13,12 @@
  *
 **/
 
-SELF_VERSION <- 167;
-SELF_SHORTNAME <- "DCTR";
+class cStationWater extends cStation
+{
+	constructor()
+		{
+		::cStation.constructor();
+		this.ClassName="cStationWater";
+		}
+}
+

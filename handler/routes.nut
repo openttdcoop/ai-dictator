@@ -13,68 +13,31 @@
  *
 **/
 
-function cRoute::GetVirtualAirMailGroup()
-// return the groupID for the mail virtual air group
-	{
-	return cRoute.VirtualAirGroup[1];
-	}
-
-function cRoute::GetVirtualAirPassengerGroup()
-// return the groupID for the passenger virtual air group
-	{
-	return cRoute.VirtualAirGroup[0];
-	}
-
-function cRoute::RouteSetDistance()
-// setup a route distance
-	{
-	local a, b= -1;
-	if (this.source != null)	a=this.source_location;
-	if (this.target != null)	b=this.target_location;
-	if (this.source_stationID != null && AIStation.IsValidStation(source_stationID))	a=AIStation.GetLocation(source_stationID);
-	if (this.target_stationID != null && AIStation.IsValidStation(target_stationID))	b=AIStation.GetLocation(target_stationID);
-	if (a > -1 && b > -1)	this.distance=AITile.GetDistanceManhattanToTile(a,b);
-				else	this.distance=0;
-	}
-
-function cRoute::RouteCheckEntry()
-// setup entries infos, this pointed our shortcut to the correct station object and mark them
-	{
-	this.source_entry = (this.source_stationID != null);
-	this.target_entry = (this.target_stationID != null);
-	if (this.source_entry)	
-			{
-			this.source=cStation.GetStationObject(this.source_stationID);
-			if (this.source != null)	this.source.ClaimOwner(this.UID);
-							else	this.source_entry=false;
-			}
-		else	this.source=null;
-	if (this.target_entry)
-			{
-			this.target=cStation.GetStationObject(this.target_stationID);
-			if (this.target != null)	this.target.ClaimOwner(this.UID);
-							else	this.target_entry=false;
-			}
-		else	this.target=null;
-	//DInfo("Route "+this.UID+" source="+this.source+" target="+this.target,1);
-	if (this.route_type >= RouteType.AIR)	this.RouteAirportCheck();
-	}
+function cRoute::IsWorking(uid = null)
+// return true if route is in a sane state
+{
+	local road = false;
+	if (uid == null)	road = this;
+			else	road = cRoute.Load(uid);
+	if (!road)	return false;
+	return (road.Status == 100);
+}
 
 function cRoute::RouteAirportCheck(uid=null)
 // this function check airports routes and setup some properties as they should be
 	{
-	local road=null;
-	if (uid==null)	road=this;
-			else	road=cRoute.GetRouteObject(uid);
-	if (road==null || road.route_type < RouteType.AIR)	return;
-	local oldtype=road.route_type;
-	road.route_type=RouteType.AIR;
-	if (road.UID < 2)	road.route_type=RouteType.AIRNET;
-	if (road.cargoID == cCargo.GetMailCargo())	road.route_type++;
-	if (road.UID > 1 && (!cBuilder.AirportAcceptBigPlanes(road.source_stationID) || !cBuilder.AirportAcceptBigPlanes(road.target_stationID)))	road.route_type+=4;
+	local road=false;
+	if (uid == null)	road=this;
+			else	road=cRoute.Load(uid);
+	if (!road || road.VehicleType < RouteType.AIR)	return;
+	local oldtype = road.VehicleType;
+	road.VehicleType = RouteType.AIR;
+	if (road.UID < 2)	road.VehicleType = RouteType.AIRNET;
+	if (road.CargoID == cCargo.GetMailCargo())	road.VehicleType++;
+	if (road.UID > 1 && (!cBuilder.AirportAcceptBigPlanes(road.SourceStation.ID) || !cBuilder.AirportAcceptBigPlanes(road.TargetStation.ID)))	road.VehicleType+=4;
 	// adding 4 to met small AIR or MAIL
-	if (!road.source_istown)	road.route_type=RouteType.CHOPPER;
-	if (oldtype != road.route_type)	{ DInfo("Changing aircraft type for route "+cRoute.RouteGetName(road.UID),1); }
+	if (!road.SourceProcess.IsTown)	road.VehicleType = RouteType.CHOPPER;
+	if (oldtype != road.VehicleType)	{ DInfo("Changing aircrafts type for route "+road.Name,1); }
 	}
 
 function cRoute::RouteUpdateVehicle()
@@ -131,109 +94,43 @@ function cRoute::SetRouteGroupName(groupID, r_source, r_target, r_stown, r_ttown
 function cRoute::RouteBuildGroup()
 // Build a group for that route
 	{
-	local rtype=this.route_type;
+	local rtype=this.VehicleType;
 	if (rtype >= RouteType.AIR)	rtype=RouteType.AIR;
 	local gid = AIGroup.CreateGroup(rtype);
 	if (!AIGroup.IsValidGroup(gid))	{ DError("Cannot create the group, this is serious error, please report it!",0); return; }
-	this.groupID = gid;
-	cRoute.SetRouteGroupName(this.groupID, this.sourceID, this.targetID, this.source_istown, this.target_istown, this.cargoID, false);
-	if (this.groupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(this.groupID, this.UID);
-							else	cRoute.GroupIndexer.AddItem(this.groupID, this.UID);
+	this.GroupID = gid;
+	cRoute.SetRouteGroupName(this.GroupID, this.SourceProcess.ID, this.TargetProcess.ID, this.SourceProcess.IsTown, this.TargetProcess.IsTown, this.CargoID, false);
+	if (this.GroupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(this.GroupID, this.UID);
+							else	cRoute.GroupIndexer.AddItem(this.GroupID, this.UID);
 	}
 
 function cRoute::RouteDone()
 // called when a route is finish
-	{
-	this.vehicle_count=0;
-	this.status=100;
-	this.isWorking=true;
+{
+	this.VehicleCount=0;
+	this.Status=100;
 	this.RouteSave();
-	if (this.source_istown)	cProcess.statueTown.AddItem(this.sourceID,0);
-	if (this.target_istown)	cProcess.statueTown.AddItem(this.targetID,0);
+	if (this.SourceProcess.IsTown)	cProcess.statueTown.AddItem(this.SourceProcess.ID,0);
+	if (this.TargetProcess.IsTown)	cProcess.statueTown.AddItem(this.TargetProcess.ID,0);
 	this.RouteAirportCheck();
-	if (this.UID>1 && this.target_istown && this.route_type != RouteType.WATER && this.route_type != RouteType.RAIL && (this.cargoID==cCargo.GetPassengerCargo() || this.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(this.targetID);
-	this.RouteCheckEntry();
-	if (this.source_entry)
-		{
-		this.source.cargo_produce.AddItem(this.cargoID,0);
-		this.source.cargo_accept.AddItem(this.cargoID,0); // that's not true, both next lines could be false, but CheckCangoHandleByStation will clean them if need
-		}
-	if (this.target_entry)
-		{
-		this.target.cargo_accept.AddItem(this.cargoID,0);
-		this.target.cargo_produce.AddItem(this.cargoID,0);
-		}
+	if (this.UID>1 && this.TargetProcess.IsTown && this.VehicleType != RouteType.WATER && this.VehicleType != RouteType.RAIL && (this.CargoID == cCargo.GetPassengerCargo() || this.CargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(this.TargetProcess.ID);
+	this.SourceStation.s_CargoProduce.AddItem(this.CargoID,0);
+	this.SourceStation.s_CargoAccept.AddItem(this.CargoID,0); // that's not true, both next lines could be false, but CheckCangoHandleByStation will clean them if need
+	this.TargetStation.s_CargoAccept.AddItem(this.CargoID,0);
+	this.TargetStation.s_CargoProduce.AddItem(this.CargoID,0);
 	this.RouteSetDistance();
-	}
+}
 
 function cRoute::RouteSave()
 // save that route to the database
 	{
-	if (this.UID in database)	DInfo("Route "+this.UID+" is already in database",2);
+	this.SetRouteName();
+	if (this.UID in database)	DInfo("Route "+this.Name+" is already in database",2);
 			else		{
-					DInfo("Adding route "+this.UID+" to the route database",2);
+					DInfo("Adding route "+this.Name+" to the route database",2);
 					database[this.UID] <- this;
 					RouteIndexer.AddItem(this.UID, 1);
 					}
-	this.RouteCheckEntry();
-	}
-
-function cRoute::RouteTypeToString(that_type)
-// return a string for that_type road type
-	{
-	switch (that_type)
-		{
-		case	RouteType.RAIL:
-			return "Trains";
-		case	RouteType.ROAD:
-			return "Bus & Trucks";
-		case	RouteType.WATER:
-			return "Boats";
-		case	RouteType.AIR:
-		case	RouteType.AIRMAIL:
-		case	RouteType.AIRNET:
-		case	RouteType.AIRNETMAIL:
-			return "Big Aircrafts";
-		case	RouteType.SMALLAIR:
-		case	RouteType.SMALLMAIL:
-			return "Small Aircrafts";
-		case	RouteType.CHOPPER:
-			return "Choppers";
-		}
-	return "unkown";
-	}
-
-function cRoute::RouteGetName(uid)
-// set a string for that route
-	{
-	local src=null;
-	local dst=null;
-	local name="#"+uid+" invalid route";
-	local road=cRoute.GetRouteObject(uid);
-	if (road == null)	return name;
-	local rtype=cRoute.RouteTypeToString(road.route_type);
-	if (road.UID == 0) // ignore virtual route, use by old savegame
-		{
-		name="Virtual Air Passenger Network for "+AICargo.GetCargoLabel(road.cargoID)+" using "+rtype;
-		return name;
-		}
-	if (road.UID == 1)
-		{
-		name="Virtual Air Mail Network for "+AICargo.GetCargoLabel(road.cargoID)+" using "+rtype;
-		return name;
-		}
-	if (road.source_entry)	src=cStation.StationGetName(road.source_stationID);
-				else	{
-					if (road.source_istown)	src=AITown.GetName(road.sourceID);
-								else	src=AIIndustry.GetName(road.sourceID);
-					}
-	if (road.target_entry)	dst=cStation.StationGetName(road.target_stationID);
-				else	{
-					if (road.target_istown)	dst=AITown.GetName(road.targetID);
-								else	dst=AIIndustry.GetName(road.targetID);
-					}
-	name="#"+road.UID+": From "+src+" to "+dst+" for "+AICargo.GetCargoLabel(road.cargoID)+" using "+rtype;
-	return name;
 	}
 
 function cRoute::CreateNewRoute(UID)
@@ -243,106 +140,34 @@ function cRoute::CreateNewRoute(UID)
 	if (!jobs) return; // workaround to loading savegame where the jobs has disapears
 	jobs.isUse = true;
 	this.UID = jobs.UID;
-	this.sourceID = jobs.sourceObject.ID;
-	this.source_istown = jobs.sourceObject.IsTown;
-	if (this.source_istown)	cTileTools.SeduceTown(this.sourceID);
-	this.targetID = jobs.targetObject.ID;
-	this.target_istown = jobs.targetObject.IsTown;
-	if (this.target_istown)	cTileTools.SeduceTown(this.targetID);
-	this.vehicle_count = 0;
-	this.route_type	= jobs.roadType;
-	this.cargoID = jobs.cargoID;
-	switch (this.route_type)
+	this.SourceProcess = jobs.sourceObject;
+	this.TargetProcess = jobs.targetObject;
+	this.VehicleType	= jobs.roadType;
+	this.CargoID = jobs.cargoID;
+	switch (this.VehicleType)
 		{
 		case	RouteType.RAIL:
-			this.station_type=AIStation.STATION_TRAIN;
+			this.StationType=AIStation.STATION_TRAIN;
 		break;
 		case	RouteType.ROAD:
-			this.station_type=AIStation.STATION_TRUCK_STOP;
-			if (this.cargoID == cCargo.GetPassengerCargo())	this.station_type=AIStation.STATION_BUS_STOP;
+			this.StationType=AIStation.STATION_TRUCK_STOP;
+			if (this.CargoID == cCargo.GetPassengerCargo())	this.StationType=AIStation.STATION_BUS_STOP;
 		break;
 		case	RouteType.WATER:
-			this.station_type=AIStation.STATION_DOCK;
+			this.StationType=AIStation.STATION_DOCK;
 		break;
 		case	RouteType.AIR:
-			this.station_type=AIStation.STATION_AIRPORT;
+			this.StationType=AIStation.STATION_AIRPORT;
 			local randcargo=AIBase.RandRange(100);
-			if (randcargo >70)	{ this.cargoID=cCargo.GetMailCargo(); this.route_type=RouteType.SMALLMAIL; }
-						else	{ this.cargoID=cCargo.GetPassengerCargo(); this.route_type=RouteType.SMALLAIR; }
-			DInfo("Airport work, choosen : "+randcargo+" "+cCargo.GetCargoLabel(this.cargoID),1);
+			if (randcargo >60)	{ this.CargoID=cCargo.GetMailCargo(); this.RouteType=RouteType.SMALLMAIL; }
+						else	{ this.CargoID=cCargo.GetPassengerCargo(); this.RouteType=RouteType.SMALLAIR; }
+			DInfo("Airport work, choosen : "+randcargo+" "+cCargo.GetCargoLabel(this.CargoID),1);
 		break;
 		}
-	this.isWorking = false;
-	this.status = 0;
-	this.source_location = jobs.sourceObject.Location;
-	this.target_location = jobs.targetObject.Location;
+	this.Status = 0;
 	this.RouteSetDistance();
 	this.RouteBuildGroup();
 	this.RouteSave();
-	}
-
-function cRoute::VirtualMailCopy()
-// this function copy infos from virtual passenger route to the mail one
-	{
-	local mailRoute=cRoute.GetRouteObject(1);
-	local passRoute=cRoute.GetRouteObject(0);
-	mailRoute.source_entry=passRoute.source_entry; // mailroute will follow passroute values
-	mailRoute.target_entry=passRoute.target_entry;
-	mailRoute.source_stationID=passRoute.source_stationID;
-	mailRoute.target_stationID=passRoute.target_stationID;
-	mailRoute.sourceID=passRoute.sourceID;
-	mailRoute.targetID=passRoute.targetID;
-	mailRoute.source=passRoute.source;
-	mailRoute.target=passRoute.target;
-	mailRoute.source_location=passRoute.source_location;
-	mailRoute.target_location=passRoute.target_location;
-	mailRoute.source_istown=passRoute.source_istown;
-	mailRoute.target_istown=passRoute.target_istown;
-	mailRoute.distance=passRoute.distance;
-	mailRoute.RouteCheckEntry();
-	}
-
-function cRoute::RouteInitNetwork()
-// Add the network routes to the database
-	{
-	local passRoute=cRoute();
-	passRoute.cargoID=cCargo.GetPassengerCargo();
-	passRoute.source_istown=true;
-	passRoute.target_istown=true;
-	passRoute.source_entry=false;
-	passRoute.target_entry=false;
-	passRoute.isWorking=true;
-	passRoute.UID=0;
-	passRoute.route_type = RouteType.AIR;
-	passRoute.station_type = AIStation.STATION_AIRPORT;
-	passRoute.status=100;
-	passRoute.vehicle_count=0;
-	passRoute.RouteSetDistance(); // a dummy distance start value
-	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
-	passRoute.groupID=n;
-	cRoute.SetRouteGroupName(passRoute.groupID, 0, 0, true, true, passRoute.cargoID, true);
-	cRoute.VirtualAirGroup[0]=n;
-	passRoute.groupID=n;
-	passRoute.RouteSave();
-
-	local mailRoute=cRoute();
-	mailRoute.cargoID=cCargo.GetMailCargo();
-	mailRoute.source_istown=true;
-	mailRoute.target_istown=true;
-	mailRoute.isWorking=true;
-	mailRoute.UID=1;
-	mailRoute.route_type = RouteType.AIR;
-	mailRoute.station_type = AIStation.STATION_AIRPORT;
-	mailRoute.status=100;
-	mailRoute.vehicle_count=0;
-	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
-	mailRoute.groupID=n;
-	cRoute.SetRouteGroupName(mailRoute.groupID, 1, 1, true, true, mailRoute.cargoID, true);
-	cRoute.VirtualAirGroup[1]=n;
-	mailRoute.groupID=n;
-	GroupIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
-	GroupIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);
-	mailRoute.RouteSave();
 	}
 
 function cRoute::RouteRebuildIndex()
@@ -357,7 +182,7 @@ function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way, in 2 steps, next step is RouteUndoableFreeOfVehicle()
 	{
 	if (this.UID < 2)	return; // don't touch virtual routes
-	DInfo("Marking route "+cRoute.RouteGetName(this.UID)+" undoable !!!",1);
+	DInfo("Marking route "+cRoute.GetRouteName(this.UID)+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
 	this.isWorking=false;
 	this.RouteCheckEntry();
@@ -388,16 +213,15 @@ function cRoute::RouteUndoableFreeOfVehicle()
 
 function cRoute::CreateNewStation(start)
 // Create a new station for that route at source or destination
+// The stationID must be pass thru SourceStation or TargetStation property
+// return null on failure, else the new station object created
 	{
-	local scheck=this.source_stationID;
-	if (!start)	scheck=this.target_stationID;
-	if (!AIStation.IsValidStation(scheck))
-		{ DWarn("Adding a bad station #"+scheck+" to route #"+this.UID,1); }
-	local station=cStation();
-	station.stationID=scheck;
-	station.InitNewStation();
-	this.RouteCheckEntry();
+	local scheck = null;
+	if (start)	scheck = cStation.InitNewStation(this.SourceStation);
+		else	scheck = cStation.InitNewStation(this.TargetStation);
+	if (scheck == null)	return null;
 	this.RouteAirportCheck();
+	return scheck;
 	}
 
 function cRoute::RouteReleaseStation(stationid)
@@ -409,7 +233,7 @@ function cRoute::RouteReleaseStation(stationid)
 		local ssta=cStation.GetStationObject(this.source_stationID);
 		if (ssta != null)	ssta.OwnerReleaseStation(this.UID);
 		this.source_stationID = null;
-		this.status=1;
+		this.Status=1;
 		this.isWorking=false;
 		INSTANCE.main.builder.building_route=this.UID;
 		}
@@ -418,7 +242,7 @@ function cRoute::RouteReleaseStation(stationid)
 		local ssta=cStation.GetStationObject(this.target_stationID);
 		if (ssta != null)	ssta.OwnerReleaseStation(this.UID);
 		this.target_stationID = null;
-		this.status=1;
+		this.Status=1;
 		this.isWorking=false;
 		INSTANCE.main.builder.building_route=this.UID;
 		}
@@ -473,8 +297,8 @@ function cRoute::GetDepot(uid, source=0)
 		if (source==0 || source==2)	if (cStation.IsDepot(tdepot))	return tdepot;
 		if (road.route_type == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
 		}
-	if (source==0)	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have any valid depot !",2);
-			else	DError("Route "+cRoute.RouteGetName(road.UID)+" doesn't have the request depoted ! source="+source,2);
+	if (source==0)	DError("Route "+cRoute.GetRouteName(road.UID)+" doesn't have any valid depot !",2);
+			else	DError("Route "+cRoute.GetRouteName(road.UID)+" doesn't have the request depoted ! source="+source,2);
 	return -1;
 	}
 

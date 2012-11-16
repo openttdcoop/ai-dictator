@@ -33,21 +33,22 @@ INSTANCE.main.route.VirtualMailCopy();
 function cRoute::VirtualAirNetworkUpdate()
 // update our list of airports that are in the air network
 {
-local virtroad=cRoute.GetRouteObject(0); // 0 is always the passenger one
-virtroad.distance=0;
-local towns=AITownList();
-towns.Valuate(AITown.GetPopulation);
-towns.RemoveBelowValue(INSTANCE.main.carrier.AIR_NET_CONNECTOR);
-DInfo("NETWORK > Found "+towns.Count()+" towns for network",1);
-if (towns.Count()<2)	return; // give up
-local airports=AIStationList(AIStation.STATION_AIRPORT);
-foreach (airID, dummy in airports)
-	{
-	INSTANCE.Sleep(1);
-	airports.SetValue(airID,1);
-	if (AIAirport.GetAirportType(AIStation.GetLocation(airID)) == AIAirport.AT_SMALL)	airports.SetValue(airID, 0);
-	if (AIAirport.GetNumHangars(AIStation.GetLocation(airID)) == 0)	airports.SetValue(airID, 0);
-	}
+	local virtroad=cRoute.Load(0); // 0 is always the passenger one
+	if (!virtroad)	return;
+	virtroad.Distance=0;
+	local towns=AITownList();
+	towns.Valuate(AITown.GetPopulation);
+	towns.RemoveBelowValue(INSTANCE.main.carrier.AIR_NET_CONNECTOR);
+	DInfo("NETWORK > Found "+towns.Count()+" towns for network",1);
+	if (towns.Count()<2)	return; // give up
+	local airports=AIStationList(AIStation.STATION_AIRPORT);
+	foreach (airID, dummy in airports)
+		{
+		local dummy = cLooper();
+		airports.SetValue(airID,1);
+		if (AIAirport.GetAirportType(AIStation.GetLocation(airID)) == AIAirport.AT_SMALL)	airports.SetValue(airID, 0);
+		if (AIAirport.GetNumHangars(AIStation.GetLocation(airID)) == 0)	airports.SetValue(airID, 0);
+		}
 airports.RemoveValue(0); // don't network small airports & platform, it's too hard for slow aircrafts
 if (airports.IsEmpty())	return;
 			else	DInfo("NETWORK -> Found "+airports.Count()+" valid airports for network",1);
@@ -273,21 +274,20 @@ INSTANCE.main.route.DutyOnAirNetwork(); // we handle the network load here
 foreach (uid, dummy in cRoute.RouteIndexer)
 	{
 	firstveh=false;
-	road=cRoute.GetRouteObject(uid);
-	if (road==null)	continue;
-	if (!road.isWorking)	continue;
-	if (road.route_type == RouteType.AIRNET || road.route_type == RouteType.AIRNETMAIL)	continue;
-	if (road.source == null)	continue;
-	if (road.target == null)	continue;
-	if (road.route_type == RouteType.RAIL)	{ INSTANCE.main.route.DutyOnRailsRoute(uid); continue; }
+	road=cRoute.Load(uid);
+	if (!road)	continue;
+	if (!road.IsWorking())	continue;
+	if (road.VehicleType == RouteType.AIRNET || road.VehicleType == RouteType.AIRNETMAIL)	continue;
+	if (road.SourceStation == null || road.TargetStation == null)	continue;
+	if (road.VehicleType == RouteType.RAIL)	{ INSTANCE.main.route.DutyOnRailsRoute(uid); continue; }
 	local maxveh=0;
-	local cargoid=road.cargoID;
+	local cargoid=road.CargoID;
 	if (cargoid == null)	continue;
 	local futur_engine=INSTANCE.main.carrier.GetVehicle(uid);
 	local futur_engine_capacity=1;
 	if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);
 					else	continue;
-	switch (road.route_type)
+	switch (road.VehicleType)
 		{
 		case AIVehicle.VT_ROAD:
 			maxveh=INSTANCE.main.carrier.road_max_onroute;
@@ -310,11 +310,11 @@ foreach (uid, dummy in cRoute.RouteIndexer)
 			maxveh=INSTANCE.main.carrier.water_max;
 		break;
 		}
-	road.source.UpdateStationInfos();
-	DInfo("Route "+cRoute.RouteGetName(uid)+" distance "+road.distance,2);
+	road.SourceStation.UpdateStationInfos();
+	DInfo("Route "+road.Name+" distance "+road.Distance,2);
 	local vehneed=0;
-	if (road.vehicle_count == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
-	local vehonroute=road.vehicle_count;
+	if (road.VehicleCount == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
+	local vehonroute=road.VehicleCount;
 	local cargowait=0;
 	local capacity=0;
 	dual=road.source_istown; // we need to check both side if source is town we're on a dual route (pass or mail)

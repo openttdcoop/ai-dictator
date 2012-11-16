@@ -13,6 +13,41 @@
  *
 **/
 
+class MyRailPF extends RailPathFinder
+	{
+	_cost_level_crossing = null;
+	}
+
+function MyRailPF::_Cost(path, new_tile, new_direction, self)
+{
+	local cost = ::RailPathFinder._Cost(path, new_tile, new_direction, self);
+	return cost;
+}
+/*
+function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
+{
+	return 1.4*::RailPathFinder._Estimate(cur_tile, cur_direction, goal_tiles, self);
+}*/
+
+function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
+{
+	local min_cost = self._max_cost;
+	/* As estimate we multiply the lowest possible cost for a single tile with
+	 *  with the minimum number of tiles we need to traverse. */
+	foreach (tile in goal_tiles) {
+		local dx = abs(AIMap.GetTileX(cur_tile) - AIMap.GetTileX(tile[0]));
+		local dy = abs(AIMap.GetTileY(cur_tile) - AIMap.GetTileY(tile[0]));
+		//min_cost = min(min_cost, min(dx, dy) * self._cost_diagonal_tile * 2 + (max(dx, dy) - min(dx, dy)) * self._cost_tile);
+		local thatmul=0;
+		if (AITile.GetSlope(cur_tile) == AITile.SLOPE_FLAT)	thatmul=self._cost_tile;
+										else	thatmul=self._cost_slope;
+		min_cost= max(dx, dy)*thatmul*1.4; // the Chebyshev_distance
+		min_cost= max(dx, dy)*self._cost_tile*2;
+	}
+	return min_cost;
+}
+
+
 
 function cBuilder::BuildTrainStation(start)
 // It's where we find a spot for our train station
@@ -208,14 +243,9 @@ switch (error)
 return -2;
 }
 
-function cBuilder::RoadSmoother(path)
-{
-
-}
-
 function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 {
-local status=cPathfinder.GetStatus(head1, head2, useEntry, stationID);
+local status=cPathfinder.GetStatus(head1, head2, stationID, useEntry);
 local path=cPathfinder.GetSolve(head1, head2);
 local smallerror=0;
 if (path == null)	smallerror=-2;
@@ -375,7 +405,7 @@ if (smallerror == -2)
 		local newtarget=[prev, prevprev];
 		DInfo("Pathfinder is calling an helper task",1);
 		// Create the helper task
-		local dummy= cPathfinder.GetStatus(head1, newtarget, useEntry, stationID);
+		local dummy= cPathfinder.GetStatus(head1, newtarget, stationID, useEntry);
 		dummy=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, newtarget));
 		dummy.r_source=head1;
 		dummy.r_target=head2;
@@ -396,7 +426,7 @@ else	{ // we cannot get smallerror==-1 because on -1 it always return, so limit 
 				{
 				//DInfo("Pathfinder helper task "+source+" succeed !",1,"cBuilder::BuildRoadRail");
 				cPathfinder.CloseTask(mytask.source, mytask.target);
-				mytask=cPathfinder.GetPathfinderObject(source); print("now mytask="+mytask+" src="+source);
+				mytask=cPathfinder.GetPathfinderObject(source);
 				}
 			}
 		}

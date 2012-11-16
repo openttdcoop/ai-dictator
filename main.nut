@@ -42,7 +42,7 @@ enum DepotAction {
 }
 
 
-import("pathfinder.road", "RoadPathFinder", 3);
+import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
 
 require("require.nut");
@@ -141,10 +141,10 @@ function DictatorAI::Start()
 									if (!jobs_obj)	main.builder.building_route=-1;
 												else	{
 													main.route.CreateNewRoute(main.builder.building_route);
-													DInfo("Creating a new route : "+cRoute.RouteGetName(main.builder.building_route),0);
+													DInfo("Creating a new route : "+cRoute.GetRouteName(main.builder.building_route),0);
 													}
 									}
-								else	DInfo("Construction of route "+cRoute.RouteGetName(main.builder.building_route)+" is at phase "+main.route.status,1);
+								else	DInfo("Construction of route "+cRoute.GetRouteName(main.builder.building_route)+" is at phase "+main.route.Status,1);
 					if (main.builder.building_route != -1)
 						{
 						main.builder.TryBuildThatRoute();
@@ -154,13 +154,13 @@ function DictatorAI::Start()
 				else main.builder.DumpTopJobs();
 				}
 		main.bank.CashFlow();
-		main.event.HandleEvents();
+		//main.event.HandleEvents();
 		AIController.Sleep(1);
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(1);
-		main.builder.WeeklyChecks();
+		//main.builder.WeeklyChecks();
 		AIController.Sleep(1);
-		main.builder.MonthlyChecks();
+		//main.builder.MonthlyChecks();
 		AIController.Sleep(1);
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(1);

@@ -13,5 +13,20 @@
  *
 **/
 
-SELF_VERSION <- 167;
-SELF_SHORTNAME <- "DCTR";
+class cStationRoad extends cStation
+{
+	constructor()
+		{
+		::cStation.constructor();
+		this.ClassName	= "cStationRoad";
+		}
+}
+
+function cStationRoad::GetRoadStationEntry(entrynum=-1)
+// return the front road station entrynum
+{
+	if (entrynum == -1)	entrynum=this.s_Tiles.Begin();
+	return this.s_Tiles.GetValue(entrynum);
+}
+
+

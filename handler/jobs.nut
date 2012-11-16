@@ -582,16 +582,17 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 	foreach (cargoid, amount in cargoList)
 		{
 		local targetList=cJobs.GetJobTarget(p.ID, cargoid, p.IsTown, p.Location); // find where we could transport it
+		local pause = cLooper();
 		foreach (destination, distance in targetList)
 			{
 			local transportList=GetTransportList(distance);	// find possible ways to transport that
+			local pause = cLooper();
 			foreach (transtype, dummy2 in transportList)
 				{
 				cJobs.CreateNewJob(p.UID, destination, cargoid, transtype, distance);
-				::AIController.Sleep(1);
+				local pause = cLooper();
 				}
 			}
-		::AIController.Sleep(1);
 		}
 	}
 
@@ -608,12 +609,10 @@ function cJobs::DeleteJob(uid)
 function cJobs::DeleteIndustry(industry_id)
 // Remove an industry and all jobs using it
 {
-	local counter=0;
 	foreach (object in cJobs.database)
 		{
 		if ((!object.sourceObject.IsTown && object.sourceObject.ID == industry_id) || (!object.targetObject.IsTown && object.targetObject.ID == industry_id))	cJobs.DeleteJob(object.UID);
-		if (counter > 200)	{ counter=0; AIController.Sleep(1); }
-					else	counter++;
+		local pause = cLooper();
 		}
 	cJobs.RawJob_Delete(industry_id);
 	cProcess.DeleteProcess(industry_id);
@@ -623,7 +622,7 @@ function cJobs::RawJobHandling()
 // Find a raw Job and add possible jobs from it to jobs database
 	{
 	if (cJobs.rawJobs.IsEmpty())	return;
-	local looper = (10 - cRoute.RouteIndexer.Count());
+	local looper = (4 - cRoute.RouteIndexer.Count());
 	if (looper < 1)	looper=1;
 	for (local j=0; j < looper; j++)
 		{
@@ -674,8 +673,8 @@ foreach (puid, _ in alljob)
 	if (curr % 18 == 0)
 		{
 		DInfo(curr+" / "+alljob.Count(),0);
-		INSTANCE.Sleep(1);
 		}
+	local pause = cLooper();
 	}
 cJobs.rawJobs.Sort(AIList.SORT_BY_VALUE, false);
 }

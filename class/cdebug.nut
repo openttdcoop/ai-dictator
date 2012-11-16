@@ -50,28 +50,21 @@ function cDebug::showLogic(item)
 
 function cBuilder::DumpRoute(idx=null)
 {
-local road=null;
-if (idx == null)	road=INSTANCE.main.route;
-		else	road=cRoute.GetRouteObject(idx);
-DInfo("Route #"+road.UID+" "+cRoute.RouteGetName(road.UID),2);
-local srcname="";
-local tgtname="";
-if (road.source_istown)	srcname=AITown.GetName(road.sourceID);
-			else	srcname=AIIndustry.GetName(road.sourceID);
-if (road.target_istown)	tgtname=AITown.GetName(road.targetID);
-			else	tgtname=AIIndustry.GetName(road.targetID);
-srcname=road.sourceID+":"+srcname;
-tgtname=road.targetID+":"+tgtname;
-DInfo("Source: "+srcname+" Target: "+tgtname+" route_type: "+cRoute.RouteTypeToString(road.route_type)+" status: "+road.status+" Cargo:"+AICargo.GetCargoLabel(road.cargoID),2);
-if (!road.source_entry) return;
-DInfo("Source station "+road.source_stationID+"("+AIStation.GetName(road.source_stationID)+")",2);
-DInfo("# "+road.source.stationID+" Station type: "+road.source.stationType+" specialType: "+road.source.specialType+" produce "+road.source.cargo_produce.Count()+" cargos, accept "+road.source.cargo_accept.Count()+" cargos");
-if (!road.target_entry) return;
-DInfo("# "+road.target.stationID+" Station type: "+road.target.stationType+" specialType: "+road.target.specialType+" produce "+road.target.cargo_produce.Count()+" cargos, accept "+road.target.cargo_accept.Count()+" cargos",2);
+	if (!INSTANCE.debug)	return;
+	local road=null;
+	if (idx == null)	road=INSTANCE.main.route;
+			else	road=cRoute.Load(idx);
+	DInfo("Route "+road.Name+" VehicleType: "+cRoute.RouteTypeToString(road.VehicleType)+" status: "+road.Status+" Cargo:"+cCargo.GetCargoLabel(road.CargoID),2);
+if (road.SourceStation == null) return;
+DInfo(road.SourceStation.s_Name+" Station type: "+road.SourceStation.s_Type+" subType: "+road.SourceStation.SubType+" produce "+road.SourceStation.CargoProduce.Count()+" cargos, accept "+road.SourceStation.CargoAccept.Count()+" cargos");
+
+if (road.TargetStation == null) return;
+DInfo(road.TargetStation.s_Name+" Station type: "+road.TargetStation.s_Type+" subType: "+road.TargetStation.SubType+" produce "+road.TargetStation.CargoProduce.Count()+" cargos, accept "+road.TargetStation.CargoAccept.Count()+" cargos");
 }
 
 function cBuilder::DumpJobs(uid)
 {
+	if (!INSTANCE.debug)	return;
 	local tjob=cJobs.GetJobObject(uid);
 	local src=tjob.sourceObject.Name;
 	local dst=tjob.targetObject.Name;
@@ -80,6 +73,7 @@ function cBuilder::DumpJobs(uid)
 
 function cBuilder::DumpTopJobs()
 {
+	if (!INSTANCE.debug)	return;
 	local i=0;
 	foreach (uid, ranking in INSTANCE.main.jobs.jobDoable)
 		{

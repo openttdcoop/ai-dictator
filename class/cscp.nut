@@ -39,6 +39,7 @@ function cSCP::Init()
 
 function cSCP::WaitReady()
 {
+return;
 	DInfo("Waiting SCP to get ready.",2);
 	for (local j=0; j < 10; j++)
 		{

@@ -87,7 +87,6 @@ function cProcess::AddNewProcess(_id, _istown)
 		if (!AITown.IsValidTown(_id)) return;
 		p.Name = AITown.GetName(_id);
 		p.Location=AITown.GetLocation(_id);
-		cProcess.statueTown.AddItem(p.ID,0);
 		}
 	else	{
 		if (!AIIndustry.IsValidIndustry(_id)) return;
@@ -101,17 +100,15 @@ function cProcess::AddNewProcess(_id, _istown)
 	p.ScoreProduction=0;
 	p.CargoCheckSupply();
 	p.UpdateDate=null;
-	p.UpdateScore();
 	p.FailureDate = null;
+	p.UpdateScore();
 	p.Save();
 }
 
 function cProcess::Load(uid)
 // Try to load a uid if need, throw error if it fail
 {
-	local obj=null;
-	if (uid == null)	obj=this;
-			else	obj=cProcess.GetProcessObject(uid);
+	local obj=cProcess.GetProcessObject(uid);
 	if (obj == null)
 		{
 		DWarn("cProcess.Load function return NULL",1);
@@ -131,70 +128,64 @@ function cProcess::DeleteProcess(uid=null)
 
 // private
 
-function cProcess::UpdateScoreRating(uid=null)
+function cProcess::UpdateScoreRating()
 // Update the Rating score
 {
-	local obj=cProcess.Load(uid);
-	if (!obj)	return false;
-	if (obj.IsTown)	{
-				local rate = AITown.GetRating(obj.ID, AICompany.ResolveCompanyID(AICompany.COMPANY_SELF));
+	if (this.IsTown)	{
+				local rate = AITown.GetRating(this.ID, AICompany.ResolveCompanyID(AICompany.COMPANY_SELF));
 				if (rate == AITown.TOWN_RATING_NONE)	rate=AITown.TOWN_RATING_GOOD;
 				if (rate < AITown.TOWN_RATING_POOR)	rate = 0;
-				obj.ScoreRating = 0 + (80 * rate);
+				this.ScoreRating = 0 + (80 * rate);
 				}
 			else	switch (INSTANCE.fairlevel)
 				{	
 				case	0:
-					obj.ScoreRating= 500 - (500 * AIIndustry.GetAmountOfStationsAround(obj.ID));	// give up when 1 station is present
+					this.ScoreRating= 500 - (500 * AIIndustry.GetAmountOfStationsAround(this.ID));	// give up when 1 station is present
 				break;
 				case	1:
-					obj.ScoreRating= 500 - (250 * AIIndustry.GetAmountOfStationsAround(obj.ID));	// give up when 2 stations are there
+					this.ScoreRating= 500 - (250 * AIIndustry.GetAmountOfStationsAround(this.ID));	// give up when 2 stations are there
 				break;
 				case	2:
-					obj.ScoreRating= 500 - (100 * AIIndustry.GetAmountOfStationsAround(obj.ID));	// give up after 5 stations
+					this.ScoreRating= 500 - (100 * AIIndustry.GetAmountOfStationsAround(this.ID));	// give up after 5 stations
 				break;
 				}
-if (obj.ScoreRating < 0)	obj.ScoreRating=0;
+if (this.ScoreRating < 0)	this.ScoreRating=0;
 }
 
-function cProcess::UpdateScoreProduction(uid=null)
+function cProcess::UpdateScoreProduction()
 // Update the production score
 {
-	local obj=cProcess.Load(uid);
-	if (!obj)	return false;
 	local best=0;
 	local bestcargo=-1;
-	foreach (cargoID, value in obj.CargoProduce)
+	foreach (cargoID, value in this.CargoProduce)
 		{
 		local api=null;
-		if (obj.IsTown)	api=AITown;
+		if (this.IsTown)	api=AITown;
 				else	api=AIIndustry;
-		local current= api.GetLastMonthProduction(obj.ID, cargoID);
+		local current= api.GetLastMonthProduction(this.ID, cargoID);
 		if (best < current)	{ best=current; bestcargo=cargoID; }
-		obj.CargoProduce.SetValue(cargoID, current);
+		this.CargoProduce.SetValue(cargoID, current);
 		}
-	if (bestcargo == cCargo.GetCargoFavorite())	obj.ScoreProduction = best * cCargo.GetCargoFavoriteBonus();
-								else	obj.ScoreProduction = best;
+	if (bestcargo == cCargo.GetCargoFavorite())	this.ScoreProduction = best * cCargo.GetCargoFavoriteBonus();
+								else	this.ScoreProduction = best;
 }
 
-function cProcess::UpdateScore(uid=null)
+function cProcess::UpdateScore()
 // Update score
 {
-	local obj=cProcess.Load(uid);
-	if (!obj)	return false;
-	if (obj.UpdateDate != null && AIDate.GetCurrentDate() - obj.UpdateDate < 7)	{ DInfo("Fresh score for "+obj.Name,2); return false; }
-	DInfo("Update score for "+obj.Name,2);
-	obj.UpdateScoreRating();
-	obj.UpdateScoreProduction();
-	obj.Score = obj.ScoreRating * obj.ScoreProduction;
-	if (obj.Score < 0)	obj.Score=0;
+	if (this.UpdateDate != null && AIDate.GetCurrentDate() - this.UpdateDate < 7)	{ DInfo("Fresh score for "+this.Name,2); return false; }
+	this.UpdateScoreRating();
+	this.UpdateScoreProduction();
+	this.Score = this.ScoreRating * this.ScoreProduction;
+	if (this.Score < 0)	this.Score=0;
 	local now = AIDate.GetCurrentDate();
-	obj.UpdateDate = now;
-	if (obj.FailureDate != null)
+	this.UpdateDate = now;
+	if (this.FailureDate != null)
 		{
-		obj.Score = 0;
-		if (now - obj.FailureDate > 365)	obj.FailureDate=null;
+		this.Score = 0;
+		if (now - this.FailureDate > 365)	this.FailureDate=null;
 		}
+	DInfo("Update score for "+this.Name+" to "+this.Score,2);
 }
 
 function cProcess::ZeroProcess()

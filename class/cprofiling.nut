@@ -33,3 +33,17 @@ function cProfiling::Stop()
 	DInfo("Task end at "+nticks+", tooked "+(nticks-this.ticks)+" ticks, "+(ndate-this.date)+" days",1);
 }
 
+class cLooper extends cClass
+// This class increase a counter, once value is met, it call AIController.Sleep.
+// Creating this class inside a loop then gave a tiny break in the loop
+	{
+	static	tickCounter = [0];
+	constructor()
+		{
+		this.ClassName = "cLooper";
+		local fetch = cLooper.tickCounter[0];
+		fetch++;
+		if (fetch > 200)	{ ::AIController.Sleep(1); fetch = 0; DInfo("Resting...",2); }
+		cLooper.tickCounter[0]=fetch;
+		}
+	}

@@ -32,21 +32,17 @@ static	function GetRouteObject(UID)
 		}
 
 	UID			= null;	// UID for that route, 0/1 for airnetwork, else = the one calc in cJobs
-	sourceID		= null;	// id of source town/industry
-	source_location	= null;	// location of source
-	source_istown	= null;	// if source is town
-	source		= null;	// shortcut to the source station object
-	targetID		= null;	// id of target town/industry
-	target_location	= null;	// location of target
-	target_istown	= null;	// if target is town
-	target		= null;	// shortcut to the target station object
-	vehicle_count	= null;	// numbers of vehicle using it
-	route_type		= null;	// type of vehicle using that route (It's enum RouteType)
-	station_type	= null;	// type of station (it's AIStation.StationType)
-	rail_type		= null;	// type of rails in use, same as the first working station done
-	distance		= null;	// farest distance from source station to target station
-	isWorking		= null;	// true if the route is working
-	status		= null;	// current status of the route
+	Name			= null;	// Name of the route
+	SourceProcess	= null;	// link to source process
+	TargetProcess	= null;	// link to target process
+	SourceStation	= null;	// link to source station
+	TargetStation	= null;	// link to target station
+	VehicleCount	= null;	// numbers of vehicle using it
+	VehicleType		= null;	// type of vehicle using that route (It's enum RouteType)
+	StationType		= null;	// type of station (it's AIStation.StationType)
+	RailType		= null;	// type of rails in use, same as the first working station done
+	Distance		= null;	// farest distance from source station to target station
+	Status		= null;	// current status of the route
 						// 0 - need a destination pickup
 						// 1 - source/destination find compatible station or create new
 						// 2 - need build source station
@@ -54,52 +50,186 @@ static	function GetRouteObject(UID)
 						// 4 - need do pathfinding
 						// 5 - need checks
 						// 100 - all done, finish route
-	groupID		= null;	// groupid of the group for that route
-	source_entry	= null;	// true if we have a working station
-	source_stationID	= null;	// source station id
-	target_entry	= null;	// true if we have a working station
-	target_stationID	= null;	// target station id
-	cargoID		= null;	// the cargo id
-	date_VehicleDelete= null;	// date of last time we remove a vehicle
-	date_lastCheck	= null;	// date of last time we check route health
-	source_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
-	target_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
-	primary_RailLink	= null;	// true if we have build the main connecting rails from source to target station
-	secondary_RailLink= null;	// true if we also buld the alternate path from source to target
-	twoway		= null;	// if source station and target station accept but also produce, it's a twoway route
+	GroupID		= null;	// groupid of the group for that route
+	CargoID		= null;	// the cargo id
+	DateVehicleDelete = null;	// date of last time we remove a vehicle
+	DateHealthCheck	= null;	// date of last time we check route health
+	Source_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
+	Target_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
+	Primary_RailLink	= null;	// true if we have build the main connecting rails from source to target station
+	Secondary_RailLink= null;	// true if we also buld the alternate path from source to target
+	Twoway		= null;	// if source station and target station accept but also produce, it's a twoway route
 
 	constructor()
 		{ // * are saved variables
 		UID			= null;
-		sourceID		= null;
-		source_location	= 0;
-		source_istown	= false;
-		source		= null;		
-		targetID		= null;
-		target_location	= 0;
-		target_istown	= false;
-		target		= null;
-		vehicle_count	= 0;
-		route_type		= null;		// *
-		station_type	= null;
-		rail_type		= null;
-		distance		= 0;
-		isWorking		= false;
-		status		= 0;			// *
-		groupID		= null;		// *
-		source_entry	= false;
-		source_stationID	= null;		// *
-		target_entry	= false;
-		target_stationID	= null;		// *
-		cargoID		= null;
-		date_VehicleDelete= 0;
-		date_lastCheck	= null;
-		source_RailEntry	= null;		// *
-		target_RailEntry	= null;		// *
-		primary_RailLink	= false;		// *
-		secondary_RailLink= false;		// *
-		twoway		= false;
+		Name			= "UNKNOWN route";
+		SourceProcess	= null;
+		TargetProcess	= null;
+		SourceStation	= null;
+		TargetStation	= null;
+		VehicleCount	= 0;
+		VehicleType		= null;		// *
+		StationType		= null;
+		RailType		= null;
+		Distance		= 0;
+		Status		= 0;			// *
+		GroupID		= null;		// *
+		CargoID		= null;
+		DateVehicleDelete = null;
+		DateHealthCheck	= null;
+		Source_RailEntry	= null;		// *
+		Target_RailEntry	= null;		// *
+		Primary_RailLink	= false;		// *
+		Secondary_RailLink= false;		// *
+		Twoway		= false;
 		this.ClassName = "cRoute";
 		}
 	}
 
+function cRoute::Load(uid)
+// Get a route object
+{
+	local thatroute=cRoute.GetRouteObject(uid);
+	if (thatroute == null)	{ DWarn("Invalid routeID : "+uid+". Cannot get object",1); return false; }
+	return thatroute;
+}
+
+function cRoute::RouteTypeToString(that_type)
+// return a string for that_type road type
+{
+	switch (that_type)
+		{
+		case	RouteType.RAIL:
+			return "Trains";
+		case	RouteType.ROAD:
+			return "Bus & Trucks";
+		case	RouteType.WATER:
+			return "Boats";
+		case	RouteType.AIR:
+		case	RouteType.AIRMAIL:
+		case	RouteType.AIRNET:
+		case	RouteType.AIRNETMAIL:
+			return "Big Aircrafts";
+		case	RouteType.SMALLAIR:
+		case	RouteType.SMALLMAIL:
+			return "Small Aircrafts";
+		case	RouteType.CHOPPER:
+			return "Choppers";
+		}
+	return "unkown";
+}
+
+function cRoute::GetRouteName(uid)
+{
+	local road = cRoute.Load(uid);
+	if (!road)	return "Invalid Route "+uid;
+	return road.Name;
+}
+
+function cRoute::SetRouteName()
+// set a string for that route
+{
+	local name="### Invalid route";
+	local vroute = false;
+	local rtype=cRoute.RouteTypeToString(this.VehicleType);
+	if (this.UID == 0) // ignore virtual route, use by old savegame
+		{
+		name="Virtual Air Passenger Network for "+cCargo.GetCargoLabel(this.CargoID)+" using "+rtype;
+		vroute=true;
+		}
+	if (this.UID == 1)
+		{
+		name="Virtual Air Mail Network for "+cCargo.GetCargoLabel(this.CargoID)+" using "+rtype;
+		vroute=true;
+		}
+	local src=null;
+	local dst=null;
+	if (vroute)	this.Name = name;
+		else	{
+			if (this.SourceStation != null)	src=this.SourceStation.s_Name;
+								else	src=this.SourceProcess.Name;
+			if (this.TargetStation != null)	dst=this.TargetStation.s_Name;
+								else	dst=this.TargetProcess.Name;
+			this.Name="#"+this.UID+": From "+src+" to "+dst+" for "+cCargo.GetCargoLabel(this.CargoID)+" using "+rtype;
+			}
+}
+
+function cRoute::RouteInitNetwork()
+// Add the network routes to the database
+	{
+		UID			= null;
+		SourceProcess	= null;
+		TargetProcess	= null;
+		SourceStation	= null;
+		TargetStation	= null;
+		VehicleCount	= 0;
+		VehicleType		= null;		// *
+		StationType		= null;
+		RailType		= null;
+		Distance		= 0;
+		Status		= 0;			// *
+		GroupID		= null;		// *
+		CargoID		= null;
+		DateVehicleDelete = null;
+		DateHealthCheck	= null;
+		Source_RailEntry	= null;		// *
+		Target_RailEntry	= null;		// *
+		Primary_RailLink	= false;		// *
+		Secondary_RailLink= false;		// *
+		Twoway		= false;
+
+	local passRoute=cRoute();
+	passRoute.UID=0;
+	passRoute.CargoID=cCargo.GetPassengerCargo();
+	passRoute.VehicleType = RouteType.AIR;
+	passRoute.StationType = AIStation.STATION_AIRPORT;
+	passRoute.Status=100;
+	passRoute.Distance = 1000; // a dummy distance start value
+	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
+	passRoute.GroupID=n;
+	cRoute.SetRouteGroupName(passRoute.GroupID, 0, 0, true, true, passRoute.CargoID, true);
+	cRoute.VirtualAirGroup[0]=n;
+	passRoute.RouteSave();
+
+	local mailRoute=cRoute();
+	mailRoute.UID=1;
+	mailRoute.CargoID=cCargo.GetMailCargo();
+	mailRoute.VehicleType = RouteType.AIR;
+	mailRoute.StationType = AIStation.STATION_AIRPORT;
+	mailRoute.Status=100;
+	mailRoute.Distance = 1000;
+	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
+	mailRoute.GroupID=n;
+	cRoute.SetRouteGroupName(mailRoute.GroupID, 1, 1, true, true, mailRoute.CargoID, true);
+	cRoute.VirtualAirGroup[1]=n;
+	GroupIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
+	GroupIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);
+	mailRoute.SourceStation = passRoute.SourceStation;
+	mailRoute.TargetStation = passRoute.TargetStation;
+	mailRoute.RouteSave();
+	}
+
+function cRoute::GetVirtualAirMailGroup()
+// return the groupID for the mail virtual air group
+	{
+	return cRoute.VirtualAirGroup[1];
+	}
+
+function cRoute::GetVirtualAirPassengerGroup()
+// return the groupID for the passenger virtual air group
+	{
+	return cRoute.VirtualAirGroup[0];
+	}
+
+function cRoute::RouteSetDistance()
+// Setup a route distance
+	{
+	local a, b= -1;
+	if (this.SourceProcess != null)	a=this.SourceProcess.Location;
+	if (this.TargetProcess != null)	b=this.TargetProcess.Location;
+	if (this.SourceStation != null)	a=this.SourceStation.s_Location;
+	if (this.TargetStation != null)	b=this.TargetStation.s_Location;
+	if (a > -1 && b > -1)	this.Distance=AITile.GetDistanceManhattanToTile(a,b);
+				else	this.Distance=0;
+	}

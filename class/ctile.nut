@@ -664,13 +664,21 @@ function cTileTools::PlantsTreeAtTown(townID, makeplace=false)
 	return (!towntiles.IsEmpty());
 }
 
+function cTileTools::TownRatingNice(townID)
+// return true if our rating with that town is at least mediocre
+{
+	local curRating = AITown.GetRating(townID, AICompany.ResolveCompanyID(AICompany.COMPANY_SELF));
+	if (curRating == AITown.TOWN_RATING_NONE)	curRating = AITown.TOWN_RATING_GOOD;
+	return (curRating >= AITown.TOWN_RATING_MEDIOCRE);
+}
+
 function cTileTools::SeduceTown(townID)
 // Try seduce a town
 // needRating : rating we must reach
 // return true if we reach needRating level with that town
 {
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-	local curRating = AITown.GetRating(townID, AICompany.COMPANY_SELF);
+	local curRating = AITown.GetRating(townID, weare);
 	local town_name=AITown.GetName(townID);
 	DInfo("Town: "+town_name+" rating: "+curRating,2);
 	if (curRating == AITown.TOWN_RATING_NONE)	curRating = AITown.TOWN_RATING_GOOD;
@@ -682,7 +690,7 @@ function cTileTools::SeduceTown(townID)
 			return false;
 			}
 	local 	keeploop=true;
-	if (curRating == AITown.TOWN_RATING_APPALLING)	cTilesTools.PlantsTreeAtTown(townID, true);
+	if (curRating == AITown.TOWN_RATING_APPALLING)	cTileTools.PlantsTreeAtTown(townID, true);
 	// clear any trees place to rebuild them later
 	DInfo(	"Trying bribing "+town_name+" as much as we can",1);
 	do	{
