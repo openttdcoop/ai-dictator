@@ -83,7 +83,7 @@ while (AIEventController.IsEventWaiting())
 			local vehicle = null;
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
-			DInfo("Vehicle "+INSTANCE.main.carrier.VehicleGetName(vehicle)+" has crashed!!!",0);
+			DInfo("Vehicle "+INSTANCE.main.carrier.GetVehicleName(vehicle)+" has crashed!!!",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			local engineID=AIVehicle.GetEngineType(vehicle);
 			INSTANCE.main.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
@@ -96,7 +96,7 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(cCarrier.VehicleGetName(vehicle) + " is lost, not a good news",0);
+			DInfo(cCarrier.GetVehicleName(vehicle) + " is lost, not a good news",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) return;
 			INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
 			local rcheck=INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle);
@@ -105,7 +105,7 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
-			DInfo(cCarrier.VehicleGetName(vehicle) + " is not profitable, sending it to depot",0);
+			DInfo(cCarrier.GetVehicleName(vehicle) + " is not profitable, sending it to depot",0);
 			if (!AIVehicle.IsValidVehicle(vehicle)) return;
 			INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
 			INSTANCE.main.builder.RouteIsDamage(INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle));

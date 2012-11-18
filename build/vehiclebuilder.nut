@@ -14,6 +14,7 @@
 **/
 
 // generic vehicle building functions
+
 function cCarrier::VehicleGetCargoType(veh)
 // return cargo type the vehicle is handling
 {
@@ -40,175 +41,175 @@ return oldprofit;
 function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 // check if we can add another vehicle at the start/end station of that route
 {
-local chem=cRoute.GetRouteObject(roadidx);
-if (chem == null) return 0;
-chem.RouteUpdateVehicle();
-local thatstation=null;
-local thatentry=null;
-local otherstation=null;
-if (start)	{ thatstation=chem.source; otherstation=chem.target; }
-	else	{ thatstation=chem.target; otherstation=chem.source; }
-local divisor=0;
-local sellvalid=( (AIDate.GetCurrentDate() - chem.date_VehicleDelete) > 60);
-// prevent buy a new vehicle if we sell one less than 60 days before (this isn't affect by replacing/upgrading vehicle)
-if (!sellvalid)	{ max_allow=0; DInfo("Route sold a vehicle not a long time ago",1); }
-local virtualized=cStation.IsStationVirtual(thatstation.stationID);
-local othervirtual=cStation.IsStationVirtual(otherstation.stationID);
-local airportmode="(classic)";
-local shared=false;
-if (thatstation.owner.Count() > 1)	{ shared=true; airportmode="(shared)"; }
-if (virtualized)	airportmode="(network)";
-local airname=cStation.StationGetName(thatstation.stationID)+"-> ";
-switch (chem.route_type)
-	{
-	case AIVehicle.VT_ROAD:
-		DInfo("Road station "+cStation.StationGetName(thatstation.stationID)+" limit "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
-		if (thatstation.CanUpgradeStation())
-			{ // can still upgrade
-			if (chem.vehicle_count+max_allow > INSTANCE.main.carrier.road_max_onroute)	max_allow=(INSTANCE.main.carrier.road_max_onroute-chem.vehicle_count);
-			// limit by number of vehicle per route
-			if (!INSTANCE.use_road)	return 0;
-			// limit by vehicle disable (this can happen if we reach max vehicle game settings too
+	local chem=cRoute.Load(roadidx);
+	if (!chem) return 0;
+	chem.RouteUpdateVehicle();
+	local thatstation=null;
+	//local thatentry=null;
+	local otherstation=null;
+	if (start)	{ thatstation=chem.SourceStation; otherstation=chem.TargetStation; }
+		else	{ thatstation=chem.TargetStation; otherstation=chem.SourceStation; }
+	local divisor=0; // hihi what a bad default value to start with
+	local sellvalid=( (AIDate.GetCurrentDate() - chem.DateVehicleDelete) > 60);
+	// prevent buy a new vehicle if we sell one less than 60 days before (this isn't affect by replacing/upgrading vehicle)
+	if (!sellvalid)	{ max_allow=0; DInfo("Route sold a vehicle not a long time ago",1); return 0; }
+	local virtualized=cStation.IsStationVirtual(thatstation.s_ID);
+	local othervirtual=cStation.IsStationVirtual(otherstation.s_ID);
+	local airportmode="(classic)";
+	local shared=false;
+	if (thatstation.s_Owner.Count() > 1)	{ shared=true; airportmode="(shared)"; }
+	if (virtualized)	airportmode="(network)";
+	local airname=thatstation.s_Name+"-> ";
+	switch (chem.VehicleType)
+		{
+		case AIVehicle.VT_ROAD:
+			DInfo("Road station "+thatstation.s_Name+" limit "+thatstation.s_VehicleCount+"/"+thatstation.s_VehicleMax,1);
+			if (thatstation.CanUpgradeStation())
+				{ // can still upgrade
+				if (chem.VehicleCount+max_allow > INSTANCE.main.carrier.road_max_onroute)	max_allow=(INSTANCE.main.carrier.road_max_onroute-chem.VehicleCount);
+				// limit by number of vehicle per route
+				if (!INSTANCE.use_road)	max_allow=0;
+				// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 //			if (thatstation.vehicle_count+1 > thatstation.size)
-			if ( (thatstation.vehicle_count+max_allow) > thatstation.vehicle_max)
-				{ // we must upgrade
-				INSTANCE.main.builder.RoadStationNeedUpgrade(roadidx, start);
-				local fake=thatstation.CanUpgradeStation(); // to see if upgrade success
+				if ( (thatstation.s_VehicleCount+max_allow) > thatstation.s_VehicleMax)
+					{ // we must upgrade
+					INSTANCE.main.builder.RoadStationNeedUpgrade(roadidx, start);
+					local fake=thatstation.CanUpgradeStation(); // to see if upgrade success
+					}
+				if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
+				// limit by the max the station could handle
 				}
-			if (thatstation.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-thatstation.vehicle_count;
-			// limit by the max the station could handle
-			}
-		else	{ // max size already
-			if (thatstation.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=INSTANCE.main.carrier.road_max_onroute-thatstation.vehicle_count;
-			// limit by the max the station could handle
-			if (chem.vehicle_count+max_allow > INSTANCE.main.carrier.road_max_onroute)	max_allow=INSTANCE.main.carrier.road_max_onroute-chem.vehicle_count;
-			// limit by number of vehicle per route
-			}
-	break;
-	case AIVehicle.VT_RAIL:
-		if (thatstation.CanUpgradeStation())
-			{
-			if (!INSTANCE.use_train)	max_allow=0;
-			if (thatstation.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-thatstation.vehicle_count;
-			// don't try upgrade if we cannot add a new train
-			if (!INSTANCE.main.builder.TrainStationNeedUpgrade(roadidx, start))	max_allow=0; // if we fail to upgrade...
-			}
-		else	{
-			if (!INSTANCE.use_train) max_allow=0;
-			if (thatstation.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-thatstation.vehicle_count;
-			}
-	break;
-	case AIVehicle.VT_WATER:
-		if (!INSTANCE.use_boat)	max_allow=0;
-		if (thatstation.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-thatstation.vehicle_count;
-	break;
-	case RouteType.AIRNET:
-	case RouteType.AIRNETMAIL:
-		thatstation.CheckAirportLimits(); // force recheck limits
-		if (thatstation.CanUpgradeStation())
-			{
-			INSTANCE.main.builder.AirportNeedUpgrade(thatstation.stationID);
-			max_allow=0;
-			// get out after an upgrade, station could have change place...
-			}
-		DInfo(airname+"Limit for that route (network): "+chem.vehicle_count+"/"+INSTANCE.main.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),1);
-		DInfo(airname+"Limit for that airport (network): "+chem.vehicle_count+"/"+thatstation.vehicle_max,1);
-		if (chem.vehicle_count+max_allow > INSTANCE.main.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) max_allow=(INSTANCE.main.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) - chem.vehicle_count;
-		if (chem.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-chem.vehicle_count;
-	break;
-	case RouteType.CHOPPER:
-		DInfo(airname+"Limit for that route (choppers): "+chem.vehicle_count+"/4",1);
-		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_max,1);
-		if (chem.vehicle_count+max_allow > 4)	max_allow=4-chem.vehicle_count;
-	break;
-	case RouteType.AIR: // Airport upgrade is not related to number of aircrafts using them
-	case RouteType.AIRMAIL:
-	case RouteType.SMALLAIR:
-	case RouteType.SMALLMAIL:
-		thatstation.CheckAirportLimits(); // force recheck limits
-		if (thatstation.CanUpgradeStation())
-			{
-			INSTANCE.main.builder.AirportNeedUpgrade(thatstation.stationID);
-			max_allow=0;
-			}
-		local limitmax=INSTANCE.main.carrier.air_max;
-		if (shared)
-			{
-			if (thatstation.owner.Count()>0)	limitmax=limitmax / thatstation.owner.Count();
-			if (limitmax < 1)	limitmax=1;
-			}
-		if (virtualized)	limitmax=2; // only 2 aircrafts when the airport is also in network
-		local dualnetwork=false;
-		local routemod="(classic)";
-		if (virtualized && othervirtual)	
-			{
-			limitmax=0;	// no aircrafts at all on that route if both airport are in the network
-			dualnetwork=true;
-			routemod="(dual network)";
-			}
-		DInfo(airname+"Limit for that route "+routemod+": "+chem.vehicle_count+"/"+limitmax,1);
-		DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.vehicle_count+"/"+thatstation.vehicle_max,1);
-		if (!INSTANCE.use_air)	max_allow=0;
-		if (chem.vehicle_count+max_allow > limitmax)	max_allow=limitmax - chem.vehicle_count;
-		// limit by route limit
-		if (thatstation.vehicle_count+max_allow > thatstation.vehicle_max)	max_allow=thatstation.vehicle_max-thatstation.vehicle_count;
-		// limit by airport capacity
-	break;
-	}
-if (max_allow < 0)	max_allow=0;
-return max_allow;
+			else	{ // max size already
+				if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=INSTANCE.main.carrier.road_max_onroute-thatstation.s_VehicleCount;
+				// limit by the max the station could handle
+				if (chem.VehicleCount+max_allow > INSTANCE.main.carrier.road_max_onroute)	max_allow=INSTANCE.main.carrier.road_max_onroute-chem.VehicleCount;
+				// limit by number of vehicle per route
+				}
+		break;
+		case AIVehicle.VT_RAIL:
+			if (thatstation.CanUpgradeStation())
+				{
+				if (!INSTANCE.use_train)	max_allow=0;
+				if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
+				// don't try upgrade if we cannot add a new train
+				if (!INSTANCE.main.builder.TrainStationNeedUpgrade(roadidx, start))	max_allow=0; // if we fail to upgrade...
+				}
+			else	{
+				if (!INSTANCE.use_train) max_allow=0;
+				if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
+				}
+		break;
+		case AIVehicle.VT_WATER:
+			if (!INSTANCE.use_boat)	max_allow=0;
+			if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
+		break;
+		case RouteType.AIRNET:
+		case RouteType.AIRNETMAIL:
+			thatstation.CheckAirportLimits(); // force recheck limits
+			if (thatstation.CanUpgradeStation())
+				{
+				INSTANCE.main.builder.AirportNeedUpgrade(thatstation.s_ID);
+				return 0;
+				// get out after an upgrade, station could have change place...
+				}
+			DInfo(airname+"Limit for that route (network): "+chem.VehicleCount+"/"+INSTANCE.main.carrier.airnet_max*cCarrier.VirtualAirRoute.len(),1);
+			DInfo(airname+"Limit for that airport (network): "+chem.VehicleCount+"/"+thatstation.s_VehicleMax,1);
+			if (chem.VehicleCount+max_allow > INSTANCE.main.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) max_allow=(INSTANCE.main.carrier.airnet_max*cCarrier.VirtualAirRoute.len()) - chem.VehicleCount;
+			if (chem.VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-chem.VehicleCount;
+		break;
+		case RouteType.CHOPPER:
+			DInfo(airname+"Limit for that route (choppers): "+chem.VehicleCount+"/4",1);
+			DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.s_VehicleMax,1);
+			if (chem.VehicleCount+max_allow > 4)	max_allow=4-chem.VehicleCount;
+		break;
+		case RouteType.AIR: // Airport upgrade is not related to number of aircrafts using them
+		case RouteType.AIRMAIL:
+		case RouteType.SMALLAIR:
+		case RouteType.SMALLMAIL:
+			thatstation.CheckAirportLimits(); // force recheck limits
+			if (thatstation.CanUpgradeStation())
+				{
+				INSTANCE.main.builder.AirportNeedUpgrade(thatstation.s_ID);
+				max_allow=0;
+				}
+			local limitmax=INSTANCE.main.carrier.air_max;
+			if (shared)
+				{
+				if (thatstation.s_Owner.Count()>0)	limitmax=limitmax / thatstation.s_Owner.Count();
+				if (limitmax < 1)	limitmax=1;
+				}
+			if (virtualized)	limitmax=2; // only 2 aircrafts when the airport is also in network
+			local dualnetwork=false;
+			local routemod="(classic)";
+			if (virtualized && othervirtual)	
+				{
+				limitmax=0;	// no aircrafts at all on that route if both airport are in the network
+				dualnetwork=true;
+				routemod="(dual network)";
+				}
+			DInfo(airname+"Limit for that route "+routemod+": "+chem.VehicleCount+"/"+limitmax,1);
+			DInfo(airname+"Limit for that airport "+airportmode+": "+thatstation.s_VehicleCount+"/"+thatstation.s_VehicleMax,1);
+			if (!INSTANCE.use_air)	max_allow=0;
+			if (chem.VehicleCount+max_allow > limitmax)	max_allow=limitmax - chem.VehicleCount;
+			// limit by route limit
+			if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
+			// limit by airport capacity
+		break;
+		}
+	if (max_allow < 0)	max_allow=0;
+	return max_allow;
 }
 
 function cCarrier::BuildAndStartVehicle(routeid)
 // Create a new vehicle on route
 {
-local road=cRoute.GetRouteObject(routeid);
-if (road == null)	return false;
-local res=false;
-switch (road.route_type)
-	{
-	case AIVehicle.VT_ROAD:
-		res=INSTANCE.main.carrier.CreateRoadVehicle(routeid);
-	break;
-	case AIVehicle.VT_RAIL:
-		res=INSTANCE.main.carrier.CreateRailVehicle(routeid);
-	break;
-	case AIVehicle.VT_WATER:
-	break;
-	case RouteType.AIRNET:
-	case RouteType.AIRNETMAIL:
-	case RouteType.CHOPPER:
-	case RouteType.AIR:
-	case RouteType.AIRMAIL:
-	case RouteType.SMALLAIR:
-	case RouteType.SMALLMAIL:
-		res=INSTANCE.main.carrier.CreateAirVehicle(routeid);
-	break;
-	}
-if (res)	road.RouteUpdateVehicle();
-return res;
+	local road=cRoute.Load(routeid);
+	if (!road)	return false;
+	local res=false;
+	switch (road.VehicleType)
+		{
+		case AIVehicle.VT_ROAD:
+			res=INSTANCE.main.carrier.CreateRoadVehicle(routeid);
+		break;
+		case AIVehicle.VT_RAIL:
+			res=INSTANCE.main.carrier.CreateRailVehicle(routeid);
+		break;
+		case AIVehicle.VT_WATER:
+		break;
+		case RouteType.AIRNET:
+		case RouteType.AIRNETMAIL:
+		case RouteType.CHOPPER:
+		case RouteType.AIR:
+		case RouteType.AIRMAIL:
+		case RouteType.SMALLAIR:
+		case RouteType.SMALLMAIL:
+			res=INSTANCE.main.carrier.CreateAirVehicle(routeid);
+		break;
+		}
+	if (res)	road.RouteUpdateVehicle();
+	return res;
 }
 
 function cCarrier::GetVehicle(routeidx)
 // return the vehicle we will pickup if we build a vehicle for that route
 {
-local road=cRoute.GetRouteObject(routeidx);
-if (road == null)	return null;
-switch (road.route_type)
-	{
-	case	RouteType.RAIL:
-		return null;
-	break;
-	case	RouteType.WATER:
-		return null;
-	break;
-	case	RouteType.ROAD:
-		return INSTANCE.main.carrier.GetRoadVehicle(routeidx);
-	break;
-	default: // to catch all AIR type
-		return INSTANCE.main.carrier.GetAirVehicle(routeidx);
-	break;
-	}
+	local road=cRoute.Load(routeidx);
+	if (!road)	return null;
+	switch (road.VehicleType)
+		{
+		case	RouteType.RAIL:
+			return null;
+		break;
+		case	RouteType.WATER:
+			return null;
+		break;
+		case	RouteType.ROAD:
+			return INSTANCE.main.carrier.GetRoadVehicle(routeidx);
+		break;
+		default: // to catch all AIR type
+			return INSTANCE.main.carrier.GetAirVehicle(routeidx);
+		break;
+		}
 }
 
 function cCarrier::GetEngineEfficiency(engine, cargoID)
@@ -293,4 +294,3 @@ foreach (groupID, dummy in allgroup)
 	AIController.Sleep(1);
 	}
 }
-

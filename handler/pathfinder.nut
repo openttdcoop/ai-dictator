@@ -77,7 +77,7 @@ function cPathfinder::InfoSign(msg)
 function cPathfinder::AdvanceTask(UID)
 // Advance the pathfinding search
 	{
-	local maxTimer=400;	// maximum time put on pathfinding a path
+	local maxTimer=300;	// maximum time put on pathfinding a path
 	local maxStep=10;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);

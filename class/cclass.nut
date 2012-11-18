@@ -120,9 +120,8 @@ function cMain::CheckAccount()
 	local maxLoan = AICompany.GetMaxLoanAmount();
 	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	local goodcash = bank.mincash * cBanker.GetInflationRate();
-	if (goodcash < bank.mincash) goodcash = bank.mincash;
 	if (ourLoan == 0 && cash >= bank.mincash)	bank.unleash_road=true;
-	if (cash < goodcash)	{ bank.canBuild=false; }
+	if (!cBanker.CanBuyThat(goodcash))	{ DInfo("Low on cash, disabling build : "+goodcash,1); bank.canBuild=false; }
 	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
 	if (maxLoan > 2000000 && ourLoan > 0 && route.RouteIndexer.Count() > 6)
 		{ DInfo("Trying to repay loan",1); bank.canBuild=false; } // wait to repay loan

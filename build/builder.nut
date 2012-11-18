@@ -136,8 +136,14 @@ function cBuilder::BuildStation(start)
 		case RouteType.SMALLMAIL:
 		case RouteType.CHOPPER:
 		success=INSTANCE.main.builder.BuildAirStation(start);
-		if (success!=-1)	success=true;
-				else	success=false;
+		// we get the stationID return, but builder expect it to be in SourceStation or TargetStation to claim it
+		if (success != -1)
+			{
+			if (start)	INSTANCE.main.route.SourceStation = success;
+				else	INSTANCE.main.route.TargetStation = success;
+			success = true;
+			}
+		else	success=false;
 		break;
 		}
 	return success;
@@ -175,66 +181,73 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 // compare start(source/target) station we need vs stationID
 // return true if compatible
 {
-	local compare=cStation.GetStationObject(stationID);
-	if (compare == null)	// might happen, we found a dead station
+	local compare=cStation.Load(stationID);
+	if (!compare)	// might happen, we found an unknown station
 		{
-		INSTANCE.main.builder.DeleteStation(-1, stationID);
-		DInfo("Removing station "+cStation.StationGetName(stationID)+" that is unused.",1);
-		return false;
+		compare = cStation.InitNewStation(stationID);
+		if (compare == null)	return false; // try add this one as known
 		}
-	if (compare.stationID == INSTANCE.main.route.source_stationID)	return false;
-	if (compare.stationID == INSTANCE.main.route.target_stationID)	return false;
-//if (compare.stationType == AIStation.STATION_TRAIN)	return false; // mark all rail stations incompatible to sharing
-	DInfo("We are comparing with station #"+stationID+" "+cStation.StationGetName(stationID),2);
+	if (compare.s_Owner.IsEmpty()) // known but unused
+		{
+		if (INSTANCE.main.builder.DestroyStation(stationID))	return false;
+		} // keep using that one if we didn't destroy it
+	local sourcevalid = (typeof(INSTANCE.main.route.SourceStation) == "instance");
+	local targetvalid = (typeof(INSTANCE.main.route.TargetStation) == "instance");
+	if (sourcevalid && compare.s_ID == INSTANCE.main.route.SourceStation.s_ID)	return false;
+	if (targetvalid && compare.s_ID == INSTANCE.main.route.TargetStation.s_ID)	return false;
+	// bad we are comparing the same station with itself
+	DInfo("We are comparing with station #"+compare.s_Name,2);
 	// find if station will accept our cargo
 	local handling=true;
 	if (start)
 		{
-		if (!compare.IsCargoProduce(INSTANCE.main.route.cargoID))
+		if (!compare.IsCargoProduce(INSTANCE.main.route.CargoID))
 			{
-			DInfo("That station "+cStation.StationGetName(compare.stationID)+" doesn't produce "+cCargo.GetCargoLabel(INSTANCE.main.route.cargoID),2);
+			DInfo("Station "+compare.s_Name+" doesn't produce "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
 			handling=false;
 			}
 		}
 	else	{
-		if (!compare.IsCargoAccept(INSTANCE.main.route.cargoID))
+		if (!compare.IsCargoAccept(INSTANCE.main.route.CargoID))
 			{
-			DInfo("That station "+cStation.StationGetName(compare.stationID)+" doesn't accept "+cCargo.GetCargoLabel(INSTANCE.main.route.cargoID),2);
+			DInfo("Station "+compare.s_Name+" doesn't accept "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
 			handling=false;
 			}
 		}
 	if (!handling)
 			{
-			DInfo("Station "+cStation.StationGetName(compare.stationID)+" refuse "+cCargo.GetCargoLabel(INSTANCE.main.route.cargoID),2);
+			DInfo("Station "+compare.s_Name+" refuse "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
 			return false;
 			}
-	// here station are compatible, but still do that station is within our original station area ?
-	DInfo("Checking if station is within area of our industry/town",2);
+	// here stations are compatibles, but still do that station is within our original station area ?
+	DInfo("Checking if "+compare.s_Name+" is within area of our industry/town",2);
 	local tilecheck = null;
 	local goal=null;
-	local startistown=false;
-	if (start)	{ startistown=INSTANCE.main.route.source_istown; goal=INSTANCE.main.route.sourceID; }
-		else	{ startistown=INSTANCE.main.route.target_istown; goal=INSTANCE.main.route.targetID; }
-	if (startistown)
+	local istown=false;
+	if (start)	{ istown=INSTANCE.main.route.SourceProcess.IsTown; goal=INSTANCE.main.route.SourceProcess.ID; }
+		else	{ istown=INSTANCE.main.route.TargetProcess.IsTown; goal=INSTANCE.main.route.TargetProcess.ID; }
+	if (istown)
 		{ // check if the station is also influencing our town
-		tilecheck=cTileTools.IsWithinTownInfluence(compare.stationID,goal);
+		tilecheck=cTileTools.IsWithinTownInfluence(compare.s_ID, goal);
 		if (!tilecheck)	
 			{
-			DInfo("Station is outside "+AITown.GetName(goal)+" influence",2);
+			DInfo("Station "+compare.s_Name+" is outside "+cProcess.GetProcessName(goal, true)+" influence",2);
 			return false;
 			}
 		}
 	else	{ // check the station is within our industry
-		if (start)	tilecheck=AITileList_IndustryProducing(goal, compare.radius);
-			else	tilecheck=AITileList_IndustryAccepting(goal, compare.radius);
+		if (start)	tilecheck=AITileList_IndustryProducing(goal, compare.s_Radius);
+			else	tilecheck=AITileList_IndustryAccepting(goal, compare.s_Radius);
 		// if the station location is in that list, the station touch the industry, nice
 		local touching = false;
-		local stationtiles=cTileTools.FindStationTiles(AIStation.GetLocation(compare.stationID));
-		foreach (position, dummy in stationtiles)	{ if (tilecheck.HasItem(position))	touching = true; }
+		foreach (position, dummy in compare.s_Tiles)
+			{
+			if (tilecheck.HasItem(position))	{ touching = true; break; }
+			}
 		if (touching)
-			{ DInfo("Station is within our industry radius",2); }
+			{ DInfo("Station "+compare.s_Name+" is within range of "+cProcess.GetProcessName(goal, false),2); }
 		else	{
-			DInfo("Station is outside "+AIIndustry.GetName(goal)+" radius",2);
+			{ DInfo("Station "+compare.s_Name+" is outside range of "+cProcess.GetProcessName(goal, false),2); }
 			return false;
 			}
 		}
@@ -248,6 +261,7 @@ function cBuilder::FindCompatibleStationExists()
 	// find source station compatible
 	if (INSTANCE.main.route.StationType == null) return false;
 	local sList=AIStationList(INSTANCE.main.route.StationType);
+	
 	DInfo("Looking for a compatible station sList="+sList.Count(),2);
 	INSTANCE.main.builder.DumpRoute();
 	local source_success=false;
@@ -300,7 +314,8 @@ function cBuilder::TryBuildThatRoute()
 {
 	local success=false;
 	local buildWithRailType=null;
-	DInfo("Route "+INSTANCE.main.route.Name+" Status:"+INSTANCE.main.route.Status,1);
+	DInfo("Route "+INSTANCE.main.route.Name,1);
+	DInfo("Status:"+INSTANCE.main.route.Status,1);
 	// not using switch/case so we can advance steps in one pass
 	switch (INSTANCE.main.route.VehicleType)
 		{
@@ -330,20 +345,23 @@ function cBuilder::TryBuildThatRoute()
 		case	RouteType.SMALLAIR:
 		case	RouteType.SMALLMAIL:
 		case	RouteType.CHOPPER:
+print("aircraft task");
 			local modele=AircraftType.EFFICIENT;
 			if (!INSTANCE.main.route.SourceProcess.IsTown)	modele=AircraftType.CHOPPER;
 			success=INSTANCE.main.carrier.ChooseAircraft(INSTANCE.main.route.CargoID, INSTANCE.main.route.Distance, modele);
+print("success at picking aircraft");
 		break;
 		}
 	if (!success)
 		{
+print("no success at step 0");
 		DWarn("There's no vehicle we could use to carry that cargo: "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
 		INSTANCE.main.route.RouteIsNotDoable();
 		INSTANCE.main.builder.building_route=-1;
 		return false;
 		}
 	else	{ if (INSTANCE.main.route.Status==0)	INSTANCE.main.route.Status=1; } // advance to next phase
-
+print("status 1");
 	if (INSTANCE.main.route.Status==1)
 		{
 		INSTANCE.main.builder.FindCompatibleStationExists();
@@ -360,6 +378,7 @@ function cBuilder::TryBuildThatRoute()
 			}
 		INSTANCE.main.route.Status=2;
 		}
+print("status 2");
 	if (INSTANCE.main.route.Status==2) // change to add check against station is valid
 		{
 		if (INSTANCE.main.route.SourceStation == null)
@@ -392,6 +411,7 @@ function cBuilder::TryBuildThatRoute()
 			}
 		else { INSTANCE.main.route.Status=3; }
 		}
+print("status 3");
 	if (INSTANCE.main.route.Status==3)	
 		{
 		if (INSTANCE.main.route.TargetStation == null)
@@ -409,7 +429,7 @@ function cBuilder::TryBuildThatRoute()
 				DInfo("Destination station is already build, we're reusing an existing one",0);
 				}
 		if (success)
-			{ // attach the new station object to the route, stationID of the new station is hold in TargetStation
+			{ // attach the new station object to the route, stationID of the new station is hold in TargetStation for road
 			INSTANCE.main.route.TargetStation=cStation.Load(INSTANCE.main.route.TargetStation);
 			if (!INSTANCE.main.route.TargetStation)	{ INSTANCE.main.builder.CriticalError=true; success= false; }
 									else	INSTANCE.main.route.TargetStation.OwnerClaimStation(INSTANCE.main.route.UID);
@@ -428,6 +448,7 @@ function cBuilder::TryBuildThatRoute()
 			}
 		else	{ INSTANCE.main.route.Status=4 }
 		}
+print("status 4");
 	if (INSTANCE.main.route.Status==4) // pathfinding
 		{
 		success=INSTANCE.main.builder.BuildRoadByType();
@@ -443,6 +464,7 @@ function cBuilder::TryBuildThatRoute()
 			else	{ return false; }
 				} // and nothing more, stay at that phase & rebuild road when possible
 		}
+print("status 5");
 	if (INSTANCE.main.route.Status==5)
 		{ // check the route is really valid
 		if (INSTANCE.main.route.VehicleType == AIVehicle.VT_ROAD)
@@ -453,6 +475,7 @@ function cBuilder::TryBuildThatRoute()
 		if (success)	{ INSTANCE.main.route.Status=6; }
 				else	{ INSTANCE.main.route.RouteIsNotDoable(); INSTANCE.main.builder.building_route=-1; return false; }
 		}	
+print("status 6");
 	if (INSTANCE.main.route.Status==6)
 		{
 		INSTANCE.main.route.RouteDone();
@@ -478,4 +501,3 @@ function cBuilder::TryBuildThatRoute()
 		}
 	return success;
 }
-

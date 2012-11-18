@@ -69,6 +69,14 @@ static	function GetVehicleObject(vehicleID)
 		}
 }
 
+function cCarrier::GetVehicleName(veh)
+// return a vehicle string with the vehicle infos
+{
+	if (!AIVehicle.IsValidVehicle(veh))	return "<Invalid vehicle> #"+veh;
+	local toret="#"+veh+" "+AIVehicle.GetName(veh)+"("+cEngine.GetName(AIVehicle.GetEngineType(veh))+")";
+	return toret;
+}
+
 function cCarrier::GetVehicleCount(vehtype)
 // return number of vehicle we own
 // return 0 on error
@@ -107,3 +115,5 @@ function cCarrier::VehicleCountUpdate()
 	running_vehicle[AIVehicle.VT_WATER]=sh;
 	running_vehicle[AIVehicle.VT_AIR]=ai;
 }
+
+

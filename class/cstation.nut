@@ -25,47 +25,47 @@ static	function GetStationObject(stationID)
 	s_ID			= null;	// id of station
 	s_Type		= null;	// AIStation.StationType
 	s_SubType		= null;	// Special subtype of station (depend on station)
-	s_DateBuilt		= null;	// Date when the station was built
 	s_Location		= null;	// Location of station
 	s_Depot		= null;	// depot position and id are the same
 	s_Size		= null;	// size of station: road = number of stations, trains=width, airport=width*height
 	s_MaxSize		= null; 	// maximum size a station could be
 	s_CargoProduce	= null;	// cargos ID produce at station, value = amount waiting
 	s_CargoAccept	= null;	// cargos ID accept at station, value = cargo rating
-	s_CargoUpdate	= null;	// Last time we update cargo info
 	s_Radius		= null;	// radius of the station
 	s_VehicleCount	= null;	// vehicle using that station
 	s_VehicleMax	= null;	// max vehicle that station could handle
 	s_VehicleCapacity	= null;	// total capacity of all vehicle using the station, item=cargoID, value=capacity
 	s_Owner		= null;	// list routes that own that station
-	s_LastUpdate	= null;	// record last date we update infos for the station
+	s_DateLastUpdate	= null;	// record last date we update infos for the station
+	s_DateLastUpgrade	= null;	// record last date we try upgrade the station
 	s_MoneyUpgrade	= null;	// money we need for upgrading the station
 	s_Name		= null;	// station name
 	s_Tiles		= null;	// Tiles own by station
+	s_DateBuilt		= null;	// Date we add this station as an object
 
 	constructor()
 		{ // * are saved variables
 		this.ClassName="cStation";
-		this.s_ID			= null;
-		this.s_Type		= null;
-		this.s_SubType		= null;
-		this.s_DateBuilt		= null;
-		this.s_Location		= null;
-		this.s_Depot		= null;
-		this.s_Size		= 1;
+		this.s_ID			= -1;
+		this.s_Type			= -1;
+		this.s_SubType		= -1;
+		this.s_Location		= -1;
+		this.s_Depot		= -1;
+		this.s_Size			= 1;
 		this.s_MaxSize		= 1;
 		this.s_CargoProduce	= AIList();
 		this.s_CargoAccept	= AIList();
-		this.s_CargoUpdate	= null;
 		this.s_Radius		= 0;
 		this.s_VehicleCount	= 0;
-		this.s_VehicleMax	= 0;
+		this.s_VehicleMax		= 0;
 		this.s_VehicleCapacity	= AIList();
 		this.s_Owner		= AIList();
-		this.s_LastUpdate	= null;
+		this.s_DateLastUpdate	= null;
+		this.s_DateLastUpgrade	= null;
 		this.s_MoneyUpgrade	= 0;
-		this.s_Name		= "Default Station Name";
+		this.s_Name			= "Default Station Name";
 		this.s_Tiles		= AIList();
+		this.s_DateBuilt		= AIDate.GetCurrentDate();
 		}
 }
 
@@ -84,33 +84,46 @@ function cStation::Load(_stationID)
 {
 	local thatstation=cStation.GetStationObject(_stationID);
 	if (thatstation == null)	{ DWarn("Invalid stationID : "+_stationID+" Cannot get object",1); return false; }
+	if (!AIStation.IsValidStation(thatstation.s_ID))
+		{
+		DWarn("BREAK: Invalid station in base, removing it",1);
+		delete cStation.stationdatabase[thatstation.s_ID];
+		cStation.VirtualAirports.RemoveItem(thatstation.s_ID);
+		return false;
+		}
 	return thatstation;
 }
 
 function cStation::Save()
 // Save the station in the database
 	{
-	if (this.s_ID in cStation.stationdatabase || this.s_ID == null)
-		{ DInfo("Not adding station #"+this.s_ID+" in database "+cStation.stationdatabase.len(),2); }
-	else	{
-		this.SetStationName();
-		DInfo("Adding station : "+this.s_Name+" to station database",2);
-		cStation.stationdatabase[this.s_ID] <- this;
+	if (this.s_ID == null)	{ DInfo("Not adding station #"+this.s_ID+" in database "+cStation.stationdatabase.len(),2);  return; }
+	if (this.s_ID in cStation.stationdatabase)	
+		{
+		DWarn("BREAK Station "+this.s_Name+" properties have been changed",2);
+		delete cStation.stationdatabase[this.s_ID];
+		cStation.VirtualAirports.RemoveItem(this.s_ID);
 		}
+	this.SetStationName();
+	DInfo("Adding station : "+this.s_Name+" to station database",2);
+	cStation.stationdatabase[this.s_ID] <- this;
 	}
 
 function cStation::DeleteStation(stationid)
-// Delete the station from database & airport ref
+// Delete the station from database if unused and old enough
 	{
 	local s = cStation.Load(stationid);
-	if (!s)	return;
-	if (s.s_Owner.Count() == 0) // no more own by anyone
+	if (!s)	return false;
+	if (s.s_Owner.Count() == 0 && !AIStation.IsValidStation(s.s_ID)) // no more own by anyone
 		{
-		DInfo("Removing station "+s.s_Name+" from station database",1);
+		DInfo("BREAK Removing station "+s.s_Name+" from station database",1);
 		foreach (tile, _ in s.Tiles)	{ cTileTools.UnBlackListTile(tile); }
-		delete cStation.stationdatabase[s.ID];
-		cStation.VirtualAirports.RemoveItem(s.ID);
+		delete cStation.stationdatabase[s.s_ID];
+		cStation.VirtualAirports.RemoveItem(s.s_ID);
+		return true;
 		}
+	else	DInfo("Keeping station "+s.s_Name+" as the station still exist",1);
+	return false;
 	}
 
 function cStation::FindStationType(stationid)
@@ -162,6 +175,22 @@ function cStation::GetStationName(stationID)
 	return s.s_Name;
 }
 
+function cStation::KeepOwner(oldstation, newstation)
+// We duplicate old properties into the newstation properties, making sure we keep values we must maintain
+{
+	if (oldstation == null)	return newstation;
+	if (typeof(oldstation.s_Name) == "string")	print("old name ="+oldstation.s_Name);
+if (typeof(oldstation.s_Owner) == "instance")	print("old owner is instance");
+if (oldstation.s_Owner instanceof AIList)	print("old owner is ailist");
+if (newstation.s_Owner instanceof AIList)	print("new owner is ailist");
+	if (typeof(oldstation.s_Owner) == "instance" && (oldstation.s_Owner instanceof AIList))
+		{
+		newstation.s_Owner = oldstation.s_Owner;
+		DInfo("Preserving "+oldstation.s_Owner.Count()+" owners of station "+oldstation.s_Name,2);
+		}
+	return newstation;
+}
+
 function cStation::InitNewStation(stationID)
 // Create a station object depending on station type. Add the station to base and return the station object or null on error.
 {
@@ -173,12 +202,14 @@ function cStation::InitNewStation(stationID)
 	local _StationType = cStation.FindStationType(stationID);
 	if (_StationType == -1)	{ DError("Couldn't determine station type use by station #"+stationID); return null; }
 	local _Location = AIStation.GetLocation(stationID);
+	local _oldstation = cStation.GetStationObject(stationID); // lookout if we knows this one already
 	local _station = null;
 	local nothing = 0; // make sure no foreach bug is bugging us
 	switch (_StationType)
 		{
 		case	AIStation.STATION_TRAIN:
 			_station = cStationRail();
+			_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_SubType = AIRail.GetRailType(_Location); // set rail type the station use
 			_station.s_MaxSize = INSTANCE.main.carrier.rail_max;
 			for (local zz=0; zz < 23; zz++)	_station.s_TrainSpecs.AddItem(zz,-1); // create special cases for train usage
@@ -190,10 +221,12 @@ function cStation::InitNewStation(stationID)
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do boat
 			_station = cStationWater();
+			_station = cStation.KeepOwner(_oldstation, _station);
 		break;
 		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
 			_station = cStationRoad();
+			_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_MaxSize = INSTANCE.main.carrier.road_max;
 			_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 			_station.s_Size = _station.s_Tiles.Count();
@@ -204,6 +237,7 @@ function cStation::InitNewStation(stationID)
 		break;
 		case	AIStation.STATION_AIRPORT:
 			_station = cStationAir();
+			_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_MaxSize = 1000; // airport size is limited by airport avaiability
 			_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 			_station.s_Size = _station.s_Tiles.Count();
@@ -215,8 +249,8 @@ function cStation::InitNewStation(stationID)
 	// now common properties
 	_station.s_Location = _Location;
 	_station.s_Type = _StationType;
-	_station.s_DateBuilt = AIBaseStation.GetConstructionDate(stationID);
 	_station.s_ID = stationID;
+	_station.s_DateBuilt = AIDate.GetCurrentDate();
 	foreach (tile, _ in _station.s_Tiles)	cStation.StationClaimTile(tile, stationID);
 	_station.Save();
 	_station.CanUpgradeStation(); // just to set max_vehicle
@@ -228,6 +262,11 @@ function cStation::CanUpgradeStation()
 // just return canUpgrade value or for airports true or false if we find a better airport
 	{
 	if (!cBanker.CanBuyThat(AICompany.GetLoanInterval()))	return false;
+	local now = AIDate.GetCurrentDate();
+	if (this.s_DateLastUpgrade != null && now - this.s_DateLastUpgrade < 60)	return false;
+	// if last time we try to upgrade we have fail and it was < 60 days, give up
+	if (this.s_DateLastUpgrade != null && !cBanker.CanBuyThat(this.s_MoneyUpgrade))	return false;
+	// we fail because we need that much money and we still don't have it
 	switch (this.s_Type)
 		{
 		case	AIStation.STATION_DOCK:
@@ -243,9 +282,9 @@ function cStation::CanUpgradeStation()
 			local newairport = cBuilder.GetAirportType();
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
 			local vehlist=AIVehicleList_Station(this.s_ID);
-			local townID=AIAirport.GetNearestTown(this.s_Location, this.SubType);
+			local townID=AIAirport.GetNearestTown(this.s_Location, this.s_SubType);
 			local townpop=AITown.GetPopulation(townID);
-			if (newairport > this.SubType && !vehlist.IsEmpty() && townpop >= (newairport*200))
+			if (newairport > this.s_SubType && !vehlist.IsEmpty() && townpop >= (newairport*200))
 				{ canupgrade=true; DInfo("NEW AIRPORT AVAILABLE ! "+newairport,2); }
 			if (this.s_Tiles.Count()==1)	return false; // plaforms have 1 size only
 			return canupgrade;
@@ -263,9 +302,9 @@ function cStation::UpdateStationInfos()
 // Update informations for that station if informations are old enough
 	{
 	local now = AIDate.GetCurrentDate();
-	if (this.s_LastUpdate != null && now - this.s_LastUpdate < 20)	{ DInfo("Station "+this.s_Name+" infos are fresh",2); return; }
+	if (this.s_DateLastUpdate != null && now - this.s_DateLastUpdate < 20)	{ DInfo("Station "+this.s_Name+" infos are fresh",2); return; }
 	DInfo("Refreshing station "+this.s_Name+" infos",2);
-	this.s_LastUpdate = now;
+	this.s_DateLastUpdate = now;
 	this.UpdateCapacity();
 	this.UpdateCargos();
 	}
@@ -276,12 +315,6 @@ function cStation::IsDepot(tile)
 	if (tile == null)	return false;
 	local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile) || AIAirport.IsHangarTile(tile));
 	return isDepot;
-	}
-
-function cStation::IsStationVirtual(stationID)
-// return true if the station is part of the airnetwork
-	{
-	return (cCarrier.VirtualAirRoute.len() > 1 && cStation.VirtualAirports.HasItem(stationID));
 	}
 
 // private functions
@@ -436,17 +469,17 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 // This so, doesn't include unknown cargos that the station might handle but is not aware of
 // Use cStation::IsCargoProduceAccept for a real answer
 // That function is there to faster checks, not to gave true answer
-	{
-	local thatstation=null;
+{
+	local thatstation = false;
 	if (stationID == null)	thatstation=this;
-				else	thatstation=cStation.GetStationObject(stationID);
-	if (thatstation == null)	return;
+				else	thatstation=cStation.Load(stationID);
+	if (!thatstation)	return;
 	local cargolist=AIList();
-	cargolist.AddList(thatstation.cargo_accept);
-	cargolist.AddList(thatstation.cargo_produce);
+	cargolist.AddList(thatstation.s_CargoAccept);
+	cargolist.AddList(thatstation.s_CargoProduce);
 	local cargomail=cCargo.GetMailCargo();
 	local cargopass=cCargo.GetPassengerCargo();
-	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(thatstation.stationID));
+	local staloc=cTileTools.FindStationTiles(stationID);
 	foreach (cargo_id, cdummy in cargolist)
 		{
 		local valid_produce=false;
@@ -454,22 +487,22 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 		foreach (tiles, sdummy in staloc)
 			{
 			if (valid_accept && valid_produce)	break;
-			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.radius);
-			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.radius);
+			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.s_Radius);
+			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.s_Radius);
 			if (!valid_produce && produce > 0)	valid_produce=true;
 			if (!valid_accept && accept > 7)	valid_accept=true;
 			}
-		if (!valid_produce && thatstation.cargo_produce.HasItem(cargo_id))
+		if (!valid_produce && thatstation.s_CargoProduce.HasItem(cargo_id))
 			{
-			DInfo("Station "+thatstation.name+" no longer produce "+AICargo.GetCargoLabel(cargo_id),1);
-			thatstation.cargo_produce.RemoveItem(cargo_id);
+			DInfo("Station "+thatstation.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargo_id),1);
+			thatstation.s_CargoProduce.RemoveItem(cargo_id);
 			}
-		if (!valid_accept && thatstation.cargo_accept.HasItem(cargo_id))
+		if (!valid_accept && thatstation.s_CargoAccept.HasItem(cargo_id))
 			{
-			DInfo("Station "+thatstation.name+" no longer accept "+AICargo.GetCargoLabel(cargo_id),1);
-			thatstation.cargo_accept.RemoveItem(cargo_id);
+			DInfo("Station "+thatstation.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargo_id),1);
+			thatstation.s_CargoAccept.RemoveItem(cargo_id);
 			}
-		INSTANCE.Sleep(1);
+		local pause = cLooper();
 		}
 	}
 

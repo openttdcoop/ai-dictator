@@ -154,13 +154,13 @@ function DictatorAI::Start()
 				else main.builder.DumpTopJobs();
 				}
 		main.bank.CashFlow();
-		//main.event.HandleEvents();
+		main.event.HandleEvents();
 		AIController.Sleep(1);
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(1);
-		//main.builder.WeeklyChecks();
+		main.builder.WeeklyChecks();
 		AIController.Sleep(1);
-		//main.builder.MonthlyChecks();
+		main.builder.MonthlyChecks();
 		AIController.Sleep(1);
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(1);
@@ -320,7 +320,7 @@ function DictatorAI::CheckCurrentSettings()
 		break;
 		case 2: 
 			main.carrier.road_max_onroute=40;	// upto 40 bus/truck per route
-			main.carrier.road_max=6;		// upto a 6 size road station
+			main.carrier.road_max=9;		// upto a 9 size road station
 			main.carrier.road_upgrade=10;		// upgrade road station every X vehicles. station can handle so a max that*road_max vehicle
 			main.carrier.rail_max=12; 		// it's our highest train limit, can't build more than 12 platforms per station
 			main.carrier.water_max=60; 		// there's no real limit for boats

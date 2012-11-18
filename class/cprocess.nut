@@ -117,6 +117,15 @@ function cProcess::Load(uid)
 	return obj;
 }
 
+function cProcess::GetProcessName(uid, istown)
+// Return process name
+{
+	local puid = cProcess.GetUID(uid, istown);
+	local p = cProcess.Load(puid);
+	if (!p)	return "Unknown name";
+	return p.Name;
+}
+
 function cProcess::DeleteProcess(uid=null)
 // Remove a process
 {

@@ -76,8 +76,8 @@ static	function GetRouteObject(UID)
 		Status		= 0;			// *
 		GroupID		= null;		// *
 		CargoID		= null;
-		DateVehicleDelete = null;
-		DateHealthCheck	= null;
+		DateVehicleDelete = 0;
+		DateHealthCheck	= 0;
 		Source_RailEntry	= null;		// *
 		Target_RailEntry	= null;		// *
 		Primary_RailLink	= false;		// *
@@ -143,14 +143,14 @@ function cRoute::SetRouteName()
 		name="Virtual Air Mail Network for "+cCargo.GetCargoLabel(this.CargoID)+" using "+rtype;
 		vroute=true;
 		}
-	local src=null;
-	local dst=null;
+	local src=(typeof(this.SourceStation) == "instance");
+	local dst=(typeof(this.TargetStation) == "instance");
 	if (vroute)	this.Name = name;
 		else	{
-			if (this.SourceStation != null)	src=this.SourceStation.s_Name;
-								else	src=this.SourceProcess.Name;
-			if (this.TargetStation != null)	dst=this.TargetStation.s_Name;
-								else	dst=this.TargetProcess.Name;
+			if (src)	src=this.SourceStation.s_Name;
+				else	src=this.SourceProcess.Name;
+			if (dst)	dst=this.TargetStation.s_Name;
+				else	dst=this.TargetProcess.Name;
 			this.Name="#"+this.UID+": From "+src+" to "+dst+" for "+cCargo.GetCargoLabel(this.CargoID)+" using "+rtype;
 			}
 }
@@ -158,31 +158,10 @@ function cRoute::SetRouteName()
 function cRoute::RouteInitNetwork()
 // Add the network routes to the database
 	{
-		UID			= null;
-		SourceProcess	= null;
-		TargetProcess	= null;
-		SourceStation	= null;
-		TargetStation	= null;
-		VehicleCount	= 0;
-		VehicleType		= null;		// *
-		StationType		= null;
-		RailType		= null;
-		Distance		= 0;
-		Status		= 0;			// *
-		GroupID		= null;		// *
-		CargoID		= null;
-		DateVehicleDelete = null;
-		DateHealthCheck	= null;
-		Source_RailEntry	= null;		// *
-		Target_RailEntry	= null;		// *
-		Primary_RailLink	= false;		// *
-		Secondary_RailLink= false;		// *
-		Twoway		= false;
-
 	local passRoute=cRoute();
 	passRoute.UID=0;
 	passRoute.CargoID=cCargo.GetPassengerCargo();
-	passRoute.VehicleType = RouteType.AIR;
+	passRoute.VehicleType = RouteType.AIRNET;
 	passRoute.StationType = AIStation.STATION_AIRPORT;
 	passRoute.Status=100;
 	passRoute.Distance = 1000; // a dummy distance start value
@@ -195,7 +174,7 @@ function cRoute::RouteInitNetwork()
 	local mailRoute=cRoute();
 	mailRoute.UID=1;
 	mailRoute.CargoID=cCargo.GetMailCargo();
-	mailRoute.VehicleType = RouteType.AIR;
+	mailRoute.VehicleType = RouteType.AIRNETMAIL;
 	mailRoute.StationType = AIStation.STATION_AIRPORT;
 	mailRoute.Status=100;
 	mailRoute.Distance = 1000;

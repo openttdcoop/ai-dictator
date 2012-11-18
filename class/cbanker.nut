@@ -119,9 +119,7 @@ function cBanker::PayLoan()
 function cBanker::CashFlow()
 {
 	this.PayLoan();
-	local goodcash=this.mincash;
-	if (goodcash < this.mincash)	goodcash=this.mincash;
-	this.RaiseFundsTo(goodcash);
+	this.RaiseFundsTo(this.mincash);
 }
 
 function cBanker::GetInflationRate()

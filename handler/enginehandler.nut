@@ -326,12 +326,12 @@ function cEngine::IsVehicleAtTop(vehID)
 	{
 	if (!AIVehicle.IsValidVehicle(vehID))	{ INSTANCE.DError("Not a valid vehicle",2); return -1; }
 	local idx=cCarrier.VehicleFindRouteIndex(vehID);
-	if (idx==null)	{ INSTANCE.DError("Fail to find the route in use by this vehicle",2); return -1; }
-	local road=cRoute.GetRouteObject(idx);
-	if (road == null)	{ INSTANCE.DError("Cannot map the route of that vehicle",2); return -1; }
-	local cargoID=road.cargoID;
+	if (idx == null)	{ INSTANCE.DError("Fail to find the route used by this vehicle",2); return -1; }
+	local road=cRoute.Load(idx);
+	if (!road)	return -1;
+	local cargoID=road.CargoID;
 	local vehType=AIVehicle.GetVehicleType(vehID);
-	if (vehType==AIVehicle.VT_AIR)	cargoID=road.route_type;
+	if (vehType==AIVehicle.VT_AIR)	cargoID=road.VehicleType;
 	local engineID=AIVehicle.GetEngineType(vehID);
 	return cEngine.EngineIsTop(engineID, cargoID, false);
 	}

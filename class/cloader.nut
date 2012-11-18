@@ -445,7 +445,13 @@ function cLoader::LoadingGame()
 		grouplist.RemoveItem(cRoute.VirtualAirGroup[1]);
 		foreach (grp, dummy in grouplist)	AIGroup.DeleteGroup(grp);
 		local vehlist=AIVehicleList();
-		foreach (veh, dummy in vehlist)	{ cCarrier.VehicleOrdersReset(veh); INSTANCE.main.carrier.VehicleMaintenance_Orders(veh); }
+		foreach (obj, _ in cJobs.database)	{ obj.isUse = false; }
+		foreach (veh, dummy in vehlist)
+			{
+			cCarrier.VehicleOrdersReset(veh);
+			INSTANCE.main.carrier.VehicleMaintenance_Orders(veh);
+			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
+			}
 		}
 	OneWeek=0;
 	OneMonth=0;
@@ -469,3 +475,4 @@ function cLoader::LoadingGame()
 	local alltowns=AITownList();
 	INSTANCE.main.builder.CheckRouteStationStatus();
 }
+

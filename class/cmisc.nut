@@ -22,12 +22,12 @@ class cMisc
 
 function cMisc::PickCompanyName(who)
 {
-local nameo = ["Last", "For the", "Militia", "Revolution", "Good", "Bad", "Evil"];
-local namet = ["Hope", "People", "Corporation", "Money", "Dope", "Cry", "Shot", "War", "Battle", "Fight"];
-local x = 0; local y = 0;
-if (who == 666)  { x = AIBase.RandRange(7); y = AIBase.RandRange(10); }
-	else	 { x = who; y = who; }
-return nameo[x]+" "+namet[y]+" (DictatorAI)"; 
+	local nameo = ["Last", "For the", "Militia", "Revolution", "Good", "Bad", "Evil"];
+	local namet = ["Hope", "People", "Corporation", "Money", "Dope", "Cry", "Shot", "War", "Battle", "Fight"];
+	local x = 0; local y = 0;
+	if (who == 666)  { x = AIBase.RandRange(7); y = AIBase.RandRange(10); }
+		else	 { x = who; y = who; }
+	return nameo[x]+" "+namet[y]+" (DictatorAI)"; 
 }
 
 function cMisc::SetPresident()
@@ -49,18 +49,16 @@ function cMisc::SetPresident()
 
 function cMisc::getLastName(who)
 {
-local names = ["Castro", "Mussolini", "Lenin", "Stalin", "Batista", "Jong", "Mugabe", "Al-Bashir", "Milosevic",
-	"Bonaparte", "Caesar", "Tse-Tung"];
-if (who == 666) { who = AIBase.RandRange(12) };
-return names[who];
+	local names = ["Castro", "Mussolini", "Lenin", "Stalin", "Batista", "Jong", "Mugabe", "Al-Bashir", "Milosevic", "Bonaparte", "Caesar", "Tse-Tung"];
+	if (who == 666) { who = AIBase.RandRange(12) };
+	return names[who];
 }
 
 function cMisc::getFirstName(who)
 {
-local names = ["Fidel", "Benito", "Vladamir", "Joseph", "Fulgencio", "Kim", "Robert", "Omar", "Slobodan",
-	"Napoleon", "Julius", "Mao"];
-if (who == 666) { who = AIBase.RandRange(12) };
-return names[who];
+	local names = ["Fidel", "Benito", "Vladamir", "Joseph", "Fulgencio", "Kim", "Robert", "Omar", "Slobodan", "Napoleon", "Julius", "Mao"];
+	if (who == 666) { who = AIBase.RandRange(12) };
+	return names[who];
 }
 
 function cMisc::SetBit(value, bitset)
@@ -93,39 +91,39 @@ function cMisc::CheckBit(value, bitset)
 function cMisc::checkHQ()
 // Check and build our HQ if need
 {
-if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
-	{
-	local townlist = AITownList();
-	townlist.Valuate(AIBase.RandItem);
-	local tilelist = null;
-	tilelist = cTileTools.GetTilesAroundTown(townlist.Begin());
-	tilelist.Valuate(AIBase.RandItem);
-	foreach (tile, dummy in tilelist)
+	if (!AIMap.IsValidTile(AICompany.GetCompanyHQ(AICompany.COMPANY_SELF)))
 		{
-		if (AICompany.BuildCompanyHQ(tile))
+		local townlist = AITownList();
+		townlist.Valuate(AIBase.RandItem);
+		local tilelist = null;
+		tilelist = cTileTools.GetTilesAroundTown(townlist.Begin());
+		tilelist.Valuate(AIBase.RandItem);
+		foreach (tile, dummy in tilelist)
 			{
-			local name = AITown.GetName(AITile.GetClosestTown(tile));
-			DInfo("Built company headquarters near " + name,0);
-			return;
-			}
-		AIController.Sleep(1);
-		}	
-	}
+			if (AICompany.BuildCompanyHQ(tile))
+				{
+				local name = AITown.GetName(AITile.GetClosestTown(tile));
+				DInfo("Built company headquarters near " + name,0);
+				return;
+				}
+			AIController.Sleep(1);
+			}	
+		}
 }
 
 
-/*function GetCurrentGoalCallback(message, self)
-{
-print("Received answer goal with ");
-for (local i=0; i < message.Data.len(); i++)	print(" Goal #"+i+" - "+message.Data[i]);
-local goal_to_do=AIList();
-if (message.Data[3] < message.Data[2])	goal_to_do.AddItem(message.Data[1],0);
-if (message.Data[6] < message.Data[5])	goal_to_do.AddItem(message.Data[4],0);
-if (message.Data[9] < message.Data[8])	goal_to_do.AddItem(message.Data[7],0);
-if (goal_to_do.IsEmpty())	return;
-INSTANCE.SetCargoFavorite(goal_to_do.Begin());
-}
-*/
+//function GetCurrentGoalCallback(message, self)
+//{
+//print("Received answer goal with ");
+//for (local i=0; i < message.Data.len(); i++)	print(" Goal #"+i+" - "+message.Data[i]);
+//local goal_to_do=AIList();
+//if (message.Data[3] < message.Data[2])	goal_to_do.AddItem(message.Data[1],0);
+//if (message.Data[6] < message.Data[5])	goal_to_do.AddItem(message.Data[4],0);
+//if (message.Data[9] < message.Data[8])	goal_to_do.AddItem(message.Data[7],0);
+//if (goal_to_do.IsEmpty())	return;
+//INSTANCE.SetCargoFavorite(goal_to_do.Begin());
+//}
+
 function cMisc::ListToArray(list)
 {
 	local array = [];
