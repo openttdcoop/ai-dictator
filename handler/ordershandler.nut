@@ -123,15 +123,15 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 			oneorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
 			twoorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
 			if (!road.Twoway) { oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
-			srcplace= road.SourceStation.Location;
-			dstplace= road.TargetStation.Location;
+			srcplace= road.SourceStation.s_Location;
+			dstplace= road.TargetStation.s_Location;
 		break;
 		case AIVehicle.VT_RAIL:
 			oneorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
 			twoorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
 			if (!road.Twoway)	{ oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
-			srcplace= road.SourceStation.Location;
-			dstplace= road.TargetStation.Location;
+			srcplace= road.SourceStation.s_Location;
+			dstplace= road.TargetStation.s_Location;
 		break;
 		case RouteType.AIR:
 		case RouteType.AIRMAIL:
@@ -139,14 +139,14 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 		case RouteType.SMALLMAIL:
 			oneorder=AIOrder.OF_NONE;
 			twoorder=AIOrder.OF_NONE;
-			srcplace= road.SourceStation.Location;
-			dstplace= road.TargetStation.Location;
+			srcplace= road.SourceStation.s_Location;
+			dstplace= road.TargetStation.s_Location;
 		break;
 		case AIVehicle.VT_WATER:
 			oneorder=AIOrder.OF_FULL_LOAD_ANY;
 			twoorder=AIOrder.OF_FULL_LOAD_ANY;
-			srcplace= road.SourceStation.Location;
-			dstplace= road.TargetStation.Location;
+			srcplace= road.SourceStation.s_Location;
+			dstplace= road.TargetStation.s_Location;
 		break;
 		case RouteType.AIRNET:
 		case RouteType.AIRNETMAIL: // it's the air network
@@ -157,7 +157,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 			oneorder=AIOrder.OF_NONE;
 			twoorder=AIOrder.OF_NONE;
 			srcplace= AIIndustry.GetHeliportLocation(road.SourceProcess.ID);
-			dstplace= road.TargetStation.Location;
+			dstplace= road.TargetStation.s_Location;
 		break;
 		}
 	if (srcplace == -1 || dstplace == -1) return false;

@@ -239,6 +239,8 @@ switch (error)
 	return 0;
 	case	AIError.ERR_VEHICLE_IN_THE_WAY:
 	return -1;
+	case	AIError.ERR_OWNED_BY_ANOTHER_COMPANY:
+	return 0;
 	}
 return -2;
 }
@@ -384,7 +386,7 @@ if (smallerror == -2)
 		mytask.status=-1;
 		local badtiles=AIList();
 		badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-		badtiles.KeepValue(-realtask.stationID);
+		badtiles.KeepValue(-mytask.stationID);
 		cBuilder.RailCleaner(badtiles); // remove all rail we've built
 		foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
 		INSTANCE.main.builder.CriticalError=true;

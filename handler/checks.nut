@@ -103,6 +103,7 @@ function cBuilder::RouteNeedRepair()
 	if (deletethatone != -1)
 		{
 		local trys=cRoute.GetRouteObject(deletethatone);
+		DInfo("RouteNeedRepair mark "+trys.UID+" undoable",1);
 		trys.RouteIsNotDoable();
 		}
 }
@@ -112,6 +113,7 @@ function cBuilder::YearlyChecks()
 	INSTANCE.TwelveMonth=0;
 	DInfo("Yearly checks run...",1);
 	INSTANCE.main.builder.CheckRouteStationStatus();
+print("end station check");
 	INSTANCE.main.jobs.CheckTownStatue();
 	INSTANCE.main.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 	INSTANCE.main.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
@@ -173,6 +175,8 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 					{ stobj.s_CargoProduce.AddItem(cargoID, 0); } // rediscover cargo
 				else	{
 					DWarn("Station "+stobj.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargoID),0);
+					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
+print("undoable by checkroute");
 					road.RouteIsNotDoable();
 					continue;
 					}
@@ -184,6 +188,8 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 					{ stobj.s_CargoAccept.AddItem(cargoID, 0); } // rediscover cargo
 				else	{
 					DWarn("Station "+stobj.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargoID),0);
+					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
+print("undoable by checkroute");
 					road.RouteIsNotDoable();
 					}
 				}

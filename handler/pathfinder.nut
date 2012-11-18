@@ -14,9 +14,9 @@
 **/
 
 class cPathfinder extends cClass
+// Use it with cPathfinder.GetStatus(src, dst); to create and manage tasks
 	{
 static	database = {};
-
 static	function GetPathfinderObject(UID)
 		{
 		if (UID in cPathfinder.database)	return cPathfinder.database[UID];
@@ -56,22 +56,67 @@ static	function GetPathfinderObject(UID)
 		}
 	}
 
-function cPathfinder::GetUID(source, target)
+// public
+
+function cPathfinder::GetUID(src, tgt)
 // return UID of the task
 	{
-	if (source == null || target == null)	return null;
-	if (!AIMap.IsValidTile(source[0]) || !AIMap.IsValidTile(target[1]))	return null;
-	return source[0]+target[1];
+	src = cPathfinder.GetSourceX(src);
+	tgt = cPathfinder.GetTargetX(tgt);
+	local ss = typeof(src);
+	local ts = typeof(tgt);
+	if (ss != "array" || ts != "array")	{ DInfo("Bad pathfinder source ("+ss+") or target ("+ts+")",1); return null; }
+	if (src.len() != 2 || tgt.len() != 2)	{ DInfo("Bad pathfinder source ("+src.len()+") or target ("+tgt.len()+")",1); return null; }
+	if (!AIMap.IsValidTile(src[0]) || !AIMap.IsValidTile(tgt[1]))	return null;
+	return src[0]+tgt[1];
 	}
 
-function cPathfinder::InfoSign(msg)
-// Update the sign and recreate it if need
+function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
+// return the status of the task, and create it if we didn't plane it yet
 	{
-	local loc=-1;
-	if (AISign.IsValidSign(this.signHandler))	loc=AISign.GetLocation(this.signHandler);
-	if (loc != this.target[1])	loc=-1;
-	if (loc != -1)	AISign.SetName(this.signHandler, msg);
-			else	this.signHandler=AISign.BuildSign(this.target[1],msg);
+	source = cPathfinder.GetSourceX(source);
+	target = cPathfinder.GetTargetX(target);
+	local uid=cPathfinder.GetUID(source, target);
+	if (uid == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
+	if (uid in cPathfinder.database)	{ }
+						else	{ cPathfinder.CreateNewTask(source, target, useEntry, stationID); return 0; }
+	local pathstatus=cPathfinder.GetPathfinderObject(uid);
+	return pathstatus.status;
+	}	
+
+function cPathfinder::AdvanceAllTasks()
+// Advance all tasks handle by the pathfinder, if openttd handle multi-core/cpu this would be a huge help here
+	{
+	foreach (task in cPathfinder.database)	cPathfinder.AdvanceTask(task.UID);
+	}
+
+function cPathfinder::GetSolve(source, target)
+// return the solver instance
+	{
+	source = cPathfinder.GetSourceX(source);
+	target = cPathfinder.GetTargetX(target);
+	local UID=cPathfinder.GetUID(source, target);
+	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
+	local pftask=cPathfinder.GetPathfinderObject(UID);
+print("return solve for "+pftask.UID);
+	return pftask.solve;
+	}
+	
+function cPathfinder::CloseTask(source, target)
+// Destroy that task
+	{
+	source = cPathfinder.GetSourceX(source);
+	target = cPathfinder.GetTargetX(target);
+	local UID=cPathfinder.GetUID(source, target);
+	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
+	local pftask=cPathfinder.GetPathfinderObject(UID);
+	if (pftask == null)	return;
+	if (pftask.UID in cPathfinder.database)
+		{
+		delete cPathfinder.database[pftask.UID];
+		AISign.RemoveSign(pftask.signHandler);
+		DInfo("Pathfinder task "+pftask.UID+" closed.",1);
+		}
 	}
 
 function cPathfinder::AdvanceTask(UID)
@@ -123,40 +168,38 @@ function cPathfinder::AdvanceTask(UID)
 		}
 	}
 
-function cPathfinder::AdvanceAllTasks()
-// Advance all tasks handle by the pathfinder, if openttd handle multi-core/cpu this would be a huge help here
-	{
-	foreach (task in cPathfinder.database)	cPathfinder.AdvanceTask(task.UID);
-	}
+// private
 
-function cPathfinder::GetSolve(source, target)
-// return the solver instance
-	{
-	local UID=cPathfinder.GetUID(source, target);
-	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
-	local pftask=cPathfinder.GetPathfinderObject(UID);
-	return pftask.solve;
-	}
-	
-function cPathfinder::CloseTask(source, target)
-// Destroy that task
-	{
-	local UID=cPathfinder.GetUID(source, target);
-	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
-	local pftask=cPathfinder.GetPathfinderObject(UID);
-	if (pftask == null)	return;
-	if (pftask.UID in cPathfinder.database)
-		{
-		delete cPathfinder.database[pftask.UID];
-		AISign.RemoveSign(pftask.signHandler);
-		DInfo("Pathfinder task "+pftask.UID+" closed.",1);
-		}
+function cPathfinder::GetSourceX(x)
+// This convert integer coord to internal usage (same as railpathfinder)
+{
+	if (typeof(x) == "integer")	return [x,0];
+	return x;
 }
+
+function cPathfinder::GetTargetX(x)
+// This convert integer coord to internal usage (same as railpathfinder)
+{
+	if (typeof(x) == "integer")	return [0, x];
+	return x;
+}
+
+function cPathfinder::InfoSign(msg)
+// Update the sign and recreate it if need
+	{
+	local loc=-1;
+	if (AISign.IsValidSign(this.signHandler))	loc=AISign.GetLocation(this.signHandler);
+	if (loc != this.target[1])	loc=-1;
+	if (loc != -1)	AISign.SetName(this.signHandler, msg);
+			else	this.signHandler=AISign.BuildSign(this.target[1],msg);
+	}
 
 function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 // Create a new pathfinding task
 	{
 	local pftask=cPathfinder();
+	src = cPathfinder.GetSourceX(src);
+	tgt = cPathfinder.GetTargetX(tgt);
 	pftask.UID=cPathfinder.GetUID(src, tgt);
 	pftask.source=src;
 	pftask.target=tgt;
@@ -175,6 +218,8 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 		pftask.pathHandler.cost.slope=80;
 		pftask.pathHandler._cost_level_crossing = 120;
 		pftask.pathHandler.InitializePath([pftask.source[0]], [pftask.target[1]]);
+print("pftask.source="+pftask.source[0]+" : "+pftask.target[1]);
+print("BREAK");
 		}
 	else	{ // rail
 		pftask.pathHandler= MyRailPF();
@@ -185,20 +230,9 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 		pftask.pathHandler.cost.max_tunnel_length=30;
 		pftask.pathHandler.cost.tile=70;
 		pftask.pathHandler.cost.slope=80;
-		pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
+		pftask.pathHandler.InitializePath(pftask.source, pftask.target);
 		}
 	DInfo("New pathfinder task : "+pftask.UID,1);
 	cPathfinder.database[pftask.UID] <- pftask;
 	}
-
-function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
-// return the status of the task, and create it if we didn't plane it yet
-	{
-	local uid=cPathfinder.GetUID(source, target);
-	if (uid == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
-	if (uid in cPathfinder.database)	{ }
-						else	{ cPathfinder.CreateNewTask(source, target, useEntry, stationID); return 0; }
-	local pathstatus=cPathfinder.GetPathfinderObject(uid);
-	return pathstatus.status;
-	}	
 

@@ -257,7 +257,7 @@ function cRoute::GetDepot(uid, source=0)
 	local sdepot=-1;
 	local tdepot=-1;
 	if (typeof(road.SourceStation) == "instance")	sdepot=road.SourceStation.s_Depot;
-	if (typeof(road.TargetStation) == "instance")	sdepot=road.TargetStation.s_Depot;
+	if (typeof(road.TargetStation) == "instance")	tdepot=road.TargetStation.s_Depot;
 	if (road.VehicleType == RouteType.RAIL)
 		{
 		local se, sx, de, dx=-1;

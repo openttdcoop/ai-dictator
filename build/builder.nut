@@ -160,11 +160,12 @@ function cBuilder::BuildRoadByType()
 			DInfo("Calling road pathfinder: from "+INSTANCE.main.route.SourceStation.s_Name+" to "+INSTANCE.main.route.TargetStation.s_Name,2);
 			local fromsrc=INSTANCE.main.route.SourceStation.GetRoadStationEntry();
 			local todst=INSTANCE.main.route.TargetStation.GetRoadStationEntry();
-			if (!INSTANCE.main.route.Twoway && INSTANCE.main.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD))	return true;
+			if (!INSTANCE.main.route.Twoway && INSTANCE.main.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD, INSTANCE.main.route.Distance))	return true;
 			INSTANCE.main.route.Twoway = true; // mark it so roadrunner won't be run on next try
-			local result = INSTANCE.main.builder.AsyncConstructRoadROAD(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
-			if (result == -1)	{ INSTANCE.main.builder.CriticalError=true; cPathfinder.CloseTask([fromsrc,0], [0,todst]); }
-			if (result == 1)	{ cPathfinder.CloseTask([fromsrc,0], [0,todst]); return true; }
+			//local result = INSTANCE.main.builder.AsyncConstructRoadROAD(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
+			local result = cPathfinder.GetStatus(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
+			if (result == -1)	{ INSTANCE.main.builder.CriticalError=true; cPathfinder.CloseTask(fromsrc, todst); }
+			if (result == 2)	{ cPathfinder.CloseTask(fromsrc, todst); return true; }
 			return false;
 		case AIVehicle.VT_RAIL:
 			success=INSTANCE.main.builder.CreateStationsConnection(INSTANCE.main.route.source_stationID, INSTANCE.main.route.target_stationID);
@@ -345,23 +346,17 @@ function cBuilder::TryBuildThatRoute()
 		case	RouteType.SMALLAIR:
 		case	RouteType.SMALLMAIL:
 		case	RouteType.CHOPPER:
-print("aircraft task");
 			local modele=AircraftType.EFFICIENT;
 			if (!INSTANCE.main.route.SourceProcess.IsTown)	modele=AircraftType.CHOPPER;
 			success=INSTANCE.main.carrier.ChooseAircraft(INSTANCE.main.route.CargoID, INSTANCE.main.route.Distance, modele);
-print("success at picking aircraft");
 		break;
 		}
 	if (!success)
 		{
-print("no success at step 0");
 		DWarn("There's no vehicle we could use to carry that cargo: "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
-		INSTANCE.main.route.RouteIsNotDoable();
-		INSTANCE.main.builder.building_route=-1;
-		return false;
+		INSTANCE.main.route.Status = 666;
 		}
 	else	{ if (INSTANCE.main.route.Status==0)	INSTANCE.main.route.Status=1; } // advance to next phase
-print("status 1");
 	if (INSTANCE.main.route.Status==1)
 		{
 		INSTANCE.main.builder.FindCompatibleStationExists();
@@ -378,7 +373,6 @@ print("status 1");
 			}
 		INSTANCE.main.route.Status=2;
 		}
-print("status 2");
 	if (INSTANCE.main.route.Status==2) // change to add check against station is valid
 		{
 		if (INSTANCE.main.route.SourceStation == null)
@@ -402,16 +396,12 @@ print("status 2");
 			{ // it's bad we cannot build our source station, that's really bad !
 			if (INSTANCE.main.builder.CriticalError)
 				{
-				INSTANCE.main.builder.CriticalError=false;
-				INSTANCE.main.route.RouteIsNotDoable();
-				INSTANCE.main.builder.building_route=-1;
-				return false;
+				INSTANCE.main.route.Status = 666;
 				}
 			else	{ INSTANCE.builddelay=true; return false; }
 			}
 		else { INSTANCE.main.route.Status=3; }
 		}
-print("status 3");
 	if (INSTANCE.main.route.Status==3)	
 		{
 		if (INSTANCE.main.route.TargetStation == null)
@@ -437,14 +427,8 @@ print("status 3");
 			}
 		if (!success)
 			{ // we cannot do destination station
-			if (INSTANCE.main.builder.CriticalError)
-				{
-				INSTANCE.main.builder.CriticalError=false;
-				INSTANCE.main.route.RouteIsNotDoable();
-				INSTANCE.main.builder.building_route=-1;
-				return false;
-				}
-			else	{ INSTANCE.builddelay=true; return false; }
+			if (INSTANCE.main.builder.CriticalError)	INSTANCE.main.route.Status = 666;
+									else	{ INSTANCE.builddelay=true; return false; }
 			}
 		else	{ INSTANCE.main.route.Status=4 }
 		}
@@ -454,14 +438,8 @@ print("status 4");
 		success=INSTANCE.main.builder.BuildRoadByType();
 		if (success)	{ INSTANCE.main.route.Status=5; }
 			else	{
-				if (INSTANCE.main.builder.CriticalError)
-					{
-					INSTANCE.main.builder.CriticalError=false;
-					INSTANCE.main.route.RouteIsNotDoable();
-					INSTANCE.main.builder.building_route=-1;
-					return false;
-					}
-			else	{ return false; }
+				if (INSTANCE.main.builder.CriticalError)	INSTANCE.main.route.Status = 666;
+				else	return false;
 				} // and nothing more, stay at that phase & rebuild road when possible
 		}
 print("status 5");
@@ -473,9 +451,8 @@ print("status 5");
 			}
 		else	{ success=true; } // other route type for now are ok
 		if (success)	{ INSTANCE.main.route.Status=6; }
-				else	{ INSTANCE.main.route.RouteIsNotDoable(); INSTANCE.main.builder.building_route=-1; return false; }
+				else	{ INSTANCE.main.route.Status=666; }
 		}	
-print("status 6");
 	if (INSTANCE.main.route.Status==6)
 		{
 		INSTANCE.main.route.RouteDone();
@@ -498,6 +475,13 @@ print("status 6");
 		if (INSTANCE.safeStart >0 && INSTANCE.main.route.VehicleType == RouteType.ROAD)	INSTANCE.safeStart--;
 		//if (INSTANCE.main.route.route_type==RouteType.RAIL)	INSTANCE.main.route.DutyOnRailsRoute(INSTANCE.main.route.UID);
 		//							else	INSTANCE.main.route.DutyOnRoute();
+		}
+	if (INSTANCE.main.route.Status == 666)
+		{
+		DInfo("TryBuildThatRoute mark "+INSTANCE.main.route.UID+" undoable",1);
+		INSTANCE.main.route.RouteIsNotDoable();
+		INSTANCE.main.builder.building_route=-1;
+		return false;
 		}
 	return success;
 }

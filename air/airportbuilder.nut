@@ -60,8 +60,9 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	// prior to reroute aircraft, make sure they have a route to go
 	foreach (ownID, dummy in station.s_Owner)
 		{
-		local dummyObj=cRoute.GetRouteObject(ownID);
-		INSTANCE.main.carrier.VehicleBuildOrders(dummyObj.groupID,true);
+		local dummyObj=cRoute.Load(ownID);
+		if (!dummyObj)	continue;
+		INSTANCE.main.carrier.VehicleBuildOrders(dummyObj.GroupID,true);
 		}
 	INSTANCE.main.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 	local counter=0;
@@ -305,7 +306,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		}
 	success= (newStation != -1 && !needTime);
 	if (helipadonly)	success=true;
-	if (needMoney > 0)
+	if (needMoney > 0 && oldAirport != null)
 		{
 		oldAirport.s_MoneyUpgrade = needMoney;
 		INSTANCE.main.carrier.vehnextprice += needMoney; // try to reserve the money for next upgrade try
@@ -323,7 +324,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 							{
 							OldAirport.OwnerReleaseStation(ownerUID);
 							local deadowner=cRoute.Load(ownerUID);
-							if (deadowner != false)	deadowner.RouteIsNotDoable();
+							if (deadowner != false)	{ DInfo("BuildAirStation mark "+deadowner.UID+" undoable",1); deadowner.RouteIsNotDoable(); }
 							}
 						// and get ride of the old (now dead) station
 						cStation.DeleteStation(oldAirport.s_ID);
@@ -372,10 +373,10 @@ function cBuilder::BuildAirStation(start, routeID=null)
 			road.SourceStation = road.CreateNewStation(start);
 			road.SourceStation.s_Depot = -1;
 			road.SourceStation.s_Location = heliloc;
-			return heliloc;
+			return road.SourceStation.s_ID;
 			}
 		}
-	if (!needTime)	INSTANCE.main.builder.CriticalError=true;
+	if (!needTime && !needMoney)	INSTANCE.main.builder.CriticalError=true;
 	return -1;
 }
 

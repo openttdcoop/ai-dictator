@@ -348,7 +348,7 @@ function cBuilder::BuildRoadStation(start)
 			}
 		success=(depotbuild && stationbuild);
 		if (success) // we have depot + station tile, pathfind to them
-			{ INSTANCE.main.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(deptile), AIRoad.GetRoadStationFrontTile(statile));	}
+			{ INSTANCE.main.builder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(deptile), AIRoad.GetRoadStationFrontTile(statile), statile);	}
 		}
 	if ((statile==-1 || deptile==-1) && !istown && isneartown)
 		{ // We fail to build the station, but it's because we force build station close to roads and there is no roads
@@ -539,7 +539,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 			if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 				{
 				msg+="Damage & ";
-				INSTANCE.main.builder.BuildRoadROAD(sfront, dfront);
+				INSTANCE.main.builder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 					{ msg+=error_error; good=false; }
 				else	{ msg+=error_repair; minGood=true; break; }
@@ -613,7 +613,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 			if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
 				{
 				msg+="Damage & ";
-				INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front);
+				INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
 					{ msg+=error_error; good=false;  cTileTools.DemolishTile(repair.source.depot); }
 				else	{ msg+=error_repair; }
@@ -628,7 +628,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 			if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 				{
 				msg+="Damage & ";
-				INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front);
+				INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 					{ msg+=error_error; good=false; cTileTools.DemolishTile(repair.target.depot); }
 				else	{ msg+=error_repair; }
@@ -786,21 +786,6 @@ if (waserror)
 if (holes.len() > 0)
 	{ DInfo("Road construction fail...",1); return false; }
 return true;
-}
-
-function cBuilder::BuildRoadROAD(head1, head2)
-// Pathfind and building the road.
-// AllowDelay to false to get immediate road construction and block script until its end.
-// AllowDelay to true to use cPathfinder class that makes all pathfinding advance, but let the script continue others tasks.
-// we return true or false if it fail
-{
-local path= false;
-path = INSTANCE.main.builder.PathfindRoadROAD(head1, head2);
-if (path != null && path != false)
-	{
-	return INSTANCE.main.builder.ConstructRoadROAD(path);
-	}
-else	{ return false;	}
 }
 
 function cBuilder::RoadFindCompatibleDepot(tile)
@@ -1087,7 +1072,7 @@ else	{
 	}
 }
 
-function cBuilder::RoadRunner(source, target, road_type, walkedtiles=null, origin=null)
+function cBuilder::RoadRunnerHelper(source, target, road_type, walkedtiles=null, origin=null)
 // Follow all directions to walk through the path starting at source, ending at target
 // check if the path is valid by using road_type (railtype, road)
 // return true if we reach target by running the path
@@ -1097,7 +1082,9 @@ if (origin == null)	origin=AITile.GetDistanceManhattanToTile(source, target);
 if (walkedtiles == null)	{ walkedtiles=AIList(); }
 local valid=false;
 local direction=null;
-local found=(source == target);
+local found=false;
+local solve= AIList();
+if (source == target)	{ found = true; }
 local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
 foreach (voisin in directions)
 	{
@@ -1128,12 +1115,25 @@ foreach (voisin in directions)
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; } 
 	if (valid)	walkedtiles.AddItem(direction,0);
-//	if (valid && INSTANCE.debug)	cDebug.PutSign(direction,"+");
+	//if (valid && INSTANCE.debug)	cDebug.PutSign(direction,walkedtiles.Count());
 	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
-	if (!found && valid)	found=INSTANCE.main.builder.RoadRunner(direction, target, road_type, walkedtiles, origin);
-	if (found) return found;
+	if (!found && valid)	solve = INSTANCE.main.builder.RoadRunnerHelper(direction, target, road_type, walkedtiles, origin);
+	if (!found)	found = !solve.IsEmpty();
+	if (found) { solve.AddItem(source,walkedtiles.Count()); return solve; }
 	}
-return found;
+return solve;
+}
+
+function cBuilder::RoadRunner(source, target, road_type, distance = null)
+{
+	print("calling roadrunner: distance="+distance);
+	local solve = cBuilder.RoadRunnerHelper(source, target, road_type);
+	local result = !solve.IsEmpty();
+	if (result && distance != null && solve.Count() > distance*2)	result=false;
+	cDebug.ClearSigns();
+	print("solve result ="+solve.Count()+" "+distance+" return="+result);
+	cDebug.showLogic(solve);
+	return result;
 }
 
 function cBuilder::IsRoadStationBusy(stationid)
@@ -1152,15 +1152,31 @@ local station_obj=INSTANCE.chemin.GListGetItem(station_index);
 veh_using_station.Valuate(AITile.GetDistanceManhattanToTile, AIStation.GetLocation(stationid));
 }
 
+function cBuilder::BuildRoadROAD(head1, head2, stationID)
+// Pathfind and building the road.
+// AllowDelay to false to get immediate road construction and block script until its end.
+// AllowDelay to true to use cPathfinder class that makes all pathfinding advance, but let the script continue others tasks.
+// we return true or false if it fail
+{
+	while (true)
+		{
+print("roadbuilder strict called ="+head1+" : "+head2);
+		local result = cPathfinder.GetStatus(head1, head2, stationID);
+		if (result == -1)	{ INSTANCE.main.builder.CriticalError=true; cPathfinder.CloseTask(head1, head2); return false; }
+		if (result == 2)	{ cPathfinder.CloseTask(head1, head2); return true; }
+		cPathfinder.AdvanceAllTasks();
+		}
+}
+
 function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 // this construct (build) the road we get from path
 {
-	local head1=[src,0];
-	local head2=[0,dst];
-	local status=cPathfinder.GetStatus(head1, head2, stationID);
-	local path=cPathfinder.GetSolve(head1, head2);
+	local status=cPathfinder.GetStatus(src, dst, stationID);
+	local path=cPathfinder.GetSolve(src, dst);
 	local smallerror = 0;
 	if (path == null)	smallerror = -2;
+print("called with status ="+status);
+
 	switch (status)
 		{
 		case	0:	// still pathfinding
@@ -1168,7 +1184,7 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 		case	-1:	// failure
 		return -1;
 		case	2:	// succeed
-		return 1;
+		return 2;
 		case	3:	// waiting child to end
 		return 0;
 		}
@@ -1182,66 +1198,37 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 	local counter=0;
 	local walked=[];
 	cBanker.RaiseFundsBigTime();
-	while (path != null && smallerror == 0)
+	while (path != null)
 		{
-		if (prev != null)
+		local par = path.GetParent();
+	/*	local parone = null;
+		local partwo = null;
+		local parthree = null;
+		local parfour = null;
+		if (par != null)	parone = par.GetParent();
+		if (parone != null)	partwo = parone.GetParent();
+		if (partwo != null)	parthree = partwo.GetParent();*/
+		if (par != null)
 			{
-			if (AIMap.DistanceManhattan(prev, path.GetTile()) > 1)
+cDebug.PutSign(path.GetTile(), "a");
+cDebug.PutSign(par.GetTile(), "r");
+
+			if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1)
 				{
-				if (AITunnel.GetOtherTunnelEnd(prev) == path.GetTile())
-					{
-					if (!AITunnel.BuildTunnel(AIVehicle.VT_ROAD, prev))
-						{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),2);
-						smallerror=cBuilder.EasyError(AIError.GetLastError());
-						if (smallerror == -1)
-							{
-							DInfo("That tunnel would be too expensive. Construction aborted.",2);
-							return false;
-							}
-						if (smallerror == -2)	break;
-						}
-					else	{
-						cTileTools.BlackListTile(prev, -stationID); // i mark them as blacklist and assign to -stationID, so i could recover them later
-						cTileTools.BlackListTile(path.GetTile(), -stationID);
-						}
-					}
-				else	{
-					local bridgeID = cBridge.GetCheapBridgeID(AIVehicle.VT_ROAD, AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
-					if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgeID, prev, path.GetTile()))
-						{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),2);
-						smallerror=cBuilder.EasyError(AIError.GetLastError());
-						if (smallerror == -1)
-							{
-							DInfo("That bridge would be too expensive. Construction aborted.",2);
-							return false;
-							}
-						if (smallerror==-2)	break;
-						}
-					else	{
-						cTileTools.BlackListTile(prev, -stationID);
-						cTileTools.BlackListTile(path.GetTile(), -stationID);
-						}
-					cBridge.IsBridgeTile(prev); // force bridge check
-					}
-				prev = path.GetTile();
-				path = path.GetParent();
-				walked.push(prev);
-				}
-			 else {
-				// check for small up/down hills correction
-				local targetTile=path.GetTile();
+/*
 				if (prevprevprev != null)
 					{
-					if (AITile.GetSlope(prevprevprev) == AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) == AITile.SLOPE_FLAT && AITile.GetSlope(prevprev) != AITile.SLOPE_FLAT)
+					// check for small up/down hills correction
+					local targetTile=path.GetTile();
+					local parTile=par.GetTile();
+					local equal= (AITile.GetMinHeight(parTile) == AITile.GetMinHeight(targetTile));
+					if (equal && AITile.GetSlope(parTile) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT)
 						{
 						DInfo("Smoothing land to build road",1);
-						INSTANCE.NeedDelay(30);
-						cTileTools.TerraformLevelTiles(targetTile, prevprevprev);
+						cTileTools.TerraformLevelTiles(targetTile, prevprevprev.GetTile());
 						}
-					}
-				if (!AIRoad.BuildRoad(prev, targetTile))
+					}*/
+				if (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()))
 					{
 					smallerror=cBuilder.EasyError(AIError.GetLastError());
 					if (smallerror==-1)
@@ -1252,21 +1239,52 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 					if (smallerror==-2)	break;
 					}
 				else	{
-					cTileTools.BlackListTile(prev, -stationID);
+					cTileTools.BlackListTile(par.GetTile(), -stationID);
 					}
-				}
-			}
-		if (path != null)
-			{
-			prevprevprev= prevprev;
-			prevprev = prev;
-			prev = path.GetTile();
-			path = path.GetParent();
-			walked.push(prev);
-			}
-	}
-
-	local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, head2));
+				} // aimap
+		 	else	{
+				if (!cBridge.IsBridgeTile(path.GetTile()) && !AITunnel.IsTunnelTile(path.GetTile()))
+					{
+					if (AIRoad.IsRoadTile(path.GetTile())) cTileTools.DemolishTile(path.GetTile());
+					if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == par.GetTile())
+						{
+						if (!AITunnel.BuildTunnel(AIVehicle.VT_ROAD, path.GetTile()))
+							{
+							smallerror=cBuilder.EasyError(AIError.GetLastError());
+							if (smallerror==-1)
+								{
+								DInfo("An error occured while I was building the tunnel: " + AIError.GetLastErrorString(),2);
+								return false;
+								}
+							if (smallerror==-2)	break;
+							}
+						else	{
+							cTileTools.BlackListTile(par.GetTile(), -stationID);
+							}
+						} // aitunnel
+				 	else	{
+						local bridgeID = cBridge.GetCheapBridgeID(AIVehicle.VT_ROAD, AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
+						if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgeID, path.GetTile(), par.GetTile()))
+							{
+							smallerror=cBuilder.EasyError(AIError.GetLastError());
+							if (smallerror==-1)
+								{
+								DInfo("An error occured while I was building the bridge: " + AIError.GetLastErrorString(),2);
+								return false;
+								}
+							if (smallerror==-2)	break;
+							}
+						else	{
+							cTileTools.BlackListTile(par.GetTile(), -stationID); print("BREAK bridge built success");
+							}
+						}//else ai tunnel
+					}//if cBrigde
+				}// else aimap
+			} //ifpar
+		prev = path;
+		path = par;
+		}
+	local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, dst));
 	local source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
 	if (smallerror == -2)
 		{
@@ -1290,8 +1308,7 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 			mytask.status=-1;
 			local badtiles=AIList();
 			badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-			badtiles.KeepValue(-realtask.stationID);
-			cBuilder.RailCleaner(badtiles); // remove all rail we've built
+			badtiles.KeepValue(-mytask.stationID);
 			foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
 			INSTANCE.main.builder.CriticalError=true;
 			return false;
@@ -1312,10 +1329,10 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 			local newtarget=[0, prev];
 			DInfo("Pathfinder is calling an helper task",1);
 			// Create the helper task
-			local dummy= cPathfinder.GetStatus(head1, newtarget, stationID);
-			dummy=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, newtarget));
-			dummy.r_source=head1;
-			dummy.r_target=head2;
+			local dummy= cPathfinder.GetStatus(src, newtarget, stationID);
+			dummy=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, newtarget));
+			dummy.r_source=cPathfinder.GetSourceX(src);
+			dummy.r_target=cPathfinder.GetTargetX(newtarget);
 			mytask.status=3; // wait for subtask end
 			return false;
 			}
@@ -1344,4 +1361,4 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 		bltiles.KeepValue(-stationID);
 		return true;
 		}
-	}
+}

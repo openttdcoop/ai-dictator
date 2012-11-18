@@ -153,41 +153,42 @@ function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
 // if reroute this function stop all vehicles that use stationID to goto stationID
 // if !rereroute this function restore vehicles orders
 {
-local station=cStation.GetStationObject(stationID);
-local road=null;
-local vehlist=null;
-local veh=null;
-local group=null;
-local checkgroup=AIList();
-checkgroup.AddList(station.owner);
-checkgroup.AddItem(0,0); // add virtual group in the list
-foreach (ownID, dummy in station.owner)
-	{
-	if (ownID == 1)	continue; // ignore virtual mail route, route 0 will re-reroute route 1 already
-	road=cRoute.GetRouteObject(ownID);
-	if (road==null || road.groupID==null)	return;
-	if (reroute)
+	local station=cStation.Load(stationID);
+	if (!station)	return;
+	local road=null;
+	local vehlist=null;
+	local veh=null;
+	local group=null;
+	local checkgroup=AIList();
+	checkgroup.AddList(station.s_Owner);
+	checkgroup.AddItem(0,0); // add virtual group in the list
+	foreach (ownID, dummy in station.s_Owner)
 		{
-		vehlist=AIVehicleList_Group(road.groupID);
-		vehlist.Valuate(AIVehicle.GetState);
-		vehlist.RemoveValue(AIVehicle.VS_STOPPED);
-		vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
-		vehlist.RemoveValue(AIVehicle.VS_CRASHED);
-		foreach (veh, dummy in vehlist)
-			if (cCarrier.ToDepotList.HasItem(veh))	vehlist.RemoveItem(veh); // remove vehicle on their way to depot
-		if (vehlist.IsEmpty()) continue;
-		veh=vehlist.Begin();
-		local orderindex=VehicleFindDestinationInOrders(veh, stationID);
-		if (orderindex != -1)
+		if (ownID == 1)	continue; // ignore virtual mail route, route 0 will re-reroute route 1 already
+		road = cRoute.Load(ownID);
+		if (!road || road.GroupID==null)	continue;
+		if (reroute)
 			{
-			DInfo("Re-routing traffic on route "+cRoute.RouteGetName(road.UID)+" to ignore "+cStation.StationGetName(stationID),0);
-			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
-				{ DError("Fail to remove order for vehicle "+INSTANCE.main.carrier.GetVehicleName(veh),2); }
+			vehlist=AIVehicleList_Group(road.GroupID);
+			vehlist.Valuate(AIVehicle.GetState);
+			vehlist.RemoveValue(AIVehicle.VS_STOPPED);
+			vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
+			vehlist.RemoveValue(AIVehicle.VS_CRASHED);
+			foreach (veh, dummy in vehlist)
+				if (cCarrier.ToDepotList.HasItem(veh))	vehlist.RemoveItem(veh); // remove vehicle on their way to depot
+			if (vehlist.IsEmpty()) continue;
+			veh=vehlist.Begin();
+			local orderindex=VehicleFindDestinationInOrders(veh, stationID);
+			if (orderindex != -1)
+				{
+				DInfo("Re-routing traffic on route "+road.Name+" to ignore "+station.s_Name,0);
+				if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, orderindex)))
+					{ DError("Fail to remove order for vehicle "+INSTANCE.main.carrier.GetVehicleName(veh),2); }
+				}
 			}
+		else	{ INSTANCE.main.carrier.VehicleBuildOrders(road.GroupID,true); }
 		}
-	else	{ INSTANCE.main.carrier.VehicleBuildOrders(road.groupID,true); }
-	}
-}
+}	
 
 function cCarrier::VehicleSendToDepot(veh,reason)
 // send a vehicle to depot
