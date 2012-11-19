@@ -62,7 +62,6 @@ function cClass::DWarn(putMsg, debugValue=1)
 {
 	local debugState = DictatorAI.GetSetting("debug");
 	local func=this.GetName();
-	debugValue+=10;
 	if (debugState > 0)	func+="-> ";
 				else	func="";
 	if (debugValue <= debugState )

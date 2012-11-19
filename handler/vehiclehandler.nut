@@ -273,63 +273,63 @@ return null;
 function cCarrier::VehicleUpgradeEngine(vehID)
 // we will try to upgrade engine and wagons for vehicle veh
 {
-local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(vehID);
-if (idx == null)
-	{
-	DWarn("This vehicle "+INSTANCE.main.carrier.GetVehicleName(vehID)+" is not use by any route !!!",1);
-	INSTANCE.main.carrier.VehicleSell(vehID,true);
-	INSTANCE.main.carrier.vehnextprice=0;
-	return false;
-	}
-local betterEngine=cEngine.IsVehicleAtTop(vehID);
-if (betterEngine==-1)
-	{
-	DWarn("That vehicle have its engine already at top, building a new one anyway",1);
-	betterEngine=AIVehicle.GetEngineType(vehID);
-	}
-local vehtype=AIVehicle.GetVehicleType(vehID);
-local new_vehID=null;
-local road=INSTANCE.main.route.GetRouteObject(idx);
-if (road == null)	return;
-local homedepot=cRoute.GetDepot(idx);
-if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
-DInfo("Upgrading using depot at "+homedepot,2);
-cDebug.PutSign(homedepot,"D");
-local money=0;
-local oldenginename=INSTANCE.main.carrier.GetVehicleName(vehID);
-switch (vehtype)
-	{
-	case AIVehicle.VT_RAIL:
-// Upgrading the loco engine is doable, but it might get too complexe for nothing, so i will destroy the train, and tell the AddWagon function we need X more wagons, as the train is now removed, the function will have no choice then build another one. This new one (if it's doable) will be an upgraded version of loco and wagons. Problem solve.
-		homedepot=AIVehicle.GetLocation(vehID);
-		local numwagon=cCarrier.GetNumberOfWagons(vehID);
+	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(vehID);
+	local oldenginename=cCarrier.GetVehicleName(vehID);
+	if (idx == null)
+		{
+		DWarn("This vehicle "+oldenginename+" is not use by any route !!!",1);
 		INSTANCE.main.carrier.VehicleSell(vehID,false);
-		DInfo("Train vehicle "+oldenginename+" replace, a new train will be built",0);
-		INSTANCE.main.carrier.AddWagon(idx, numwagon);
-		return; // for now cannot do more than that
-	break;
-	case AIVehicle.VT_ROAD:
-		INSTANCE.main.carrier.VehicleSell(vehID,false);
-		new_vehID = INSTANCE.main.carrier.CreateRoadEngine(betterEngine, homedepot, road.cargoID);
-	break;
-	case AIVehicle.VT_AIR:
-		INSTANCE.main.carrier.VehicleSell(vehID,false);
-		new_vehID = INSTANCE.main.carrier.CreateAircraftEngine(betterEngine, homedepot);
-	break;
-	case AIVehicle.VT_WATER:
-		INSTANCE.main.carrier.VehicleSell(vehID,false);
-	return;
-	break;
-	}
-if (AIVehicle.IsValidVehicle(new_vehID))
-	{
-	local newenginename=INSTANCE.main.carrier.GetVehicleName(new_vehID);
-	AIGroup.MoveVehicle(road.groupID,new_vehID);
-	DInfo("Vehicle "+oldenginename+" replace with "+newenginename,0);
-	cCarrier.StartVehicle(new_vehID); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
-	INSTANCE.main.carrier.VehicleBuildOrders(road.groupID,false); // need to build its orders
-	}
-if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
+		INSTANCE.main.carrier.vehnextprice=0;
+		return false;
+		}
+	local betterEngine=cEngine.IsVehicleAtTop(vehID);
+	if (betterEngine==-1)
+		{
+		DWarn("That vehicle have its engine already at top, building a new one anyway",1);
+		betterEngine=AIVehicle.GetEngineType(vehID);
+		}
+	local vehtype=AIVehicle.GetVehicleType(vehID);
+	local new_vehID=null;
+	local road=cRoute.Load(idx);
+	if (!road)	return false;
+	local homedepot=cRoute.GetDepot(idx);
+	if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
+	DInfo("Upgrading using depot at "+homedepot,2);
+	cDebug.PutSign(homedepot,"D");
+	local money=0;
+	switch (vehtype)
+		{
+		case AIVehicle.VT_RAIL:
+		// Upgrading the loco engine is doable, but it might get too complexe for nothing, so i will destroy the train, and tell the AddWagon function we need X more wagons, as the train is now removed, the function will have no choice then build another one. This new one (if it's doable) will be an upgraded version of loco and wagons. Problem solve.
+			homedepot=AIVehicle.GetLocation(vehID);
+			local numwagon=cCarrier.GetNumberOfWagons(vehID);
+			INSTANCE.main.carrier.VehicleSell(vehID,false);
+			DInfo("Train vehicle "+oldenginename+" replace, a new train will be built",0);
+			INSTANCE.main.carrier.AddWagon(idx, numwagon);
+			return; // for now cannot do more than that
+		break;
+		case AIVehicle.VT_ROAD:
+			INSTANCE.main.carrier.VehicleSell(vehID,false);
+			new_vehID = INSTANCE.main.carrier.CreateRoadEngine(betterEngine, homedepot, road.CargoID);
+		break;
+		case AIVehicle.VT_AIR:
+			INSTANCE.main.carrier.VehicleSell(vehID,false);
+			new_vehID = INSTANCE.main.carrier.CreateAircraftEngine(betterEngine, homedepot);
+		break;
+		case AIVehicle.VT_WATER:
+			INSTANCE.main.carrier.VehicleSell(vehID,false);
+		return;
+		break;
+		}
+	if (AIVehicle.IsValidVehicle(new_vehID))
+		{
+		local newenginename=INSTANCE.main.carrier.GetVehicleName(new_vehID);
+		AIGroup.MoveVehicle(road.GroupID,new_vehID);
+		DInfo("Vehicle "+oldenginename+" replace with "+newenginename,0);
+		cCarrier.StartVehicle(new_vehID); // Not sharing orders with previous vehicle as its orders are "goto depot" orders
+		INSTANCE.main.carrier.VehicleBuildOrders(road.GroupID,false); // need to build its orders
+		}
+	if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
 }
 
 function cCarrier::VehicleMaintenance_Orders(vehID)
@@ -520,7 +520,8 @@ return true;
 function cCarrier::VehicleListSendToDepotAndWaitSell(vehlist)
 // Send & sell all vehicles from an AIList of vehicles, we will wait 2 months or if all vehicles are sold
 {
-	if (!vehlist instanceof AIList)	return;
+	if (vehlist instanceof AIList)	{}
+						else	return;
 	foreach (vehicle, dummy in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 	foreach (vehicle, dummy in vehlist)
 		{

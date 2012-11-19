@@ -157,6 +157,7 @@ function cRoute::CreateNewRoute(UID)
 			local randcargo=AIBase.RandRange(100);
 			if (randcargo >60)	{ this.CargoID=cCargo.GetMailCargo(); this.VehicleType=RouteType.SMALLMAIL; }
 						else	{ this.CargoID=cCargo.GetPassengerCargo(); this.VehicleType=RouteType.SMALLAIR; }
+			if (!this.SourceProcess.IsTown)	{ this.CargoID=cCargo.GetPassengerCargo(); this.VehicleType=RouteType.CHOPPER; }
 			DInfo("Airport work, choosen : "+randcargo+" "+cCargo.GetCargoLabel(this.CargoID),1);
 		break;
 		}

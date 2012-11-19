@@ -458,7 +458,7 @@ function cJobs::UpdateDoableJobs()
 		if (doable)
 			if (parentListID.HasItem(myjob.parentID))
 				{
-				DInfo("Job already done by parent job ! First pass filter",2);
+				//DInfo("Job already done by parent job ! First pass filter",2);
 				doable=false;
 				}
 		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	doable=false;
@@ -516,7 +516,7 @@ function cJobs::UpdateDoableJobs()
 
 		if (parentListID.HasItem(myjob.parentID))
 			{
-			DInfo("Job already done by parent job ! Second pass filter",2);
+			//DInfo("Job already done by parent job ! Second pass filter",2);
 			cJobs.jobDoable.RemoveItem(jobID);
 			}
 		}

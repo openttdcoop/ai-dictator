@@ -146,6 +146,8 @@ function cBuilder::BuildAirStation(start, routeID=null)
 	local oldAirport_Remove=false;
 	local airportUpgrade=false;
 	local oldAirport_Noise=0;
+	local oldAirport_Width=0;
+	local oldAirport_Height=0;
 	local tilelist=AITileList();
 	local success=false;
 	local allfail=true;
@@ -359,7 +361,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 						local dstValid = (typeof(oldOwner.TargetStation) == "instance");
 						if (srcValid && oldOwner.SourceStation.s_ID == oldAirport.s_ID)	oldOwner.SourceStation = newStation;
 						if (dstValid && oldOwner.TargetStation.s_ID == oldAirport.s_ID)	oldOwner.TargetStation = newStation;
-						oldOwner.RouteUpdateVehicle();
+						//oldOwner.RouteUpdateVehicle(); check routes.nut 58
 						local pause = cLooper();
 						}
 				cStation.DeleteStation(oldAirport.s_ID);

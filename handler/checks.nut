@@ -152,9 +152,9 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 // This check that our routes are still working, a dead station might prevent us to keep the job done
 // pass a stationID to onlythisone to only check that station ID
 {
-	//local allstations=AIStationList(AIStation.STATION_ANY);
-	local allstations = AIList();
-	foreach (stations in cStation.stationdatabase)	allstations.AddItem(stations.s_ID,0);
+	local allstations=AIStationList(AIStation.STATION_ANY);
+	//local allstations = AIList();
+	//foreach (stations in cStation.stationdatabase)	allstations.AddItem(stations.s_ID,0);
 	if (onlythisone != null)	allstations.KeepValue(onlythisone);
 	foreach (stationID, dummy in allstations)
 		{
