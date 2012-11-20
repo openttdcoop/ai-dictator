@@ -615,7 +615,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 				msg+="Damage & ";
 				INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
-					{ msg+=error_error; good=false;  cTileTools.DemolishTile(repair.source.depot); }
+					{ msg+=error_error; good=false;  cTileTools.DemolishTile(repair.SourceStation.s_Depot); }
 				else	{ msg+=error_repair; }
 				DInfo(msg,1);
 				}
@@ -630,7 +630,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 				msg+="Damage & ";
 				INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
-					{ msg+=error_error; good=false; cTileTools.DemolishTile(repair.target.depot); }
+					{ msg+=error_error; good=false; cTileTools.DemolishTile(repair.TargetStation.s_Depot); }
 				else	{ msg+=error_repair; }
 				DInfo(msg,1);
 				}
