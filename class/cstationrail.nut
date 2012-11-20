@@ -15,6 +15,7 @@
 
 class cStationRail extends cStation
 {
+	TrainSpecs = null;
 /*
 	stationID		= null;	// id of station
 	stationType		= null;	// AIStation.StationType
@@ -80,6 +81,7 @@ bit5 alt train line fire done
 		{
 		::cStation.constructor();
 		this.ClassName="cStationRail";
+		this.TrainSpecs = AIList();
 		}
 }
 
