@@ -76,11 +76,11 @@ function cCarrier::VehicleList_KeepStuckVehicle(vehicleslist)
 // @param vehicleslist The list of vehicle we should filter
 // @return same list with only matching vehicles
 {
-vehicleslist.Valuate(AIVehicle.GetState);
-vehicleslist.KeepValue(AIVehicle.VS_RUNNING);
-vehicleslist.Valuate(AIVehicle.GetCurrentSpeed);
-vehicleslist.KeepValue(0); // non moving ones
-return vehicleslist;
+	vehicleslist.Valuate(AIVehicle.GetState);
+	vehicleslist.KeepValue(AIVehicle.VS_RUNNING);
+	vehicleslist.Valuate(AIVehicle.GetCurrentSpeed);
+	vehicleslist.KeepValue(0); // non moving ones
+	return vehicleslist;
 }
 
 function cCarrier::VehicleList_KeepLoadingVehicle(vehicleslist)
@@ -88,9 +88,9 @@ function cCarrier::VehicleList_KeepLoadingVehicle(vehicleslist)
 // @param vehicleslist The list of vehicle we should filter
 // @return same list with only matching vehicles
 {
-vehicleslist.Valuate(AIVehicle.GetState);
-vehicleslist.KeepValue(AIVehicle.VS_AT_STATION);
-return vehicleslist;
+	vehicleslist.Valuate(AIVehicle.GetState);
+	vehicleslist.KeepValue(AIVehicle.VS_AT_STATION);
+	return vehicleslist;
 }
 
 function cCarrier::VehicleNearStation(stationID)
@@ -98,29 +98,29 @@ function cCarrier::VehicleNearStation(stationID)
 // @param stationID the station id to check
 // @return the vehicle list
 {
-local vehicles=AIVehicleList_Station(stationID);
-local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID),24);
-tilelist.Valuate(AIStation.GetStationID);
-tilelist.KeepValue(stationID); // now tilelist = only the tiles of the station we were looking for
-local check_tiles=AITileList();
-foreach (tiles, stationid_found in tilelist)
-	{
-	local stationloc=AIStation.GetLocation(stationid_found);
-	local upper=stationloc+AIMap.GetTileIndex(-1,-1);
-	local lower=stationloc+AIMap.GetTileIndex(1,1);
-	check_tiles.AddRectangle(upper,lower);
-	}
-vehicles.Valuate(AIVehicle.GetLocation);
-foreach (vehicle, location in vehicles)
-	{ if (!check_tiles.HasItem(location))	vehicles.SetValue(vehicle, -1); }
-vehicles.RemoveValue(-1);
-vehicles.Valuate(AIVehicle.GetState);
-vehicles.RemoveValue(AIVehicle.VS_STOPPED);
-vehicles.RemoveValue(AIVehicle.VS_IN_DEPOT);
-vehicles.RemoveValue(AIVehicle.VS_BROKEN);
-vehicles.RemoveValue(AIVehicle.VS_CRASHED);
-vehicles.RemoveValue(AIVehicle.VS_INVALID);
-//DInfo("VehicleListAtRoadStation = "+vehicles.Count(),2);
+	local vehicles=AIVehicleList_Station(stationID);
+	local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID),24);
+	tilelist.Valuate(AIStation.GetStationID);
+	tilelist.KeepValue(stationID); // now tilelist = only the tiles of the station we were looking for
+	local check_tiles=AITileList();
+	local stationloc=AIStation.GetLocation(stationID);
+	foreach (tiles, stationid_found in tilelist)
+		{
+		local upper=stationloc+AIMap.GetTileIndex(-1,-1);
+		local lower=stationloc+AIMap.GetTileIndex(1,1);
+		check_tiles.AddRectangle(upper,lower);
+		}
+	vehicles.Valuate(AIVehicle.GetLocation);
+	foreach (vehicle, location in vehicles)
+		{ if (!check_tiles.HasItem(location))	vehicles.SetValue(vehicle, -1); }
+	vehicles.RemoveValue(-1);
+	vehicles.Valuate(AIVehicle.GetState);
+	vehicles.RemoveValue(AIVehicle.VS_STOPPED);
+	vehicles.RemoveValue(AIVehicle.VS_IN_DEPOT);
+	vehicles.RemoveValue(AIVehicle.VS_BROKEN);
+	vehicles.RemoveValue(AIVehicle.VS_CRASHED);
+	vehicles.RemoveValue(AIVehicle.VS_INVALID);
+	//DInfo("VehicleListAtRoadStation = "+vehicles.Count(),2);
 return vehicles;
 }
 

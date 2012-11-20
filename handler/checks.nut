@@ -203,7 +203,7 @@ function cBuilder::RoadStationsBalancing()
 {
 	local busstation = AIStationList(AIStation.STATION_BUS_STOP);
 	local allstations = AIStationList(AIStation.STATION_TRUCK_STOP);
-	allstations.AddList(busstation);
+	//allstations.AddList(busstation);
 	if (allstations.IsEmpty())	return;
 	foreach (stations, _ in allstations)
 		{

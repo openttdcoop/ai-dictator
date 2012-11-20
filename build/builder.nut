@@ -461,6 +461,10 @@ print("status 5");
 		local srcacc=INSTANCE.main.route.SourceStation.IsCargoAccept(INSTANCE.main.route.CargoID);
 		local dstprod=INSTANCE.main.route.TargetStation.IsCargoProduce(INSTANCE.main.route.CargoID);
 		local dstacc=INSTANCE.main.route.TargetStation.IsCargoAccept(INSTANCE.main.route.CargoID);
+		if (srcprod)	INSTANCE.main.route.SourceStation.s_CargoProduce.AddItem(INSTANCE.main.route.CargoID,0);
+		if (srcacc)	INSTANCE.main.route.SourceStation.s_CargoAccept.AddItem(INSTANCE.main.route.CargoID,0);
+		if (dstprod)	INSTANCE.main.route.TargetStation.s_CargoProduce.AddItem(INSTANCE.main.route.CargoID,0);
+		if (dstacc)	INSTANCE.main.route.TargetStation.s_CargoAccept.AddItem(INSTANCE.main.route.CargoID,0);
 		if (srcprod && srcacc && dstprod && dstacc)
 			{
 			DInfo("Route set as twoway",1);
@@ -473,8 +477,8 @@ print("status 5");
 		INSTANCE.builddelay=false;
 		INSTANCE.main.builder.building_route=-1; // Allow us to work on a new route now
 		if (INSTANCE.safeStart >0 && INSTANCE.main.route.VehicleType == RouteType.ROAD)	INSTANCE.safeStart--;
-		//if (INSTANCE.main.route.route_type==RouteType.RAIL)	INSTANCE.main.route.DutyOnRailsRoute(INSTANCE.main.route.UID);
-		//							else	INSTANCE.main.route.DutyOnRoute();
+		if (INSTANCE.main.route.VehicleType==RouteType.RAIL)	INSTANCE.main.route.DutyOnRailsRoute(INSTANCE.main.route.UID);
+										else	INSTANCE.main.route.DutyOnRoute();
 		}
 	if (INSTANCE.main.route.Status == 666)
 		{

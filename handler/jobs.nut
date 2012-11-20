@@ -162,9 +162,12 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	if (badind)
 		{
 		DInfo("Removing bad industry from the job pool: "+myjob.UID,0);
-		local deadroute=cRoute.GetRouteObject(myjob.UID);
-		DInfo("RefreshValue mark "+deadroute.UID+" undoable",1);
-		if (deadroute != null)	deadroute.RouteIsNotDoable();
+		local deadroute=cRoute.Load(myjob.UID);
+		if (!deadroute)
+			{
+			DInfo("RefreshValue mark "+deadroute.UID+" undoable",1);
+			deadroute.RouteIsNotDoable();
+			}
 		return;
 		}
 	if (myjob.isUse)	return;	// no need to refresh an already done job
