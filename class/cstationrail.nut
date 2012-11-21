@@ -15,7 +15,8 @@
 
 class cStationRail extends cStation
 {
-	TrainSpecs = null;
+	s_TrainSpecs = null;
+	s_Platforms = null;
 /*
 	stationID		= null;	// id of station
 	stationType		= null;	// AIStation.StationType
@@ -81,7 +82,8 @@ bit5 alt train line fire done
 		{
 		::cStation.constructor();
 		this.ClassName="cStationRail";
-		this.TrainSpecs = AIList();
+		this.s_TrainSpecs = AIList();
+		this.s_Platforms = AIList();
 		}
 }
 
@@ -89,38 +91,37 @@ function cStationRail::GetRailStationMiscInfo(stationID=null)
 // Setup misc infos about a station, we shouldn't use that function direcly as it's an helper to cStation::InitNewStation()
 // stationID: the stationID to check
 {
-local thatstation=null;
-if (stationID == null)	thatstation=this;
-			else	thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	return -1;
-local stalenght=0;
-local entrypos=AIStation.GetLocation(thatstation.stationID);
-local direction, frontTile, backTile=null;
-direction=AIRail.GetRailStationDirection(entrypos);
-if (direction == AIRail.RAILTRACK_NW_SE)
-	{
-	frontTile=AIMap.GetTileIndex(0,-1);
-	backTile=AIMap.GetTileIndex(0,1);
-	}
-else	{ // NE_SW
-	frontTile=AIMap.GetTileIndex(-1,0);
-	backTile=AIMap.GetTileIndex(1,0);
-	}
-ClearSigns();
-local exitpos=null;
-PutSign(entrypos,"Start");
-local scanner=entrypos;
-while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; PutSign(scanner,"."); INSTANCE.NeedDelay(10); }
-exitpos=scanner+frontTile;
-PutSign(exitpos,"End");
-thatstation.StationGetName();
-DInfo("Station "+thatstation.StationGetName()+" depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1);
-thatstation.locations.SetValue(16,entrypos);
-thatstation.locations.SetValue(17,exitpos);
-thatstation.locations.SetValue(18,direction);
-thatstation.locations.SetValue(19,stalenght);
-thatstation.DefinePlatform();
-ClearSigns();
+	local thatstation = false;
+	if (stationID == null)	thatstation=this;
+				else	thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local stalenght=0;
+	local entrypos=AIStation.GetLocation(thatstation.s_ID);
+	local direction, frontTile, backTile=null;
+	direction=AIRail.GetRailStationDirection(entrypos);
+	if (direction == AIRail.RAILTRACK_NW_SE)
+		{
+		frontTile=AIMap.GetTileIndex(0,-1);
+		backTile=AIMap.GetTileIndex(0,1);
+		}
+	else	{ // NE_SW
+		frontTile=AIMap.GetTileIndex(-1,0);
+		backTile=AIMap.GetTileIndex(1,0);
+		}
+	cDebug.ClearSigns();
+	local exitpos=null;
+	cDebug.PutSign(entrypos,"Start");
+	local scanner=entrypos;
+	while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; cDebug.PutSign(scanner,"."); INSTANCE.NeedDelay(10); }
+	exitpos=scanner+frontTile;
+	cDebug.PutSign(exitpos,"End");
+	DInfo("Station "+thatstation.s_Name+" depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1);
+	thatstation.s_TrainSpecs.SetValue(16,entrypos);
+	thatstation.s_TrainSpecs.SetValue(17,exitpos);
+	thatstation.s_TrainSpecs.SetValue(18,direction);
+	thatstation.s_TrainSpecs.SetValue(19,stalenght);
+	thatstation.DefinePlatform();
+	cDebug.ClearSigns();
 }
 
 function cStationRail::GetRailStationFrontTile(entry, platform, stationID=null)
@@ -134,9 +135,9 @@ local thatstation=null;
 if (stationID == null)	thatstation=this;
 			else	thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	return -1;
-local direction=thatstation.locations.GetValue(18);
-local start=thatstation.locations.GetValue(16);
-local end=thatstation.locations.GetValue(17);
+local direction=thatstation.s_TrainSpecs.GetValue(18);
+local start=thatstation.s_TrainSpecs.GetValue(16);
+local end=thatstation.s_TrainSpecs.GetValue(17);
 local frontTile=null;
 if (direction==AIRail.RAILTRACK_NE_SW)
 		{
@@ -149,7 +150,7 @@ if (direction==AIRail.RAILTRACK_NE_SW)
 		}
 if (entry)	frontTile=start;
 	else	frontTile=end;
-PutSign(frontTile,"Front="+entry);
+cDebug.PutSign(frontTile,"Front="+entry);
 ClearSigns();
 return frontTile;
 }
@@ -160,7 +161,7 @@ function cStationRail::IsRailStationEntryOpen(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 if ((entry & 1) == 1)	{ DInfo("Station "+thatstation.StationGetName()+" entry is open",2); return true; }
 DInfo("Station "+thatstation.StationGetName()+" entry is CLOSE",2);
 return false;
@@ -172,7 +173,7 @@ function cStationRail::IsRailStationExitOpen(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 if ((exit & 2) == 2)	{ DInfo("Station "+thatstation.StationGetName()+" exit is open",2); return true; }
 DInfo("Station "+thatstation.StationGetName()+" exit is CLOSE",2);
 return false;
@@ -184,9 +185,9 @@ function cStationRail::RailStationCloseEntry(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 entry=entry ^ 1;
-thatstation.locations.SetValue(0, entry);
+thatstation.s_TrainSpecs.SetValue(0, entry);
 DInfo("Closing the entry of station "+thatstation.StationGetName(),1);
 }
 
@@ -196,9 +197,9 @@ function cStationRail::RailStationCloseExit(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 exit=exit ^ 2;
-thatstation.locations.SetValue(0, exit);
+thatstation.s_TrainSpecs.SetValue(0, exit);
 DInfo("Closing the exit of station "+thatstation.StationGetName(),1);
 }
 
@@ -208,9 +209,9 @@ function cStationRail::RailStationSetPrimarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 entry=entry ^ 16;
-thatstation.locations.SetValue(0, entry);
+thatstation.s_TrainSpecs.SetValue(0, entry);
 }
 
 function cStationRail::RailStationSetSecondarySignalBuilt(stationID=null)
@@ -219,9 +220,9 @@ function cStationRail::RailStationSetSecondarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 entry=entry ^ 32;
-thatstation.locations.SetValue(0, entry);
+thatstation.s_TrainSpecs.SetValue(0, entry);
 }
 
 function cStationRail::IsRailStationPrimarySignalBuilt(stationID=null)
@@ -230,7 +231,7 @@ function cStationRail::IsRailStationPrimarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 if ((exit & 16) == 16)	
 	{
 	DInfo("Station "+thatstation.StationGetName()+" signals are built on primary track",2);
@@ -245,7 +246,7 @@ function cStationRail::IsRailStationSecondarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 if ((exit & 32) == 32)
 	{
 	DInfo("Station "+thatstation.StationGetName()+" signals are built on secondary track",2);
@@ -262,8 +263,8 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	return -1;
-local entryIN=thatstation.locations.GetValue(1);
-local exitIN=thatstation.locations.GetValue(3);
+local entryIN=thatstation.s_TrainSpecs.GetValue(1);
+local exitIN=thatstation.s_TrainSpecs.GetValue(3);
 if (getEntry)	return entryIN;
 		else	return exitIN;
 }
@@ -272,28 +273,28 @@ function cStationRail::GetRailStationOUT(getEntry, stationID=null)
 // Return the tile where the station OUT point is
 // getEntry = true to return the entry OUT, false to return exit OUT
 {
-local thatstation=null;
-if (stationID==null)	thatstation=this;
-		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation==null)	return -1;
-local entryOUT=thatstation.locations.GetValue(2);
-local exitOUT=thatstation.locations.GetValue(4);
-if (getEntry)	return entryOUT;
-		else	return exitOUT;
+	local thatstation=false;
+	if (stationID==null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local entryOUT=thatstation.s_TrainSpecs.GetValue(2);
+	local exitOUT=thatstation.s_TrainSpecs.GetValue(4);
+	if (getEntry)	return entryOUT;
+			else	return exitOUT;
 }
 
-function cStationRail::GetRailStationDirection()	{ return this.locations.GetValue(18); }
+function cStationRail::GetRailStationDirection()	{ return this.s_TrainSpecs.GetValue(18); }
 // avoid errors by returning proper index for direction of a station
 
 function cStationRail::GetLocation(stationID=null)
 // avoid errors, return station location
 {
-local thatstation=null;
-if (stationID==null)	thatstation=this;
-		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	return -1;
-if (thatstation.stationType==AIStation.STATION_TRAIN)	return thatstation.locations.GetValue(16);
-return AIStation.GetLocation(thatstation.stationID);
+	local thatstation=false;
+	if (stationID==null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	if (thatstation.s_Type==AIStation.STATION_TRAIN)	return thatstation.s_TrainSpecs.GetValue(16);
+	return AIStation.GetLocation(thatstation.s_ID);
 }
 
 function cStationRail::IsPlatformOpen(platformID, useEntry)
@@ -303,7 +304,7 @@ local platindex=cStation.GetPlatformIndex(platformID);
 if (platindex==-1)	{ DError("Bad platform index",1); return false; }
 local stationID=AIStation.GetStationID(platformID);
 local thatstation=cStation.GetStationObject(stationID);
-local statusbit=thatstation.platforms.GetValue(platindex);
+local statusbit=thatstation.s_Platforms.GetValue(platindex);
 if (useEntry)	return ((statusbit & 1) ==1);
 		else	return ((statusbit & 2) ==2);
 }
@@ -311,131 +312,131 @@ if (useEntry)	return ((statusbit & 1) ==1);
 function cStationRail::DefinePlatform(stationID=null)
 // look out a train station and add every platforms we found
 {
-local thatstation=null;
-if (stationID==null)	thatstation=this;
-		else		thatstation=cStation.GetStationObject(stationID);
-if (thatstation == null)	return -1;
-local frontTile, backTile, leftTile, rightTile= null;
-local direction=thatstation.GetRailStationDirection();
-local staloc=thatstation.GetLocation();
-if (direction == AIRail.RAILTRACK_NW_SE)
-	{
-	frontTile=AIMap.GetTileIndex(0,-1);
-	backTile=AIMap.GetTileIndex(0,1);
-	leftTile=AIMap.GetTileIndex(1,0);
-	rightTile=AIMap.GetTileIndex(-1,0);
-	}
-else	{ // NE_SW
-	frontTile=AIMap.GetTileIndex(-1,0);
-	backTile=AIMap.GetTileIndex(1,0);
-	leftTile=AIMap.GetTileIndex(0,-1);
-	rightTile=AIMap.GetTileIndex(0,1);
-	}
-local isEntryClear, isExitClear=null;
-local lookup=0;
-local start=thatstation.GetLocation();
-local end=thatstation.locations.GetValue(17);
-local topLeftPlatform=start;
-local topRightPlatform=start;
-local usable=false;
-/*PutSign(start,"SS");
-PutSign(end,"SE");
-PutSign(start+frontTile,"cs");
-PutSign(end+backTile,"ce");*/
+	local thatstation=false;
+	if (stationID==null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local frontTile, backTile, leftTile, rightTile= null;
+	local direction=thatstation.GetRailStationDirection();
+	local staloc=thatstation.GetLocation();
+	if (direction == AIRail.RAILTRACK_NW_SE)
+		{
+		frontTile=AIMap.GetTileIndex(0,-1);
+		backTile=AIMap.GetTileIndex(0,1);
+		leftTile=AIMap.GetTileIndex(1,0);
+		rightTile=AIMap.GetTileIndex(-1,0);
+		}
+	else	{ // NE_SW
+		frontTile=AIMap.GetTileIndex(-1,0);
+		backTile=AIMap.GetTileIndex(1,0);
+		leftTile=AIMap.GetTileIndex(0,-1);
+		rightTile=AIMap.GetTileIndex(0,1);
+		}
+	local isEntryClear, isExitClear=null;
+	local lookup=0;
+	local start=thatstation.GetLocation();
+	local end=thatstation.s_TrainSpecs.GetValue(17);
+	local topLeftPlatform=start;
+	local topRightPlatform=start;
+	local usable=false;
+/*cDebug.PutSign(start,"SS");
+cDebug.PutSign(end,"SE");
+cDebug.PutSign(start+frontTile,"cs");
+cDebug.PutSign(end+backTile,"ce");*/
 // search up
-while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
-	{
-	topLeftPlatform=lookup+start;
-	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
-	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
+	while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.s_ID))
 		{
-		local value=thatstation.platforms.GetValue(lookup+start);
-		usable=AIRail.IsRailTile(lookup+start+frontTile);
-		if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.stationID);
-		if (usable)
+		topLeftPlatform=lookup+start;
+		if (!thatstation.s_Platforms.HasItem(lookup+start))	thatstation.s_Platforms.AddItem(lookup+start,0);
+		if (thatstation.s_Platforms.HasItem(lookup+start)) // now retest, might be just added
 			{
-			local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
-			usable=((rtrack & direction) == direction);
+			local value=thatstation.s_Platforms.GetValue(lookup+start);
+			usable=AIRail.IsRailTile(lookup+start+frontTile);
+			if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.s_ID);
+			if (usable)
+				{
+				local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
+				usable=((rtrack & direction) == direction);
+				}
+			if (usable)	value=value | 1;
+				else	value=value & ~1;
+	
+			usable=AIRail.IsRailTile(lookup+end+backTile);
+			if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.s_ID);
+			if (usable)
+				{
+				local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
+				usable=((rtrack & direction) == direction);
+				}
+			if (usable)	value=value | 2;
+				else	value=value & ~2;
+			thatstation.s_Platforms.SetValue(lookup+start,value);
+			//cDebug.PutSign(lookup+start+frontTile,value);
 			}
-		if (usable)	value=value | 1;
-			else	value=value & ~1;
-
-		usable=AIRail.IsRailTile(lookup+end+backTile);
-		if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.stationID);
-		if (usable)
-			{
-			local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
-			usable=((rtrack & direction) == direction);
-			}
-		if (usable)	value=value | 2;
-			else	value=value & ~2;
-		thatstation.platforms.SetValue(lookup+start,value);
-		//PutSign(lookup+start+frontTile,value);
+		lookup+=leftTile;
 		}
-	lookup+=leftTile;
-	}
-// search down
-lookup=rightTile;
-while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
-	{
-	topRightPlatform=lookup+start;
-	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
-	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
+	// search down
+	lookup=rightTile;
+	while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.s_ID))
 		{
-		local value=thatstation.platforms.GetValue(lookup+start);
-		usable=AIRail.IsRailTile(lookup+start+frontTile);
-		if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.stationID);
-		if (usable)
+		topRightPlatform=lookup+start;
+		if (!thatstation.s_Platforms.HasItem(lookup+start))	thatstation.s_Platforms.AddItem(lookup+start,0);
+		if (thatstation.s_Platforms.HasItem(lookup+start)) // now retest, might be just added
 			{
-			local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
-			usable=((rtrack & direction) == direction);
+			local value=thatstation.s_Platforms.GetValue(lookup+start);
+			usable=AIRail.IsRailTile(lookup+start+frontTile);
+			if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.s_ID);
+			if (usable)
+				{
+				local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
+				usable=((rtrack & direction) == direction);
+				}
+			if (usable)	value=value | 1;
+				else	value=value & ~1;
+	
+			usable=AIRail.IsRailTile(lookup+end+backTile);
+			if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.s_ID);
+			if (usable)
+				{
+				local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
+				usable=((rtrack & direction) == direction);
+				}
+			if (usable)	value=value | 2;
+				else	value=value & ~2;
+	
+			thatstation.s_Platforms.SetValue(lookup+start,value);
+			//cDebug.PutSign(lookup+start+frontTile,value);
 			}
-		if (usable)	value=value | 1;
-			else	value=value & ~1;
-
-		usable=AIRail.IsRailTile(lookup+end+backTile);
-		if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.stationID);
-		if (usable)
-			{
-			local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
-			usable=((rtrack & direction) == direction);
-			}
-		if (usable)	value=value | 2;
-			else	value=value & ~2;
-
-		thatstation.platforms.SetValue(lookup+start,value);
-		//PutSign(lookup+start+frontTile,value);
+		lookup+=rightTile;
 		}
-	lookup+=rightTile;
-	}
-local goodPlatforms=AIList();
-goodPlatforms.AddList(thatstation.platforms);
-if (thatstation.owner.Count() == 0)
-	goodPlatforms.RemoveValue(0);	// no one own it yet, we just validate a platform if its rail in front is built
-else	{
-//	local mainOwner=cRoute.GetRouteObject(thatstation.owner.Begin());
-//	if (mainOwner == null)	{ DError("Cannot get station owner route "+thatstation.owner.Begin(),1,"cStation.DefinePlatform"); return false; }
-	local runTarget=cStation.RailStationGetRunnerTarget(thatstation.stationID);
-	PutSign(runTarget,"Checker");
-	foreach (platidx, openclose in goodPlatforms)
-		{
-		local value=0;
-		if (runTarget == -1)	break;
-		if ((openclose & 1) == 1 && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=value | 1;
-																else	value=value & ~1;
-		if ((openclose & 2) == 2 && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=value | 2;
-																else	value=value & ~2;
-		thatstation.platforms.SetValue(platidx, value);
-		if (value == 0)	goodPlatforms.RemoveItem(platidx); // not so true if we connect both side of a station, but good for now
-		}	
-	}
-DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2);
-thatstation.size=thatstation.platforms.Count();
-thatstation.max_trains=goodPlatforms.Count();
-thatstation.locations.SetValue(20,topLeftPlatform);
-thatstation.locations.SetValue(21,topRightPlatform);
-//PutSign(topLeftPlatform,"NL");
-//PutSign(topRightPlatform,"NR");
+	local goodPlatforms=AIList();
+	goodPlatforms.AddList(thatstation.s_Platforms);
+	if (thatstation.s_Owner.Count() == 0)
+		goodPlatforms.RemoveValue(0);	// no one own it yet, we just validate a platform if its rail in front is built
+	else	{
+	//	local mainOwner=cRoute.GetRouteObject(thatstation.owner.Begin());
+	//	if (mainOwner == null)	{ DError("Cannot get station owner route "+thatstation.owner.Begin(),1,"cStation.DefinePlatform"); return false; }
+		local runTarget=cStation.RailStationGetRunnerTarget(thatstation.s_ID);
+		cDebug.PutSign(runTarget,"Checker");
+		foreach (platidx, openclose in goodPlatforms)
+			{
+			local value=0;
+			if (runTarget == -1)	break;
+			if ((openclose & 1) == 1 && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=value | 1;
+																	else	value=value & ~1;
+			if ((openclose & 2) == 2 && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=value | 2;
+																	else	value=value & ~2;
+			thatstation.s_Platforms.SetValue(platidx, value);
+			if (value == 0)	goodPlatforms.RemoveItem(platidx); // not so true if we connect both side of a station, but good for now
+			}	
+		}
+	DInfo("Station "+thatstation.s_Name+" have "+thatstation.s_Platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2);
+	thatstation.s_Size=thatstation.s_Platforms.Count();
+//	thatstation.max_trains=goodPlatforms.Count();
+	thatstation.s_TrainSpecs.SetValue(20,topLeftPlatform);
+	thatstation.s_TrainSpecs.SetValue(21,topRightPlatform);
+	//cDebug.PutSign(topLeftPlatform,"NL");
+	//cDebug.PutSign(topRightPlatform,"NR");
 }
 
 function cStationRail::RailStationGetRunnerTarget(runnerID)
@@ -450,12 +451,12 @@ if (mainOwner == null)	return -1;
 local primary=(mainOwner.source_stationID == runnerID);
 if (primary)
 	{
-	if (mainOwner.source_RailEntry)	return thatstation.locations.GetValue(4);
-						else	return thatstation.locations.GetValue(3);
+	if (mainOwner.source_RailEntry)	return thatstation.s_TrainSpecs.GetValue(4);
+						else	return thatstation.s_TrainSpecs.GetValue(3);
 	}
 else	{
-	if (mainOwner.target_RailEntry)	return thatstation.locations.GetValue(2);
-						else	return thatstation.locations.GetValue(1);
+	if (mainOwner.target_RailEntry)	return thatstation.s_TrainSpecs.GetValue(2);
+						else	return thatstation.s_TrainSpecs.GetValue(1);
 	}
 return -1;
 }
@@ -473,9 +474,9 @@ return platindex+front;
 
 function cStationRail::GetPlatformIndex(platform, useEntry=true)
 // return the platform reference (it's the station platform start location)
-// useEntry: true return the real reference in our .platforms, false = return the location of the exit for that platform
+// useEntry: true return the real reference in our .s_Platforms, false = return the location of the exit for that platform
 // the useEntry=false query shouldn't be use as index as only the start is record, you will fail to find the platform with that index
-// -> it mean don't use it when trying to find a platform in cStation.platforms list
+// -> it mean don't use it when trying to find a platform in cStation.s_Platforms list
 // on error return -1
 {
 local stationID=AIStation.GetStationID(platform);
@@ -488,12 +489,12 @@ local staX=0;
 local staY=0;
 if (useEntry)
 	{
-	staX=AIMap.GetTileX(thatstation.locations.GetValue(16)); // X=SW->NE
-	staY=AIMap.GetTileY(thatstation.locations.GetValue(16)); // Y=SE->NW
+	staX=AIMap.GetTileX(thatstation.s_TrainSpecs.GetValue(16)); // X=SW->NE
+	staY=AIMap.GetTileY(thatstation.s_TrainSpecs.GetValue(16)); // Y=SE->NW
 	}
 else	{
-	staX=AIMap.GetTileX(thatstation.locations.GetValue(17));
-	staY=AIMap.GetTileY(thatstation.locations.GetValue(17));
+	staX=AIMap.GetTileX(thatstation.s_TrainSpecs.GetValue(17));
+	staY=AIMap.GetTileY(thatstation.s_TrainSpecs.GetValue(17));
 	}
 if (thatstation.GetRailStationDirection()==AIRail.RAILTRACK_NE_SW)
 	{ staY=platY; }
@@ -592,8 +593,8 @@ local stationID=AIStation.GetStationID(platform);
 local thatstation=cStation.GetStationObject(stationID);
 local crossing=0;
 local direction=thatstation.GetRailStationDirection();
-if (useEntry)	crossing=thatstation.locations.GetValue(5);
-		else	crossing=thatstation.locations.GetValue(6);
+if (useEntry)	crossing=thatstation.s_TrainSpecs.GetValue(5);
+		else	crossing=thatstation.s_TrainSpecs.GetValue(6);
 if (crossing < 0)	{ DError("Crossing isn't define yet",2); return -1; }
 local goalTile=0;
 if (direction==AIRail.RAILTRACK_NE_SW)
@@ -644,10 +645,10 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	{ DError("Invalid stationID "+stationID,1); return -1; }
-local ted=thatstation.locations.GetValue(7);
-local txd=thatstation.locations.GetValue(8);
-local tet=thatstation.locations.GetValue(9);
-local txt=thatstation.locations.GetValue(10);
+local ted=thatstation.s_TrainSpecs.GetValue(7);
+local txd=thatstation.s_TrainSpecs.GetValue(8);
+local tet=thatstation.s_TrainSpecs.GetValue(9);
+local txt=thatstation.s_TrainSpecs.GetValue(10);
 if (taker)
 	{
 	if (useEntry)	tet+=1;
@@ -657,10 +658,10 @@ else	{
 	if (useEntry)	ted+=1;
 			else	txd+=1;
 	}
-thatstation.locations.SetValue(7, ted);
-thatstation.locations.SetValue(8, txd);
-thatstation.locations.SetValue(9, tet);
-thatstation.locations.SetValue(10, txt);
+thatstation.s_TrainSpecs.SetValue(7, ted);
+thatstation.s_TrainSpecs.SetValue(8, txd);
+thatstation.s_TrainSpecs.SetValue(9, tet);
+thatstation.s_TrainSpecs.SetValue(10, txt);
 DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" add a new train: taker="+taker+" useEntry="+useEntry,2);
 }
 
@@ -671,10 +672,10 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	{ DError("Invalid stationID "+stationID,1); return -1; }
-local ted=thatstation.locations.GetValue(7);
-local txd=thatstation.locations.GetValue(8);
-local tet=thatstation.locations.GetValue(9);
-local txt=thatstation.locations.GetValue(10);
+local ted=thatstation.s_TrainSpecs.GetValue(7);
+local txd=thatstation.s_TrainSpecs.GetValue(8);
+local tet=thatstation.s_TrainSpecs.GetValue(9);
+local txt=thatstation.s_TrainSpecs.GetValue(10);
 if (taker)
 	{
 	if (useEntry)	tet-=1;
@@ -688,10 +689,10 @@ if (ted < 0)	ted=0;
 if (txd < 0)	txd=0;
 if (tet < 0)	tet=0;
 if (txt < 0)	txt=0;
-thatstation.locations.SetValue(7, ted);
-thatstation.locations.SetValue(8, txd);
-thatstation.locations.SetValue(9, tet);
-thatstation.locations.SetValue(10, txt);
+thatstation.s_TrainSpecs.SetValue(7, ted);
+thatstation.s_TrainSpecs.SetValue(8, txd);
+thatstation.s_TrainSpecs.SetValue(9, tet);
+thatstation.s_TrainSpecs.SetValue(10, txt);
 DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" remove train: taker="+taker+" useEntry="+useEntry,2);
 }
 
@@ -815,7 +816,7 @@ function cStation::CanUpgradeStation()
 			local townpop=AITown.GetPopulation(townID);
 			if (newairport > this.specialType && !vehlist.IsEmpty() && townpop >= (newairport*200))
 				{ canupgrade=true; DInfo("NEW AIRPORT AVAIABLE ! "+newairport,2); }
-			if (this.locations.Count()==1)	return false; // plaforms have 1 size only
+			if (this.s_TrainSpecs.Count()==1)	return false; // plaforms have 1 size only
 			return canupgrade;
 		break;
 		default: // bus or truck
@@ -952,8 +953,8 @@ function cStation::DeleteStation(stationid)
 function cStation::GetRoadStationEntry(entrynum=-1)
 // return the front road station entrynum
 	{
-	if (entrynum == -1)	entrynum=this.locations.Begin();
-	return this.locations.GetValue(entrynum);
+	if (entrynum == -1)	entrynum=this.s_TrainSpecs.Begin();
+	return this.s_TrainSpecs.GetValue(entrynum);
 	}
 
 function cStation::ClaimOwner(uid)
@@ -995,16 +996,16 @@ function cStation::CheckAirportLimits()
 		return; // it happen if the airport is moved and now invalid
 		}
 	locations=cTileTools.FindStationTiles(AIStation.GetLocation(this.stationID));
-	this.specialType=AIAirport.GetAirportType(this.locations.Begin());
+	this.specialType=AIAirport.GetAirportType(this.s_TrainSpecs.Begin());
 	if (this.specialType == 255)
 		{
-		DWarn("Invalid airport type at "+this.locations.Begin(),1);
-		PutSign(this.locations.Begin(),"INVALID AIRPORT TYPE !");
+		DWarn("Invalid airport type at "+this.s_TrainSpecs.Begin(),1);
+		cDebug.PutSign(this.s_TrainSpecs.Begin(),"INVALID AIRPORT TYPE !");
 		INSTANCE.NeedDelay(50);
 		return;
 		}
 	this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
-	this.depot=AIAirport.GetHangarOfAirport(this.locations.Begin());
+	this.depot=AIAirport.GetHangarOfAirport(this.s_TrainSpecs.Begin());
 	local virtualized=cStation.IsStationVirtual(this.stationID);
 	// get out of airnetwork if the network is too poor
 	local rawlimit=INSTANCE.main.carrier.AirportTypeLimit[this.specialType];
@@ -1021,8 +1022,8 @@ function cStation::InitNewStation()
 	if (this.stationID == null)	{ DWarn("Bad station id : null",1); return; }
 	this.stationType = cStation.FindStationType(this.stationID);
 	local loc=AIStation.GetLocation(this.stationID);
-	this.locations=cTileTools.FindStationTiles(loc);
-	foreach (tile, dummy in this.locations)	this.StationClaimTile(tile, this.stationID);
+	this.s_TrainSpecs=cTileTools.FindStationTiles(loc);
+	foreach (tile, dummy in this.s_TrainSpecs)	this.StationClaimTile(tile, this.stationID);
 	if (this.stationType != AIStation.STATION_AIRPORT)	this.radius=AIStation.GetCoverageRadius(this.stationType);
 	// avoid getting the warning message for coverage of airport with that function
 	switch	(this.stationType)
@@ -1030,10 +1031,10 @@ function cStation::InitNewStation()
 		case	AIStation.STATION_TRAIN:
 			this.specialType=AIRail.GetRailType(loc); // set rail type the station use
 			this.maxsize=INSTANCE.main.carrier.rail_max; this.size=1;
-			this.locations=AIList();
-			for (local zz=0; zz < 23; zz++)	this.locations.AddItem(zz,-1); // create special cases for train usage
-			for (local zz=7; zz < 11; zz++)	this.locations.SetValue(zz,0);
-			this.locations.SetValue(0,1+2); // enable IN && OUT for the new station
+			this.s_TrainSpecs=AIList();
+			for (local zz=0; zz < 23; zz++)	this.s_TrainSpecs.AddItem(zz,-1); // create special cases for train usage
+			for (local zz=7; zz < 11; zz++)	this.s_TrainSpecs.SetValue(zz,0);
+			this.s_TrainSpecs.SetValue(0,1+2); // enable IN && OUT for the new station
 			this.GetRailStationMiscInfo();
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do boat
@@ -1046,15 +1047,15 @@ function cStation::InitNewStation()
 			if (AIRoad.HasRoadType(locations.Begin(), AIRoad.ROADTYPE_ROAD))
 				this.specialType=AIRoad.ROADTYPE_ROAD;	// set road type the station use
 			else	this.specialType=AIRoad.ROADTYPE_TRAM;
-			foreach(loc, dummy in this.locations)	this.locations.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
+			foreach(loc, dummy in this.s_TrainSpecs)	this.s_TrainSpecs.SetValue(loc, AIRoad.GetRoadStationFrontTile(loc));
 		break;
 		case	AIStation.STATION_AIRPORT:
 			this.maxsize=1000; // airport size is limited by airport avaiability
-			this.size=this.locations.Count();
-			this.specialType=AIAirport.GetAirportType(this.locations.Begin());
+			this.size=this.s_TrainSpecs.Count();
+			this.specialType=AIAirport.GetAirportType(this.s_TrainSpecs.Begin());
 			this.radius=AIAirport.GetAirportCoverageRadius(this.specialType);
 			this.depot=AIAirport.GetHangarOfAirport(loc);
-			DInfo("Airport size: "+this.locations.Count(),2);
+			DInfo("Airport size: "+this.s_TrainSpecs.Count(),2);
 		break;
 		}
 	this.vehicle_count=0;
@@ -1092,17 +1093,17 @@ else	{ // NE_SW
 	}
 ClearSigns();
 local exitpos=null;
-PutSign(entrypos,"Start");
+cDebug.PutSign(entrypos,"Start");
 local scanner=entrypos;
-while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; PutSign(scanner,"."); INSTANCE.NeedDelay(10); }
+while (AIRail.IsRailStationTile(scanner))	{ stalenght++; scanner+=backTile; cDebug.PutSign(scanner,"."); INSTANCE.NeedDelay(10); }
 exitpos=scanner+frontTile;
-PutSign(exitpos,"End");
+cDebug.PutSign(exitpos,"End");
 thatstation.StationGetName();
 DInfo("Station "+thatstation.StationGetName()+" depth is "+stalenght+" direction="+direction+" start="+entrypos+" end="+exitpos,1);
-thatstation.locations.SetValue(16,entrypos);
-thatstation.locations.SetValue(17,exitpos);
-thatstation.locations.SetValue(18,direction);
-thatstation.locations.SetValue(19,stalenght);
+thatstation.s_TrainSpecs.SetValue(16,entrypos);
+thatstation.s_TrainSpecs.SetValue(17,exitpos);
+thatstation.s_TrainSpecs.SetValue(18,direction);
+thatstation.s_TrainSpecs.SetValue(19,stalenght);
 thatstation.DefinePlatform();
 ClearSigns();
 }
@@ -1118,9 +1119,9 @@ local thatstation=null;
 if (stationID == null)	thatstation=this;
 			else	thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	return -1;
-local direction=thatstation.locations.GetValue(18);
-local start=thatstation.locations.GetValue(16);
-local end=thatstation.locations.GetValue(17);
+local direction=thatstation.s_TrainSpecs.GetValue(18);
+local start=thatstation.s_TrainSpecs.GetValue(16);
+local end=thatstation.s_TrainSpecs.GetValue(17);
 local frontTile=null;
 if (direction==AIRail.RAILTRACK_NE_SW)
 		{
@@ -1133,7 +1134,7 @@ if (direction==AIRail.RAILTRACK_NE_SW)
 		}
 if (entry)	frontTile=start;
 	else	frontTile=end;
-PutSign(frontTile,"Front="+entry);
+cDebug.PutSign(frontTile,"Front="+entry);
 ClearSigns();
 return frontTile;
 }
@@ -1144,7 +1145,7 @@ function cStation::IsRailStationEntryOpen(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 if ((entry & 1) == 1)	{ DInfo("Station "+thatstation.StationGetName()+" entry is open",2); return true; }
 DInfo("Station "+thatstation.StationGetName()+" entry is CLOSE",2);
 return false;
@@ -1156,7 +1157,7 @@ function cStation::IsRailStationExitOpen(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 if ((exit & 2) == 2)	{ DInfo("Station "+thatstation.StationGetName()+" exit is open",2); return true; }
 DInfo("Station "+thatstation.StationGetName()+" exit is CLOSE",2);
 return false;
@@ -1168,9 +1169,9 @@ function cStation::RailStationCloseEntry(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 entry=entry ^ 1;
-thatstation.locations.SetValue(0, entry);
+thatstation.s_TrainSpecs.SetValue(0, entry);
 DInfo("Closing the entry of station "+thatstation.StationGetName(),1);
 }
 
@@ -1180,9 +1181,9 @@ function cStation::RailStationCloseExit(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 exit=exit ^ 2;
-thatstation.locations.SetValue(0, exit);
+thatstation.s_TrainSpecs.SetValue(0, exit);
 DInfo("Closing the exit of station "+thatstation.StationGetName(),1);
 }
 
@@ -1192,9 +1193,9 @@ function cStation::RailStationSetPrimarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 entry=entry ^ 16;
-thatstation.locations.SetValue(0, entry);
+thatstation.s_TrainSpecs.SetValue(0, entry);
 }
 
 function cStation::RailStationSetSecondarySignalBuilt(stationID=null)
@@ -1203,9 +1204,9 @@ function cStation::RailStationSetSecondarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local entry=thatstation.locations.GetValue(0);
+local entry=thatstation.s_TrainSpecs.GetValue(0);
 entry=entry ^ 32;
-thatstation.locations.SetValue(0, entry);
+thatstation.s_TrainSpecs.SetValue(0, entry);
 }
 
 function cStation::IsRailStationPrimarySignalBuilt(stationID=null)
@@ -1214,7 +1215,7 @@ function cStation::IsRailStationPrimarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 if ((exit & 16) == 16)	
 	{
 	DInfo("Station "+thatstation.StationGetName()+" signals are built on primary track",2);
@@ -1229,7 +1230,7 @@ function cStation::IsRailStationSecondarySignalBuilt(stationID=null)
 local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
-local exit=thatstation.locations.GetValue(0);
+local exit=thatstation.s_TrainSpecs.GetValue(0);
 if ((exit & 32) == 32)
 	{
 	DInfo("Station "+thatstation.StationGetName()+" signals are built on secondary track",2);
@@ -1246,8 +1247,8 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	return -1;
-local entryIN=thatstation.locations.GetValue(1);
-local exitIN=thatstation.locations.GetValue(3);
+local entryIN=thatstation.s_TrainSpecs.GetValue(1);
+local exitIN=thatstation.s_TrainSpecs.GetValue(3);
 if (getEntry)	return entryIN;
 		else	return exitIN;
 }
@@ -1260,13 +1261,13 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation==null)	return -1;
-local entryOUT=thatstation.locations.GetValue(2);
-local exitOUT=thatstation.locations.GetValue(4);
+local entryOUT=thatstation.s_TrainSpecs.GetValue(2);
+local exitOUT=thatstation.s_TrainSpecs.GetValue(4);
 if (getEntry)	return entryOUT;
 		else	return exitOUT;
 }
 
-function cStation::GetRailStationDirection()	{ return this.locations.GetValue(18); }
+function cStation::GetRailStationDirection()	{ return this.s_TrainSpecs.GetValue(18); }
 // avoid errors by returning proper index for direction of a station
 
 function cStation::GetLocation(stationID=null)
@@ -1276,7 +1277,7 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	return -1;
-if (thatstation.stationType==AIStation.STATION_TRAIN)	return thatstation.locations.GetValue(16);
+if (thatstation.stationType==AIStation.STATION_TRAIN)	return thatstation.s_TrainSpecs.GetValue(16);
 return AIStation.GetLocation(thatstation.stationID);
 }
 
@@ -1298,7 +1299,7 @@ local platindex=cStation.GetPlatformIndex(platformID);
 if (platindex==-1)	{ DError("Bad platform index",1); return false; }
 local stationID=AIStation.GetStationID(platformID);
 local thatstation=cStation.GetStationObject(stationID);
-local statusbit=thatstation.platforms.GetValue(platindex);
+local statusbit=thatstation.s_Platforms.GetValue(platindex);
 if (useEntry)	return ((statusbit & 1) ==1);
 		else	return ((statusbit & 2) ==2);
 }
@@ -1329,7 +1330,7 @@ else	{ // NE_SW
 local isEntryClear, isExitClear=null;
 local lookup=0;
 local start=thatstation.GetLocation();
-local end=thatstation.locations.GetValue(17);
+local end=thatstation.s_TrainSpecs.GetValue(17);
 local topLeftPlatform=start;
 local topRightPlatform=start;
 local usable=false;
@@ -1337,10 +1338,10 @@ local usable=false;
 while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
 	{
 	topLeftPlatform=lookup+start;
-	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
-	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
+	if (!thatstation.s_Platforms.HasItem(lookup+start))	thatstation.s_Platforms.AddItem(lookup+start,0);
+	if (thatstation.s_Platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
-		local value=thatstation.platforms.GetValue(lookup+start);
+		local value=thatstation.s_Platforms.GetValue(lookup+start);
 		usable=AIRail.IsRailTile(lookup+start+frontTile);
 		if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.stationID);
 		if (usable)
@@ -1360,8 +1361,8 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 			}
 		if (usable)	value=value | 2;
 			else	value=value & ~2;
-		thatstation.platforms.SetValue(lookup+start,value);
-		//PutSign(lookup+start+frontTile,value);
+		thatstation.s_Platforms.SetValue(lookup+start,value);
+		//cDebug.PutSign(lookup+start+frontTile,value);
 		}
 	lookup+=leftTile;
 	}
@@ -1370,10 +1371,10 @@ lookup=rightTile;
 while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.stationID))
 	{
 	topRightPlatform=lookup+start;
-	if (!thatstation.platforms.HasItem(lookup+start))	thatstation.platforms.AddItem(lookup+start,0);
-	if (thatstation.platforms.HasItem(lookup+start)) // now retest, might be just added
+	if (!thatstation.s_Platforms.HasItem(lookup+start))	thatstation.s_Platforms.AddItem(lookup+start,0);
+	if (thatstation.s_Platforms.HasItem(lookup+start)) // now retest, might be just added
 		{
-		local value=thatstation.platforms.GetValue(lookup+start);
+		local value=thatstation.s_Platforms.GetValue(lookup+start);
 		usable=AIRail.IsRailTile(lookup+start+frontTile);
 		if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.stationID);
 		if (usable)
@@ -1394,20 +1395,20 @@ while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+
 		if (usable)	value=value | 2;
 			else	value=value & ~2;
 
-		thatstation.platforms.SetValue(lookup+start,value);
-		//PutSign(lookup+start+frontTile,value);
+		thatstation.s_Platforms.SetValue(lookup+start,value);
+		//cDebug.PutSign(lookup+start+frontTile,value);
 		}
 	lookup+=rightTile;
 	}
 local goodPlatforms=AIList();
-goodPlatforms.AddList(thatstation.platforms);
+goodPlatforms.AddList(thatstation.s_Platforms);
 if (thatstation.owner.Count() == 0)
 	goodPlatforms.RemoveValue(0);	// no one own it yet, we just validate a platform if its rail in front is built
 else	{
 //	local mainOwner=cRoute.GetRouteObject(thatstation.owner.Begin());
 //	if (mainOwner == null)	{ DError("Cannot get station owner route "+thatstation.owner.Begin(),1,"cStation.DefinePlatform"); return false; }
 	local runTarget=cStation.RailStationGetRunnerTarget(thatstation.stationID);
-	PutSign(runTarget,"Checker");
+	cDebug.PutSign(runTarget,"Checker");
 	foreach (platidx, openclose in goodPlatforms)
 		{
 		local value=0;
@@ -1416,17 +1417,17 @@ else	{
 																else	value=value & ~1;
 		if ((openclose & 2) == 2 && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=value | 2;
 																else	value=value & ~2;
-		thatstation.platforms.SetValue(platidx, value);
+		thatstation.s_Platforms.SetValue(platidx, value);
 		if (value == 0)	goodPlatforms.RemoveItem(platidx); // not so true if we connect both side of a station, but good for now
 		}	
 	}
-DInfo("Station "+thatstation.name+" have "+thatstation.platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2);
-thatstation.size=thatstation.platforms.Count();
+DInfo("Station "+thatstation.name+" have "+thatstation.s_Platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2);
+thatstation.size=thatstation.s_Platforms.Count();
 thatstation.max_trains=goodPlatforms.Count();
-thatstation.locations.SetValue(20,topLeftPlatform);
-thatstation.locations.SetValue(21,topRightPlatform);
-//PutSign(topLeftPlatform,"NL");
-//PutSign(topRightPlatform,"NR");
+thatstation.s_TrainSpecs.SetValue(20,topLeftPlatform);
+thatstation.s_TrainSpecs.SetValue(21,topRightPlatform);
+//cDebug.PutSign(topLeftPlatform,"NL");
+//cDebug.PutSign(topRightPlatform,"NR");
 }
 
 function cStation::RailStationGetRunnerTarget(runnerID)
@@ -1441,12 +1442,12 @@ if (mainOwner == null)	return -1;
 local primary=(mainOwner.source_stationID == runnerID);
 if (primary)
 	{
-	if (mainOwner.source_RailEntry)	return thatstation.locations.GetValue(4);
-						else	return thatstation.locations.GetValue(3);
+	if (mainOwner.source_RailEntry)	return thatstation.s_TrainSpecs.GetValue(4);
+						else	return thatstation.s_TrainSpecs.GetValue(3);
 	}
 else	{
-	if (mainOwner.target_RailEntry)	return thatstation.locations.GetValue(2);
-						else	return thatstation.locations.GetValue(1);
+	if (mainOwner.target_RailEntry)	return thatstation.s_TrainSpecs.GetValue(2);
+						else	return thatstation.s_TrainSpecs.GetValue(1);
 	}
 return -1;
 }
@@ -1464,9 +1465,9 @@ return platindex+front;
 
 function cStation::GetPlatformIndex(platform, useEntry=true)
 // return the platform reference (it's the station platform start location)
-// useEntry: true return the real reference in our .platforms, false = return the location of the exit for that platform
+// useEntry: true return the real reference in our .s_Platforms, false = return the location of the exit for that platform
 // the useEntry=false query shouldn't be use as index as only the start is record, you will fail to find the platform with that index
-// -> it mean don't use it when trying to find a platform in cStation.platforms list
+// -> it mean don't use it when trying to find a platform in cStation.s_Platforms list
 // on error return -1
 {
 local stationID=AIStation.GetStationID(platform);
@@ -1479,12 +1480,12 @@ local staX=0;
 local staY=0;
 if (useEntry)
 	{
-	staX=AIMap.GetTileX(thatstation.locations.GetValue(16)); // X=SW->NE
-	staY=AIMap.GetTileY(thatstation.locations.GetValue(16)); // Y=SE->NW
+	staX=AIMap.GetTileX(thatstation.s_TrainSpecs.GetValue(16)); // X=SW->NE
+	staY=AIMap.GetTileY(thatstation.s_TrainSpecs.GetValue(16)); // Y=SE->NW
 	}
 else	{
-	staX=AIMap.GetTileX(thatstation.locations.GetValue(17));
-	staY=AIMap.GetTileY(thatstation.locations.GetValue(17));
+	staX=AIMap.GetTileX(thatstation.s_TrainSpecs.GetValue(17));
+	staY=AIMap.GetTileY(thatstation.s_TrainSpecs.GetValue(17));
 	}
 if (thatstation.GetRailStationDirection()==AIRail.RAILTRACK_NE_SW)
 	{ staY=platY; }
@@ -1583,8 +1584,8 @@ local stationID=AIStation.GetStationID(platform);
 local thatstation=cStation.GetStationObject(stationID);
 local crossing=0;
 local direction=thatstation.GetRailStationDirection();
-if (useEntry)	crossing=thatstation.locations.GetValue(5);
-		else	crossing=thatstation.locations.GetValue(6);
+if (useEntry)	crossing=thatstation.s_TrainSpecs.GetValue(5);
+		else	crossing=thatstation.s_TrainSpecs.GetValue(6);
 if (crossing < 0)	{ DError("Crossing isn't define yet",2); return -1; }
 local goalTile=0;
 if (direction==AIRail.RAILTRACK_NE_SW)
@@ -1641,10 +1642,10 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	{ DError("Invalid stationID "+stationID,1); return -1; }
-local ted=thatstation.locations.GetValue(7);
-local txd=thatstation.locations.GetValue(8);
-local tet=thatstation.locations.GetValue(9);
-local txt=thatstation.locations.GetValue(10);
+local ted=thatstation.s_TrainSpecs.GetValue(7);
+local txd=thatstation.s_TrainSpecs.GetValue(8);
+local tet=thatstation.s_TrainSpecs.GetValue(9);
+local txt=thatstation.s_TrainSpecs.GetValue(10);
 if (taker)
 	{
 	if (useEntry)	tet+=1;
@@ -1654,10 +1655,10 @@ else	{
 	if (useEntry)	ted+=1;
 			else	txd+=1;
 	}
-thatstation.locations.SetValue(7, ted);
-thatstation.locations.SetValue(8, txd);
-thatstation.locations.SetValue(9, tet);
-thatstation.locations.SetValue(10, txt);
+thatstation.s_TrainSpecs.SetValue(7, ted);
+thatstation.s_TrainSpecs.SetValue(8, txd);
+thatstation.s_TrainSpecs.SetValue(9, tet);
+thatstation.s_TrainSpecs.SetValue(10, txt);
 DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" add a new train: taker="+taker+" useEntry="+useEntry,2);
 }
 
@@ -1668,10 +1669,10 @@ local thatstation=null;
 if (stationID==null)	thatstation=this;
 		else		thatstation=cStation.GetStationObject(stationID);
 if (thatstation == null)	{ DError("Invalid stationID "+stationID,1); return -1; }
-local ted=thatstation.locations.GetValue(7);
-local txd=thatstation.locations.GetValue(8);
-local tet=thatstation.locations.GetValue(9);
-local txt=thatstation.locations.GetValue(10);
+local ted=thatstation.s_TrainSpecs.GetValue(7);
+local txd=thatstation.s_TrainSpecs.GetValue(8);
+local tet=thatstation.s_TrainSpecs.GetValue(9);
+local txt=thatstation.s_TrainSpecs.GetValue(10);
 if (taker)
 	{
 	if (useEntry)	tet-=1;
@@ -1685,10 +1686,10 @@ if (ted < 0)	ted=0;
 if (txd < 0)	txd=0;
 if (tet < 0)	tet=0;
 if (txt < 0)	txt=0;
-thatstation.locations.SetValue(7, ted);
-thatstation.locations.SetValue(8, txd);
-thatstation.locations.SetValue(9, tet);
-thatstation.locations.SetValue(10, txt);
+thatstation.s_TrainSpecs.SetValue(7, ted);
+thatstation.s_TrainSpecs.SetValue(8, txd);
+thatstation.s_TrainSpecs.SetValue(9, tet);
+thatstation.s_TrainSpecs.SetValue(10, txt);
 DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" remove train: taker="+taker+" useEntry="+useEntry,2);
 }
 */

@@ -23,7 +23,9 @@ class cLoader
 
 function cLoader::RegisterStations()
 // discover and register stations as openttd knows them
+// there's still few infos our stations will lack out of this (sadly most of them are important ones, like depot)
 {
+	DInfo("Looking the map for our stations",0);
 	local stations = AIList();
 	local temp = null;
 	temp = AIStationList(AIStation.STATION_TRAIN);
@@ -49,7 +51,6 @@ function cLoader::OldSaveWarn()
 	AILog.Error("WARNING");
 	AILog.Info("That savegame was made with DictatorAI version "+INSTANCE.main.bank.busyRoute);
 	AILog.Info("I have add a compatibility loader to help restoring old savegames but it doesn't support all versions");
-	AILog.Info("If the AI crash, please bugreport the savegame version and AI version in use.");
 	AILog.Info("If you re-save your game, it will be saved with the new save format.");
 	AILog.Error("WARNING");
 	INSTANCE.Sleep(20);
@@ -92,24 +93,27 @@ function cLoader::LoadOldSave()
 	for (local i=0; i < all_stations.len(); i++)
 		{
 		local obj=cStation();
-		obj.s_ID=all_stations[i];
-		obj.s_Type=all_stations[i+1];
-		obj.s_SubType=all_stations[i+2];
-		obj.s_Size=all_stations[i+3];
-		obj.s_MaxSize=all_stations[i+4];
-		obj.s_Depot=all_stations[i+5];
-		obj.s_Radius=all_stations[i+6];
+		local lost = null;
+		local _stationID = all_stations[i]; // id
+		lost = all_stations[i+1]; // type
+		lost = all_stations[i+2]; // subtype
+		lost = all_stations[i+3]; // size
+		lost = all_stations[i+4]; // maxsize
+		local _Depot=all_stations[i+5]; // depot
+		lost = all_stations[i+6]; // radius
 		local counter=all_stations[i+7];
 		local nextitem=i+8+counter;
 		local temparray=[];
-		for (local z=0; z < counter; z++)	temparray.push(all_stations[i+8+z]);
-		obj.s_Tiles=cMisc.ArrayToList(temparray);
+		for (local z=0; z < counter; z++)	temparray.push(all_stations[i+8+z]); // locations
+		lost=cMisc.ArrayToList(temparray);
 		counter=all_stations[nextitem];
 		temparray=[];
-		for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
+		for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]); // lol don't remember what it was, platforms ?
 		i=nextitem+counter;
 		iter++;
-		//obj.StationSave();
+		local info = cStation.Load(_stationID);
+		if (!info)	continue;
+		info.Depot = _Depot;
 		}
 	DInfo(iter+" stations found.",0);
 	DInfo("base size: "+INSTANCE.main.bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1);
@@ -292,9 +296,10 @@ function cLoader::Load154()
 	ConvertOldSave();
 }
 
-function cLoader::LoadSaveGame()
+function cLoader::Load166()
 // The latest load function
 	{
+	cLoader.OldSaveWarn();
 	local all_stations=INSTANCE.main.bank.unleash_road;
 	DInfo("...Restoring stations",0);
 	local iter=0;
@@ -312,8 +317,6 @@ function cLoader::LoadSaveGame()
 		obj.s_Size=all_stations[i+2];
 		obj.s_Depot=all_stations[i+3];
 		if (sobj != false)	sobj.s_Depot = obj.s_Depot;
-//		if (obj.stationType == AIStation.STATION_AIRPORT)	obj.radius=AIAirport.GetAirportCoverageRadius(obj.specialType);
-//										else	obj.radius=AIStation.GetCoverageRadius(obj.stationType);
 		local counter=all_stations[i+4];
 		local nextitem=i+5+counter;
 		local temparray=[];
@@ -324,11 +327,8 @@ function cLoader::LoadSaveGame()
 		for (local z=0; z < counter; z++)	temparray.push(all_stations[nextitem+1+z]);
 		local lost =cMisc.ArrayToList(temparray); // train plaforms, lost for now
 		obj.s_MaxSize=1;
-//		if (obj.stationType == AIStation.STATION_BUS_STOP || obj.stationType == AIStation.STATION_TRUCK_STOP)	obj.maxsize=INSTANCE.main.carrier.road_max;
-//		if (obj.stationType == AIStation.STATION_TRAIN)	obj.maxsize=INSTANCE.main.carrier.rail_max;
 		i=nextitem+counter;
 		iter++;
-//		if (saveit)	obj.StationSave();
 		}
 	DInfo("Found "+iter+" stations.",0);
 	local all_routes=INSTANCE.main.bank.canBuild;
@@ -338,6 +338,7 @@ function cLoader::LoadSaveGame()
 		{
 		saveit=true;
 		local obj=cRoute();
+		local temp;
 		obj.VehicleType=all_routes[i+0];
 		obj.Status=all_routes[i+1];
 		obj.GroupID=all_routes[i+2];
@@ -352,96 +353,42 @@ function cLoader::LoadSaveGame()
 		i+=8;
 		iter++;
 		local gname=AIGroup.GetName(obj.GroupID);
-		local cc=0;
-		local workstr=gname.slice(2); // discard 2 first char
-		for (cc=0; cc < workstr.len(); cc++)
-			if (workstr.slice(cc,cc+1)=="*")	{ obj.CargoID=workstr.slice(0,cc).tointeger(); break; }
-		workstr=workstr.slice(cc+1);
-		local src_IsTown = (workstr.slice(0,1)=="T");
-		workstr=workstr.slice(1);
-		for (cc=0; cc < workstr.len(); cc++)
-			if (workstr.slice(cc,cc+1)=="*")	{ obj.SourceProcess=workstr.slice(0,cc).tointeger(); break; }
-		workstr=workstr.slice(cc+1);
-		local tgt_IsTown = (workstr.slice(0,1)=="T");
-		workstr=workstr.slice(1);
-		obj.TargetProcess=workstr.tointeger();
-		obj.Twoway=false;
-		// restore process
-		obj.SourceProcess = cProcess.Load(cProcess.GetUID(obj.SourceProcess, src_IsTown));
-		obj.TargetProcess = cProcess.Load(cProcess.GetUID(obj.TargetProcess, tgt_IsTown));
-		switch (obj.VehicleType)
+		// this version use A*CargoID*I###*T### groupname
+		local workarr = cMisc.SplitStars(gname);
+		local src_IsTown, dst_IsTown;
+		if (workarr.len() != 0)
 			{
-			case	RouteType.RAIL:
-				obj.StationType=AIStation.STATION_TRAIN;
-			break;
-			case	RouteType.ROAD:
-				obj.StationType=AIStation.STATION_TRUCK_STOP;
-				if (obj.CargoID == cCargo.GetPassengerCargo())	obj.StationType=AIStation.STATION_BUS_STOP;
-			break;
-			case	RouteType.WATER:
-				obj.Stationtype=AIStation.STATION_DOCK;
-			break;
-			case	RouteType.AIR:
-			case	RouteType.AIRMAIL:
-			case	RouteType.AIRNET:
-			case	RouteType.AIRNETMAIL:
-			case	RouteType.SMALLAIR:
-			case	RouteType.SMALLMAIL:
-			case	RouteType.CHOPPER:
-				obj.Stationtype=AIStation.STATION_AIRPORT;
-			break;
+			obj.CargoID = workarr[1].tointeger();
+			src_IsTown = (workarr[2].slice(0,1) == "T");
+			dst_IsTown = (workarr[3].slice(0,1) == "T");
 			}
+		temp=workarr[2].slice(1).tointeger(); // source id
+		obj.SourceProcess = cProcess.Load(cProcess.GetUID(temp, src_IsTown));
+		temp=workarr[3].slice(1).tointeger(); // target id
+		obj.TargetProcess = cProcess.Load(cProcess.GetUID(temp, dst_IsTown));
+		obj.Twoway=false;
 		local jrt=obj.VehicleType;
 		local crg=obj.CargoID;
+		temp = cJobs();
+//	if (this.UID == null && this.SourceProcess.ID != null && this.TargetProcess.ID != null && this.cargoID != null && this.roadType != null)
+		temp.UID = null;
 		if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
-		local pUID = cProcess.GetUID(obj.SourceProcess, obj.src_IsTown);
-		cJobs.CreateNewJob(obj.SourceProcess.ID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
-		foreach (idx, val in cJobs.database)
+		temp.roadType = jrt;
+		temp.cargoID = obj.CargoID;
+		if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
+		if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
+		if (saveit)
 			{
-			if (cJobs.jobDoable.HasItem(idx))	continue;
-								else	{ // that's a new job, must be the one we seek
-									cJobs.jobDoable.AddItem(idx,0);
-									local thatjob=cJobs.Load(idx);
-									if (!thatjob)	{ saveit=true; continue; } // ie: dual job will not be create and so == null there
-									thatjob.isUse=true;
-									obj.UID=thatjob.UID;
-									break;
-									}
-			}
-		if (saveit && obj.UID != null)
-			{
-/*			cRoute.database[obj.UID] <- obj;
-			if (obj.UID>1 && obj.target_istown && obj.route_type != RouteType.WATER && obj.route_type != RouteType.RAIL && (obj.cargoID==cCargo.GetPassengerCargo() || obj.cargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(obj.targetID);
-			obj.RouteCheckEntry(); // re-enable the link to stations
-			if (obj.source_entry && AIStation.IsValidStation(obj.source_stationID))
-				{
-				obj.rail_type=AIRail.GetRailType(AIStation.GetLocation(obj.source_stationID));
-				obj.RouteSetDistance();
-				}*/
+			temp.sourceObject = obj.SourceProcess;
+			temp.targetObject = obj.TargetProcess;
+			print(temp.GetUID());
+			obj.UID = temp.UID;
+			cJobs.CreateNewJob(obj.SourceProcess.UID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
+			temp = cJobs.Load(obj.UID); // now load it
+			if (!temp)	continue;
+			temp.isUse = true;
 			obj.RouteDone();
-			if (obj.groupID != null)	cRoute.GroupIndexer.AddItem(obj.groupID,obj.UID);
-			local srcprod=obj.SourceStation.IsCargoProduce(obj.CargoID);
-			local srcacc=obj.SourceStation.IsCargoAccept(obj.CargoID);
-			local dstprod=obj.TargetStation.IsCargoProduce(obj.CargoID);
-			local dstacc=obj.TargetStation.IsCargoAccept(obj.CargoID);
-			if (srcprod)	obj.SourceStation.s_CargoProduce.AddItem(obj.CargoID,0);
-			if (srcacc)	obj.SourceStation.s_CargoAccept.AddItem(obj.CargoID,0);
-			if (dstprod)	obj.TargetStation.s_CargoProduce.AddItem(obj.CargoID,0);
-			if (dstacc)	obj.TargetStation.s_CargoAccept.AddItem(obj.CargoID,0);
-		if (srcprod && srcacc && dstprod && dstacc)	obj.Twoway=true;
-									else	obj.Twoway=false;
-
-
-/*			obj.source.cargo_produce.AddItem(obj.CargoID,0);
-			obj.source.cargo_accept.AddItem(obj.CargoID,0);
-			obj.target.cargo_produce.AddItem(obj.CargoID,0);
-			obj.target.cargo_accept.AddItem(obj.CargoID,0);
-			local sp=obj.source.IsCargoProduce(obj.CargoID);
-			local sa=obj.source.IsCargoAccept(obj.CargoID);
-			local tp=obj.target.IsCargoProduce(obj.CargoID);
-			local ta=obj.target.IsCargoAccept(obj.CargoID);
-			if (sp && sa && tp && ta)	obj.twoway=true; // mark it twoway*/
-			DInfo("Proccess... "+cRoute.RouteGetName(obj.UID),0);
+			DInfo("Proccess... "+obj.Name,0);
 			}
 		}
 	DInfo("Found "+iter+" routes.",0);
@@ -460,7 +407,7 @@ function cLoader::LoadSaveGame()
 		obj.full=false;
 		i+=5;
 		cTrain.vehicledatabase[obj.vehicleID] <- obj;
-		cTrain.Update(obj.vehicleID);
+		//cTrain.Update(obj.vehicleID);
 		iter++;
 		}
 	DInfo("Found "+iter+" trains.",0);
@@ -473,6 +420,11 @@ function cLoader::LoadSaveGame()
 	cRoute.RouteRebuildIndex();
 	}
 
+function cLoader::LoadSaveGame()
+// Load current savegame version in use
+{
+}
+
 function cLoader::LoadingGame()
 {
 	cLoader.RegisterStations();
@@ -480,7 +432,8 @@ function cLoader::LoadingGame()
 	{
 	if (INSTANCE.main.bank.busyRoute < 152)	cLoader.LoadOldSave();
 		else	if (INSTANCE.main.bank.busyRoute < 156)	cLoader.Load154();
-			else	cLoader.LoadSaveGame();
+			else if (INSTANCE.main.bank.busyRoute < 167)	cLoader.Load166();
+				else	cLoader.LoadSaveGame();
 	} catch (e)
 		{
 		AILog.Error("Cannot load that savegame !");

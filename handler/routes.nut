@@ -100,35 +100,6 @@ function cRoute::RouteBuildGroup()
 							else	cRoute.GroupIndexer.AddItem(this.GroupID, this.UID);
 	}
 
-function cRoute::RouteDone()
-// called when a route is finish
-{
-	this.VehicleCount=0;
-	this.Status=100;
-	this.RouteSave();
-	if (this.SourceProcess.IsTown)	cProcess.statueTown.AddItem(this.SourceProcess.ID,0);
-	if (this.TargetProcess.IsTown)	cProcess.statueTown.AddItem(this.TargetProcess.ID,0);
-	this.RouteAirportCheck();
-	if (this.UID>1 && this.TargetProcess.IsTown && this.VehicleType != RouteType.WATER && this.VehicleType != RouteType.RAIL && (this.CargoID == cCargo.GetPassengerCargo() || this.CargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(this.TargetProcess.ID);
-	this.SourceStation.s_CargoProduce.AddItem(this.CargoID,0);
-	this.SourceStation.s_CargoAccept.AddItem(this.CargoID,0); // that's not true, both next lines could be false, but CheckCangoHandleByStation will clean them if need
-	this.TargetStation.s_CargoAccept.AddItem(this.CargoID,0);
-	this.TargetStation.s_CargoProduce.AddItem(this.CargoID,0);
-	this.RouteSetDistance();
-}
-
-function cRoute::RouteSave()
-// save that route to the database
-	{
-	this.SetRouteName();
-	if (this.UID in database)	DInfo("Route "+this.Name+" is already in database",2);
-			else		{
-					DInfo("Adding route "+this.Name+" to the route database",2);
-					database[this.UID] <- this;
-					RouteIndexer.AddItem(this.UID, 1);
-					}
-	}
-
 function cRoute::CreateNewRoute(UID)
 // Create and add to database a new route with informations taken from cJobs
 	{

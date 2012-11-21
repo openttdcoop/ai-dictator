@@ -155,6 +155,68 @@ function cRoute::SetRouteName()
 			}
 }
 
+function cRoute::RouteSave()
+// save that route to the database
+	{
+	this.SetRouteName();
+	if (this.UID in database)	DInfo("Route "+this.Name+" is already in database",2);
+			else		{
+					DInfo("Adding route "+this.Name+" to the route database",2);
+					database[this.UID] <- this;
+					RouteIndexer.AddItem(this.UID, 1);
+					}
+	}
+
+
+function cRoute::RouteDone()
+// called when a route is finish
+{
+	if (!cMisc.ValidInstance(this.SourceProcess) || !cMisc.ValidInstance(this.TargetProcess))	return;
+	this.VehicleCount=0;
+	this.Status=100;
+	switch (this.VehicleType)
+		{
+		case	RouteType.RAIL:
+			this.StationType=AIStation.STATION_TRAIN;
+		break;
+		case	RouteType.ROAD:
+			this.StationType=AIStation.STATION_TRUCK_STOP;
+			if (this.CargoID == cCargo.GetPassengerCargo())	this.StationType=AIStation.STATION_BUS_STOP;
+		break;
+		case	RouteType.WATER:
+			this.Stationtype=AIStation.STATION_DOCK;
+		break;
+		case	RouteType.AIR:
+		case	RouteType.AIRMAIL:
+		case	RouteType.AIRNET:
+		case	RouteType.AIRNETMAIL:
+		case	RouteType.SMALLAIR:
+		case	RouteType.SMALLMAIL:
+		case	RouteType.CHOPPER:
+			this.Stationtype=AIStation.STATION_AIRPORT;
+		break;
+		}
+	this.RouteSave();
+	if (!cMisc.ValidInstance(this.SourceStation) || !cMisc.ValidInstance(this.TargetStation))	return;
+
+	this.RouteSetDistance();
+	if (this.SourceProcess.IsTown)	cProcess.statueTown.AddItem(this.SourceProcess.ID,0);
+	if (this.TargetProcess.IsTown)	cProcess.statueTown.AddItem(this.TargetProcess.ID,0);
+	this.RouteAirportCheck();
+	if (this.UID>1 && this.TargetProcess.IsTown && this.VehicleType != RouteType.WATER && this.VehicleType != RouteType.RAIL && (this.CargoID == cCargo.GetPassengerCargo() || this.CargoID==cCargo.GetMailCargo()) )	cJobs.TargetTownSet(this.TargetProcess.ID);
+	local srcprod=this.SourceStation.IsCargoProduce(this.CargoID);
+	local srcacc=this.SourceStation.IsCargoAccept(this.CargoID);
+	local dstprod=this.TargetStation.IsCargoProduce(this.CargoID);
+	local dstacc=this.TargetStation.IsCargoAccept(this.CargoID);
+	if (srcprod)	this.SourceStation.s_CargoProduce.AddItem(this.CargoID,0);
+	if (srcacc)	this.SourceStation.s_CargoAccept.AddItem(this.CargoID,0);
+	if (dstprod)	this.TargetStation.s_CargoProduce.AddItem(this.CargoID,0);
+	if (dstacc)	this.TargetStation.s_CargoAccept.AddItem(this.CargoID,0);
+print("BREAK srcprod="+srcprod+" srcacc="+srcacc+" dstprod="+dstprod+" dstacc="+dstacc);
+	if (srcprod && srcacc && dstprod && dstacc)	this.Twoway=true;
+								else	this.Twoway=false;
+}
+
 function cRoute::RouteInitNetwork()
 // Add the network routes to the database
 	{
@@ -205,10 +267,10 @@ function cRoute::RouteSetDistance()
 // Setup a route distance
 	{
 	local a, b= -1;
-	if (this.SourceProcess != null)	a=this.SourceProcess.Location;
-	if (this.TargetProcess != null)	b=this.TargetProcess.Location;
-	if (this.SourceStation != null)	a=this.SourceStation.s_Location;
-	if (this.TargetStation != null)	b=this.TargetStation.s_Location;
+	if (cMisc.ValidInstance(this.SourceProcess))	a=this.SourceProcess.Location;
+	if (cMisc.ValidInstance(this.TargetProcess))	b=this.TargetProcess.Location;
+	if (cMisc.ValidInstance(this.SourceStation))	a=this.SourceStation.s_Location;
+	if (cMisc.ValidInstance(this.TargetStation))	b=this.TargetStation.s_Location;
 	if (a > -1 && b > -1)	this.Distance=AITile.GetDistanceManhattanToTile(a,b);
 				else	this.Distance=0;
 	}

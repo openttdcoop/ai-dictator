@@ -60,7 +60,7 @@ function cTrain::Save()
 	if (AIVehicle.GetVehicleType(this.vehicleID)!=AIVehicle.VT_RAIL)	{ DError("Only supporting train",2,"cTrain::Save"); return; }
 	if (this.vehicleID in cTrain.vehicledatabase)	return;
 	cTrain.vehicledatabase[this.vehicleID] <- this;
-	DInfo("Adding "+cCarrier.VehicleGetName(this.vehicleID)+" to cTrain database",2,"cTrain::Save");
+	DInfo("Adding "+cCarrier.GetVehicleName(this.vehicleID)+" to cTrain database",2,"cTrain::Save");
 	}
 
 function cTrain::Load(tID)
@@ -81,7 +81,7 @@ function cTrain::Update(vehID)
 // Update a train infos for length, locos, wagons
 	{
 	local train=cTrain.Load(vehID);
-	DInfo("Updating vehicle properties for "+cCarrier.VehicleGetName(vehID),2,"cTrain::Update");
+	DInfo("Updating vehicle properties for "+cCarrier.GetVehicleName(vehID),2,"cTrain::Update");
 	train.numberWagons=cCarrier.GetNumberOfWagons(vehID);
 	train.numberLocos=cCarrier.GetNumberOfLocos(vehID);
 	train.length=AIVehicle.GetLength(vehID);
@@ -102,7 +102,7 @@ function cTrain::TrainSetStation(vehID, stationID, isSource, useEntry, taker)
 		train.dstStationID=stationID;
 		if (taker)	train.stationbit+=2;
 		}
-	DInfo("Train "+cCarrier.VehicleGetName(vehID)+" assign to station "+cStation.GetName(stationID),2,"cTrain::TrainSetStation");
+	DInfo("Train "+cCarrier.GetVehicleName(vehID)+" assign to station "+cStation.GetName(stationID),2,"cTrain::TrainSetStation");
 	}
 
 function cTrain::DeleteVehicle(vehID)
@@ -113,7 +113,7 @@ function cTrain::DeleteVehicle(vehID)
 		local atrain=null;
 		if (AIVehicle.IsValidVehicle(vehID))	atrain=cTrain.Load(vehID); // if invalid cTrain.Load would call DeleteVehicle and infinite loop
 								else	{ atrain=cTrain(); atrain.vehicleID=vehID; }
-		DInfo("Removing train "+cCarrier.VehicleGetName(vehID)+" from database",2,"cTrain::DeleteVehicle");
+		DInfo("Removing train "+cCarrier.GetVehicleName(vehID)+" from database",2,"cTrain::DeleteVehicle");
 		local taker=((atrain.stationbit & 1) == 1);
 		if (atrain.srcStationID != null)	cStation.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID);
 		taker=((atrain.stationbit & 2) == 2);

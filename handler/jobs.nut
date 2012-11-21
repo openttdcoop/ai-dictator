@@ -19,7 +19,7 @@ function cJobs::Load(UID)
 	local obj = cJobs.GetJobObject(UID);
 	if (obj == null)
 		{
-		DWarn("cJobs.Load function return NULL",1);
+		DWarn("cJobs.Load function return NULL with UID="+UID,1);
 		return false;
 		}
 	return obj;
@@ -171,13 +171,12 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		return;
 		}
 	if (myjob.isUse)	return;	// no need to refresh an already done job
-	::AIController.Sleep(1);
+	local pause = cLooper();
 	// moneyGains, ranking & cargoAmount
 	myjob.sourceObject.UpdateScore();
 	myjob.targetObject.UpdateScore();
 	if (updateCost)	myjob.EstimateCost();
 	myjob.RankThisJob();
-	::AIController.Sleep(1);
 	}
 
 function cJobs::IsInfosUpdate(jobID)

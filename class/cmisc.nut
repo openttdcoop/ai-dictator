@@ -149,3 +149,26 @@ function cMisc::ArrayToList(array)
 	return list;
 }
 
+function cMisc::ValidInstance(obj)
+// return true if obj is an instance of something
+{
+	return (typeof(obj) == "instance");
+}
+
+function cMisc::SplitStars(st)
+// This split the string st into an array of string, the split is at each * in the st
+// This is to cut off a group name infos and grab them easy
+{
+	local retValue=[];
+	local buff="";
+	for (local i = 0; i < st.len(); i++)
+		{
+		local c = st.slice(i, i+1);
+		if (c == "*")	{ retValue.push(buff); buff=""; }
+				else	buff+=c;
+		}
+	if (buff != "")	retValue.push(buff); // add last one found because eol
+	return retValue;
+}
+
+

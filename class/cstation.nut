@@ -493,7 +493,7 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 			if (!valid_accept && accept > 7)	valid_accept=true;
 			}
 		if (!valid_produce && thatstation.s_CargoProduce.HasItem(cargo_id))
-			{
+			{ // TODO: fixme, bug finding who produce what.
 			DInfo("Station "+thatstation.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargo_id),1);
 			thatstation.s_CargoProduce.RemoveItem(cargo_id);
 			}
