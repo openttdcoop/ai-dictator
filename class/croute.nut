@@ -184,7 +184,7 @@ function cRoute::RouteDone()
 			if (this.CargoID == cCargo.GetPassengerCargo())	this.StationType=AIStation.STATION_BUS_STOP;
 		break;
 		case	RouteType.WATER:
-			this.Stationtype=AIStation.STATION_DOCK;
+			this.StationType=AIStation.STATION_DOCK;
 		break;
 		case	RouteType.AIR:
 		case	RouteType.AIRMAIL:
@@ -193,7 +193,7 @@ function cRoute::RouteDone()
 		case	RouteType.SMALLAIR:
 		case	RouteType.SMALLMAIL:
 		case	RouteType.CHOPPER:
-			this.Stationtype=AIStation.STATION_AIRPORT;
+			this.StationType=AIStation.STATION_AIRPORT;
 		break;
 		}
 	this.RouteSave();

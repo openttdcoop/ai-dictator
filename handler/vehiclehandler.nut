@@ -265,9 +265,9 @@ else	{ // others
 function cCarrier::VehicleFindRouteIndex(veh)
 // return UID of the route the veh vehicle is running on
 {
-local group=AIVehicle.GetGroupID(veh);
-if (cRoute.GroupIndexer.HasItem(group))		return cRoute.GroupIndexer.GetValue(group);
-return null;
+	local group=AIVehicle.GetGroupID(veh);
+	if (cRoute.GroupIndexer.HasItem(group))		return cRoute.GroupIndexer.GetValue(group);
+	return null;
 }
 
 function cCarrier::VehicleUpgradeEngine(vehID)

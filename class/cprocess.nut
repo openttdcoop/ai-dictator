@@ -246,7 +246,7 @@ function cProcess::GetUID(_id, _istown)
 // Create a UID for industry
 	{
 	local uID=_id;
-	if (_istown)	uID+=10000;
+	if (typeof(uID) == "integer" && _istown)	uID+=10000;
 	return uID;
 	}
 

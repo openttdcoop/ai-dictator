@@ -143,7 +143,11 @@ function cRoute::RouteRebuildIndex()
 	{
 	cRoute.RouteIndexer.Clear();
 	foreach (item in cRoute.database)
-		cRoute.RouteIndexer.AddItem(item.UID, 1);	
+		{
+		cRoute.RouteIndexer.AddItem(item.UID, 1);
+		if (item.GroupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(item.GroupID, item.UID);
+								else	cRoute.GroupIndexer.AddItem(item.GroupID, item.UID);
+		}
 	}
 
 function cRoute::RouteIsNotDoable()

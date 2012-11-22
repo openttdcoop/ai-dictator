@@ -28,7 +28,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	if (firstroute.SourceStation.s_ID == stationid)	{ start=true; townid=firstroute.SourceProcess.ID; }
 								else	{ start=false; townid=firstroute.TargetProcess.ID; }
 	local now=AIDate.GetCurrentDate();
-	if (station.s_DateLastUpgrade != null && now - station.s_DateLastUpgrade < 120) // wait 40 days before each trys
+	if (station.s_DateLastUpgrade != null && now - station.s_DateLastUpgrade < 300) // wait 300 days before each trys
 		{
 		DInfo("We try to upgrade that airport not so long ago, giving up",1);
 		return false;
@@ -359,8 +359,16 @@ function cBuilder::BuildAirStation(start, routeID=null)
 						if (!oldOwner)	continue;
 						local srcValid = (typeof(oldOwner.SourceStation) == "instance");
 						local dstValid = (typeof(oldOwner.TargetStation) == "instance");
-						if (srcValid && oldOwner.SourceStation.s_ID == oldAirport.s_ID)	oldOwner.SourceStation = newStation;
-						if (dstValid && oldOwner.TargetStation.s_ID == oldAirport.s_ID)	oldOwner.TargetStation = newStation;
+						if (srcValid && oldOwner.SourceStation.s_ID == oldAirport.s_ID)
+							{
+							oldOwner.SourceStation = newStation;
+							oldOwner.SourceStation.OwnerClaimStation(oldOwner.UID);
+							}
+						if (dstValid && oldOwner.TargetStation.s_ID == oldAirport.s_ID)
+							{
+							oldOwner.TargetStation = newStation;
+							oldOwner.TargetStation.OwnerClaimStation(oldOwner.UID);
+							}
 						//oldOwner.RouteUpdateVehicle(); check routes.nut 58
 						local pause = cLooper();
 						}

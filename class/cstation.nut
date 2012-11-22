@@ -175,6 +175,7 @@ function cStation::GetStationName(stationID)
 	return s.s_Name;
 }
 
+/*
 function cStation::KeepOwner(oldstation, newstation)
 // We duplicate old properties into the newstation properties, making sure we keep values we must maintain
 {
@@ -189,7 +190,7 @@ if (newstation.s_Owner instanceof AIList)	print("new owner is ailist");
 		DInfo("Preserving "+oldstation.s_Owner.Count()+" owners of station "+oldstation.s_Name,2);
 		}
 	return newstation;
-}
+}*/
 
 function cStation::InitNewStation(stationID)
 // Create a station object depending on station type. Add the station to base and return the station object or null on error.
@@ -209,7 +210,7 @@ function cStation::InitNewStation(stationID)
 		{
 		case	AIStation.STATION_TRAIN:
 			_station = cStationRail();
-			_station = cStation.KeepOwner(_oldstation, _station);
+			//_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_SubType = AIRail.GetRailType(_Location); // set rail type the station use
 			_station.s_MaxSize = INSTANCE.main.carrier.rail_max;
 			for (local zz=0; zz < 23; zz++)	_station.s_TrainSpecs.AddItem(zz,-1); // create special cases for train usage
@@ -221,12 +222,12 @@ function cStation::InitNewStation(stationID)
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do boat
 			_station = cStationWater();
-			_station = cStation.KeepOwner(_oldstation, _station);
+			//_station = cStation.KeepOwner(_oldstation, _station);
 		break;
 		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
 			_station = cStationRoad();
-			_station = cStation.KeepOwner(_oldstation, _station);
+			//_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_MaxSize = INSTANCE.main.carrier.road_max;
 			_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 			_station.s_Size = _station.s_Tiles.Count();
@@ -237,7 +238,7 @@ function cStation::InitNewStation(stationID)
 		break;
 		case	AIStation.STATION_AIRPORT:
 			_station = cStationAir();
-			_station = cStation.KeepOwner(_oldstation, _station);
+			//_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_MaxSize = 1000; // airport size is limited by airport avaiability
 			_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 			_station.s_Size = _station.s_Tiles.Count();
@@ -426,7 +427,6 @@ function cStation::IsCargoProduceAccept(cargoID, produce_query, stationID=null)
 	if (stationID == null)	thatstation=this;
 				else	thatstation=cStation.Load(stationID);
 	if (!thatstation)	return false;
-//	local staloc=cTileTools.FindStationTiles(AIStation.GetLocation(thatstation.stationID));
 	foreach (tiles, sdummy in thatstation.s_Tiles)
 		{
 		local success=false;
@@ -479,12 +479,12 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 	cargolist.AddList(thatstation.s_CargoProduce);
 	local cargomail=cCargo.GetMailCargo();
 	local cargopass=cCargo.GetPassengerCargo();
-	local staloc=cTileTools.FindStationTiles(stationID);
+	//local staloc=cTileTools.FindStationTiles(stationID);
 	foreach (cargo_id, cdummy in cargolist)
 		{
 		local valid_produce=false;
 		local valid_accept=false;
-		foreach (tiles, sdummy in staloc)
+		foreach (tiles, sdummy in thatstation.s_Tiles)
 			{
 			if (valid_accept && valid_produce)	break;
 			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.s_Radius);
@@ -492,8 +492,9 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 			if (!valid_produce && produce > 0)	valid_produce=true;
 			if (!valid_accept && accept > 7)	valid_accept=true;
 			}
+print("station "+thatstation.s_Name+" produce="+valid_produce+" accept="+valid_accept+" cargo="+cCargo.GetCargoLabel(cargo_id)+" radius="+thatstation.s_Radius);
 		if (!valid_produce && thatstation.s_CargoProduce.HasItem(cargo_id))
-			{ // TODO: fixme, bug finding who produce what.
+			{
 			DInfo("Station "+thatstation.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargo_id),1);
 			thatstation.s_CargoProduce.RemoveItem(cargo_id);
 			}
