@@ -63,10 +63,10 @@ function cRoute::RouteUpdateVehicle()
 	this.VehicleCount=vehingroup.Count();
 	}
 
-function cRoute::SetRouteGroupName(groupID, r_source, r_target, r_stown, r_ttown, r_cargo, isVirtual)
+function cRoute::SetRouteGroupName(groupID, r_source, r_target, r_stown, r_ttown, r_cargo, isVirtual, sourceStaID, targetStaID)
 // This rename a group to a format we can read
 	{
-	if (!AIGroup.IsValidGroup(groupID))	return "invalid";
+	if (groupID == null || !AIGroup.IsValidGroup(groupID))	return "invalid";
 	local dummychar="A";
 	local dummycount=65; // the ASCII A, as this is also A in unicode
 	local st="I";
@@ -75,7 +75,7 @@ function cRoute::SetRouteGroupName(groupID, r_source, r_target, r_stown, r_ttown
 	if (r_ttown)	dt="T";
 	if (r_source==null)	r_source="B";
 	if (r_target==null)	r_target="B";
-	local endname="*"+r_cargo+"*"+st+r_source+"*"+dt+r_target;
+	local endname="*"+r_cargo+"*"+st+r_source+"*"+dt+r_target+"*"+sourceStaID+"*"+targetStaID;
 	if (isVirtual)	endname="-NETWORK "+AICargo.GetCargoLabel(r_cargo);
 	dummychar=dummycount.tochar();
 	local groupname=dummychar+endname;
@@ -95,7 +95,7 @@ function cRoute::RouteBuildGroup()
 	local gid = AIGroup.CreateGroup(rtype);
 	if (!AIGroup.IsValidGroup(gid))	{ DError("Cannot create the group, this is serious error, please report it!",0); return; }
 	this.GroupID = gid;
-	cRoute.SetRouteGroupName(this.GroupID, this.SourceProcess.ID, this.TargetProcess.ID, this.SourceProcess.IsTown, this.TargetProcess.IsTown, this.CargoID, false);
+	cRoute.SetRouteGroupName(this.GroupID, this.SourceProcess.ID, this.TargetProcess.ID, this.SourceProcess.IsTown, this.TargetProcess.IsTown, this.CargoID, false, this.SourceStation.s_ID, this.TargetStation.s_ID);
 	if (this.GroupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(this.GroupID, this.UID);
 							else	cRoute.GroupIndexer.AddItem(this.GroupID, this.UID);
 	}
@@ -134,7 +134,6 @@ function cRoute::CreateNewRoute(UID)
 		}
 	this.Status = 0;
 	this.RouteSetDistance();
-	this.RouteBuildGroup();
 	this.RouteSave();
 	}
 
@@ -146,7 +145,7 @@ function cRoute::RouteRebuildIndex()
 		{
 		cRoute.RouteIndexer.AddItem(item.UID, 1);
 		if (item.GroupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(item.GroupID, item.UID);
-								else	cRoute.GroupIndexer.AddItem(item.GroupID, item.UID);
+								else	if (item.GroupID != null)	cRoute.GroupIndexer.AddItem(item.GroupID, item.UID);
 		}
 	}
 

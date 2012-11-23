@@ -456,6 +456,7 @@ print("status 5");
 	if (INSTANCE.main.route.Status==6)
 		{
 		INSTANCE.main.route.RouteDone();
+		INSTANCE.main.route.RouteBuildGroup();
 		DInfo("Route contruction complete ! "+INSTANCE.main.route.Name,0);
 		local srcprod=INSTANCE.main.route.SourceStation.IsCargoProduce(INSTANCE.main.route.CargoID);
 		local srcacc=INSTANCE.main.route.SourceStation.IsCargoAccept(INSTANCE.main.route.CargoID);

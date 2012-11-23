@@ -198,7 +198,6 @@ function cRoute::RouteDone()
 		}
 	this.RouteSave();
 	if (!cMisc.ValidInstance(this.SourceStation) || !cMisc.ValidInstance(this.TargetStation))	return;
-
 	this.RouteSetDistance();
 	if (this.SourceProcess.IsTown)	cProcess.statueTown.AddItem(this.SourceProcess.ID,0);
 	if (this.TargetProcess.IsTown)	cProcess.statueTown.AddItem(this.TargetProcess.ID,0);
@@ -229,7 +228,7 @@ function cRoute::RouteInitNetwork()
 	passRoute.Distance = 1000; // a dummy distance start value
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
 	passRoute.GroupID=n;
-	cRoute.SetRouteGroupName(passRoute.GroupID, 0, 0, true, true, passRoute.CargoID, true);
+	cRoute.SetRouteGroupName(passRoute.GroupID, 0, 0, true, true, passRoute.CargoID, true, null, null);
 	cRoute.VirtualAirGroup[0]=n;
 	passRoute.RouteSave();
 
@@ -242,7 +241,7 @@ function cRoute::RouteInitNetwork()
 	mailRoute.Distance = 1000;
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
 	mailRoute.GroupID=n;
-	cRoute.SetRouteGroupName(mailRoute.GroupID, 1, 1, true, true, mailRoute.CargoID, true);
+	cRoute.SetRouteGroupName(mailRoute.GroupID, 1, 1, true, true, mailRoute.CargoID, true, null, null);
 	cRoute.VirtualAirGroup[1]=n;
 	GroupIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
 	GroupIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);

@@ -381,6 +381,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 			road.SourceStation = AIStation.GetStationID(heliloc);
 			road.VehicleType = RouteType.CHOPPER;
 			road.SourceStation = road.CreateNewStation(start);
+			if (!cMisc.ValidInstance(road.SourceStation))	return -1;
 			road.SourceStation.s_Depot = -1;
 			road.SourceStation.s_Location = heliloc;
 			return road.SourceStation.s_ID;

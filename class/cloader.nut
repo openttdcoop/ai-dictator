@@ -148,7 +148,7 @@ function cLoader::LoadOldSave()
 		local saveit = (obj.UID > 1);
 		if (saveit && cMisc.ValidInstance(obj.SourceStation) && cMisc.ValidInstance(obj.TargetStation) && cMisc.ValidInstance(obj.SourceProcess) && cMisc.ValidInstance(obj.TargetProcess))
 			{
-			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false);
+			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
 			obj.RouteDone();
 			DInfo("Validate... "+obj.Name,0);
 			}
@@ -241,6 +241,7 @@ print("obj.Source="+obj.SourceProcess+" istown="+temp);
 					}
 		iter++;
 		local saveit = (obj.UID > 2); // ignore virtual routes
+		if (saveit)	saveit = obj.GroupID != null;
 		if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
 		if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
 		if (saveit)	saveit = cMisc.ValidInstance(obj.SourceStation);
@@ -261,7 +262,7 @@ print("obj.Source="+obj.SourceProcess+" istown="+temp);
 			temp = cJobs.Load(obj.UID); // now load it
 			if (!temp)	continue;
 			temp.isUse = true;
-			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false);
+			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
 			obj.RouteDone();
 			DInfo("Validate... "+obj.Name,0);
 			}
@@ -369,6 +370,7 @@ function cLoader::Load166()
 		if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
 		temp.roadType = jrt;
 		temp.cargoID = obj.CargoID;
+		if (saveit)	saveit = obj.GroupID != null;
 		if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
 		if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
 		if (saveit)
@@ -383,7 +385,7 @@ function cLoader::Load166()
 			temp.isUse = true;
 			if (cMisc.ValidInstance(obj.SourceStation))	obj.SourceStation.OwnerClaimStation(obj.UID);
 			if (cMisc.ValidInstance(obj.TargetStation))	obj.TargetStation.OwnerClaimStation(obj.UID);
-			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false);
+			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
 			obj.RouteDone();
 			DInfo("Validate... "+obj.Name,0);
 			}
@@ -420,6 +422,141 @@ function cLoader::Load166()
 function cLoader::LoadSaveGame()
 // Load current savegame version in use
 {
+	local all_stations=INSTANCE.main.bank.unleash_road;
+	DInfo("...Restoring stations",0);
+	local iter=0;
+	local allcargos=AICargoList();
+	local all_routes=INSTANCE.main.bank.canBuild;
+	local saveit=true;
+	for (local i=0; i < all_stations.len(); i++)
+		{
+		saveit=true;
+		local stationID=all_stations[i];
+		local sobj = cStation.Load(stationID);
+		if (!sobj)	saveit = false;
+		if (saveit && !AIStation.IsValidStation(sobj.s_ID))	saveit=false;
+		if (saveit)	sobj.s_Depot=all_stations[i+1];
+		i+=1;
+		if (saveit && sobj instanceof cStationRail)
+			{
+			local counter=all_stations[i+1];
+			i+=2;
+			local temparray=[];
+			for (local z=0; z < counter; z++)	temparray.push(all_stations[i+z]);
+			i+=(counter-1);
+			if (saveit)	sobj.s_Platforms=cMisc.ArrayToList(temparray);
+			counter=all_stations[i+1];
+			i+=2;
+			temparray=[];
+			for (local z=0; z < counter; z++)	temparray.push(all_stations[i+z]);
+			if (saveit)	sobj.s_TrainSpecs =cMisc.ArrayToList(temparray); // train plaforms, lost for now
+			i+=(counter-1);
+			}
+		}
+		iter++;
+	DInfo("Found "+iter+" stations.",0);
+
+	DInfo("...Restoring routes",0);
+	iter=0;
+	for (local i=0; i < all_routes.len(); i++)
+		{
+		saveit=true;
+		local obj=cRoute();
+		local temp;
+		local _rtype = allroutes[i];
+		local _groupid = all_routes[i+1];
+		local _one = all_routes[i+2];
+		local _two = all_routes[i+3];
+		local _three = all_routes[i+4];
+		local _four =all_routes[i+5];
+		i+=5;
+		iter++;
+		saveit = (_groupid != null);
+		local src_IsTown, dst_IsTown;
+		if (saveit)
+			{
+			local gname=AIGroup.GetName(_groupid);
+			// this version use A*CargoID*I###*T###*###*### groupname
+			local workarr = cMisc.SplitStars(gname);
+
+			if (workarr.len() != 0)
+				{
+				obj.CargoID = workarr[1].tointeger();
+				src_IsTown = (workarr[2].slice(0,1) == "T");
+				dst_IsTown = (workarr[3].slice(0,1) == "T");
+				}
+			temp=workarr[2].slice(1).tointeger(); // source id
+			obj.SourceProcess = cProcess.Load(cProcess.GetUID(temp, src_IsTown));
+			temp=workarr[3].slice(1).tointeger(); // target id
+			obj.TargetProcess = cStation.Load(temp);
+			temp=workarr[4].slice(1).tointeger(); // source station id
+			obj.SourceStation = cStation.Load(temp);
+			temp=workarr[5].slice(1).tointeger(); // target station id
+			obj.TargetStation = cStation.Load(temps);
+			if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
+			if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
+			if (saveit)	saveit = cMisc.ValidInstance(obj.SourceStation);
+			if (saveit)	saveit = cMisc.ValidInstance(obj.TargetStation);
+			if (saveit)	obj.VehicleType = _rtype;
+			obj.GroupID = _groupid;
+			}
+		if (saveit)
+			{
+			local jrt= obj.VehicleType;
+			local crg= obj.CargoID;
+			temp = cJobs();
+			temp.UID = null;
+			if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
+			temp.roadType = jrt;
+			temp.cargoID = obj.CargoID;
+			temp.sourceObject = obj.SourceProcess;
+			temp.targetObject = obj.TargetProcess;
+			temp.cargoID = obj.CargoID;
+			temp.GetUID();
+			cJobs.CreateNewJob(obj.SourceProcess.UID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
+			temp = cJobs.Load(obj.UID); // now load it
+			if (!temp)	continue;
+			temp.isUse = true;
+			obj.UID = temp.UID;
+			obj.SourceStation.OwnerClaimStation(obj.UID);
+			obj.TargetStation.OwnerClaimStation(obj.UID);
+			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
+			obj.Source_RailEntry = _one;
+			obj.Target_RailEntry = _two;
+			obj.Primary_RailLink = _three;
+			obj.Secondary_RailLink = _four;
+			obj.RouteDone();
+			DInfo("Validate... "+obj.Name,0);
+			}
+		}
+	DInfo("Found "+iter+" routes.",0);
+	DInfo("Restoring trains",0);
+	local all_trains=SixMonth;
+	iter=0;
+	for (local i=0; i < all_trains.len(); i++)
+		{
+		local obj=cTrain();
+		obj.vehicleID=all_trains[i];
+		obj.srcStationID=all_trains[i+1];
+		obj.dstStationID=all_trains[i+2];
+		obj.src_useEntry=all_trains[i+3];
+		obj.dst_useEntry=all_trains[i+4];
+		obj.stationbit=all_trains[i+5];
+		obj.full=false;
+		i+=5;
+		cTrain.vehicledatabase[obj.vehicleID] <- obj;
+		//cTrain.Update(obj.vehicleID);
+		iter++;
+		}
+	DInfo("Found "+iter+" trains.",0);
+	local planelist=AIVehicleList_Group(INSTANCE.main.bank.mincash); // restore the network aircraft
+	foreach (veh, dummy in planelist)	AIGroup.MoveVehicle(cRoute.VirtualAirGroup[0],veh);
+	planelist=AIVehicleList_Group(INSTANCE.TwelveMonth);
+	foreach (veh, dummy in planelist)	AIGroup.MoveVehicle(cRoute.VirtualAirGroup[1],veh);
+	AIGroup.DeleteGroup(INSTANCE.main.bank.mincash);
+	AIGroup.DeleteGroup(TwelveMonth);
+	cRoute.RouteRebuildIndex();
+
 }
 
 function cLoader::LoadingGame()

@@ -206,10 +206,10 @@ function DictatorAI::Save()
 		{
 		if (obj.UID < 2 || obj.UID == null)	continue; // don't save virtual route
 		all_routes.push(obj.VehicleType);
-		all_routes.push(obj.Status);
+//		all_routes.push(obj.Status);
 		all_routes.push(obj.GroupID);
-		all_routes.push(obj.SourceStation.s_ID);
-		all_routes.push(obj.TargetStation.s_ID);
+//		all_routes.push(obj.SourceStation.s_ID);
+//		all_routes.push(obj.TargetStation.s_ID);
 		all_routes.push(obj.Primary_RailLink);
 		all_routes.push(obj.Secondary_RailLink);
 		all_routes.push(obj.Source_RailEntry);
@@ -219,15 +219,18 @@ function DictatorAI::Save()
 	foreach(obj in cStation.stationdatabase)
 		{
 		all_stations.push(obj.s_ID);
-		all_stations.push(obj.s_SubType);
-		all_stations.push(obj.s_Size);
+//		all_stations.push(obj.s_SubType);
+//		all_stations.push(obj.s_Size);
 		all_stations.push(obj.s_Depot);
-		temparray=cMisc.ListToArray(obj.s_Tiles);
-		all_stations.push(temparray.len());
-		for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
-		temparray=cMisc.ListToArray(obj.s_Tiles);
-		all_stations.push(temparray.len());
-		for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
+		if (obj instanceof cStationRail)
+			{
+			temparray=cMisc.ListToArray(obj.s_Platforms);
+			all_stations.push(temparray.len());
+			for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
+			temparray=cMisc.ListToArray(obj.s_TrainSpecs);
+			all_stations.push(temparray.len());
+			for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
+			}
 		}
 	// vehicle
 	foreach (obj in cTrain.vehicledatabase)
