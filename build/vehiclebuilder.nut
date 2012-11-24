@@ -270,27 +270,26 @@ function cCarrier::CheckOneVehicleOrGroup(vehID, doGroup)
 // vehID: the vehicleID to check
 // doGroup: if true, we will add all the vehicles that belong to the vehicleID group
 {
-if (!AIVehicle.IsValidVehicle(vehID))	return false;
-local vehList=AIList();
-local vehGroup=AIVehicle.GetGroupID(vehID);
-if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
-if (vehList.IsEmpty())	vehList.AddItem(vehID,0);
-foreach (vehicle, dummy in vehList)
-	cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
+	if (!AIVehicle.IsValidVehicle(vehID))	return false;
+	local vehList=AIList();
+	local vehGroup=AIVehicle.GetGroupID(vehID);
+	if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
+	if (vehList.IsEmpty())	vehList.AddItem(vehID,0);
+	foreach (vehicle, dummy in vehList)
+		cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
 }
 
 function cCarrier::CheckOneVehicleOfGroup(doGroup)
 // Add one vehicle of each vehicle groups we own to maintenance check
 // doGroup: true to also do the whole group add, this mean all vehicles we own
 {
-local allgroup=AIGroupList();
-foreach (groupID, dummy in allgroup)
-	{
-	local vehlist=AIVehicleList_Group(groupID);
-	//vehlist.Valuate(AIBase.RandItem);
-	vehlist.Valuate(AIVehicle.GetAge);
-	vehlist.Sort(AIList.SORT_BY_VALUE,false);
-	if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(),doGroup);
-	AIController.Sleep(1);
-	}
+	local allgroup=AIGroupList();
+	foreach (groupID, dummy in allgroup)
+		{
+		local vehlist=AIVehicleList_Group(groupID);
+		vehlist.Valuate(AIVehicle.GetAge);
+		vehlist.Sort(AIList.SORT_BY_VALUE,false);
+		if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(),doGroup);
+		local pause = cLooper();
+		}
 }

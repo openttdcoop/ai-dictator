@@ -121,34 +121,6 @@ print("end station check");
 	INSTANCE.main.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
 }
 
-function cBuilder::GetCargoListProduceAtTile(tile)
-// return list of cargo that tile is producing
-{
-local cargo_list=AICargoList();
-local radius=AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
-foreach (cargo, dummy in cargo_list)
-	{
-	local produce=AITile.GetCargoProduction(tile, cargo, 1, 1, radius);
-	cargo_list.SetValue(cargo, produce);
-	}
-cargo_list.KeepAboveValue(0);
-return cargo_list;
-}
-
-function cBuilder::GetCargoListAcceptAtTile(tile)
-// return list of cargo that tile is accepting
-{
-local cargo_list=AICargoList();
-local radius=AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
-foreach (cargo, dummy in cargo_list)
-	{
-	local accept=AITile.GetCargoAcceptance(tile, cargo, 1, 1, radius);
-	cargo_list.SetValue(cargo, accept);
-	}
-cargo_list.KeepAboveValue(7); // doc says below 8 means no acceptance
-return cargo_list;
-}
-
 function cBuilder::CheckRouteStationStatus(onlythisone=null)
 // This check that our routes are still working, a dead station might prevent us to keep the job done
 // pass a stationID to onlythisone to only check that station ID
@@ -315,13 +287,6 @@ function cBuilder::RoadStationsBalancing()
 					}
 				}
 		}
-}
-
-function cBuilder::QuickTasks()
-// functions list here should be only function with a vital thing to do
-{
-INSTANCE.main.builder.AirportStationsBalancing();
-
 }
 
 function cBuilder::BoostedBuys()

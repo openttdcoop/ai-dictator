@@ -465,6 +465,8 @@ function cJobs::UpdateDoableJobs()
 				}
 		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	doable=false;
 		// not doable if the industry no longer exist
+		if (doable && myjob.roadType == AIVehicle.VT_AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300))	doable=false;
+		// not doable because aircraft with poor towns don't make good jobs
 		if (doable && myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 1)	doable=false;
 		// not doable if town jobs is not allow
 		if (doable && !myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 2)	doable=false;

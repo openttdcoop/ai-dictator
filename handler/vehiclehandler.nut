@@ -485,19 +485,26 @@ function cCarrier::VehicleSellAndDestroyRoute(vehicle)
 // This is to watch a group of vehicle to sell, to remove a dead station/route
 // We will callback the handler to remove the route, this might fail if last vehicle is crash
 {
-if (!AIVehicle.IsValidVehicle(vehicle))	return;
-local groupID=AIVehicle.GetGroupID(vehicle);
-local allvehicles=AIVehicleList_Group(groupID);
-allvehicles.Valuate(AIVehicle.GetState);
-allvehicles.RemoveValue(AIVehicle.VS_CRASHED);
-if (allvehicles.Count()>1)	INSTANCE.main.carrier.VehicleSell(vehicle, false);
-				else	{ // ok we are handling the last one of the group
-					local idx=cRoute.GroupIndexer.GetValue(groupID);
-					local road=cRoute.GetRouteObject(idx);
-					if (road==null)	{ DError("Cannot load that route : "+idx,1); return; }
-					INSTANCE.main.carrier.VehicleSell(vehicle, false);
-					road.RouteUndoableFreeOfVehicle();
-					}
+	local reason = null;
+	if (INSTANCE.main.carrier.ToDepotList.HasItem(vehicle))
+		{
+		reason = INSTANCE.main.carrier.ToDepotList.GetValue(vehicle);
+		INSTANCE.main.carrier.ToDepotList.RemoveItem(vehicle);
+		}
+	if (reason != DepotAction.REMOVEROUTE)	return;
+	if (!AIVehicle.IsValidVehicle(vehicle))	return;
+	local groupID=AIVehicle.GetGroupID(vehicle);
+	local allvehicles=AIVehicleList_Group(groupID);
+	allvehicles.Valuate(AIVehicle.GetState);
+	allvehicles.RemoveValue(AIVehicle.VS_CRASHED);
+	if (allvehicles.Count() > 1)	INSTANCE.main.carrier.VehicleSell(vehicle, false);
+					else	{ // ok we are handling the last one of the group
+						local idx=cRoute.GroupIndexer.GetValue(groupID);
+						local road=cRoute.Load(idx);
+						if (!road)	{ DError("Cannot load that route : "+idx,1); return; }
+						INSTANCE.main.carrier.VehicleSell(vehicle, false);
+						road.RouteUndoableFreeOfVehicle();
+						}
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)

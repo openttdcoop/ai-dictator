@@ -463,7 +463,7 @@ function cLoader::LoadSaveGame()
 		saveit=true;
 		local obj=cRoute();
 		local temp;
-		local _rtype = allroutes[i];
+		local _rtype = all_routes[i];
 		local _groupid = all_routes[i+1];
 		local _one = all_routes[i+2];
 		local _two = all_routes[i+3];
@@ -492,7 +492,7 @@ function cLoader::LoadSaveGame()
 			temp=workarr[4].slice(1).tointeger(); // source station id
 			obj.SourceStation = cStation.Load(temp);
 			temp=workarr[5].slice(1).tointeger(); // target station id
-			obj.TargetStation = cStation.Load(temps);
+			obj.TargetStation = cStation.Load(temp);
 			if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
 			if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
 			if (saveit)	saveit = cMisc.ValidInstance(obj.SourceStation);

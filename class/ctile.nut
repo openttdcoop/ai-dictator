@@ -116,7 +116,7 @@ function cTileTools::IsWithinTownInfluence(stationid, townid)
 // A tweak for AIStation.IsWithinTownInfluence in openttd < 1.1.2
 {
 	local stationtile=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
-	foreach (tile, dummy in stationtile)	{ if (AITile.IsWithinTownInfluence(tile, townid)) return true; }
+	foreach (tile, dummy in stationtile)	{ if (AITile.IsWithinTownInfluence(tile, townid) || AITile.GetTownAuthority(tile) == townid) return true; }
 	return false;
 }
 
