@@ -26,6 +26,7 @@ cDebug.PutSign(depot,"A");
 				DError("Cannot create the air vehicle at "+depot,2);
 				return -1;
 				}
+	cEngine.Update(vehID);
 	INSTANCE.main.carrier.vehnextprice-=price;
 	if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
 	return vehID;
@@ -52,7 +53,7 @@ cBuilder.DumpRoute(routeidx);
 	if (firstveh == -1)	{ DError("Cannot create the engine "+cEngine.GetName(veh),2); return false; }
 				else	{ DInfo("Just brought a new aircraft: "+cCarrier.GetVehicleName(firstveh),0); }
 	// no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
-	// as thir engine is the fastest always
+	// as their engine is the fastest always
 	local firstorderflag = null;
 	local secondorderflag = null;
 	secondorderflag = AIOrder.OF_NONE;

@@ -296,6 +296,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 	if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
 	DInfo("Upgrading using depot at "+homedepot,2);
 	cDebug.PutSign(homedepot,"D");
+	if (cEngine.IsRabbitSet(vehID))	cEngine.Update(vehID); // Discover an already created engine status
 	local money=0;
 	switch (vehtype)
 		{

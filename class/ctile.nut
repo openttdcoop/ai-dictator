@@ -649,8 +649,8 @@ function cTileTools::PlantsTreeAtTown(townID, makeplace=false)
 	local towntiles = cTileTools.GetTilesAroundPlace(AITown.GetLocation(townID), 200);
 	towntiles.Valuate(AITile.IsBuildable)
 	towntiles.KeepValue(1);
-	towntiles.Valuate(AITile.IsWithinTownInfluence, townID);
-	towntiles.KeepValue(1);
+	towntiles.Valuate(AITile.GetTownAuthority);
+	towntiles.KeepValue(townID);
 	towntiles.Valuate(AITile.HasTreeOnTile);
 	if (makeplace)
 		{

@@ -36,7 +36,7 @@ function cJobs::CheckLimitedStatus()
 // Check & set the limited status, at early stage we limit the distance to accept a job.
 	{
 	local oldmax=distanceLimits[1];
-	local testLimitChange= GetTransportDistance(AIVehicle.VT_RAIL, false, INSTANCE.main.bank.unleash_road); // get max distance a train could do
+	local testLimitChange= GetTransportDistance(RouteType.RAIL, false, INSTANCE.main.bank.unleash_road); // get max distance a train could do
 	if (oldmax != distanceLimits[1])
 	DInfo("Distance limit status change to "+INSTANCE.main.bank.unleash_road,2);
 	}
@@ -86,8 +86,8 @@ function cJobs::GetUID()
 			local v4=(this.sourceObject.ID+10000);
 			if (this.sourceObject.IsTown) v4+=4000;
 			parentID= v4+(this.cargoID+1);
-			if (this.roadType == AIVehicle.VT_AIR)	parentID = v4+(this.cargoID+100);
-			if (this.roadType == AIVehicle.VT_ROAD && this.cargoID == cCargo.GetPassengerCargo())
+			if (this.roadType == RouteType.AIR)	parentID = v4+(this.cargoID+100);
+			if (this.roadType == RouteType.ROAD && this.cargoID == cCargo.GetPassengerCargo())
 				{ parentID = v4+(this.cargoID+300); }
 			// parentID: prevent a route done by a transport to be done by another transport
 			// As paris->anywhere(v/bus)[parentID=1000] paris->anywhere(pass/train)[parentID=1000]
@@ -119,7 +119,7 @@ function cJobs::RankThisJob()
 	// use the rating of target if its a town
 	if (srcTown && dstTown)	stationrank = min(this.sourceObject.ScoreRating, this.targetObject.ScoreRating);
 	// take the poorest rank out of the two towns
-	if (dstTown && cJobs.targetTown.HasItem(this.targetObject.ID) && (this.roadType==AIVehicle.VT_AIR || this.roadType==AIVehicle.VT_ROAD) && (this.cargoID == cCargo.GetPassengerCargo() || this.cargoID == cCargo.GetMailCargo()))
+	if (dstTown && cJobs.targetTown.HasItem(this.targetObject.ID) && (this.roadType==RouteType.AIR || this.roadType==RouteType.ROAD) && (this.cargoID == cCargo.GetPassengerCargo() || this.cargoID == cCargo.GetMailCargo()))
 		// passenger or mail transport by road or aircraft to that target already
 		{
 		local drank= ( (10 * valuerank) / 100) * cJobs.targetTown.GetValue(this.targetObject.ID);
@@ -152,12 +152,12 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	if (!myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))
 		{
 		badind=true;
-		cJobs.DeleteIndustry(myjob.sourceObject.ID);
+		cJobs.MarkIndustryDead(myjob.sourceObject.ID);
 		}
 	if (!myjob.targetObject.IsTown && !AIIndustry.IsValidIndustry(myjob.targetObject.ID))
 		{
 		badind=true;
-		cJobs.DeleteIndustry(myjob.targetObject.ID);
+		cJobs.MarkIndustryDead(myjob.targetObject.ID);
 		}
 	if (badind)
 		{
@@ -261,7 +261,7 @@ function cJobs::EstimateCost()
 	local daystransit=0;
 	switch (this.roadType)
 		{
-		case	AIVehicle.VT_ROAD:
+		case	RouteType.ROAD:
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
 			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
 			if (engine==-1)	engine=INSTANCE.main.carrier.ChooseRoadVeh(this.cargoID);
@@ -274,7 +274,7 @@ function cJobs::EstimateCost()
 			money+=(4+distance)*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD))*cBanker.GetInflationRate();
 			daystransit=16;
 		break;
-		case	AIVehicle.VT_RAIL:
+		case	RouteType.RAIL:
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 			local rtype=null;
 			engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
@@ -298,7 +298,7 @@ function cJobs::EstimateCost()
 						}
 			daystransit=4;
 		break;
-		case	AIVehicle.VT_WATER: //TODO: fixme boat
+		case	RouteType.WATER: //TODO: fixme boat
 			// 2 vehicle + 2 stations + 2 depot
 			engine=null;
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
@@ -308,7 +308,7 @@ function cJobs::EstimateCost()
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT))*cBanker.GetInflationRate();
 			daystransit=32;
 		break;
-		case	AIVehicle.VT_AIR:
+		case	RouteType.AIR:
 			// 2 vehicle + 2 airports
 			engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIR);
 			if (engine==-1)	engine=INSTANCE.main.carrier.ChooseAircraft(this.cargoID, this.distance, AircraftType.EFFICIENT);
@@ -362,20 +362,20 @@ function cJobs::GetTransportList(distance)
 	local v_air  =1;
 	local v_road =1;
 	local tweaklist=AIList();
-	local road_maxdistance=cJobs.GetTransportDistance(AIVehicle.VT_ROAD,false,false);
-	local road_mindistance=cJobs.GetTransportDistance(AIVehicle.VT_ROAD,true,false);
-	local rail_maxdistance=cJobs.GetTransportDistance(AIVehicle.VT_RAIL,false,false);
-	local rail_mindistance=cJobs.GetTransportDistance(AIVehicle.VT_RAIL,true,false);
-	local air_maxdistance=cJobs.GetTransportDistance(AIVehicle.VT_AIR,false,false);
-	local air_mindistance=cJobs.GetTransportDistance(AIVehicle.VT_AIR,true,false);
-	local water_maxdistance=cJobs.GetTransportDistance(AIVehicle.VT_WATER,false,false);
-	local water_mindistance=cJobs.GetTransportDistance(AIVehicle.VT_WATER,true,false);
+	local road_maxdistance=cJobs.GetTransportDistance(RouteType.ROAD,false,false);
+	local road_mindistance=cJobs.GetTransportDistance(RouteType.ROAD,true,false);
+	local rail_maxdistance=cJobs.GetTransportDistance(RouteType.RAIL,false,false);
+	local rail_mindistance=cJobs.GetTransportDistance(RouteType.RAIL,true,false);
+	local air_maxdistance=cJobs.GetTransportDistance(RouteType.AIR,false,false);
+	local air_mindistance=cJobs.GetTransportDistance(RouteType.AIR,true,false);
+	local water_maxdistance=cJobs.GetTransportDistance(RouteType.WATER,false,false);
+	local water_mindistance=cJobs.GetTransportDistance(RouteType.WATER,true,false);
 	//DInfo("Distances: Truck="+road_mindistance+"/"+road_maxdistance+" Aircraft="+air_mindistance+"/"+air_maxdistance+" Train="+rail_mindistance+"/"+rail_maxdistance+" Boat="+water_mindistance+"/"+water_maxdistance,2);
 	local goal=distance;
-	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(1,2*v_road); }
-	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(0,1*v_train); }
-	if (goal >= air_mindistance && goal <= air_maxdistance)		{ tweaklist.AddItem(3,4*v_air); }
-	//if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(2,3*v_boat); } TODO: fixme boat
+	if (goal >= road_mindistance && goal <= road_maxdistance)	{ tweaklist.AddItem(RouteType.ROAD,2*v_road); }
+	if (goal >= rail_mindistance && goal <= rail_maxdistance)	{ tweaklist.AddItem(RouteType.RAIL,1*v_train); }
+	if (goal >= air_mindistance && goal <= air_maxdistance)		{ tweaklist.AddItem(RouteType.AIR,4*v_air); }
+	//if (goal >= water_mindistance && goal <= water_maxdistance)	{ tweaklist.AddItem(RouteType.WATER,3*v_boat); } TODO: fixme boat
 	tweaklist.RemoveValue(0);
 	return tweaklist;
 	}
@@ -385,13 +385,13 @@ function cJobs::IsTransportTypeEnable(transport_type)
 	{
 	switch (transport_type)
 		{
-		case	AIVehicle.VT_ROAD:
+		case	RouteType.ROAD:
 		return	(INSTANCE.use_road);
-		case	AIVehicle.VT_AIR:
+		case	RouteType.AIR:
 		return	(INSTANCE.use_air);
-		case	AIVehicle.VT_RAIL:
+		case	RouteType.RAIL:
 		return	(INSTANCE.use_train);
-		case	AIVehicle.VT_WATER:
+		case	RouteType.WATER:
 		return	(INSTANCE.use_boat);
 		}
 	}
@@ -416,10 +416,10 @@ function cJobs::UpdateDoableJobs()
 	local toproad=0;
 	local toprail=0;
 	local topwater=0;
-	cJobs.CostTopJobs[AIVehicle.VT_RAIL]=0;
-	cJobs.CostTopJobs[AIVehicle.VT_AIR]=0;
-	cJobs.CostTopJobs[AIVehicle.VT_WATER]=0;
-	cJobs.CostTopJobs[AIVehicle.VT_ROAD]=0;
+	cJobs.CostTopJobs[RouteType.RAIL]=0;
+	cJobs.CostTopJobs[RouteType.AIR]=0;
+	cJobs.CostTopJobs[RouteType.WATER]=0;
+	cJobs.CostTopJobs[RouteType.ROAD]=0;
 	// reset all top jobs
 	foreach (id, value in INSTANCE.main.jobs.jobIndexer)
 		{
@@ -432,16 +432,16 @@ function cJobs::UpdateDoableJobs()
 		local vehtest=null;
 		switch (myjob.roadType)
 			{
-			case	AIVehicle.VT_AIR:
+			case	RouteType.AIR:
 				if (!INSTANCE.use_air)	doable=false;
 			break;
-			case	AIVehicle.VT_ROAD:
+			case	RouteType.ROAD:
 				if (!INSTANCE.use_road)	doable=false;
 			break;
-			case	AIVehicle.VT_WATER:
+			case	RouteType.WATER:
 				if (!INSTANCE.use_boat)	doable=false;
 			break;
-			case	AIVehicle.VT_RAIL:
+			case	RouteType.RAIL:
 				if (!INSTANCE.use_train)	doable=false;
 			break;
 			}
@@ -465,7 +465,7 @@ function cJobs::UpdateDoableJobs()
 				}
 		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	doable=false;
 		// not doable if the industry no longer exist
-		if (doable && myjob.roadType == AIVehicle.VT_AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300))	doable=false;
+		if (doable && myjob.roadType == RouteType.AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300))	doable=false;
 		// not doable because aircraft with poor towns don't make good jobs
 		if (doable && myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 1)	doable=false;
 		// not doable if town jobs is not allow
@@ -474,28 +474,28 @@ function cJobs::UpdateDoableJobs()
 		if (doable)	{
 				switch (myjob.roadType)
 					{
-					case	AIVehicle.VT_AIR:
+					case	RouteType.AIR:
 						if (topair < myjob.ranking && myjob.cargoID == cCargo.GetPassengerCargo())
 							{
 							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
 							topair=myjob.ranking;
 							}
 					break;
-					case	AIVehicle.VT_ROAD:
+					case	RouteType.ROAD:
 						if (toproad < myjob.ranking)
 							{
 							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
 							toproad=myjob.ranking;
 							}
 					break;
-					case	AIVehicle.VT_WATER:
+					case	RouteType.WATER:
 						if (topwater < myjob.ranking)
 							{
 							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
 							topwater=myjob.ranking;
 							}
 					break;
-						case	AIVehicle.VT_RAIL:
+						case	RouteType.RAIL:
 						if (toprail < myjob.ranking)
 							{
 							cJobs.CostTopJobs[myjob.roadType]=myjob.moneyToBuild;
@@ -513,9 +513,9 @@ function cJobs::UpdateDoableJobs()
 			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
 		local myjob=cJobs.Load(jobID);
 		if (!myjob)	continue;
-		local airValid=(cJobs.CostTopJobs[AIVehicle.VT_AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_AIR]) && INSTANCE.use_air);
-		local trainValid=(cJobs.CostTopJobs[AIVehicle.VT_RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[AIVehicle.VT_RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[AIVehicle.VT_RAIL]) && INSTANCE.use_train);
-		if (myjob.roadType == AIVehicle.VT_ROAD && (airValid || trainValid))	cJobs.jobDoable.RemoveItem(jobID);
+		local airValid=(cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && INSTANCE.use_air);
+		local trainValid=(cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && INSTANCE.use_train);
+		if (myjob.roadType == RouteType.ROAD && (airValid || trainValid))	cJobs.jobDoable.RemoveItem(jobID);
 			// disable because we have funds to build an aircraft or a rail job
 
 		if (parentListID.HasItem(myjob.parentID))
@@ -560,16 +560,17 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	newjob.targetObject = cProcess.Load(dstID);
 	if (!newjob.targetObject)	return;
 	// filters unwanted jobs
-	if (road_type==AIVehicle.VT_WATER)	return;
+	if (road_type==RouteType.WATER)	return;
 	// disable any boat jobs
-	if (road_type == AIVehicle.VT_AIR && cargo_id != cCargo.GetPassengerCargo()) return;
+	if (road_type == RouteType.AIR && cargo_id != cCargo.GetPassengerCargo()) return;
 	// only pass for aircraft, we will randomize if pass or mail later
-	if (!newjob.sourceObject.IsTown && AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && road_type != AIVehicle.VT_AIR && road_type != AIVehicle.VT_WATER) return;
+	if (!newjob.sourceObject.IsTown && AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && road_type != RouteType.AIR && road_type != RouteType.WATER) return;
 	// only aircraft & boat to do platforms
 	newjob.distance = _distance;
 	newjob.roadType = road_type;
 	newjob.cargoID = cargo_id;
 	newjob.GetUID();
+print("newjobUID ="+newjob.UID);
 	newjob.Save();
 	INSTANCE.main.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount... must be call after GetUID
 	}
@@ -611,16 +612,26 @@ function cJobs::DeleteJob(uid)
 	if (cJobs.badJobs.HasItem(uid))	cJobs.badJobs.RemoveItem(uid);
 	}
 
-function cJobs::DeleteIndustry(industry_id)
+function cJobs::DeleteIndustry()
 // Remove an industry and all jobs using it
 {
+	if (cJobs.deadIndustry.IsEmpty())	return;
 	foreach (object in cJobs.database)
 		{
-		if ((!object.sourceObject.IsTown && object.sourceObject.ID == industry_id) || (!object.targetObject.IsTown && object.targetObject.ID == industry_id))	cJobs.DeleteJob(object.UID);
+		foreach (industryID, _ in cJobs.deadIndustry)
+			{
+			if ((!object.sourceObject.IsTown && object.sourceObject.ID == industryID) || (!object.targetObject.IsTown && object.targetObject.ID == industryID))	cJobs.DeleteJob(object.UID);
+			}
 		local pause = cLooper();
 		}
-	cJobs.RawJob_Delete(industry_id);
+	cJobs.deadIndustry.Clear();
+}
+
+function cJobs::MarkIndustryDead(industry_id)
+{
 	cProcess.DeleteProcess(industry_id);
+	if (cJobs.rawJobs.HasItem(industry_id))	cJobs.RawJob_Delete(industry_id);
+							else	cJobs.deadIndustry.AddItem(industry_id,0);
 }
 
 function cJobs::RawJobHandling()

@@ -277,7 +277,6 @@ function cRoute::DutyOnRoute()
 		if (road.VehicleType == RouteType.RAIL)	{ INSTANCE.main.route.DutyOnRailsRoute(uid); continue; }
 		local maxveh=0;
 		local cargoid=road.CargoID;
-	print("uid="+uid+" name="+INSTANCE.main.route.Name);
 		local futur_engine=INSTANCE.main.carrier.GetVehicle(uid);
 		local futur_engine_capacity=1;
 		if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);

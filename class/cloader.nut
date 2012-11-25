@@ -113,7 +113,7 @@ function cLoader::LoadOldSave()
 		iter++;
 		local info = cStation.Load(_stationID);
 		if (!info)	continue;
-		info.Depot = _Depot;
+		info.s_Depot = _Depot;
 		}
 	DInfo(iter+" stations found.",0);
 	DInfo("base size: "+INSTANCE.main.bank.unleash_road.len()+" dbsize="+cStation.stationdatabase.len()+" savedb="+OneMonth,1);
@@ -157,7 +157,7 @@ function cLoader::LoadOldSave()
 	cRoute.RouteRebuildIndex();
 	DInfo(iter+" routes found.",0);
 	DInfo("base size: "+INSTANCE.main.bank.canBuild.len()+" dbsize="+cRoute.database.len()+" savedb="+OneWeek,2);
-	ConvertOldSave();
+	cLoader.ConvertOldSave();
 }
 
 function cLoader::Load154()
@@ -213,7 +213,6 @@ function cLoader::Load154()
 		obj.UID=all_routes[i]; // UID
 		obj.SourceProcess=all_routes[i+1]; // sourceID
 		temp = all_routes[i+2]; // src istown
-print("obj.Source="+obj.SourceProcess+" istown="+temp);
 		obj.SourceProcess = cProcess.Load(cProcess.GetUID(obj.SourceProcess, temp));
 		obj.TargetProcess = all_routes[i+3]; //targetID
 		temp = all_routes[i+4]; // dst istown
@@ -224,11 +223,7 @@ print("obj.Source="+obj.SourceProcess+" istown="+temp);
 		obj.Status=all_routes[i+8]; // status
 		obj.GroupID=all_routes[i+9]; // groupid
 		obj.SourceStation = all_routes[i+10]; // src stationID
-		obj.SourceStation = cStation.Load(obj.SourceStation);
-		if (cMisc.ValidInstance(obj.SourceStation))	obj.SourceStation.OwnerClaimStation(obj.UID);
 		obj.TargetStation = all_routes[i+11]; // dst stationID
-		obj.TargetStation = cStation.Load(obj.TargetStation);
-		if (cMisc.ValidInstance(obj.TargetStation))	obj.TargetStation.OwnerClaimStation(obj.UID);
 		obj.CargoID=all_routes[i+12]; // cargoID
 		obj.Primary_RailLink=all_routes[i+13]; /// primary raillink
 		obj.Secondary_RailLink=all_routes[i+14]; // secondary raillink
@@ -239,13 +234,10 @@ print("obj.Source="+obj.SourceProcess+" istown="+temp);
 					obj.Target_RailEntry=all_routes[i+17];
 					i+=17;
 					}
-		iter++;
 		local saveit = (obj.UID > 2); // ignore virtual routes
 		if (saveit)	saveit = obj.GroupID != null;
 		if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
 		if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
-		if (saveit)	saveit = cMisc.ValidInstance(obj.SourceStation);
-		if (saveit)	saveit = cMisc.ValidInstance(obj.TargetStation);
 		local jrt=obj.VehicleType;
 		local crg=obj.CargoID;
 		if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
@@ -254,17 +246,22 @@ print("obj.Source="+obj.SourceProcess+" istown="+temp);
 			temp = cJobs();
 			temp.sourceObject = obj.SourceProcess;
 			temp.targetObject = obj.TargetProcess;
-			temp.roadType = obj.VehicleType;
-			temp.cargoID = obj.CargoID;
+			temp.roadType = jrt;
+			temp.cargoID = crg;
 			temp.GetUID();
 			obj.UID = temp.UID;
 			cJobs.CreateNewJob(obj.SourceProcess.UID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
 			temp = cJobs.Load(obj.UID); // now load it
 			if (!temp)	continue;
 			temp.isUse = true;
+			obj.SourceStation = cStation.Load(obj.SourceStation);
+			if (cMisc.ValidInstance(obj.SourceStation))	obj.SourceStation.OwnerClaimStation(obj.UID);
+			obj.TargetStation = cStation.Load(obj.TargetStation);
+			if (cMisc.ValidInstance(obj.TargetStation))	obj.TargetStation.OwnerClaimStation(obj.UID);
 			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
 			obj.RouteDone();
 			DInfo("Validate... "+obj.Name,0);
+			iter++;
 			}
 		else	if (obj.GroupID!=null && AIGroup.IsValidGroup(obj.GroupID))	AIGroup.DeleteGroup(obj.GroupID);
 		}
@@ -368,8 +365,6 @@ function cLoader::Load166()
 		temp = cJobs();
 		temp.UID = null;
 		if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
-		temp.roadType = jrt;
-		temp.cargoID = obj.CargoID;
 		if (saveit)	saveit = obj.GroupID != null;
 		if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
 		if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
@@ -377,6 +372,8 @@ function cLoader::Load166()
 			{
 			temp.sourceObject = obj.SourceProcess;
 			temp.targetObject = obj.TargetProcess;
+			temp.roadType = jrt;
+			temp.cargoID = crg;
 			temp.GetUID();
 			obj.UID = temp.UID;
 			cJobs.CreateNewJob(obj.SourceProcess.UID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
@@ -508,10 +505,9 @@ function cLoader::LoadSaveGame()
 			temp.UID = null;
 			if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
 			temp.roadType = jrt;
-			temp.cargoID = obj.CargoID;
+			temp.cargoID = crg;
 			temp.sourceObject = obj.SourceProcess;
 			temp.targetObject = obj.TargetProcess;
-			temp.cargoID = obj.CargoID;
 			temp.GetUID();
 			cJobs.CreateNewJob(obj.SourceProcess.UID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
 			temp = cJobs.Load(obj.UID); // now load it
@@ -568,6 +564,9 @@ function cLoader::LoadingGame()
 		else	if (INSTANCE.main.bank.busyRoute < 156)	cLoader.Load154();
 			else if (INSTANCE.main.bank.busyRoute < 167)	cLoader.Load166();
 				else	cLoader.LoadSaveGame();
+	local grouplist = AIGroupList();
+	grouplist.RemoveList(cRoute.GroupIndexer);
+	foreach (grp, _ in grouplist)	AIGroup.DeleteGroup(grp);
 	} catch (e)
 		{
 		AILog.Error("Cannot load that savegame !");
@@ -578,6 +577,11 @@ function cLoader::LoadingGame()
 		foreach (grp, dummy in grouplist)	AIGroup.DeleteGroup(grp);
 		local vehlist=AIVehicleList();
 		foreach (obj, _ in cJobs.database)	{ obj.isUse = false; }
+		foreach (veh, dummy in vehlist)	AIVehicle.SendVehicleToDepot(veh);
+		foreach (item in cRoute.database)	if (item.UID > 1)	delete cRoute.database[item.UID];
+		cRoute.RouteIndexer.Clear();
+		cRoute.GroupIndexer.Clear();
+print("indexer="+cRoute.RouteIndexer.Count()+" Group="+cRoute.GroupIndexer.Count()+" base="+cRoute.database.len());
 		foreach (veh, dummy in vehlist)
 			{
 			cCarrier.VehicleOrdersReset(veh);

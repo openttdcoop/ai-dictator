@@ -129,7 +129,7 @@ function cEngine::RabbitUnset(vehicleID)
 	local engineID=AIVehicle.GetEngineType(vehicleID);
 	if (engineID==null)	return ;
 	local eng=cEngine.Load(engineID);
-	if (eng.isKnown >= 0)	eng.isKnown=-1;
+	if (eng.isKnown >= 0)	eng.isKnown = -1;
 	}
 
 function cEngine::GetCapacity(eID, cargoID=null)

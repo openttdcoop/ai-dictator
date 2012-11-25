@@ -88,11 +88,15 @@ function cBuilder::AirportNeedUpgrade(stationid)
 				}
 
 	result=INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
+print("STOPME airport upgrade stationID="+stationid+" result="+result);
 	if (result == -1)	return false;
+	station = cStation.Load(result);
+	if (!station)	{ print("got trouble loading new station "+result);}
+foreach (ownID, _ in station.s_Owner)	print("new owners = "+ownID);
 	DInfo("Airport was upgrade successfuly !",1);
 //INSTANCE.main.carrier.VehicleHandleTrafficAtStation(AIStation.GetStationID(result), false);
 	INSTANCE.main.carrier.vehnextprice=0; // We might have put a little havock while upgrading, reset this one
-	station.s_DateLastUpgrade=null;
+	//station.s_DateLastUpgrade=null;
 }
 
 function cBuilder::GetAirportType()
@@ -319,12 +323,12 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		if (oldAirport_Remove)
 			{
 			DInfo("Trying to restore previous airport, feeling lucky ?",0);
-			success=cBuilder.AirportMaker(oldAirport.s_Location, oldAirport.s_Type);
+			success=cBuilder.AirportMaker(oldAirport.s_Location, oldAirport.s_SubType);
 			if (success)	return oldAirport.s_ID;
 					else	{
 						foreach (ownerUID, _ in oldAirport.s_Owner)
 							{
-							OldAirport.OwnerReleaseStation(ownerUID);
+							oldAirport.OwnerReleaseStation(ownerUID);
 							local deadowner=cRoute.Load(ownerUID);
 							if (deadowner != false)	{ DInfo("BuildAirStation mark "+deadowner.UID+" undoable",1); deadowner.RouteIsNotDoable(); }
 							}
@@ -352,26 +356,34 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				}
 			if (oldAirport_Remove)
 				{
-				foreach (ownerUID, dummy in oldAirport.s_Owner)
+print("old airportid="+oldAirport.s_ID+" newid="+newStation.s_ID);
+				if (oldAirport.s_ID != newStation.s_ID)
+					{
+					foreach (ownerUID, dummy in oldAirport.s_Owner)
 						{
-						oldAirport.OwnerReleaseStation(ownerUID);
+/*
 						local oldOwner = cRoute.Load(ownerUID);
+print("UID="+ownerUID+" is record to have "+oldAirport.s_ID+" in its list");
 						if (!oldOwner)	continue;
 						local srcValid = (typeof(oldOwner.SourceStation) == "instance");
 						local dstValid = (typeof(oldOwner.TargetStation) == "instance");
 						if (srcValid && oldOwner.SourceStation.s_ID == oldAirport.s_ID)
 							{
+							oldAirport.OwnerReleaseStation(ownerUID);
 							oldOwner.SourceStation = newStation;
 							oldOwner.SourceStation.OwnerClaimStation(oldOwner.UID);
 							}
 						if (dstValid && oldOwner.TargetStation.s_ID == oldAirport.s_ID)
 							{
+							oldAirport.OwnerReleaseStation(ownerUID);
 							oldOwner.TargetStation = newStation;
 							oldOwner.TargetStation.OwnerClaimStation(oldOwner.UID);
 							}
-						//oldOwner.RouteUpdateVehicle(); check routes.nut 58
+						//oldOwner.RouteUpdateVehicle(); check routes.nut 58*/
+						cRoute.RouteChangeStation(ownerUID, oldAirport.s_ID, newStation.s_ID);
 						local pause = cLooper();
 						}
+					}
 				cStation.DeleteStation(oldAirport.s_ID);
 				cCarrier.VehicleHandleTrafficAtStation(newStation.s_ID, false); // rebuild orders
 				}

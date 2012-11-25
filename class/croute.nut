@@ -273,3 +273,34 @@ function cRoute::RouteSetDistance()
 	if (a > -1 && b > -1)	this.Distance=AITile.GetDistanceManhattanToTile(a,b);
 				else	this.Distance=0;
 	}
+
+function cRoute::RouteChangeStation(uid, _oldstation, _newstation)
+// Route swap _oldstation with _newstation
+{
+	if (_oldstation == _newstation)	return;
+	local road = cRoute.Load(uid);
+	if (!road)	return;
+	if (road.UID > 1)	return; // don't alter virtuals, let them reclaim it later
+	local nstation = cStation.Load(_newstation);
+	if (!nstation)	return;
+	local vsource = cMisc.ValidInstance(road.SourceStation);
+	local vtarget = cMisc.ValidInstance(road.TargetStation);
+	local start = null;
+	if (vsource && _oldstation == road.SourceStation.s_ID)	start = true;
+	if (vtarget && _oldstation == road.TargetStation.s_ID)	start = false;
+	if (start == null)	return; // no station match the old one
+	DInfo("Route "+uid+" is changing from station "+cStation.GetStationName(_oldstation)+" to "+cStation.GetStationName(_newstation),1);
+	if (start)
+		{
+		road.SourceStation.OwnerReleaseStation(uid);
+		road.SourceStation = nstation;
+		road.SourceStation.OwnerClaimStation(uid);
+		}
+	else	{
+		road.TargetStation.OwnerReleaseStation(uid);
+		road.TargetStation = nstation;
+		road.TargetStation.OwnerClaimStation(uid);
+		}
+	road.SetRouteName();
+	cRoute.SetRouteGroupName(road.GroupID, road.SourceProcess.ID, road.TargetProcess.ID, road.SourceProcess.IsTown, road.TargetProcess.IsTown, road.CargoID, false, road.SourceStation.s_ID, road.TargetStation.s_ID);
+}
