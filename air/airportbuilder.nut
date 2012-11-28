@@ -85,19 +85,14 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		local test=AITestMode();
 		result=AIAirport.RemoveAirport(station.s_Location);
 		test=null;
-		INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,true);
 		counter++;
 		if (!result) 
 			{
 			AIController.Sleep(10);
-			INSTANCE.main.carrier.VehicleIsWaitingInDepot(true); // try remove aircraft from airport
+			INSTANCE.main.carrier.FreeDepotOfVehicle(station.s_Depot); // try remove aircraft from airport
 			}
 		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);	
-	if (!result)	{
-				INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,false);
-				return false;
-				}
-
+	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,false);
 	result=INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
 	if (result == -1)	return false;
 	DInfo("Airport was upgrade successfuly !",1);

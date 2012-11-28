@@ -161,12 +161,12 @@ function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
 	local group=null;
 	local checkgroup=AIList();
 	checkgroup.AddList(station.s_Owner);
-	checkgroup.AddItem(0,0); // add virtual group in the list
-	foreach (ownID, dummy in station.s_Owner)
+	checkgroup.AddItem(0,0); // add pass virtual group in the list
+	checkgroup.AddItem(1,0); // add mail virtual
+	foreach (ownID, dummy in checkgroup)
 		{
-		if (ownID == 1)	continue; // ignore virtual mail route, route 0 will re-reroute route 1 already
 		road = cRoute.Load(ownID);
-		if (!road || road.GroupID==null)	continue;
+		if (!road || road.Status != 100)	continue;
 		if (reroute)
 			{
 			vehlist=AIVehicleList_Group(road.GroupID);
@@ -382,7 +382,7 @@ allroadveh.Valuate(AIVehicle.GetVehicleType);
 allroadveh.KeepValue(AIVehicle.VT_ROAD);
 allroadveh.Valuate(AIVehicle.GetState);
 allroadveh.RemoveValue(AIVehicle.VS_STOPPED);
-allroadveh.RemoveValue(AIVehicle.VS_IN_DEPOT);
+//allroadveh.RemoveValue(AIVehicle.VS_IN_DEPOT);
 allroadveh.RemoveValue(AIVehicle.VS_CRASHED);
 allroadveh.RemoveValue(AIVehicle.VS_INVALID);
 
@@ -433,7 +433,7 @@ foreach (vehicle, dummy in tlist)
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 		}
 	cCarrier.VehicleMaintenance_Orders(vehicle);
-	AIController.Sleep(1);
+	local pause = cLooper();
 	}
 if (!checkallvehicle)
 	{ // we need to estimate the fleet value
@@ -509,7 +509,7 @@ function cCarrier::VehicleSellAndDestroyRoute(vehicle)
 }
 
 function cCarrier::VehicleGroupSendToDepotAndSell(idx)
-// Send & sell all vehicles from that route
+// Send & sell all vehicles from that route to remove the route
 {
 	local road=cRoute.Load(idx);
 	if (!road)	return false;
@@ -555,6 +555,32 @@ function cCarrier::VehicleSendToDepotAndSell(uid)
 	if (!road)	return;
 	local vehlist = AIVehicleList_Group(road.GroupID);
 	if (!vehlist.IsEmpty())	foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(veh, DepotAction.SELL);
+}
+
+function cCarrier::FreeDepotOfVehicle(depotID)
+// this function remove any vehicle in depot or at that depot position (stopping them)
+{
+	if (!cStation.IsDepot(depotID))	return true;
+	DInfo("Selling all vehicles at depot "+depotID+" to remove it.",1);
+	local vehlist = AIVehicleList();
+	vehlist.Valuate(AIVehicle.GetLocation);
+	vehlist.KeepValue(depotID);
+	if (vehlist.IsEmpty())	return true;
+	local goodlist = AIList();
+	vehlist.Valuate(AIVehicle.IsStoppedInDepot);
+	goodlist.AddList(vehlist);
+	goodlist.KeepValue(1);
+	vehlist.RemoveValue(1);
+	foreach (veh, _ in vehlist)
+		{
+		local pause = cLooper();
+		cCarrier.StopVehicle(veh);
+		}
+	vehlist.AddList(goodlist);
+	foreach (veh, _ in vehlist)	{ cCarrier.VehicleSell(veh, false); local pause = cLooper(); }
+	vehlist.Valuate(AIVehicle.IsValidVehicle);
+	vehlist.RemoveValue(1);
+	return (vehlist.IsEmpty());
 }
 
 function cCarrier::VehicleIsWaitingInDepot(onlydelete=false)
@@ -678,7 +704,7 @@ local maxspeed=4000;
 while (wait)
 	{ // wait to see if its speed remain at 0
 	local speed=AIVehicle.GetCurrentSpeed(vehID);
-	if (speed == 0 || speed < maxspeed || AIVehicle.GetState(vehID)==AIVehicle.VS_STOPPED)	{ INSTANCE.Sleep(5); i++; maxspeed=speed; }
+	if (speed == 0 || speed < maxspeed || AIVehicle.GetState(vehID)==AIVehicle.VS_STOPPED)	{ AIController.Sleep(5); i++; maxspeed=speed; }
 															else	return false;
 	if (i > 4)	wait=false;
 	}
@@ -693,21 +719,21 @@ return false; // crash/invalid...
 function cCarrier::StopVehicle(vehID)
 // Try to stop a vehicle that is running, and not restart it...
 {
-local	wait=true;
-local i=0;
-while (wait)
-	{ // wait to see if its speed remain >0
-	local speed=AIVehicle.GetCurrentSpeed(vehID);
-	local state=AIVehicle.GetState(vehID);
-	if (state == AIVehicle.VS_CRASHED || state == AIVehicle.VS_INVALID)	return false;
-	if (speed > 0 || state == AIVehicle.VS_AT_STATION || state == AIVehicle.VS_IN_DEPOT)	{ INSTANCE.Sleep(5); i++; }
-	if (state == AIVehicle.VS_BROKEN)	i=0; // wait until broken status is remove
-	if (i > 4)	wait=false;
-	}
-if ((AIVehicle.GetState(vehID) == AIVehicle.VS_RUNNING || AIVehicle.GetState(vehID) == AIVehicle.VS_AT_STATION) && AIVehicle.StartStopVehicle(vehID))
-	{
-	DInfo("Stoping "+cCarrier.GetVehicleName(vehID)+"...",0);
-	return true;
-	}
-return false;
+	local	wait=true;
+	local i=0;
+	while (wait)
+		{ // wait to see if its speed remain >0
+		local speed=AIVehicle.GetCurrentSpeed(vehID);
+		local state=AIVehicle.GetState(vehID);
+		if (state == AIVehicle.VS_CRASHED || state == AIVehicle.VS_INVALID)	return false;
+		if (speed > 0 || state == AIVehicle.VS_AT_STATION || state == AIVehicle.VS_IN_DEPOT)	{ AIController.Sleep(15); i++; }
+		if (state == AIVehicle.VS_BROKEN)	i=0; // wait until broken status is remove
+		if (i > 4)	wait=false;
+		}
+	if ((AIVehicle.GetState(vehID) == AIVehicle.VS_RUNNING || AIVehicle.GetState(vehID) == AIVehicle.VS_AT_STATION) && AIVehicle.StartStopVehicle(vehID))
+		{
+		DInfo("Stoping "+cCarrier.GetVehicleName(vehID)+"...",0);
+		return true;
+		}
+	return false;
 }

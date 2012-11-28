@@ -136,14 +136,14 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 			if (shared)
 				{
 				if (thatstation.s_Owner.Count()>0)	limitmax=limitmax / thatstation.s_Owner.Count();
-				if (limitmax < 1)	limitmax=1;
+				if (limitmax < 2)	limitmax=2;
 				}
-			if (virtualized)	limitmax=2; // only 2 aircrafts when the airport is also in network
+			if (virtualized)	limitmax=4; // only 4 aircrafts when the airport is also in network
 			local dualnetwork=false;
 			local routemod="(classic)";
 			if (virtualized && othervirtual)	
 				{
-				limitmax=0;	// no aircrafts at all on that route if both airport are in the network
+				limitmax=2;	// no aircrafts at all on that route if both airport are in the network
 				dualnetwork=true;
 				routemod="(dual network)";
 				}

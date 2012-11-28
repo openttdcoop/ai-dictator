@@ -518,6 +518,7 @@ function cLoader::LoadSaveGame()
 			temp.isUse = true;
 			obj.SourceStation.OwnerClaimStation(obj.UID);
 			obj.TargetStation.OwnerClaimStation(obj.UID);
+			obj.VehicleType = jrt;
 			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
 			obj.Source_RailEntry = _one;
 			obj.Target_RailEntry = _two;
@@ -567,6 +568,7 @@ function cLoader::LoadingGame()
 			else if (INSTANCE.main.bank.busyRoute < 167)	cLoader.Load166();
 				else	cLoader.LoadSaveGame();
 	local grouplist = AIGroupList();
+	foreach (grp, _ in grouplist)	cCarrier.VehicleBuildOrders(grp, true);
 	grouplist.RemoveList(cRoute.GroupIndexer);
 	foreach (grp, _ in grouplist)	AIGroup.DeleteGroup(grp);
 	foreach (uid, _ in cRoute.RouteIndexer)

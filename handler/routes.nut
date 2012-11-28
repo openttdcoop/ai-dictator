@@ -13,16 +13,6 @@
  *
 **/
 
-function cRoute::IsWorking(uid = null)
-// return true if route is in a sane state
-{
-	local road = false;
-	if (uid == null)	road = this;
-			else	road = cRoute.Load(uid);
-	if (!road)	return false;
-	return (road.Status == 100);
-}
-
 function cRoute::RouteAirportCheck(uid=null)
 // this function check airports routes and setup some properties as they should be
 	{
@@ -153,7 +143,7 @@ function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way, in 2 steps, next step is RouteUndoableFreeOfVehicle()
 	{
 	if (this.UID < 2)	return; // don't touch virtual routes
-	DInfo("Marking route "+cRoute.GetRouteName(this.UID)+" undoable !!!",1);
+	DInfo("BREAK Marking route "+cRoute.GetRouteName(this.UID)+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
 	this.Status = 666;
 	if (!INSTANCE.main.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ this.RouteUndoableFreeOfVehicle(); }
@@ -173,7 +163,7 @@ function cRoute::RouteUndoableFreeOfVehicle()
 	local uidsafe = this.UID;
 	if (this.UID in cRoute.database)
 		{
-		DInfo("ROUTE -> Removing route "+this.UID+" from database",1);
+		DInfo("BREAK ROUTE -> Removing route "+this.UID+" from database",1);
 		cRoute.RouteIndexer.RemoveItem(this.UID);
 		cRoute.RouteDamage.RemoveItem(this.UID);
 		delete cRoute.database[this.UID];

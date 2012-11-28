@@ -134,9 +134,8 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 // pass a stationID to onlythisone to only check that station ID
 {
 	local allstations=AIStationList(AIStation.STATION_ANY);
-	//local allstations = AIList();
-	//foreach (stations in cStation.stationdatabase)	allstations.AddItem(stations.s_ID,0);
 	if (onlythisone != null)	allstations.KeepValue(onlythisone);
+	local healthy = true;
 	foreach (stationID, dummy in allstations)
 		{
 		local pause1 = cLooper();
@@ -158,6 +157,7 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 					DWarn("Station "+stobj.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
 					road.RouteIsNotDoable();
+					healthy = false;
 					continue;
 					}
 				if (stobj.IsCargoAccept(cargoID))	{ stobj.s_CargoAccept.AddItem(cargoID, 0); }
@@ -170,10 +170,12 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 					DWarn("Station "+stobj.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
 					road.RouteIsNotDoable();
+					healthy = false;
 					}
 				}
 			}
 		}
+	return healthy;
 }
 
 function cBuilder::RoadStationsBalancing()

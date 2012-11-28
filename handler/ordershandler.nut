@@ -28,48 +28,87 @@ function cCarrier::AirNetworkOrdersHandler()
 {
 	local road=null;
 	local isfirst=true;
-	local rabbit=null; // this will be our rabbit aircraft that take orders & everyone share with it
+	local mailrabbit=null; // this will be our rabbit aircraft that take orders & everyone share them with it
+	local passrabbit=null;
 	local mailgroup=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
 	local passgroup=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
-	local allgroup=AIList();
-	allgroup.AddList(mailgroup);
-	allgroup.AddList(passgroup);
-	allgroup.Valuate(AIVehicle.GetState);
-	foreach (vehicle, dummy in allgroup)
+	foreach (vehicle, _ in mailgroup)
 		{ // if vehicle is in our todepotlist, it's going to depot for something, so set it as in depot -> it will be remove from list
-		if (INSTANCE.main.carrier.ToDepotList.HasItem(vehicle))	allgroup.SetValue(vehicle,AIVehicle.VS_IN_DEPOT);
-		INSTANCE.Sleep(1);
+		if (cCarrier.ToDepotList.HasItem(vehicle))	mailgroup.RemoveItem(vehicle);
+		local pause = cLooper();
 		}
-	allgroup.KeepValue(AIVehicle.VS_RUNNING);
-	if (allgroup.IsEmpty())	return false;
-	allgroup.Valuate(AIVehicle.GetAge);
-	allgroup.Sort(AIList.SORT_BY_VALUE, false);
-	rabbit=allgroup.Begin();
-	allgroup.RemoveTop(1);
-	local orderpossave=AIList();
-	foreach (vehicle, dummy in allgroup)	allgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT));
-	local numorders=AIOrder.GetOrderCount(rabbit);
-	if (numorders != cCarrier.VirtualAirRoute.len())
+	foreach (vehicle, _ in passgroup)
+		{ // if vehicle is in our todepotlist, it's going to depot for something, so set it as in depot -> it will be remove from list
+		if (cCarrier.ToDepotList.HasItem(vehicle))	passgroup.RemoveItem(vehicle);
+		local pause = cLooper();
+		}
+	mailgroup.Valuate(AIVehicle.GetState);
+	passgroup.Valuate(AIVehicle.GetState);
+	mailgroup.KeepValue(AIVehicle.VS_RUNNING);
+	passgroup.KeepValue(AIVehicle.VS_RUNNING);
+	local numorders = null;
+	local rabbit_destination=null;
+	if (!passgroup.IsEmpty())
 		{
-		for (local i=0; i < INSTANCE.main.carrier.VirtualAirRoute.len(); i++)
+		foreach (vehicle, _ in passgroup)	passgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT));
+		// save current order for each vehicle
+		passrabbit = passgroup.Begin();
+		rabbit_destination = passgroup.GetValue(passgroup.Begin());
+		passgroup.RemoveTop(1); // remove the rabbit
+		numorders = AIOrder.GetOrderCount(passrabbit);
+		if (numorders != cCarrier.VirtualAirRoute.len())
 			{
-			local destination=INSTANCE.main.carrier.VirtualAirRoute[i];
-			if (!AIOrder.AppendOrder(rabbit, destination, AIOrder.OF_NONE))
-				{ DError("Aircraft network order refuse",2); }
+			for (local i=0; i < cCarrier.VirtualAirRoute.len(); i++)
+				{
+				local destination = cCarrier.VirtualAirRoute[i];
+				if (!AIOrder.AppendOrder(passrabbit, destination, AIOrder.OF_NONE))	{ DError("Passenger rabbit refuse order",2); }
+				}
+			if (numorders > 0)
+				{
+				// now remove previous rabbit orders, should not make the aircrafts gone too crazy
+			//	for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(passrabbit, AIOrder.ResolveOrderPosition(passrabbit,0));
+				cCarrier.VehicleOrdersReset(passrabbit);
+				}
 			}
-		if (numorders > 0)
+		passgroup.AddItem(passrabbit, rabbit_destination); // readd the rabbit so it will goes to its previous destination too
+		foreach (vehicle, destination in passgroup)
 			{
-			// now remove previous rabbit orders, should not make the aircrafts gone too crazy
-			for (local i=0; i < numorders; i++)
-					{ AIOrder.RemoveOrder(rabbit, AIOrder.ResolveOrderPosition(rabbit,0)); }
+			if (vehicle != passrabbit)	AIOrder.ShareOrders(vehicle, passrabbit);
+			// now try to get it back to its initial station destination
+			local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
+			if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
 			}
 		}
-	foreach (vehicle, stationtile in allgroup)
+	if (!mailgroup.IsEmpty())
 		{
-		AIOrder.ShareOrders(vehicle,rabbit);
-		// now try to get it back to its initial station destination
-		local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(stationtile));
-		if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
+		foreach (vehicle, _ in mailgroup)	mailgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT));
+		// save current order for each vehicle
+		mailrabbit = mailgroup.Begin();
+		rabbit_destination = mailgroup.GetValue(mailgroup.Begin());
+		mailgroup.RemoveTop(1); // remove the rabbit
+		numorders = AIOrder.GetOrderCount(mailrabbit);
+		if (numorders != cCarrier.VirtualAirRoute.len())
+			{
+			for (local i=0; i < cCarrier.VirtualAirRoute.len(); i++)
+				{
+				local destination = cCarrier.VirtualAirRoute[((cCarrier.VirtualAirRoute.len()-1)-i)];
+				if (!AIOrder.AppendOrder(mailrabbit, destination, AIOrder.OF_NONE))	{ DError("Mail rabbit refuse order",2); }
+				}
+			if (numorders > 0)
+				{
+				// now remove previous rabbit orders, should not make the aircrafts gone too crazy
+			//	for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(passrabbit, AIOrder.ResolveOrderPosition(passrabbit,0));
+				cCarrier.VehicleOrdersReset(mailrabbit);
+				}
+			}
+		mailgroup.AddItem(mailrabbit, rabbit_destination); // readd the rabbit so it will goes to its previous destination too
+		foreach (vehicle, destination in mailgroup)
+			{
+			if (vehicle != mailrabbit)	AIOrder.ShareOrders(vehicle, mailrabbit);
+			// now try to get it back to its initial station destination
+			local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
+			if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
+			}
 		}
 }
 
@@ -95,11 +134,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 	vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 	vehlist.RemoveValue(AIVehicle.VS_CRASHED);
 	foreach (veh, dummy in vehlist)
-		{
-		if (cCarrier.ToDepotList.HasItem(veh))	{ vehlist.SetValue(veh, 1); } // remove ones going to depot
-							else		{ vehlist.SetValue(veh, 0); }
-		}
-	vehlist.RemoveValue(1);
+		if (cCarrier.ToDepotList.HasItem(veh))	vehlist.RemoveItem(veh); // remove ones going to depot
 	if (vehlist.IsEmpty())	return true;
 	local veh=vehlist.Begin();
 	local filterveh=AIList();

@@ -101,10 +101,16 @@ function cRoute::Load(uid)
 		if (!damage && !AIStation.IsValidStation(thatroute.TargetStation.s_ID))	damage=true;
 		if (damage)
 			{
-			DWarn("BREAK Route "+thatroute.Name+" is damage...",1);
+			DWarn("Route "+thatroute.Name+" is damage...",1);
 			}
 		}
 	if (thatroute.Status != 100)	DWarn("route "+thatroute.Name+" have a non working status : "+thatroute.Status,1);
+	if (thatroute.Status == 666)	// callback the end of destruction
+		{
+		local vehlist = AIVehicleList_Group(thatstation.GroupID);
+		if (vehlist.IsEmpty())	thatroute.RouteUndoableFreeOfVehicle();
+		return false;
+		}
 	return thatroute;
 }
 

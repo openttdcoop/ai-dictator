@@ -22,7 +22,7 @@ function cCarrier::CreateAircraftEngine(engineID, depot)
 	local vehID = AIVehicle.BuildVehicle(depot, engineID);
 	if (!AIVehicle.IsValidVehicle(vehID))
 				{
-cDebug.PutSign(depot,"A");
+				cDebug.PutSign(depot,"A");
 				DError("Cannot create the air vehicle at "+depot,2);
 				return -1;
 				}
@@ -96,10 +96,9 @@ function cCarrier::ChooseAircraft(cargo, distance, airtype=0)
 	local special=0;
 	local limitsmall=false;
 	local fastengine=false;
-	if (airtype >= 20)
+	if (airtype == 20)
 		{
-		airtype-=20; // this will get us back to original aircraft type
-		if (airtype > 1)	airtype=0; // force EFFICIENT for small aircraft only
+		airtype=AircraftType.EFFICIENT; // force EFFICIENT for small aircraft only
 		limitsmall=true;
 		}
 	switch (airtype)
@@ -111,16 +110,16 @@ function cCarrier::ChooseAircraft(cargo, distance, airtype=0)
 			vehlist.Valuate(cEngine.GetCapacity, passCargo)
 			vehlist.RemoveBelowValue(30);
 				if (limitsmall) // small ones
-				{
-				vehlist.Valuate(AIEngine.GetPlaneType);
-				vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
-				special=RouteType.SMALLAIR;
-				}
-			else	special=RouteType.AIR;
+					{
+					vehlist.Valuate(AIEngine.GetPlaneType);
+					vehlist.KeepValue(AIAirport.PT_SMALL_PLANE);
+					special=RouteType.SMALLAIR;
+					}
+				else	special=RouteType.AIR;
 			if (AICargo.GetTownEffect(cargo) == AICargo.TE_MAIL)
 				{ // mail/fast ones
 				vehlist.Valuate(AIEngine.GetMaxSpeed);
-				special++; // AIRMAIL OR SMALLAIR
+				special++; // AIRMAIL OR SMALLMAIL
 				vehlist.Sort(AIList.SORT_BY_VALUE,false);
 				vehlist.KeepTop(5); // best fastest engine out of the 5 top fast one
 				}
@@ -162,7 +161,7 @@ function cCarrier::GetAirVehicle(routeidx)
 	if (!road)	return null;
 	local modele=AircraftType.EFFICIENT;
 	if (road.VehicleType == RouteType.AIRNET || road.VehicleType == RouteType.AIRNETMAIL)	modele=AircraftType.BEST; // top speed/capacity for network
-	if (road.SourceStation.s_SubType == AIAirport.AT_SMALL || road.TargetStation.s_SubType == AIAirport.AT_SMALL)	modele+=20;
+	if (road.SourceStation.s_SubType == AIAirport.AT_SMALL || road.TargetStation.s_SubType == AIAirport.AT_SMALL)	modele=20;
 	if (road.VehicleType == RouteType.CHOPPER)	modele=AircraftType.CHOPPER; // need a chopper
 	local veh = INSTANCE.main.carrier.ChooseAircraft(road.CargoID, road.Distance, modele);
 	return veh;

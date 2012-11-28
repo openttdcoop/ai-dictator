@@ -472,6 +472,8 @@ function cBuilder::CheckRoadHealth(routeUID)
 	if (typeof(repair.SourceStation) != "instance" || typeof(repair.TargetStation) != "instance")
 				{ DInfo("Cannot repair that route as stations aren't setup.",1); return false; }
 	if (repair.VehicleType != AIVehicle.VT_ROAD)	return false; // only check road type
+	if (!cBuilder.CheckRouteStationStatus(repair.SourceStation.s_ID) || !cBuilder.CheckRouteStationStatus(repair.TargetStation.s_ID))	return true;
+	// the route itself will get destroy by CheckRouteStationStatus returning false, so we return the route is ok.
 	local good=true;
 	repair.Status=99; // on hold
 	local space="        ";
@@ -822,10 +824,6 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 // @param start true to upgrade source station, false for destination station
 // @return true or false
 {
-//local new_location=[AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,-1), AIMap.GetTileIndex(-1,1), AIMap.GetTileIndex(1,-1), AIMap.GetTileIndex(1,1)];
-// left, right, behind middle, front middle, behind left, behind right, front left, front right
-//local new_facing=[AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0), AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1)];
-// 0 will be same as original station, north, south, east, west
 	local road=cRoute.Load(roadidx);
 	if (!road)	return false;
 	if (road.Status != 100)	return false;
@@ -860,7 +858,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 	cDebug.PutSign(sta_pos+p_backward,"B");
 	cDebug.PutSign(sta_pos+p_forward+p_forward,"F");
 	DInfo("Size :"+work.s_Size,2);
-	INSTANCE.NeedDelay(100);
+	INSTANCE.NeedDelay(20);
 	// 1st tile of station, 2nd tile to face
 	upgradepos.push(sta_pos+p_left);				// left of station, same facing
 	upgradepos.push(sta_pos+p_left+p_forward);
@@ -913,16 +911,16 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 		if (tile == dep_pos || direction == dep_pos)	{ depotdead = cBuilder.DestroyDepot(dep_pos); }
 		// kill our depot if it is about to bug us building
 		if (AIRoad.IsRoadTile(tile))	{ i++; continue; } // don't build on a road if we could avoid it
-cDebug.PutSign(tile, "S");
-cDebug.PutSign(direction, "o");
+		cDebug.PutSign(tile, "S");
+		cDebug.PutSign(direction, "o");
 
 		new_sta_pos=INSTANCE.main.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.s_ID);
 		if (!INSTANCE.main.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
 		INSTANCE.main.builder.CriticalError=false; // discard it
 		if (new_sta_pos != -1)	break;
-		AIController.Sleep(1);
-		INSTANCE.NeedDelay(50);
-cDebug.ClearSigns();
+		local pause = cLooper();
+		INSTANCE.NeedDelay(10);
+		cDebug.ClearSigns();
 		i++;
 		}
 	DInfo("2nd try don't care roads",2);
@@ -934,9 +932,8 @@ cDebug.ClearSigns();
 			local tile=upgradepos[i];
 			local direction=upgradepos[i+1];
 			if (AIRoad.IsRoadStationTile(tile) || AIRoad.IsRoadStationTile(direction))	{ i++; continue; } // don't build on a station
-cDebug.PutSign(tile, "S");
-cDebug.PutSign(direction, "o");
-
+			cDebug.PutSign(tile, "S");
+			cDebug.PutSign(direction, "o");
 			if (tile == dep_pos || direction == dep_pos)	{ depotdead = cBuilder.DestroyDepot(dep_pos); }
 			// kill our depot if it is about to bug us building
 			if (!cTileTools.DemolishTile(tile))	{ DInfo("Cannot clean the place for the new station at "+tile,1); }
@@ -946,7 +943,7 @@ cDebug.PutSign(direction, "o");
 			if (new_sta_pos != -1)	break;
 			AIController.Sleep(1);
 			INSTANCE.NeedDelay(50);
-cDebug.ClearSigns();
+			cDebug.ClearSigns();
 			i++;
 			}
 		}
@@ -1199,33 +1196,13 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 	while (path != null)
 		{
 		local par = path.GetParent();
-	/*	local parone = null;
-		local partwo = null;
-		local parthree = null;
-		local parfour = null;
-		if (par != null)	parone = par.GetParent();
-		if (parone != null)	partwo = parone.GetParent();
-		if (partwo != null)	parthree = partwo.GetParent();*/
 		if (par != null)
 			{
-cDebug.PutSign(path.GetTile(), "a");
-cDebug.PutSign(par.GetTile(), "r");
+//cDebug.PutSign(path.GetTile(), "a");
+//cDebug.PutSign(par.GetTile(), "r");
 
 			if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1)
 				{
-/*
-				if (prevprevprev != null)
-					{
-					// check for small up/down hills correction
-					local targetTile=path.GetTile();
-					local parTile=par.GetTile();
-					local equal= (AITile.GetMinHeight(parTile) == AITile.GetMinHeight(targetTile));
-					if (equal && AITile.GetSlope(parTile) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT)
-						{
-						DInfo("Smoothing land to build road",1);
-						cTileTools.TerraformLevelTiles(targetTile, prevprevprev.GetTile());
-						}
-					}*/
 				if (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()))
 					{
 					smallerror=cBuilder.EasyError(AIError.GetLastError());

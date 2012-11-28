@@ -78,14 +78,8 @@ function cBuilder::DestroyStation(stationid)
 function cBuilder::DestroyDepot(tile)
 // Remove a depot, sold any vehicle in it that might prevent us doing it
 {
-	local isDepot=cStation.IsDepot(tile);
-	if (!isDepot)	return false;
-	local veh = AIVehicleList_Depot(tile);
-	if (!veh.IsEmpty())
-		{
-		DInfo("Selling all vehicles at depot "+tile+" to remove it.",1);
-		foreach (vehID, _ in veh)	cCarrier.VehicleSell(vehID, false);
-		}
+	if (!cStation.IsDepot(tile))	return false;
+	if (!cCarrier.FreeDepotOfVehicle(tile))	return false;
 	return cTileTools.DemolishTile(tile);
 }
 
