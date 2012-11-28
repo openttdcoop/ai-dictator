@@ -419,6 +419,7 @@ function cLoader::Load166()
 function cLoader::LoadSaveGame()
 // Load current savegame version in use
 {
+	DInfo("Loading savegame version "+INSTANCE.main.bank.busyRoute);
 	local all_stations=INSTANCE.main.bank.unleash_road;
 	DInfo("...Restoring stations",0);
 	local iter=0;
@@ -427,6 +428,7 @@ function cLoader::LoadSaveGame()
 	local saveit=true;
 	for (local i=0; i < all_stations.len(); i++)
 		{
+		//print("all_station["+i+"]="+all_stations[i]);
 		saveit=true;
 		local stationID=all_stations[i];
 		local sobj = cStation.Load(stationID);
@@ -485,10 +487,10 @@ function cLoader::LoadSaveGame()
 			temp=workarr[2].slice(1).tointeger(); // source id
 			obj.SourceProcess = cProcess.Load(cProcess.GetUID(temp, src_IsTown));
 			temp=workarr[3].slice(1).tointeger(); // target id
-			obj.TargetProcess = cStation.Load(temp);
-			temp=workarr[4].slice(1).tointeger(); // source station id
+			obj.TargetProcess = cProcess.Load(cProcess.GetUID(temp, dst_IsTown));
+			temp=workarr[4].tointeger(); // source station id
 			obj.SourceStation = cStation.Load(temp);
-			temp=workarr[5].slice(1).tointeger(); // target station id
+			temp=workarr[5].tointeger(); // target station id
 			obj.TargetStation = cStation.Load(temp);
 			if (saveit)	saveit = cMisc.ValidInstance(obj.SourceProcess);
 			if (saveit)	saveit = cMisc.ValidInstance(obj.TargetProcess);
@@ -509,11 +511,11 @@ function cLoader::LoadSaveGame()
 			temp.sourceObject = obj.SourceProcess;
 			temp.targetObject = obj.TargetProcess;
 			temp.GetUID();
+			obj.UID=temp.UID;
 			cJobs.CreateNewJob(obj.SourceProcess.UID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
 			temp = cJobs.Load(obj.UID); // now load it
 			if (!temp)	continue;
 			temp.isUse = true;
-			obj.UID = temp.UID;
 			obj.SourceStation.OwnerClaimStation(obj.UID);
 			obj.TargetStation.OwnerClaimStation(obj.UID);
 			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
@@ -567,6 +569,15 @@ function cLoader::LoadingGame()
 	local grouplist = AIGroupList();
 	grouplist.RemoveList(cRoute.GroupIndexer);
 	foreach (grp, _ in grouplist)	AIGroup.DeleteGroup(grp);
+	foreach (uid, _ in cRoute.RouteIndexer)
+		{
+		if (uid < 2)	continue;
+		local rr = cRoute.Load(uid);
+		if (!rr)	continue;
+		if (rr.Status != 100)	continue;
+		rr.SourceStation.OwnerClaimStation(uid);
+		rr.TargetStation.OwnerClaimStation(uid);
+		}
 	} catch (e)
 		{
 		AILog.Error("Cannot load that savegame !");
@@ -581,7 +592,6 @@ function cLoader::LoadingGame()
 		foreach (item in cRoute.database)	if (item.UID > 1)	delete cRoute.database[item.UID];
 		cRoute.RouteIndexer.Clear();
 		cRoute.GroupIndexer.Clear();
-print("indexer="+cRoute.RouteIndexer.Count()+" Group="+cRoute.GroupIndexer.Count()+" base="+cRoute.database.len());
 		foreach (veh, dummy in vehlist)
 			{
 			cCarrier.VehicleOrdersReset(veh);

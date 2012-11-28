@@ -98,7 +98,6 @@ function cPathfinder::GetSolve(source, target)
 	local UID=cPathfinder.GetUID(source, target);
 	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
 	local pftask=cPathfinder.GetPathfinderObject(UID);
-print("return solve for "+pftask.UID);
 	return pftask.solve;
 	}
 	
@@ -218,8 +217,6 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 		pftask.pathHandler.cost.slope=80;
 		pftask.pathHandler._cost_level_crossing = 120;
 		pftask.pathHandler.InitializePath([pftask.source[0]], [pftask.target[1]]);
-print("pftask.source="+pftask.source[0]+" : "+pftask.target[1]);
-print("BREAK");
 		}
 	else	{ // rail
 		pftask.pathHandler= MyRailPF();

@@ -122,7 +122,7 @@ function cJobs::RankThisJob()
 	if (dstTown && cJobs.targetTown.HasItem(this.targetObject.ID) && (this.roadType==RouteType.AIR || this.roadType==RouteType.ROAD) && (this.cargoID == cCargo.GetPassengerCargo() || this.cargoID == cCargo.GetMailCargo()))
 		// passenger or mail transport by road or aircraft to that target already
 		{
-		local drank= ( (10 * valuerank) / 100) * cJobs.targetTown.GetValue(this.targetObject.ID);
+		local drank= ( (20 * valuerank) / 100) * cJobs.targetTown.GetValue(this.targetObject.ID);
 		DInfo("Downranking because target town is already handle : Lost "+drank,2);
 		valuerank -= drank; // add 10% penalty for each time we have use that town as target, to avoid reuse a town too much
 		}
@@ -133,9 +133,6 @@ function cJobs::RankThisJob()
 		}
 	if (valuerank < 1)	valuerank=1;
 	this.ranking = stationrank * valuerank;
-
-//print(this.Name+" srcstationrk="+this.sourceObject.ScoreRating+" dststationrk="+this.targetObject.ScoreRating+" srcprod="+this.sourceObject.ScoreProduction+" dstprod="+this.targetObject.ScoreProduction);
-//print(this.Name+" rank="+this.ranking+" valuerk="+valuerank+" stationrank="+stationrank);
 	}
 
 function cJobs::RefreshValue(jobID, updateCost=false)
@@ -163,11 +160,9 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 		{
 		DInfo("Removing bad industry from the job pool: "+myjob.UID,0);
 		local deadroute=cRoute.Load(myjob.UID);
-		if (!deadroute)
-			{
-			DInfo("RefreshValue mark "+deadroute.UID+" undoable",1);
-			deadroute.RouteIsNotDoable();
-			}
+		if (!deadroute)	return;
+		DInfo("RefreshValue mark "+deadroute.UID+" undoable",1);
+		deadroute.RouteIsNotDoable();
 		return;
 		}
 	if (myjob.isUse)	return;	// no need to refresh an already done job
@@ -465,7 +460,7 @@ function cJobs::UpdateDoableJobs()
 				}
 		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	doable=false;
 		// not doable if the industry no longer exist
-		if (doable && myjob.roadType == RouteType.AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 300))	doable=false;
+		if (doable && myjob.roadType == RouteType.AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 40 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 40))	doable=false;
 		// not doable because aircraft with poor towns don't make good jobs
 		if (doable && myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 1)	doable=false;
 		// not doable if town jobs is not allow
@@ -570,7 +565,6 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	newjob.roadType = road_type;
 	newjob.cargoID = cargo_id;
 	newjob.GetUID();
-print("newjobUID ="+newjob.UID);
 	newjob.Save();
 	INSTANCE.main.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount... must be call after GetUID
 	}

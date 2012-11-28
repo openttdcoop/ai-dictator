@@ -39,7 +39,7 @@ function cRoute::RouteAirportCheck(uid=null)
 	if (road.UID > 1 && srcValid && dstValid && (!cBuilder.AirportAcceptBigPlanes(road.SourceStation.s_ID) || !cBuilder.AirportAcceptBigPlanes(road.TargetStation.s_ID)))	road.VehicleType+=4;
 	// adding 4 to met small AIR or MAIL
 	if (!road.SourceProcess.IsTown)	road.VehicleType = RouteType.CHOPPER;
-	if (oldtype != road.VehicleType)	{ DInfo("Changing aircrafts type for route "+road.Name,1); road.SetRouteName(); }
+	if (oldtype != road.VehicleType)	{ DInfo("Changing aircrafts type for route "+road.Name+" to "+cRoute.RouteTypeToString(road.VehicleType),1); road.SetRouteName(); }
 	}
 
 function cRoute::RouteUpdateVehicle()
@@ -165,8 +165,8 @@ function cRoute::RouteUndoableFreeOfVehicle()
 	if (this.UID < 2)	return; // don't touch virtual routes
 	local stasrc = null;
 	local stadst = null;
-	if (typeof(this.SourceStation) == "instance") this.RouteReleaseStation(this.SourceStation.s_ID);
-	if (typeof(this.TargetStation) == "instance") this.RouteReleaseStation(this.TargetStation.s_ID);
+	if (cMisc.ValidInstance(this.SourceStation)) this.RouteReleaseStation(this.SourceStation.s_ID);
+	if (cMisc.ValidInstance(this.TargetStation)) this.RouteReleaseStation(this.TargetStation.s_ID);
 	cBuilder.DestroyStation(stasrc);
 	cBuilder.DestroyStation(stadst);
 	if (this.GroupID != null)	{ AIGroup.DeleteGroup(this.GroupID); cRoute.GroupIndexer.RemoveItem(this.GroupID); }
@@ -178,7 +178,6 @@ function cRoute::RouteUndoableFreeOfVehicle()
 		cRoute.RouteDamage.RemoveItem(this.UID);
 		delete cRoute.database[this.UID];
 		}
-	cJobs.DeleteJob(uidsafe);
 	}
 
 function cRoute::CreateNewStation(start)
@@ -198,24 +197,22 @@ function cRoute::RouteReleaseStation(stationid)
 // Release a station for our route and remove us from its owner list
 	{
 	if (stationid == null)	return ;
-	local ss = (typeof(this.SourceStation) == "instance");
-	local sd = (typeof(this.TargetStation) == "instance");
+	local ss = (cMisc.ValidInstance(this.SourceStation));
+	local sd = (cMisc.ValidInstance(this.TargetStation));
 
 	if (ss && this.SourceStation.s_ID == stationid)
 		{
 		local ssta=cStation.Load(this.SourceStation.s_ID);
 		if (ssta != false)	ssta.OwnerReleaseStation(this.UID);
 		this.SourceStation = null;
-		this.Status=1;
-		INSTANCE.main.builder.building_route=this.UID;
+		this.Status=666;
 		}
 	if (sd && this.TargetStation.s_ID == stationid)
 		{
 		local ssta=cStation.Load(this.TargetStation.s_ID);
 		if (ssta != false)	ssta.OwnerReleaseStation(this.UID);
 		this.TargetStation = null;
-		this.Status=1;
-		INSTANCE.main.builder.building_route=this.UID;
+		this.Status=666;
 		}
 	if (INSTANCE.main.route.RouteDamage.HasItem(this.UID))	INSTANCE.main.route.RouteDamage.RemoveItem(this.UID);
 	INSTANCE.builddelay=false; INSTANCE.main.bank.canBuild=true;

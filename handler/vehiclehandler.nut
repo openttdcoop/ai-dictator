@@ -522,6 +522,7 @@ function cCarrier::VehicleGroupSendToDepotAndSell(idx)
 						foreach (vehicle, dummy in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.REMOVEROUTE);
 						}
 		}
+	else	return false;
 return true;
 }
 
@@ -546,6 +547,15 @@ function cCarrier::VehicleListSendToDepotAndWaitSell(vehlist)
 			} while (wait);
 		}
 	}
+
+function cCarrier::VehicleSendToDepotAndSell(uid)
+// Send and sell all vehicles from route uid, used by checks.nut to repair road
+{
+	local road=cRoute.Load(uid);
+	if (!road)	return;
+	local vehlist = AIVehicleList_Group(road.GroupID);
+	if (!vehlist.IsEmpty())	foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(veh, DepotAction.SELL);
+}
 
 function cCarrier::VehicleIsWaitingInDepot(onlydelete=false)
 // this function checks our depots and sell vehicle in it

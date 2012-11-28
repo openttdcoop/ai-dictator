@@ -19,14 +19,25 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	// better check criticals stuff before stopping our traffic and find we're going to fail
 	local station=cStation.Load(stationid);
 	local firstroute = false;
-	if (station != false)	{ firstroute = cRoute.Load(station.s_Owner.Begin()); }
-	if (!firstroute || !station)	{ DInfo("Found an airport attach to no route ! Giving up.",1); return false }
+	if (station != false)
+		{
+		foreach (owner, _ in station.s_Owner)
+			{
+			firstroute = cRoute.Load(owner);
+			if (firstroute != false && firstroute.Status == 100)	break;
+			}
+//		if (!station.s_Owner.IsEmpty())	firstroute = cRoute.Load(station.s_Owner.Begin());
+//foreach (ownuid, _ in station.s_Owner)	print("station "+station.s_Name+" own by "+cRoute.GetRouteName(ownuid));
+		}
+	if (!firstroute || !station || firstroute.Status != 100)	{ DInfo("Found an airport attach to no route ! Giving up.",1); return false }
 	local townrating=0;
 	local noiselevel=0;
 	local townid=-1;
-	local start=false;
-	if (firstroute.SourceStation.s_ID == stationid)	{ start=true; townid=firstroute.SourceProcess.ID; }
-								else	{ start=false; townid=firstroute.TargetProcess.ID; }
+	local start=null;
+	cDebug.ClearSigns();
+	if (firstroute.SourceStation.s_ID == stationid)	{ start=true; townid=firstroute.SourceProcess.ID; cDebug.PutSign(firstroute.SourceStation.s_Location, "Upgrade"); }
+	if (firstroute.TargetStation.s_ID == stationid)	{ start=false; townid=firstroute.TargetProcess.ID; cDebug.PutSign(firstroute.TargetStation.s_Location, "Upgrade"); }
+	if (start == null)	{ print("BREAK: cannot find station from owner"); return false; }
 	local now=AIDate.GetCurrentDate();
 	if (station.s_DateLastUpgrade != null && now - station.s_DateLastUpgrade < 300) // wait 300 days before each trys
 		{
@@ -88,27 +99,24 @@ function cBuilder::AirportNeedUpgrade(stationid)
 				}
 
 	result=INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
-print("STOPME airport upgrade stationID="+stationid+" result="+result);
 	if (result == -1)	return false;
-	station = cStation.Load(result);
-	if (!station)	{ print("got trouble loading new station "+result);}
-foreach (ownID, _ in station.s_Owner)	print("new owners = "+ownID);
 	DInfo("Airport was upgrade successfuly !",1);
-//INSTANCE.main.carrier.VehicleHandleTrafficAtStation(AIStation.GetStationID(result), false);
+	local chk = cStation.Load(result);
+	if (!chk)	print("BREAK bad station");
+	if (chk.s_Owner.IsEmpty())	print("BREAK no owner !");
 	INSTANCE.main.carrier.vehnextprice=0; // We might have put a little havock while upgrading, reset this one
-	//station.s_DateLastUpgrade=null;
 }
 
 function cBuilder::GetAirportType()
 // return an airport type to build or null
 {
-local AirType=null;
-if (AIAirport.IsValidAirportType(AIAirport.AT_SMALL))	{ AirType=AIAirport.AT_SMALL; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_LARGE))	{ AirType=AIAirport.AT_LARGE; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_METROPOLITAN))	{ AirType=AIAirport.AT_METROPOLITAN; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_INTERNATIONAL))	{ AirType=AIAirport.AT_INTERNATIONAL; }
-if (AIAirport.IsValidAirportType(AIAirport.AT_INTERCON))	{ AirType=AIAirport.AT_INTERCON; }
-return AirType;
+	local AirType=null;
+	if (AIAirport.IsValidAirportType(AIAirport.AT_SMALL))	{ AirType=AIAirport.AT_SMALL; }
+	if (AIAirport.IsValidAirportType(AIAirport.AT_LARGE))	{ AirType=AIAirport.AT_LARGE; }
+	if (AIAirport.IsValidAirportType(AIAirport.AT_METROPOLITAN))	{ AirType=AIAirport.AT_METROPOLITAN; }
+	if (AIAirport.IsValidAirportType(AIAirport.AT_INTERNATIONAL))	{ AirType=AIAirport.AT_INTERNATIONAL; }
+	if (AIAirport.IsValidAirportType(AIAirport.AT_INTERCON))	{ AirType=AIAirport.AT_INTERCON; }
+	return AirType;
 }
 
 function cBuilder::AirportMaker(tile, airporttype)
@@ -133,8 +141,8 @@ function cBuilder::BuildAirStation(start, routeID=null)
 // return airport stationID on success
 {
 	local road=false;
-	if (routeID==null)	road=INSTANCE.main.route;
-			else		road=cRoute.Load(routeID);
+	if (routeID == null)	{ if (INSTANCE.main.builder.building_route != -1)	road=INSTANCE.main.route; }
+				else	road=cRoute.Load(routeID);
 	if (road == false)	return -1;
 	local townname="none";
 	local helipadonly=false;
@@ -152,6 +160,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 	local oldAirport_Noise=0;
 	local oldAirport_Width=0;
 	local oldAirport_Height=0;
+	local Sameplace = false;
 	local tilelist=AITileList();
 	local success=false;
 	local allfail=true;
@@ -197,10 +206,11 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		airportUpgrade=true;
 		oldAirport_Width=AIAirport.GetAirportWidth(oldAirport.s_SubType);
 		oldAirport_Height=AIAirport.GetAirportHeight(oldAirport.s_SubType);
+		if (air_x == oldAirport_Width && air_y == oldAirport_Height)	Sameplace=true;
 		ignoreList=cTileTools.FindStationTiles(oldAirport.s_Location);
 		oldAirport_Noise=AIAirport.GetNoiseLevelIncrease(oldAirport.s_Location, oldAirport.s_SubType);
 		cDebug.showLogic(ignoreList);
-		DInfo("Found an old airport in town : we will upgrade it",1);
+		DInfo("Found an old airport in town "+oldAirport.s_Name+": we will upgrade it",1);
 		if (!AIAirport.IsValidAirportType(oldAirport.s_SubType))	DWarn("Old airport type is no more buildable, this is highly dangerous !!!",0);
 		}
 	if (!helipadonly)
@@ -249,16 +259,17 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		tilelist.RemoveValue(1);
 		tilelist.Valuate(AITile.GetCargoAcceptance, cargoID, air_x, air_y, rad);
 		tilelist.RemoveBelowValue(8);
+		if (Sameplace)	{ tilelist.Clear(); tilelist.AddItem(oldAirport.s_Location,0); }
 		foreach (tile, dummy in tilelist)
 			{
-			cDebug.PutSign(tile,".");
 			local newTile=-1;
 			if (cTileTools.IsAreaFlat(tile, air_x, air_y))	newTile=tile;
+			if (Sameplace)	newTile = tile;
 			if (newTile != -1)
 				{
 				DInfo("Found a flat area to try at "+newTile,1);
 				cDebug.PutSign(newTile,"*");
-				for (local tt=0; tt < 5; tt++)
+				for (local tt=0; tt < 10; tt++)
 					{
 					if (airportUpgrade && !oldAirport_Remove)
 						{
@@ -266,7 +277,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 						DInfo("Removing old airport : "+oldAirport.s_Name,1);
 						if (oldAirport_Remove)	{ break; }
 						}
-					INSTANCE.Sleep(5);
+					AIController.Sleep(15);
 					}
 				if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; break; }
 				success=cBuilder.AirportMaker(newTile, airporttype);
@@ -343,49 +354,26 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		if (!helipadonly)
 			{
 			DInfo("Airport #"+AIStation.GetStationID(newStation)+"-"+AIStation.GetName(AIStation.GetStationID(newStation))+" built at "+townname,0);
-			if (start)
-				{
-				road.SourceStation = AIStation.GetStationID(newStation);
-				newStation = road.CreateNewStation(start);
-				road.SourceStation = newStation;
-				}
-			else	{
-				road.TargetStation = AIStation.GetStationID(newStation);
-				newStation = road.CreateNewStation(start);
-				road.TargetStation = newStation;
-				}
+			local fakeroute = cRoute();
+			fakeroute.SourceStation = AIStation.GetStationID(newStation);
+			newStation = fakeroute.CreateNewStation(true);
 			if (oldAirport_Remove)
 				{
-print("old airportid="+oldAirport.s_ID+" newid="+newStation.s_ID);
-				if (oldAirport.s_ID != newStation.s_ID)
-					{
-					foreach (ownerUID, dummy in oldAirport.s_Owner)
-						{
-/*
-						local oldOwner = cRoute.Load(ownerUID);
-print("UID="+ownerUID+" is record to have "+oldAirport.s_ID+" in its list");
-						if (!oldOwner)	continue;
-						local srcValid = (typeof(oldOwner.SourceStation) == "instance");
-						local dstValid = (typeof(oldOwner.TargetStation) == "instance");
-						if (srcValid && oldOwner.SourceStation.s_ID == oldAirport.s_ID)
-							{
-							oldAirport.OwnerReleaseStation(ownerUID);
-							oldOwner.SourceStation = newStation;
-							oldOwner.SourceStation.OwnerClaimStation(oldOwner.UID);
-							}
-						if (dstValid && oldOwner.TargetStation.s_ID == oldAirport.s_ID)
-							{
-							oldAirport.OwnerReleaseStation(ownerUID);
-							oldOwner.TargetStation = newStation;
-							oldOwner.TargetStation.OwnerClaimStation(oldOwner.UID);
-							}
-						//oldOwner.RouteUpdateVehicle(); check routes.nut 58*/
-						cRoute.RouteChangeStation(ownerUID, oldAirport.s_ID, newStation.s_ID);
-						local pause = cLooper();
-						}
-					}
-				cStation.DeleteStation(oldAirport.s_ID);
+				foreach (ownerUID, _ in oldAirport.s_Owner)	cRoute.RouteChangeStation(ownerUID, oldAirport, newStation);
 				cCarrier.VehicleHandleTrafficAtStation(newStation.s_ID, false); // rebuild orders
+				}
+			else	{
+				if (start)
+					{
+//					road.SourceStation = AIStation.GetStationID(newStation);
+//					newStation = road.CreateNewStation(start);
+					road.SourceStation = newStation;
+					}
+				else	{
+//					road.TargetStation = AIStation.GetStationID(newStation);
+//					newStation = road.CreateNewStation(start);
+					road.TargetStation = newStation;
+					}
 				}
 			return newStation.s_ID;
 			}
@@ -410,16 +398,30 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 // width : width of an airport
 // height: height of an airport
 {
-local allsolve=[];
+	local allsolve=[];
 //foreach (tile, dummy in workTileList)	if (cTileTools.IsTilesBlackList(tile))	workTileList.RemoveItem(tile);
 // remove bad tile locations
-if (workTileList.IsEmpty())	return [];
-local randomTile=AITileList();
-randomTile.AddList(workTileList);
-randomTile.Sort(AIList.SORT_BY_VALUE, false);
-cDebug.showLogic(randomTile);
-cDebug.ClearSigns();
-randomTile.KeepTop(6);
+	if (workTileList.IsEmpty())	return [];
+	cDebug.showLogic(workTileList);
+	cDebug.ClearSigns();
+	local randomTile=AITileList();
+	randomTile.AddList(workTileList);
+	randomTile.Sort(AIList.SORT_BY_VALUE, false);
+	local prev= null;
+	foreach (tile, value in randomTile)
+		{
+		if (prev==null)	{ prev = tile; continue; }
+				else	{
+					if (AIMap.DistanceManhattan(prev, tile) < 2)	randomTile.SetValue(tile, value >> 1);
+					prev = tile;
+					}
+		}
+//randomTile.Valuate(AIBase.RandItem);
+	randomTile.Sort(AIList.SORT_BY_VALUE, false);
+	cDebug.showLogic(randomTile);
+	cDebug.ClearSigns();
+
+	randomTile.KeepTop(6);
 foreach (tile, dummy in randomTile)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
 workTileList.Clear();
 workTileList.AddList(randomTile);

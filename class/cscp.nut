@@ -69,8 +69,8 @@ function cSCP::AddCommandSet()
 
 function cSCP::GoalComplete(message, self)
 {
-	this.DInfo("Goal complete for "+AICargo.GetCargoLabel(message.Data[0])+" "+message.Data[0],0);
-	this.GetCurrentGoal();
+	INSTANCE.main.SCP.DInfo("Goal complete for "+AICargo.GetCargoLabel(message.Data[0])+" "+message.Data[0],0);
+	INSTANCE.main.SCP.GetCurrentGoal();
 }
 
 function cSCP::GetCurrentGoal()

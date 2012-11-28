@@ -92,6 +92,19 @@ function cRoute::Load(uid)
 {
 	local thatroute=cRoute.GetRouteObject(uid);
 	if (thatroute == null)	{ DWarn("Invalid routeID : "+uid+". Cannot get object",1); return false; }
+	if (thatroute.Status == 100 && thatroute.UID > 1) // in theory a working one
+		{
+		local damage = false;
+		if (!cMisc.ValidInstance(thatroute.SourceStation))	damage=true;
+		if (!damage && !cMisc.ValidInstance(thatroute.TargetStation))	damage=true;
+		if (!damage && !AIStation.IsValidStation(thatroute.SourceStation.s_ID))	damage=true;
+		if (!damage && !AIStation.IsValidStation(thatroute.TargetStation.s_ID))	damage=true;
+		if (damage)
+			{
+			DWarn("BREAK Route "+thatroute.Name+" is damage...",1);
+			}
+		}
+	if (thatroute.Status != 100)	DWarn("route "+thatroute.Name+" have a non working status : "+thatroute.Status,1);
 	return thatroute;
 }
 
@@ -211,7 +224,6 @@ function cRoute::RouteDone()
 	if (srcacc)	this.SourceStation.s_CargoAccept.AddItem(this.CargoID,0);
 	if (dstprod)	this.TargetStation.s_CargoProduce.AddItem(this.CargoID,0);
 	if (dstacc)	this.TargetStation.s_CargoAccept.AddItem(this.CargoID,0);
-print("BREAK srcprod="+srcprod+" srcacc="+srcacc+" dstprod="+dstprod+" dstacc="+dstacc);
 	if (srcprod && srcacc && dstprod && dstacc)	this.Twoway=true;
 								else	this.Twoway=false;
 }
@@ -274,33 +286,45 @@ function cRoute::RouteSetDistance()
 				else	this.Distance=0;
 	}
 
-function cRoute::RouteChangeStation(uid, _oldstation, _newstation)
-// Route swap _oldstation with _newstation
+function cRoute::RouteChangeStation(uid, o_Object, n_Object)
+// Route swap its old station with the new nStationObject
 {
-	if (_oldstation == _newstation)	return;
 	local road = cRoute.Load(uid);
-	if (!road)	return;
-	if (road.UID > 1)	return; // don't alter virtuals, let them reclaim it later
-	local nstation = cStation.Load(_newstation);
-	if (!nstation)	return;
+	if (!road)	{ print("BREAK !road"); return; }
+	if (road.UID < 2) {print ("BREAK low uid "+road.UID); 	return; } // don't alter virtuals, let them reclaim it later
+	if (road.Status != 100)
+		{
+		print("BREAK !=100");
+		return;
+		}
 	local vsource = cMisc.ValidInstance(road.SourceStation);
 	local vtarget = cMisc.ValidInstance(road.TargetStation);
 	local start = null;
-	if (vsource && _oldstation == road.SourceStation.s_ID)	start = true;
-	if (vtarget && _oldstation == road.TargetStation.s_ID)	start = false;
-	if (start == null)	return; // no station match the old one
-	DInfo("Route "+uid+" is changing from station "+cStation.GetStationName(_oldstation)+" to "+cStation.GetStationName(_newstation),1);
+	if (vsource && o_Object.s_ID == road.SourceStation.s_ID)	start = true;
+	if (vtarget && o_Object.s_ID == road.TargetStation.s_ID)	start = false;
+	if (start == null)	{
+
+print("objectid="+o_Object.s_ID);
+if (vsource)	print("sourceID ="+road.SourceStation.s_ID);
+		else	print("sourceID = bug");
+if (vtarget)	print("targetID ="+road.TargetStation.s_ID);
+		else	print("targetID = bug");
+ print("BREAK no start > source="+vsource+" target="+vtarget);
+ return;
+ } // no station match the old one
+	DInfo("Route "+uid+" is changing from station "+o_Object.s_Name+" to "+n_Object.s_Name,1);
 	if (start)
 		{
 		road.SourceStation.OwnerReleaseStation(uid);
-		road.SourceStation = nstation;
+		road.SourceStation = n_Object;
 		road.SourceStation.OwnerClaimStation(uid);
 		}
 	else	{
 		road.TargetStation.OwnerReleaseStation(uid);
-		road.TargetStation = nstation;
+		road.TargetStation = n_Object;
 		road.TargetStation.OwnerClaimStation(uid);
 		}
 	road.SetRouteName();
 	cRoute.SetRouteGroupName(road.GroupID, road.SourceProcess.ID, road.TargetProcess.ID, road.SourceProcess.IsTown, road.TargetProcess.IsTown, road.CargoID, false, road.SourceStation.s_ID, road.TargetStation.s_ID);
+	road.RouteAirportCheck();
 }

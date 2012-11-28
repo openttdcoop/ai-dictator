@@ -104,15 +104,15 @@ function cTileTools::FindStationTiles(tile)
 {
 	local stationid=AIStation.GetStationID(tile);
 	if (!AIStation.IsValidStation(stationid))	return AIList();
-	local tilelist=cTileTools.GetTilesAroundPlace(tile,24);
-	tilelist.Valuate(AITile.GetDistanceManhattanToTile,tile);
-	tilelist.KeepBelowValue(12);
+	local tilelist=cTileTools.GetTilesAroundPlace(tile,12);
+//	tilelist.Valuate(AITile.GetDistanceManhattanToTile,tile);
+//	tilelist.KeepBelowValue(12);
 	tilelist.Valuate(AIStation.GetStationID);
 	tilelist.KeepValue(stationid);
 	return tilelist;
 }
 
-function cTileTools::IsWithinTownInfluence(stationid, townid)
+function cTileTools::StationIsWithinTownInfluence(stationid, townid)
 // A tweak for AIStation.IsWithinTownInfluence in openttd < 1.1.2
 {
 	local stationtile=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
@@ -138,11 +138,23 @@ function cTileTools::GetTilesAroundPlace(place,maxsize)
 // Get tiles around a place
 {
 	local tiles = AITileList();
-	local distedge = AIMap.DistanceFromEdge(place);
-	local offset = null;
-	if (distedge > maxsize) distedge=maxsize; // limit to maxsize around
-	offset = AIMap.GetTileIndex(distedge - 1, distedge -1);
-	tiles.AddRectangle(place - offset, place + offset);
+	local mapSizeX = AIMap.GetMapSizeX();
+	local mapSizeY = AIMap.GetMapSizeY();
+	local ox = AIMap.GetTileX(place);
+	local oy = AIMap.GetTileY(place);
+	local tx = ox;
+	local ty = oy;
+	if (ox - maxsize < 1)	ox = 1;
+				else	ox = ox - maxsize;
+	if (tx + maxsize >= mapSizeX-2)	tx = mapSizeX-2;
+						else	tx = tx + maxsize; 
+	if (oy - maxsize < 1)	oy = 1;
+				else	oy = oy - maxsize;
+	if (ty + maxsize >= mapSizeY-2)	ty = mapSizeY-2;
+						else	ty = ty + maxsize;
+	local o = AIMap.GetTileIndex(ox, oy);
+	local t = AIMap.GetTileIndex(tx, ty);
+	tiles.AddRectangle(o, t);
 	return tiles;
 }
 
@@ -397,7 +409,7 @@ function cTileTools::ShapeTile(tile, wantedHeight, evaluateOnly)
 			{
 			slope-=AITile.SLOPE_STEEP;
 			compSlope=AITile.GetComplementSlope(slope);
-			DInfo("Tile: "+tile+" Removing SteepSlope",2);
+			//DInfo("Tile: "+tile+" Removing SteepSlope",2);
 			AITile.RaiseTile(tile,compSlope);
 			error=AIError.GetLastError();
 			if (error != AIError.ERR_NONE)	generror=true;

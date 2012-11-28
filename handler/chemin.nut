@@ -22,6 +22,8 @@ function cRoute::RouteUpdateAirPath()
 	local network = cRoute.Load(0);
 	network.SourceStation = cStation.Load(oneAirportID);
 	network.TargetStation = cStation.Load(twoAirportID);
+	if (cMisc.ValidInstance(network.SourceStation) && cMisc.ValidInstance(network.TargetStation))	network.Status=100;
+																else	network.Status=99;
 	network.SourceProcess = cProcess.Load(cProcess.GetUID(cStation.VirtualAirports.GetValue(oneAirportID), true));
 	network.TargetProcess = cProcess.Load(cProcess.GetUID(cStation.VirtualAirports.GetValue(twoAirportID), true));
 	local mailnet = cRoute.Load(1);
@@ -29,6 +31,7 @@ function cRoute::RouteUpdateAirPath()
 	mailnet.TargetStation = network.TargetStation;
 	mailnet.SourceProcess = network.SourceProcess;
 	mailnet.TargetProcess = network.TargetProcess;
+	mailnet.Status = network.Status;
 }
 
 function cRoute::VirtualAirNetworkUpdate()
@@ -165,6 +168,7 @@ function cRoute::DutyOnAirNetwork()
 	if (INSTANCE.main.carrier.VirtualAirRoute.len()<2) return;
 	local virtroad=cRoute.Load(0);
 	if (!virtroad)	return;
+	if (virtroad.Status != 100)	return;
 	local vehlist=AIList();
 	local passengerID=cCargo.GetPassengerCargo();
 	local maillist=AIVehicleList_Group(INSTANCE.main.route.GetVirtualAirMailGroup());
@@ -350,9 +354,11 @@ function cRoute::DutyOnRoute()
 			}
 		if (vehneed > 0)
 			{
-			vehneed=INSTANCE.main.carrier.CanAddNewVehicle(uid, true, vehneed);
+			local allowmax=INSTANCE.main.carrier.CanAddNewVehicle(uid, true, vehneed);
+			if (allowmax < vehneed)	vehneed=allowmax;
 			DInfo("CanAddNewVehicle for "+road.SourceStation.s_Name+" says "+vehneed,2);
-			vehneed=INSTANCE.main.carrier.CanAddNewVehicle(uid, false, vehneed);
+			allowmax=INSTANCE.main.carrier.CanAddNewVehicle(uid, false, vehneed);
+			if (allowmax < vehneed)	vehneed=allowmax;
 			DInfo("CanAddNewVehicle for "+road.TargetStation.s_Name+" says "+vehneed,2);
 			}
 		DInfo("Capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.VehicleCount+"/"+maxveh+" firstveh="+firstveh,2);

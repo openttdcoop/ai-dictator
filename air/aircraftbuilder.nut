@@ -50,7 +50,7 @@ function cCarrier::CreateAirVehicle(routeidx)
 	INSTANCE.main.bank.RaiseFundsBy(price);
 	local firstveh = cCarrier.CreateAircraftEngine(veh, homedepot);
 cBuilder.DumpRoute(routeidx);
-	if (firstveh == -1)	{ DError("Cannot create the engine "+cEngine.GetName(veh),2); return false; }
+	if (firstveh == -1)	{ DError("BREAK Cannot create the engine "+cEngine.GetName(veh),2); return false; }
 				else	{ DInfo("Just brought a new aircraft: "+cCarrier.GetVehicleName(firstveh),0); }
 	// no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
 	// as their engine is the fastest always
@@ -156,7 +156,7 @@ function cCarrier::ChooseAircraft(cargo, distance, airtype=0)
 }
 
 function cCarrier::GetAirVehicle(routeidx)
-// return the vehicle we will pickup if we to build a vehicle on that route
+// return the vehicle we will pickup if we build a vehicle on that route
 {
 	local road = cRoute.Load(routeidx);
 	if (!road)	return null;

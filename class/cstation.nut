@@ -100,9 +100,13 @@ function cStation::Save()
 	if (this.s_ID == null)	{ DInfo("Not adding station #"+this.s_ID+" in database "+cStation.stationdatabase.len(),2);  return; }
 	if (this.s_ID in cStation.stationdatabase)	
 		{
-		DWarn("BREAK Station "+this.s_Name+" properties have been changed",2);
+		DInfo("Station "+this.s_Name+" properties have been changed",2);
+		local sta=cStation.stationdatabase[this.s_ID];
+		local keepowner=AIList();
+		keepowner.AddList(sta.s_Owner);
 		delete cStation.stationdatabase[this.s_ID];
 		cStation.VirtualAirports.RemoveItem(this.s_ID);
+		this.s_Owner.AddList(keepowner);
 		}
 	this.SetStationName();
 	DInfo("Adding station : "+this.s_Name+" to station database",2);
@@ -114,15 +118,15 @@ function cStation::DeleteStation(stationid)
 	{
 	local s = cStation.Load(stationid);
 	if (!s)	return false;
-	if (s.s_Owner.Count() == 0 && !AIStation.IsValidStation(s.s_ID)) // no more own by anyone
+	if (s.s_Owner.Count() == 0) // no more own by anyone
 		{
 		DInfo("BREAK Removing station "+s.s_Name+" from station database",1);
-		foreach (tile, _ in s.Tiles)	{ cTileTools.UnBlackListTile(tile); }
+		foreach (tile, _ in s.s_Tiles)	{ cTileTools.UnBlackListTile(tile); }
 		delete cStation.stationdatabase[s.s_ID];
 		cStation.VirtualAirports.RemoveItem(s.s_ID);
 		return true;
 		}
-	else	DInfo("Keeping station "+s.s_Name+" as the station still exist",1);
+	else	DInfo("Keeping station "+s.s_Name+" as the station is still use by "+s.s_Owner.Count()+" routes",1);
 	return false;
 	}
 
@@ -174,23 +178,6 @@ function cStation::GetStationName(stationID)
 	if (!s)	return "Invalid Station #"+stationID;
 	return s.s_Name;
 }
-
-/*
-function cStation::KeepOwner(oldstation, newstation)
-// We duplicate old properties into the newstation properties, making sure we keep values we must maintain
-{
-	if (oldstation == null)	return newstation;
-	if (typeof(oldstation.s_Name) == "string")	print("old name ="+oldstation.s_Name);
-if (typeof(oldstation.s_Owner) == "instance")	print("old owner is instance");
-if (oldstation.s_Owner instanceof AIList)	print("old owner is ailist");
-if (newstation.s_Owner instanceof AIList)	print("new owner is ailist");
-	if (typeof(oldstation.s_Owner) == "instance" && (oldstation.s_Owner instanceof AIList))
-		{
-		newstation.s_Owner = oldstation.s_Owner;
-		DInfo("Preserving "+oldstation.s_Owner.Count()+" owners of station "+oldstation.s_Name,2);
-		}
-	return newstation;
-}*/
 
 function cStation::InitNewStation(stationID)
 // Create a station object depending on station type. Add the station to base and return the station object or null on error.
@@ -440,6 +427,7 @@ function cStation::IsCargoProduceAccept(cargoID, produce_query, stationID=null)
 			value=AITile.GetCargoAcceptance(tiles, cargoID, 1, 1, thatstation.s_Radius);
 			success=(value > 7);
 			}
+		//if (success)	cDebug.PutSign(tiles,"C");
 		if (success)	return true;
 		}
 	return false;
@@ -492,7 +480,6 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 			if (!valid_produce && produce > 0)	valid_produce=true;
 			if (!valid_accept && accept > 7)	valid_accept=true;
 			}
-print("station "+thatstation.s_Name+" produce="+valid_produce+" accept="+valid_accept+" cargo="+cCargo.GetCargoLabel(cargo_id)+" radius="+thatstation.s_Radius);
 		if (!valid_produce && thatstation.s_CargoProduce.HasItem(cargo_id))
 			{
 			DInfo("Station "+thatstation.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargo_id),1);

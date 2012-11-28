@@ -87,17 +87,31 @@ function cBuilder::ShowStationCapacity()
 {
 if (!INSTANCE.debug) return;
 local stations=null;
-local sta_list=AIStationList(AIStation.STATION_BUS_STOP);
+local sta_list=AIStationList(AIStation.STATION_ANY);
 if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	{
-	stations=cStation.GetStationObject(sta_id);
+	stations=cStation.Load(sta_id);
 	local stuck="CLOSE - ";
 	if (stations.CanUpgradeStation()) stuck="UPGRADE -";
 	local outtxt=stuck+stations.vehicle_count+" - "+stations.vehicle_max;
-	local outpos=stations.locations.Begin();
-	PutSign(outpos,outtxt);
+	local outpos=stations.s_Location;
+	cDebug.PutSign(outpos,outtxt);
 	}
 }
+
+function cBuilder::ShowStationOwners()
+{
+if (!INSTANCE.debug) return;
+local stations=null;
+local sta_list=AIStationList(AIStation.STATION_ANY);
+if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
+	{
+	stations=cStation.Load(sta_id);
+	if (!stations)	continue;
+	if (stations.s_Owner.IsEmpty())	{ cDebug.PutSign(stations.s_Location, "NOT OWN"); print("BUG NOT OWN"); }
+	}
+}
+
 
 function cBuilder::ShowTrainStationDepot()
 {

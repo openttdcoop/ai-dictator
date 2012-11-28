@@ -43,8 +43,7 @@ while (AIEventController.IsEventWaiting())
 			cJobs.AddNewIndustryOrTown(town, true); // instant add, we need that info asap
 		break;
 		case AIEvent.ET_COMPANY_BANKRUPT:
-			print("fixme event bankrupt"); //foreach (uid, dummy in cRoute.RouteIndexer)	INSTANCE.main.builder.RouteIsDamage(uid);
-			// in case someone disapears, set a main.route.health check for all main.route.
+			// in case someone disapears, nothing, we will catch problems for sure
 		break;
 		case AIEvent.ET_INDUSTRY_OPEN:
 			event = AIEventIndustryOpen.Convert(event);

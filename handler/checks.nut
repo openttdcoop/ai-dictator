@@ -97,6 +97,15 @@ function cBuilder::RouteNeedRepair()
 		local test=INSTANCE.main.builder.CheckRoadHealth(routes);
 		if (test)	INSTANCE.main.route.RouteDamage.SetValue(routes, -1)
 			else	INSTANCE.main.route.RouteDamage.SetValue(routes, trys);
+		if (trys >= 3)	{
+					DInfo("Sending all vehicles to depot");
+					cCarrier.VehicleSendToDepotAndSell(routes);
+					}
+		if (trys == 4)	{
+					DInfo("Removing all depots to rebuild them",1);
+					cBuilder.DestroyDepot(cRoute.GetDepot(routes, 1));
+					cBuilder.DestroyDepot(cRoute.GetDepot(routes, 2));
+					}
 		if (trys >= 12)	{ deletethatone=routes }
 		if (runLimit <= 0)	break;
 		}
@@ -114,7 +123,6 @@ function cBuilder::YearlyChecks()
 	INSTANCE.TwelveMonth=0;
 	DInfo("Yearly checks run...",1);
 	INSTANCE.main.builder.CheckRouteStationStatus();
-print("end station check");
 	INSTANCE.main.jobs.CheckTownStatue();
 	INSTANCE.main.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 	INSTANCE.main.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
@@ -141,7 +149,7 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 			if (!road)	continue;
 			if (road.Status != 100)	continue; // avoid non finish routes
 			local cargoID=road.CargoID;
-			if (road.VehicleType == AIStation.STATION_AIRPORT)	cargoID=cCargo.GetPassengerCargo(); // always check passenger to avoid mail cargo
+			if (road.VehicleType >= RouteType.AIR)	cargoID=cCargo.GetPassengerCargo(); // always check passenger to avoid mail cargo
 			if (road.SourceStation.s_ID == stobj.s_ID)
 				{
 				if (stobj.IsCargoProduce(cargoID))
@@ -149,7 +157,6 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 				else	{
 					DWarn("Station "+stobj.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
-print("undoable by checkroute");
 					road.RouteIsNotDoable();
 					continue;
 					}
@@ -162,7 +169,6 @@ print("undoable by checkroute");
 				else	{
 					DWarn("Station "+stobj.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
-print("undoable by checkroute");
 					road.RouteIsNotDoable();
 					}
 				}

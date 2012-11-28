@@ -229,7 +229,7 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 		else	{ istown=INSTANCE.main.route.TargetProcess.IsTown; goal=INSTANCE.main.route.TargetProcess.ID; }
 	if (istown)
 		{ // check if the station is also influencing our town
-		tilecheck=cTileTools.IsWithinTownInfluence(compare.s_ID, goal);
+		tilecheck=cTileTools.StationIsWithinTownInfluence(compare.s_ID, goal);
 		if (!tilecheck)	
 			{
 			DInfo("Station "+compare.s_Name+" is outside "+cProcess.GetProcessName(goal, true)+" influence",2);
@@ -452,8 +452,20 @@ print("status 5");
 		else	{ success=true; } // other route type for now are ok
 		if (success)	{ INSTANCE.main.route.Status=6; }
 				else	{ INSTANCE.main.route.Status=666; }
-		}	
+		}
 	if (INSTANCE.main.route.Status==6)
+		{
+		local bad = false;
+		if (!cMisc.ValidInstance(INSTANCE.main.route.SourceStation))	bad=true;
+		if (!bad && !cMisc.ValidInstance(INSTANCE.main.route.TargetStation))	bad=true;
+		if (!bad && !cMisc.ValidInstance(INSTANCE.main.route.SourceProcess))	bad=true;
+		if (!bad && !cMisc.ValidInstance(INSTANCE.main.route.TargetProcess))	bad=true;
+		if (!bad && !AIStation.IsValidStation(INSTANCE.main.route.SourceStation.s_ID))	bad=true;
+		if (!bad && !AIStation.IsValidStation(INSTANCE.main.route.TargetStation.s_ID))	bad=true;
+		if (bad)	INSTANCE.main.route.Status=666;
+			else	INSTANCE.main.route.Status=7;
+		}	
+	if (INSTANCE.main.route.Status==7)
 		{
 		INSTANCE.main.route.RouteDone();
 		INSTANCE.main.route.RouteBuildGroup();

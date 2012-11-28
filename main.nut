@@ -170,6 +170,7 @@ function DictatorAI::Start()
 		cPathfinder.AdvanceAllTasks();
 		AIController.Sleep(1);
 		cDebug.ClearSigns();
+		cBuilder.ShowStationOwners();
 		}
 }
 

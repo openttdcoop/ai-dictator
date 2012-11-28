@@ -111,7 +111,7 @@ function cProcess::Load(uid)
 	local obj=cProcess.GetProcessObject(uid);
 	if (obj == null)
 		{
-		DWarn("cProcess.Load function return NULL",1);
+		DWarn("cProcess.Load function return NULL with "+uid,1);
 		return false;
 		}
 	return obj;
