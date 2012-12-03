@@ -77,7 +77,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		}
 	INSTANCE.main.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 	local counter=0;
-	local maxcount=600;
+	local maxcount=100;
 	local result=false;
 	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID, true);
 	// time to pray a bit for success, we could invalidate a working route here
@@ -88,12 +88,12 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		counter++;
 		if (!result) 
 			{
-			AIController.Sleep(10);
+			AIController.Sleep(40);
 			INSTANCE.main.carrier.FreeDepotOfVehicle(station.s_Depot); // try remove aircraft from airport
 			}
 		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);	
-	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,false);
 	result=INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
+	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,false);
 	if (result == -1)	return false;
 	DInfo("Airport was upgrade successfuly !",1);
 	local chk = cStation.Load(result);
@@ -264,15 +264,16 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				{
 				DInfo("Found a flat area to try at "+newTile,1);
 				cDebug.PutSign(newTile,"*");
-				for (local tt=0; tt < 10; tt++)
+				for (local tt=0; tt < 50; tt++)
 					{
 					if (airportUpgrade && !oldAirport_Remove)
 						{
+						cCarrier.FreeDepotOfVehicle(oldAirport.s_Depot);
 						oldAirport_Remove=AIAirport.RemoveAirport(oldAirport.s_Location);
 						DInfo("Removing old airport : "+oldAirport.s_Name,1);
 						if (oldAirport_Remove)	{ break; }
 						}
-					AIController.Sleep(15);
+					AIController.Sleep(10);
 					}
 				if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; break; }
 				success=cBuilder.AirportMaker(newTile, airporttype);
@@ -293,15 +294,16 @@ function cBuilder::BuildAirStation(start, routeID=null)
 			local solver=cBuilder.AirportBestPlace_EvaluateHill(solverlist, air_x, air_y);
 			if (solver.len() == 0)	{ DWarn("Nothing to do, we can't find any solve to build the airport",1); }
 						else	{
-							for (local tt=0; tt < 5; tt++)
+							for (local tt=0; tt < 50; tt++)
 								{
 								if (airportUpgrade && !oldAirport_Remove)
 									{
+									cCarrier.FreeDepotOfVehicle(oldAirport.s_Depot);
 									oldAirport_Remove=AIAirport.RemoveAirport(oldAirport.s_Location);
 									DInfo("Removing old airport : "+oldAirport.s_Name,1);
 									if (oldAirport_Remove)	break;
 									}
-								INSTANCE.Sleep(5);
+								INSTANCE.Sleep(10);
 								}
 							if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; }
 							if (!needTime)
@@ -417,44 +419,44 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 	cDebug.ClearSigns();
 
 	randomTile.KeepTop(6);
-foreach (tile, dummy in randomTile)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
-workTileList.Clear();
-workTileList.AddList(randomTile);
-cDebug.showLogic(workTileList);
-cDebug.ClearSigns();
-local templist=AITileList();
-local solveIndex=0;
-foreach (tileFrom, tileTo in workTileList)
-	{
-	templist.Clear();
-	templist.AddRectangle(tileFrom, tileTo);
-cDebug.showLogic(templist);
-cDebug.PutSign(tileFrom,"F"); cDebug.PutSign(tileTo,"T");
-	local solve=cTileTools.TerraformHeightSolver(templist);
-cDebug.ClearSigns();
-	solve.RemoveValue(0); // discard no solve
-	local bf, bt, bs, bp=null;
-	bp=99999999999999;
-	foreach (solution, prize in solve)
+	foreach (tile, dummy in randomTile)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
+	workTileList.Clear();
+	workTileList.AddList(randomTile);
+	cDebug.showLogic(workTileList);
+	cDebug.ClearSigns();
+	local templist=AITileList();
+	local solveIndex=0;
+	foreach (tileFrom, tileTo in workTileList)
 		{
-		/*allsolve.push(tileFrom);
-		allsolve.push(tileTo);
-		allsolve.push(solution);
-		allsolve.push(prize);*/
-		if (abs(prize) < abs(bp)) { bf=tileFrom; bt=tileTo; bp=prize; bs=solution; } // find cheapest one
-		solveIndex++;
+		templist.Clear();
+		templist.AddRectangle(tileFrom, tileTo);
+	cDebug.showLogic(templist);
+	cDebug.PutSign(tileFrom,"F"); cDebug.PutSign(tileTo,"T");
+		local solve=cTileTools.TerraformHeightSolver(templist);
+	cDebug.ClearSigns();
+		solve.RemoveValue(0); // discard no solve
+		local bf, bt, bs, bp=null;
+		bp=99999999999999;
+		foreach (solution, prize in solve)
+			{
+			/*allsolve.push(tileFrom);
+			allsolve.push(tileTo);
+			allsolve.push(solution);
+			allsolve.push(prize);*/
+			if (abs(prize) < abs(bp)) { bf=tileFrom; bt=tileTo; bp=prize; bs=solution; } // find cheapest one
+			solveIndex++;
+			}
+		if (!solve.IsEmpty())
+			{
+			allsolve.push(bf); // this way we only keep cheapest one out of all solves found for that area
+			allsolve.push(bt); // so the area will have only 1 solution
+			allsolve.push(bs);
+			allsolve.push(bp);
+			}
 		}
-	if (!solve.IsEmpty())
-		{
-		allsolve.push(bf); // this way we only keep cheapest one out of all solves found for that area
-		allsolve.push(bt); // so the area will have only 1 solution
-		allsolve.push(bs);
-		allsolve.push(bp);
-		}
-	}
-cDebug.ClearSigns();
-DInfo("Total solves found: "+solveIndex,1);
-return allsolve;
+	cDebug.ClearSigns();
+	DInfo("Total solves found: "+solveIndex,1);
+	return allsolve;
 }
 
 function cBuilder::AirportBestPlace_BuildFromSolve(allsolve, width, height, airporttype)

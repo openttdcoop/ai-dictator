@@ -88,10 +88,11 @@ function cBuilder::RouteNeedRepair()
 	if (INSTANCE.main.route.RouteDamage.IsEmpty()) return;
 	local deletethatone=-1;
 	local runLimit=2; // number of routes to repair per run
-	foreach (routes, dummy in INSTANCE.main.route.RouteDamage)
+	foreach (routes, state in INSTANCE.main.route.RouteDamage)
 		{
+		if (state == -666)	continue; // dead route state
 		runLimit--;
-		local trys=dummy;
+		local trys=state;
 		trys++;
 		DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1);
 		local test=INSTANCE.main.builder.CheckRoadHealth(routes);

@@ -127,6 +127,10 @@ function DictatorAI::Start()
 		DWarn("Running the AI in debug mode slowdown the AI and can do random issues !!!",1);
 		main.bank.CashFlow();
 		main.CheckAccount();
+		local dmg = AIList();
+		dmg.AddList(cRoute.RouteDamage);
+		dmg.KeepValue(-666);
+		foreach (uid, _ in dmg)	cRoute.RouteUndoableFreeOfVehicle(uid);
 		if (main.SCP.IsAllow())	main.SCP.Check();
 		if (main.bank.canBuild)
 				{

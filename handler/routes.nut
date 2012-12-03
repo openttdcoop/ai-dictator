@@ -139,6 +139,17 @@ function cRoute::RouteRebuildIndex()
 		}
 	}
 
+function cRoute::InRemoveList(uid)
+// Add a route to route damage with -1 status so it will get clear
+{
+	local road = cRoute.GetRouteObject(uid);
+	if (road == null)	return;
+	local good = (road.GroupID != null);
+	if (good && AIGroup.IsValidGroup(road.GroupID) && !AIVehicleList_Group(road.GroupID).IsEmpty())	return;
+	if (cRoute.RouteDamage.HasItem(uid))	cRoute.RouteDamage.RemoveItem(uid);
+	cRoute.RouteDamage.AddItem(uid, -666);
+}
+
 function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way, in 2 steps, next step is RouteUndoableFreeOfVehicle()
 	{
@@ -146,27 +157,30 @@ function cRoute::RouteIsNotDoable()
 	DInfo("BREAK Marking route "+cRoute.GetRouteName(this.UID)+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
 	this.Status = 666;
-	if (!INSTANCE.main.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ this.RouteUndoableFreeOfVehicle(); }
+	if (!INSTANCE.main.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ cRoute.InRemoveList(this.UID); }
 	}
 
-function cRoute::RouteUndoableFreeOfVehicle()
+function cRoute::RouteUndoableFreeOfVehicle(uid=null)
 // This is the last step of marking a route undoable
 	{
-	if (this.UID < 2)	return; // don't touch virtual routes
+	local route = false;
+	if (uid == null)	route = cRoute.Load(uid);
+			else	route = this;
+	if (!route)	return;
+	if (route.UID < 2)	return; // don't touch virtual routes
 	local stasrc = null;
 	local stadst = null;
-	if (cMisc.ValidInstance(this.SourceStation)) this.RouteReleaseStation(this.SourceStation.s_ID);
-	if (cMisc.ValidInstance(this.TargetStation)) this.RouteReleaseStation(this.TargetStation.s_ID);
+	if (cMisc.ValidInstance(route.SourceStation)) route.RouteReleaseStation(route.SourceStation.s_ID);
+	if (cMisc.ValidInstance(route.TargetStation)) route.RouteReleaseStation(route.TargetStation.s_ID);
 	cBuilder.DestroyStation(stasrc);
 	cBuilder.DestroyStation(stadst);
-	if (this.GroupID != null)	{ AIGroup.DeleteGroup(this.GroupID); cRoute.GroupIndexer.RemoveItem(this.GroupID); }
-	local uidsafe = this.UID;
-	if (this.UID in cRoute.database)
+	if (route.GroupID != null)	{ AIGroup.DeleteGroup(route.GroupID); cRoute.GroupIndexer.RemoveItem(route.GroupID); }
+	if (route.UID in cRoute.database)
 		{
-		DInfo("BREAK ROUTE -> Removing route "+this.UID+" from database",1);
-		cRoute.RouteIndexer.RemoveItem(this.UID);
-		cRoute.RouteDamage.RemoveItem(this.UID);
-		delete cRoute.database[this.UID];
+		DInfo("BREAK ROUTE -> Removing route "+route.UID+" from database",1);
+		cRoute.RouteIndexer.RemoveItem(route.UID);
+		cRoute.RouteDamage.RemoveItem(route.UID);
+		delete cRoute.database[route.UID];
 		}
 	}
 

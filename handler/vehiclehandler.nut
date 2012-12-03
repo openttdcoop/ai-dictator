@@ -504,7 +504,7 @@ function cCarrier::VehicleSellAndDestroyRoute(vehicle)
 						local road=cRoute.Load(idx);
 						if (!road)	{ DError("Cannot load that route : "+idx,1); return; }
 						INSTANCE.main.carrier.VehicleSell(vehicle, false);
-						road.RouteUndoableFreeOfVehicle();
+						cRoute.InRemoveList(road.UID);
 						}
 }
 
@@ -561,7 +561,7 @@ function cCarrier::FreeDepotOfVehicle(depotID)
 // this function remove any vehicle in depot or at that depot position (stopping them)
 {
 	if (!cStation.IsDepot(depotID))	return true;
-	DInfo("Selling all vehicles at depot "+depotID+" to remove it.",1);
+	DInfo("Selling all vehicles at depot "+depotID+" to remove it.",2);
 	local vehlist = AIVehicleList();
 	vehlist.Valuate(AIVehicle.GetLocation);
 	vehlist.KeepValue(depotID);
@@ -575,6 +575,11 @@ function cCarrier::FreeDepotOfVehicle(depotID)
 		{
 		local pause = cLooper();
 		cCarrier.StopVehicle(veh);
+		}
+	foreach (veh, _ in vehlist)
+		{
+		if (AIVehicle.GetState(veh) != AIVehicle.VS_IN_DEPOT)	cCarrier.StartVehicle(veh);
+		local pause = cLooper();
 		}
 	vehlist.AddList(goodlist);
 	foreach (veh, _ in vehlist)	{ cCarrier.VehicleSell(veh, false); local pause = cLooper(); }

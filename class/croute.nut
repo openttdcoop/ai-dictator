@@ -107,8 +107,7 @@ function cRoute::Load(uid)
 	if (thatroute.Status != 100)	DWarn("route "+thatroute.Name+" have a non working status : "+thatroute.Status,1);
 	if (thatroute.Status == 666)	// callback the end of destruction
 		{
-		local vehlist = AIVehicleList_Group(thatstation.GroupID);
-		if (vehlist.IsEmpty())	thatroute.RouteUndoableFreeOfVehicle();
+		cRoute.InRemoveList(thatroute.UID);
 		return false;
 		}
 	return thatroute;
