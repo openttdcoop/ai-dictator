@@ -654,13 +654,15 @@ function cBuilder::CheckRoadHealth(routeUID)
 		}
 	// Now clear out dead station entries
 	srcEntries.KeepValue(-1);
+	DInfo("Source station entries : "+repair.SourceStation.s_Tiles.Count()+" working "+srcEntries.Count()+" dead",1);
 	foreach (tile, _ in srcEntries)
 		{
 		DInfo(space+"Removing dead source station -> Entry "+tile,1);
 		if (cTileTools.DemolishTile(tile))	repair.SourceStation.s_Tiles.RemoveItem(tile);
 		}
 	dstEntries.KeepValue(-1);
-	foreach (tile, _ in srcEntries)
+	DInfo("Destination station entries : "+repair.TargetStation.s_Tiles.Count()+" working "+dstEntries.Count()+" dead",1);
+	foreach (tile, _ in dstEntries)
 		{
 		DInfo(space+"Removing dead destination station -> Entry "+tile,1);
 		if (cTileTools.DemolishTile(tile))	repair.TargetStation.s_Tiles.RemoveItem(tile);
