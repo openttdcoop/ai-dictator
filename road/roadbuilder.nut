@@ -480,6 +480,8 @@ function cBuilder::CheckRoadHealth(routeUID)
 	local correction=false;
 	local temp=null;
 	local minGood=false;
+	local srcEntries=AIList();
+	local dstEntries=AIList();
 	DInfo("Checking route health of "+repair.Name,1);
 	// check stations for trouble
 	// source station
@@ -488,7 +490,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 	local error_repair="Fixed !";
 	local error_error="Fail to fix it";
 	temp=repair.SourceStation;
-	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space+" Source Station is invalid !",1); good=false; }
+	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space+" Source Station is invalid !",1); return false; } // critical issue
 							else	DInfo(space+"Source station "+temp.s_Name+" is valid",1);
 	if (good)
 		{
@@ -496,15 +498,16 @@ function cBuilder::CheckRoadHealth(routeUID)
 		foreach (tile, front in temp.s_Tiles)
 			{
 			cDebug.PutSign(tile, "S");
+			srcEntries.AddItem(tile, 0);
 			msg=space+space+"Entry "+tile+" is ";
 			if (!AIRoad.AreRoadTilesConnected(tile, front))
 				{
 				msg+="NOT usable. ";
 				correction=INSTANCE.main.builder.BuildRoadFrontTile(tile, front);
-				if (correction)	msg+=error_repair;
-					else	{ msg+=error_error; good=false; }
+				if (correction)	{ msg+=error_repair; srcEntries.SetValue(tile, 1); }
+					else	{ msg+=error_error; good=false; srcEntries.SetValue(tile, -1); }
 				}
-			else	{ msg+="usable"; }
+			else	{ msg+="usable"; srcEntries.SetValue(tile, -1); }
 			DInfo(msg,1);
 			}
 		}
@@ -512,7 +515,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 	// target station
 	correction=false;
 	temp=repair.TargetStation;
-	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space+" Destination Station is invalid !",1); good=false; }
+	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space+" Destination Station is invalid !",1); return false; } // critical issue
 							else	DInfo(space+"Destination station "+temp.s_Name+" is valid",1);
 	if (good)
 		{
@@ -520,15 +523,16 @@ function cBuilder::CheckRoadHealth(routeUID)
 		foreach (tile, front in temp.s_Tiles)
 			{
 			cDebug.PutSign(tile, "S");
+			dstEntries.AddItem(tile, 0);
 			msg=space+space+"Entry "+tile+" is ";
 			if (!AIRoad.AreRoadTilesConnected(tile, front))
 				{
 				msg+="NOT usable. ";
 				correction=INSTANCE.main.builder.BuildRoadFrontTile(tile, front);
-				if (correction)	msg+=error_repair;
-					else	{ msg+=error_error; good=false; }
+				if (correction)	{ msg+=error_repair; dstEntries.SetValue(tile, 1); }
+					else	{ msg+=error_error; good=false; dstEntries.SetValue(tile, -1); }
 				}
-			else	{ msg+="usable"; }
+			else	{ msg+="usable"; dstEntries.SetValue(tile, -1); }
 			DInfo(msg,1);
 			}
 		}
@@ -542,6 +546,9 @@ function cBuilder::CheckRoadHealth(routeUID)
 			msg=space+"Connnection from "+repair.SourceStation.s_Name+" Entry #"+stile+" to "+repair.TargetStation.s_Name+" Entry #"+dtile+" : ";
 			if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 				{
+				// Removing depots that might prevents us from reaching our target
+				cBuilder.DestroyDepot(repair.TargetStation.s_Depot);
+				cBuilder.DestroyDepot(repair.SourceStation.s_Depot);
 				msg+="Damage & ";
 				INSTANCE.main.builder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
@@ -609,8 +616,10 @@ function cBuilder::CheckRoadHealth(routeUID)
 
 	if (good)
 		{
+		// if we are still here, both depots are working as they should
 		local src_depot_front=AIRoad.GetRoadDepotFrontTile(repair.SourceStation.s_Depot);
 		local tgt_depot_front=AIRoad.GetRoadDepotFrontTile(repair.TargetStation.s_Depot);
+		// source station validity with its own depot
 		foreach (tile, front in repair.SourceStation.s_Tiles)
 			{
 			msg=space+"Connnection from source station -> Entry "+tile+" to its depot : ";
@@ -619,13 +628,14 @@ function cBuilder::CheckRoadHealth(routeUID)
 				msg+="Damage & ";
 				INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
-					{ msg+=error_error; good=false;  cTileTools.DemolishTile(repair.SourceStation.s_Depot); }
-				else	{ msg+=error_repair; }
+					{ msg+=error_error; good=false; srcEntries.SetValue(tile, -1); }
+				else	{ msg+=error_repair; srcEntries.SetValue(tile, 1); }
 				DInfo(msg,1);
 				}
-			else	{ DInfo(msg+"Working",1); }
+			else	{ DInfo(msg+"Working",1); srcEntries.SetValue(tile, 1); }
 			cDebug.ClearSigns();
 			}
+		// target station validity with its own depot
 		foreach (tile, front in repair.TargetStation.s_Tiles)
 			{
 			msg=space+"Connnection from destination station -> Entry "+tile+" to its depot : ";
@@ -634,165 +644,31 @@ function cBuilder::CheckRoadHealth(routeUID)
 				msg+="Damage & ";
 				INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID);
 				if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
-					{ msg+=error_error; good=false; cTileTools.DemolishTile(repair.TargetStation.s_Depot); }
-				else	{ msg+=error_repair; }
+					{ msg+=error_error; good=false; dstEntries.SetValue(tile, -1); }
+				else	{ msg+=error_repair; dstEntries.SetValue(tile, 1); }
 				DInfo(msg,1);
 				}
-			else	{ DInfo(msg+"Working",1); }
+			else	{ DInfo(msg+"Working",1); dstEntries.SetValue(tile, 1); }
 			cDebug.ClearSigns();
 			}
+		}
+	// Now clear out dead station entries
+	srcEntries.KeepValue(-1);
+	foreach (tile, _ in srcEntries)
+		{
+		DInfo(space+"Removing dead source station -> Entry "+tile,1);
+		if (cTileTools.DemolishTile(tile))	repair.SourceStation.s_Tiles.RemoveItem(tile);
+		}
+	dstEntries.KeepValue(-1);
+	foreach (tile, _ in srcEntries)
+		{
+		DInfo(space+"Removing dead destination station -> Entry "+tile,1);
+		if (cTileTools.DemolishTile(tile))	repair.TargetStation.s_Tiles.RemoveItem(tile);
 		}
 	cDebug.ClearSigns();
 	if (good)	repair.Status=100;
 	return minGood;
 }
-
-/*
-function cBuilder::ConstructRoadROAD(path)
-// this construct (build) the road we get from path
-{
-INSTANCE.main.bank.RaiseFundsBigTime();
-DInfo("Building road structure",0);
-local prev = null;
-local waserror = false;
-local counter=0;
-holes=[];
-while (path != null)
-	{
-	local par = path.GetParent();
-	if (par != null)
-		{
-		if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1)
-			{
-			local parpar=par.GetParent();
-			if (parpar != null)
-				{
-				// check for small up/down hills correction
-				local targetTile=path.GetTile();
-				local parTile=par.GetTile();
-				local equal= (AITile.GetMinHeight(parTile) == AITile.GetMinHeight(targetTile));
-				if (equal && AITile.GetSlope(parTile) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT)
-					{
-					DInfo("Smoothing land to build road",1);
-					cTileTools.TerraformLevelTiles(targetTile, parpar.GetTile());
-					}
-				}
-
-			if (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()))
-				{
-				local error = AIError.GetLastError();
-				if (error != AIError.ERR_ALREADY_BUILT)
-					{
-					if (error == AIError.ERR_VEHICLE_IN_THE_WAY)
-						{
-						DInfo("A vehicle was in the way while I was building the road. Retrying...",1);
-						counter = 0;
-						AIController.Sleep(75);
-						while (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()) && counter < 3)
-							{
-							counter++;
-							AIController.Sleep(75);
-							}
-						if (counter > 2)
-							{
-							DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
-							cBuilder.ReportHole(path.GetTile(), par.GetTile(), waserror);
-							waserror = true;
-							}
-						 else	{
-							if (waserror)
-								{
-								waserror = false;
-								holes.push([holestart, holeend]);
-								}
-							}
-						}
-					else	{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
-						cBuilder.ReportHole(path.GetTile(), par.GetTile(), waserror);
-						waserror = true;
-						}
-					}
-			 	else	{
-					if (waserror)
-						{
-						waserror = false;
-						holes.push([holestart, holeend]);
-						}
-					}
-				}
-		 	else 	{
-				if (waserror)
-					{
-					waserror = false;
-					holes.push([holestart, holeend]);
-					}
-				}
-			}
-	 	else	{
-			if (!cBridge.IsBridgeTile(path.GetTile()) && !AITunnel.IsTunnelTile(path.GetTile()))
-				{
-				if (AIRoad.IsRoadTile(path.GetTile())) cTileTools.DemolishTile(path.GetTile());
-				if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == par.GetTile())
-					{
-					if (!AITunnel.BuildTunnel(AIVehicle.VT_ROAD, path.GetTile()))
-						{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
-						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
-							{
-							DInfo("That tunnel would be too expensive. Construction aborted.",1);
-							return false;
-							}
-						cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
-						waserror = true;
-						}
-					else	{
-						if (waserror)
-							{
-							waserror = false;
-							holes.push([holestart, holeend]);
-							}
-						}
-					}
-			 	else	{
-					local bridgeID = cBridge.GetCheapBridgeID(AIVehicle.VT_ROAD, AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
-//					local bridgelist = AIBridgeList_Length(AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1);
-//					bridgelist.Valuate(AIBridge.GetPrice,AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) + 1 );
-//					bridgelist.Sort(AIList.SORT_BY_VALUE,true);
-					if (!AIBridge.BuildBridge(AIVehicle.VT_ROAD, bridgeID, path.GetTile(), par.GetTile()))
-						{
-						DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),1);
-						if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)
-							{
-							DInfo("That bridge would be too expensive. Construction aborted.",1);
-							return false;
-							}
-						cBuilder.ReportHole(prev.GetTile(), par.GetTile(), waserror);
-						waserror = true;
-						}
-					 else	{
-						if (waserror)
-							{
-							waserror = false;
-							holes.push([holestart, holeend]);
-							}
-						}
-					}
-				}
-			}
-		}
-	prev = path;
-	path = par;
-	}
-if (waserror)
-	{
-	waserror = false;
-	holes.push([holestart, holeend]);
-	}
-if (holes.len() > 0)
-	{ DInfo("Road construction fail...",1); return false; }
-return true;
-}*/
 
 function cBuilder::RoadFindCompatibleDepot(tile)
 // Try to find an existing road depot near tile and reuse it

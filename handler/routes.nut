@@ -160,12 +160,10 @@ function cRoute::RouteIsNotDoable()
 	if (!INSTANCE.main.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ cRoute.InRemoveList(this.UID); }
 	}
 
-function cRoute::RouteUndoableFreeOfVehicle(uid=null)
+function cRoute::RouteUndoableFreeOfVehicle(uid)
 // This is the last step of marking a route undoable
 	{
-	local route = false;
-	if (uid == null)	route = cRoute.Load(uid);
-			else	route = this;
+	local route = cRoute.Load(uid);
 	if (!route)	return;
 	if (route.UID < 2)	return; // don't touch virtual routes
 	local stasrc = null;
@@ -179,9 +177,9 @@ function cRoute::RouteUndoableFreeOfVehicle(uid=null)
 		{
 		DInfo("BREAK ROUTE -> Removing route "+route.UID+" from database",1);
 		cRoute.RouteIndexer.RemoveItem(route.UID);
-		cRoute.RouteDamage.RemoveItem(route.UID);
 		delete cRoute.database[route.UID];
 		}
+	if (cRoute.RouteDamage.HasItem(uid))	cRoute.RouteDamage.RemoveItem(uid);
 	}
 
 function cRoute::CreateNewStation(start)

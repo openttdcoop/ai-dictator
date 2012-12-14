@@ -86,10 +86,7 @@ function cStation::Load(_stationID)
 	if (thatstation == null)	{ DWarn("Invalid stationID : "+_stationID+" Cannot get object",1); return false; }
 	if (!AIStation.IsValidStation(thatstation.s_ID))
 		{
-		DWarn("BREAK: Invalid station in base : "+thatstation.s_ID,1);
-//		delete cStation.stationdatabase[thatstation.s_ID];
-//		cStation.VirtualAirports.RemoveItem(thatstation.s_ID);
-		//return false;
+		DWarn("Invalid station in base : "+thatstation.s_ID,1);
 		}
 	return thatstation;
 }

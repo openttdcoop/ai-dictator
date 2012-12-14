@@ -91,6 +91,9 @@ function cRoute::Load(uid)
 // Get a route object
 {
 	local thatroute=cRoute.GetRouteObject(uid);
+	if (typeof(thatroute) != "instance")	return false;
+	if (thatroute instanceof cRoute)	{}
+						else	return false;
 	if (thatroute == null)	{ DWarn("Invalid routeID : "+uid+". Cannot get object",1); return false; }
 	if (thatroute.Status == 100 && thatroute.UID > 1) // in theory a working one
 		{
