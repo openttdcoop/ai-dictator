@@ -45,6 +45,9 @@ function cBuilder::DestroyStation(stationid)
 		}
 	// check if we have vehicle using it
 	local vehcheck=AIVehicleList_Station(stationid);
+	vehcheck.Valuate(AIVehicle.GetGroupID);
+	vehcheck.RemoveValue(cRoute.GetVirtualAirPassengerGroup()); // don't touch network aircrafts
+	vehcheck.RemoveValue(cRoute.GetVirtualAirMailGroup());
 	if (!vehcheck.IsEmpty())
 		{
 		DWarn("Sending "+vehcheck.Count()+" vehicles using station "+wasnamed+" to depot",1);

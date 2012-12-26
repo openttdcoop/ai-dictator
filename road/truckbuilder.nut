@@ -78,7 +78,9 @@ function cCarrier::CreateRoadVehicle(roadidx)
 		{
 		vehID=INSTANCE.main.carrier.CreateRoadEngine(engineID, homedepot, cargoid);
 		if (AIVehicle.IsValidVehicle(vehID))
+			{
 			DInfo("Just brought a new road vehicle: "+cCarrier.GetVehicleName(vehID),0);
+			}
 		else	{
 			DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2);
 			lackMoney=(vehID==-2);

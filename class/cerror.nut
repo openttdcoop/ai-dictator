@@ -15,7 +15,7 @@
 
 class cError extends cClass
 {
-static	isCriticalError=[0];	// maximum speed a road vehicle could do
+static	isCriticalError=[0];	// hold error flag
 
 	constructor()
 		{
@@ -26,14 +26,26 @@ static	isCriticalError=[0];	// maximum speed a road vehicle could do
 function cError::IsError()
 // return true if error is raise
 {
-	return isCriticalError[0]==1;
+	return cError.isCriticalError[0]==1;
+}
+
+function cError::ClearError()
+// force unset the error flag
+{
+	cError.SetErrorCritical(false);
+}
+
+function cError::RaiseError()
+// force the error flag set
+{
+	cError.SetErrorCritical(true);
 }
 
 function cError::SetErrorCritical(value)
 // set/unset critical flag
 {
-	if (value)	isCriticalError[0]=1;
-		else	isCriticalError[0]=0;
+	if (value)	cError.isCriticalError[0]=1;
+		else	cError.isCriticalError[0]=0;
 }
 
 function cError::IsCriticalError()
@@ -41,35 +53,35 @@ function cError::IsCriticalError()
 // we return false when no error or true when error
 // we set CriticalError to true for a critcal error or false for a temp failure
 {
-	if (IsError())	return true; // tell everyone we fail until the flag is remove
 	local lasterror=AIError.GetLastError();
 	local errcat=AIError.GetErrorCategory();
-	DInfo("Error check: "+AIError.GetLastErrorString()+" Cat: "+errcat,2);
+	DInfo("Error check: "+AIError.GetLastErrorString()+" Cat: "+errcat+" flag: "+cError.IsError(),2);
+	if (cError.IsError())	return true; // return failure as long as flag is set
 	switch (lasterror)
 		{
 		case AIError.ERR_NOT_ENOUGH_CASH:
-			SetErrorCritical(false);
+			cError.SetErrorCritical(false);
 			cBanker.RaiseFundsBigTime();
 			return true;
 		break;
 		case AIError.ERR_NONE:
-			SetErrorCritical(false);
+			cError.SetErrorCritical(false);
 			return false;
 		break;
 		case AIError.ERR_VEHICLE_IN_THE_WAY:
-			SetErrorCritical(false);
+			cError.SetErrorCritical(false);
 			return true;
 		break;
 		case AIError.ERR_LOCAL_AUTHORITY_REFUSES:
-			SetErrorCritical(false);
+			cError.SetErrorCritical(false);
 			return true;
 		break;
 		case AIError.ERR_ALREADY_BUILT:
-			SetErrorCritical(false);
+			cError.SetErrorCritical(false);
 			return false; // let's fake we success in that case
 		break;
 		default:
-			SetErrorCritical(true);
+			cError.SetErrorCritical(true);
 			return true; // critical set
 		}
 }

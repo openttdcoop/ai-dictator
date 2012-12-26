@@ -559,8 +559,10 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	// disable any boat jobs
 	if (road_type == RouteType.AIR && cargo_id != cCargo.GetPassengerCargo()) return;
 	// only pass for aircraft, we will randomize if pass or mail later
-	if (!newjob.sourceObject.IsTown && AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && road_type != RouteType.AIR && road_type != RouteType.WATER) return;
-	// only aircraft & boat to do platforms
+	if (cargo_id == cCargo.GetPassengerCargo() && !newjob.sourceObject.IsTown && AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && road_type != RouteType.AIR && road_type != RouteType.WATER) return;
+	// only aircraft & boat will do industry on water (platforms)
+	if (cargo_id == cCargo.GetPassengerCargo() && !newjob.sourceObject.IsTown && road_type == RouteType.AIR && !AIIndustry.HasHeliport(newjob.sourceObject.ID))	return;
+	// make sure the industry have an heliport we could use for aircraft (choppers), should fix FIRS Industry hotels.
 	newjob.distance = _distance;
 	newjob.roadType = road_type;
 	newjob.cargoID = cargo_id;

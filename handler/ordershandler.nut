@@ -50,7 +50,7 @@ function cCarrier::AirNetworkOrdersHandler()
 	local rabbit_destination=null;
 	if (!passgroup.IsEmpty())
 		{
-		foreach (vehicle, _ in passgroup)	passgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT));
+		foreach (vehicle, _ in passgroup)	passgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ResolveOrderPosition(vehicle, AIOrder.ORDER_CURRENT)));
 		// save current order for each vehicle
 		passrabbit = passgroup.Begin();
 		rabbit_destination = passgroup.GetValue(passgroup.Begin());
@@ -66,8 +66,8 @@ function cCarrier::AirNetworkOrdersHandler()
 			if (numorders > 0)
 				{
 				// now remove previous rabbit orders, should not make the aircrafts gone too crazy
-			//	for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(passrabbit, AIOrder.ResolveOrderPosition(passrabbit,0));
-				cCarrier.VehicleOrdersReset(passrabbit);
+				for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(passrabbit, AIOrder.ResolveOrderPosition(passrabbit,0));
+				// cCarrier.VehicleOrdersReset(passrabbit);
 				}
 			}
 		passgroup.AddItem(passrabbit, rabbit_destination); // readd the rabbit so it will goes to its previous destination too
@@ -97,8 +97,8 @@ function cCarrier::AirNetworkOrdersHandler()
 			if (numorders > 0)
 				{
 				// now remove previous rabbit orders, should not make the aircrafts gone too crazy
-			//	for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(passrabbit, AIOrder.ResolveOrderPosition(passrabbit,0));
-				cCarrier.VehicleOrdersReset(mailrabbit);
+				for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(mailrabbit, AIOrder.ResolveOrderPosition(mailrabbit,0));
+			//	cCarrier.VehicleOrdersReset(mailrabbit);
 				}
 			}
 		mailgroup.AddItem(mailrabbit, rabbit_destination); // readd the rabbit so it will goes to its previous destination too
@@ -225,6 +225,24 @@ function cCarrier::VehicleFindDestinationInOrders(vehicle, stationID)
 	return -1;
 }
 
+function cCarrier::FindClosestHangarForAircraft(veh)
+// return closest airport where we could send an aircraft
+{
+	if (AIVehicle.GetVehicleType(veh) != AIVehicle.VT_AIR) return -1; // only for aircraft
+	local vehloc=AIVehicle.GetLocation(veh);
+	local airports=AIStationList(AIStation.STATION_AIRPORT);
+	airports.Valuate(AIStation.GetLocation);
+	foreach (staID, locations in airports)	if (AIAirport.GetNumHangars(locations)==0)	airports.RemoveItem(staID);
+	// remove station without hangars
+	if (!airports.IsEmpty())
+		{
+		airports.Valuate(AIStation.GetDistanceManhattanToTile, vehloc);
+		airports.Sort(AIList.SORT_BY_VALUE, true); // closest one
+		return AIAirport.GetHangarOfAirport(AIStation.GetLocation(airports.Begin()));
+		}
+	return -1;
+}
+
 function cCarrier::VehicleSetDepotOrder(veh)
 // set all orders of the vehicle to force it going to a depot
 {
@@ -234,6 +252,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 	local homedepot = null;
 	local srcValid = false;
 	local dstValid = false;
+	local isAircraft = (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_AIR);
 	if (road != false)
 		{
 		homedepot=road.GetDepot(idx);
@@ -246,20 +265,6 @@ function cCarrier::VehicleSetDepotOrder(veh)
 	if (homedepot == null || !cStation.IsDepot(homedepot))
 		{
 		local vehloc=AIVehicle.GetLocation(veh);
-		if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_AIR)
-			{
-			local airports=AIStationList(AIStation.STATION_AIRPORT);
-			airports.Valuate(AIStation.GetLocation);
-			foreach (staID, locations in airports)	if (AIAirport.GetNumHangars(locations)==0)	airports.RemoveItem(staID);
-			// remove station without hangars
-			if (!airports.IsEmpty())
-				{
-				airports.Valuate(AIStation.GetDistanceManhattanToTile, vehloc);
-				airports.Sort(AIList.SORT_BY_VALUE, true); // closest one
-				homedepot=AIAirport.GetHangarOfAirport(AIStation.GetLocation(airports.Begin()));
-				DInfo("Sending a lost aircraft "+cCarrier.GetVehicleName(veh)+" to the closest airport hangar found at "+homedepot,1);
-				}
-			}
 		if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_ROAD)
 			{
 			cCarrier.StopVehicle(veh);
@@ -287,8 +292,15 @@ function cCarrier::VehicleSetDepotOrder(veh)
 			cCarrier.StartVehicle(veh);
 			}
 		}
-	if (srcValid)	AIOrder.AppendOrder(veh, road.SourceStation.s_Location, AIOrder.OF_NONE);
+	if (srcValid && !isAircraft)	AIOrder.AppendOrder(veh, road.SourceStation.s_Location, AIOrder.OF_NONE);
 	local orderindex = 0;
+	if (isAircraft)
+		{
+		local shortpath = FindClosestHangarForAircraft(veh);
+		DInfo("Routing aircraft "+cCarrier.GetVehicleName(veh)+" to the closest airport at "+shortpath,2);
+		if (!AIOrder.AppendOrder(veh, shortpath, AIOrder.OF_STOP_IN_DEPOT))
+			{ DError("Vehicle refuse goto closest airport order",2); }
+		}
 	if (homedepot != null)
 		{
 		if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
@@ -300,13 +312,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 		}
 	// Adding depot orders 3 time, so we should endup with at least 3 orders minimum to avoid get caught again by orders check
 	if (dstValid && cStation.IsDepot(road.TargetStation.s_Depot))	homedepot=road.TargetStation.s_Depot;
-	if (dstValid)
-		{
-		local mainstation = null;
-		if (dstValid)	mainstation = road.TargetStation.s_Location;
-		if (cCarrier.AircraftIsChopper(veh) && srcValid)	mainstation = road.SourceStation.s_Location;
-		if (mainstation != null)	AIOrder.AppendOrder(veh, mainstation, AIOrder.OF_NONE);
-		}
+	if (dstValid && !isAircraft)	AIOrder.AppendOrder(veh, road.TargetStation.s_Location, AIOrder.OF_NONE);
 	if (homedepot != null)
 		{
 		if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
@@ -317,9 +323,9 @@ function cCarrier::VehicleSetDepotOrder(veh)
 			{ DError("Vehicle refuse goto destination depot order",2); }
 		}
 
-	if (road != false)
+	if (road != false && !isAircraft)
 		for (local jjj=0; jjj < AIOrder.GetOrderCount(veh); jjj++)
-		// this send vehicle to met dropoff station before its depot, choppers won't have the dropoff station in their orders to lower distance
+		// this send vehicle to met dropoff station before its depot
 			{
 			if (!dstValid)	break;
 			if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)
@@ -337,6 +343,11 @@ function cCarrier::VehicleSetDepotOrder(veh)
 					break;
 					}
 			}
+	if (isAircraft)
+		{ // try to force it going at order 0 instead of current destination. openttd orders are weak
+		AIOrder.SkipToOrder(veh, 1);
+		AIOrder.SkipToOrder(veh, 0);
+		}
 	DInfo("Setting depot order for vehicle "+INSTANCE.main.carrier.GetVehicleName(veh),2);
 }
 

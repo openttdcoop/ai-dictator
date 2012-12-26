@@ -42,7 +42,7 @@ function cRoute::RouteUpdateVehicle()
 		this.VehicleCount=maillist.Count()+passlist.Count();
 		return;
 		}
-	if (!this.Status == 100)	return;
+	if (!this.Status == RouteStatus.WORKING)	return;
 	this.SourceStation.s_VehicleCount = AIVehicleList_Station(this.SourceStation.s_ID).Count();
 	this.SourceStation.UpdateCapacity();
 	this.TargetStation.s_VehicleCount = AIVehicleList_Station(this.TargetStation.s_ID).Count();
@@ -140,44 +140,46 @@ function cRoute::RouteRebuildIndex()
 	}
 
 function cRoute::InRemoveList(uid)
-// Add a route to route damage with -1 status so it will get clear
+// Add a route to route damage with dead status so it will get clear
 {
 	local road = cRoute.GetRouteObject(uid);
 	if (road == null)	return;
 	local good = (road.GroupID != null);
 	if (good && AIGroup.IsValidGroup(road.GroupID) && !AIVehicleList_Group(road.GroupID).IsEmpty())	return;
 	if (cRoute.RouteDamage.HasItem(uid))	cRoute.RouteDamage.RemoveItem(uid);
-	cRoute.RouteDamage.AddItem(uid, -666);
+	cRoute.RouteDamage.AddItem(uid, RouteStatus.DEAD);
 }
 
 function cRoute::RouteIsNotDoable()
 // When a route is dead, we remove it this way, in 2 steps, next step is RouteUndoableFreeOfVehicle()
 	{
 	if (this.UID < 2)	return; // don't touch virtual routes
-	DInfo("BREAK Marking route "+cRoute.GetRouteName(this.UID)+" undoable !!!",1);
+	DInfo("Marking route "+cRoute.GetRouteName(this.UID)+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
-	this.Status = 666;
+	this.Status = RouteStatus.DEAD;
 	if (!INSTANCE.main.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ cRoute.InRemoveList(this.UID); }
 	}
 
 function cRoute::RouteUndoableFreeOfVehicle(uid)
 // This is the last step of marking a route undoable
 	{
-	local route = cRoute.Load(uid);
-	if (!route)	return;
-	if (route.UID < 2)	return; // don't touch virtual routes
-	local stasrc = null;
-	local stadst = null;
-	if (cMisc.ValidInstance(route.SourceStation)) route.RouteReleaseStation(route.SourceStation.s_ID);
-	if (cMisc.ValidInstance(route.TargetStation)) route.RouteReleaseStation(route.TargetStation.s_ID);
-	cBuilder.DestroyStation(stasrc);
-	cBuilder.DestroyStation(stadst);
-	if (route.GroupID != null)	{ AIGroup.DeleteGroup(route.GroupID); cRoute.GroupIndexer.RemoveItem(route.GroupID); }
-	if (route.UID in cRoute.database)
+	local route = cRoute.GetRouteObject(uid); // the Load function will return false has route is mark DEAD
+	if (route != null)
 		{
-		DInfo("BREAK ROUTE -> Removing route "+route.UID+" from database",1);
-		cRoute.RouteIndexer.RemoveItem(route.UID);
-		delete cRoute.database[route.UID];
+		if (route.UID < 2)	return; // don't touch virtual routes
+		local stasrc = null;
+		local stadst = null;
+		if (cMisc.ValidInstance(route.SourceStation)) route.RouteReleaseStation(route.SourceStation.s_ID);
+		if (cMisc.ValidInstance(route.TargetStation)) route.RouteReleaseStation(route.TargetStation.s_ID);
+		cBuilder.DestroyStation(stasrc);
+		cBuilder.DestroyStation(stadst);
+		if (route.GroupID != null)	{ AIGroup.DeleteGroup(route.GroupID); cRoute.GroupIndexer.RemoveItem(route.GroupID); }
+		if (route.UID in cRoute.database)
+			{
+			DInfo("BREAK ROUTE -> Removing route "+route.UID+" from database",1);
+			cRoute.RouteIndexer.RemoveItem(route.UID);
+			delete cRoute.database[route.UID];
+			}
 		}
 	if (cRoute.RouteDamage.HasItem(uid))	cRoute.RouteDamage.RemoveItem(uid);
 	}
@@ -207,14 +209,14 @@ function cRoute::RouteReleaseStation(stationid)
 		local ssta=cStation.Load(this.SourceStation.s_ID);
 		if (ssta != false)	ssta.OwnerReleaseStation(this.UID);
 		this.SourceStation = null;
-		this.Status=666;
+		this.Status=RouteStatus.DEAD;
 		}
 	if (sd && this.TargetStation.s_ID == stationid)
 		{
 		local ssta=cStation.Load(this.TargetStation.s_ID);
 		if (ssta != false)	ssta.OwnerReleaseStation(this.UID);
 		this.TargetStation = null;
-		this.Status=666;
+		this.Status=RouteStatus.DEAD;
 		}
 	if (INSTANCE.main.route.RouteDamage.HasItem(this.UID))	INSTANCE.main.route.RouteDamage.RemoveItem(this.UID);
 	INSTANCE.builddelay=false; INSTANCE.main.bank.canBuild=true;

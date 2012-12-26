@@ -52,8 +52,10 @@ function cRoute::VirtualAirNetworkUpdate()
 		airports.SetValue(airID,1);
 		if (AIAirport.GetAirportType(AIStation.GetLocation(airID)) == AIAirport.AT_SMALL)	airports.SetValue(airID, 0);
 		if (AIAirport.GetNumHangars(AIStation.GetLocation(airID)) == 0)	airports.SetValue(airID, 0);
+		local not_own = cStation.Load(airID);
+		if (!not_own || not_own.s_Owner.IsEmpty())	airports.SetValue(airID, 0);
 		}
-	airports.RemoveValue(0); // don't network small airports & platform, it's too hard for slow aircrafts
+	airports.RemoveValue(0); // don't network small airports, not yet own airport & platform, it's too hard for slow aircrafts
 	if (airports.IsEmpty())	return;
 				else	DInfo("NETWORK: Found "+airports.Count()+" valid airports for network",1);
 	airports.Valuate(AIStation.GetLocation);
@@ -124,6 +126,7 @@ function cRoute::VirtualAirNetworkUpdate()
 				local thatnetwork=0;
 				foreach (vehicle, gid in stealgroup)
 					{
+					if (cCarrier.ToDepotList.HasItem(vehicle))	continue;
 					if (vehnumber % 6 == 0)	thatnetwork=cRoute.GetVirtualAirMailGroup();
 								else	thatnetwork=cRoute.GetVirtualAirPassengerGroup();
 					AIGroup.MoveVehicle(thatnetwork, vehicle);

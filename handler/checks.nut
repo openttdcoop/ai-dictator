@@ -78,7 +78,7 @@ function cBuilder::RouteIsDamage(idx)
 	local road=cRoute.Load(idx);
 	if (!road) return;
 	if (road.VehicleType != AIVehicle.VT_ROAD)	return;
-	if (road.Status != 100)	return;
+	if (road.Status != RouteStatus.WORKING)	return;
 	if (!INSTANCE.main.route.RouteDamage.HasItem(idx))	INSTANCE.main.route.RouteDamage.AddItem(idx,0);
 }
 
@@ -90,7 +90,7 @@ function cBuilder::RouteNeedRepair()
 	local runLimit=2; // number of routes to repair per run
 	foreach (routes, state in INSTANCE.main.route.RouteDamage)
 		{
-		if (state == -666)	continue; // dead route state
+		if (state == RouteStatus.DEAD)	continue; // dead route state
 		runLimit--;
 		local trys=state;
 		trys++;
@@ -147,7 +147,7 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 			local pause2 = cLooper();
 			local road=cRoute.Load(uid);
 			if (!road)	continue;
-			if (road.Status != 100)	continue; // avoid non finish routes
+			if (road.Status != RouteStatus.WORKING)	continue; // avoid non finish routes
 			local cargoID=road.CargoID;
 			if (road.VehicleType >= RouteType.AIR)	cargoID=cCargo.GetPassengerCargo(); // always check passenger to avoid mail cargo
 			if (road.SourceStation.s_ID == stobj.s_ID)

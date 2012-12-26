@@ -203,8 +203,8 @@ do
 					}
 				else	{ // see why we fail
 					if (buildmode==4)	cTileTools.BlackListTileSpot(statile);
-					INSTANCE.main.builder.IsCriticalError();
-					if (INSTANCE.main.builder.CriticalError)	{ break; }
+					cError.IsCriticalError();
+					if (cError.IsError())	{ break; }
 					}
 		}
 	buildmode++;
@@ -214,7 +214,7 @@ ClearSigns();
 if (!success) 
 	{
 	DInfo("Can't find a good place to build the train station ! "+tilelist.Count(),1);
-	if (tilelist.IsEmpty())	INSTANCE.main.builder.CriticalError=true;
+	if (tilelist.IsEmpty())	cError.RaiseError();
 	return false;
 	}
 // here, so we success to build one
@@ -389,7 +389,7 @@ if (smallerror == -2)
 		badtiles.KeepValue(-mytask.stationID);
 		cBuilder.RailCleaner(badtiles); // remove all rail we've built
 		foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
-		INSTANCE.main.builder.CriticalError=true;
+		cError.RaiseError();
 		return false;
 		}
 	else	{
@@ -550,7 +550,7 @@ local srcUseEntry=null;
 local dstUseEntry=null;
 do	{
 	bestWay=INSTANCE.main.builder.FindStationEntryToExitPoint(fromObj, toObj);
-	if (bestWay.len()==0)	{ INSTANCE.main.builder.CriticalError=true; return false; }
+	if (bestWay.len()==0)	{ cError.RaiseError(); return false; }
 				else	retry=true;
 	if (retry) // we found a possible connection
 		{
@@ -563,13 +563,13 @@ do	{
 		if (!srcresult)
 			{
 			DWarn("RailStationGrow report failure",1);
-			if (INSTANCE.main.builder.CriticalError)	return false;
+			if (cError.IsError())	return false;
 			}
 		if (!dstresult)	dstresult=INSTANCE.main.builder.RailStationGrow(toObj, dstUseEntry, false);
 		if (!dstresult)
 			{
 			DWarn("RailStationGrow report failure",1);
-			if (INSTANCE.main.builder.CriticalError)	return false;
+			if (cError.IsError())	return false;
 			}
 		if (dstresult && srcresult)
 			{
@@ -796,7 +796,7 @@ if (newStationSize > thatstation.max_trains && cangrow)
 	if (thatstation.maxsize==thatstation.size)
 		{
 		DInfo("We'll need another platform to handle that train, but the station "+cStation.StationGetName(thatstation.stationID)+" cannot grow anymore.",1);
-		INSTANCE.main.builder.CriticalError=true; // raise it ourselves
+		cError.RaiseError(); // raise it ourselves
 		return false;
 		}
 	local allfail=false;
@@ -849,9 +849,9 @@ print("BREAK 2");
 	if (!success)
 		{
 print("BREAK 3 on failure");
-		INSTANCE.main.builder.IsCriticalError();
-		allfail=INSTANCE.main.builder.CriticalError;
-		INSTANCE.main.builder.CriticalError=false;
+		cError.IsCriticalError();
+		allfail=cError.IsError();
+		cError.ClearError();
 		pside=station_right;
 		if (useEntry)	pside=station_left;
 		displace=plat_alt+pside;
@@ -868,12 +868,12 @@ print("BREAK 4");
 		if (success)	foreach (tile, dummy in areaclean)	thatstation.StationClaimTile(tile, thatstation.stationID);
 		if (!success)	
 			{
-			INSTANCE.main.builder.IsCriticalError();
-			if (INSTANCE.main.builder.CriticalError && allfail)
+			cError.IsCriticalError();
+			if (cError.IsError() && allfail)
 				{ // We will never be able to build one more station platform in that station so
 				DInfo("Critical failure, station couldn't be upgrade anymore!",1);
 				thatstation.maxsize=thatstation.size;
-				INSTANCE.main.builder.CriticalError=true; // Make sure caller will be aware of that failure
+				cError.RaiseError(); // Make sure caller will be aware of that failure
 				return false;
 				}
 			else	{
@@ -964,7 +964,7 @@ if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !close
 		cTileTools.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,staID))
 			success=INSTANCE.main.builder.DropRailHere(rail, temptile);
-		else	{ INSTANCE.main.builder.CriticalError=true; success=false; }
+		else	{ cError.RaiseError(); success=false; }
 		if (success)	{
 					if (useEntry)	{ se_crossing=temptile; crossing=se_crossing; }
 							else	{ sx_crossing=temptile; crossing=sx_crossing; }
@@ -986,14 +986,14 @@ if ( ((useEntry && se_crossing==-1) || (!useEntry && sx_crossing==-1)) && !close
 				DInfo("Exit crossing is now set to : "+sx_crossing,2);
 				cDebug.PutSign(sx_crossing,"X");
 				}
-		INSTANCE.main.builder.CriticalError=false;
+		cError.ClearError();
 		}
 	else	{
-		INSTANCE.main.builder.IsCriticalError();
-		if (INSTANCE.main.builder.CriticalError)
+		cError.IsCriticalError();
+		if (cError.IsError())
 				{
 				closeIt=true;
-				INSTANCE.main.builder.CriticalError=false;
+				cError.ClearError();
 				}
 		}
 	}
@@ -1050,12 +1050,12 @@ if (needIN > 0 || needOUT > 0)
 		cTileTools.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,staID))
 			success=INSTANCE.main.builder.DropRailHere(rail, temptile);
-		else	{ INSTANCE.main.builder.CriticalError=true; success=false; }
+		else	{ cError.RaiseError(); success=false; }
 		if (success)	thatstation.RailStationClaimTile(temptile,useEntry);
-		if (INSTANCE.main.builder.IsCriticalError())
+		if (cError.IsCriticalError())
 			{
-			if (INSTANCE.main.builder.CriticalError)	closeIt=true;
-			INSTANCE.main.builder.CriticalError=false;
+			if (cError.IsError())	closeIt=true;
+			cError.ClearError();
 			break;
 			}
 		if (building_maintrack) // we're building IN/OUT point for the primary track
@@ -1066,11 +1066,11 @@ if (needIN > 0 || needOUT > 0)
 			cTileTools.TerraformLevelTiles(position,temptile+(3*forwardTileOf));
 			if (cTileTools.CanUseTile(temptile+(1*forwardTileOf), staID))
 				success=INSTANCE.main.builder.DropRailHere(rail, temptile+(1*forwardTileOf));
-			else	{ INSTANCE.main.builder.CriticalError=true; success=false; }
+			else	{ cError.RaiseError(); success=false; }
 			if (success) thatstation.RailStationClaimTile(temptile+(1*forwardTileOf),useEntry);
 			if (cTileTools.CanUseTile(temptile+(2*forwardTileOf), staID))
 				success=INSTANCE.main.builder.DropRailHere(rail, temptile+(2*forwardTileOf));
-			else	{ INSTANCE.main.builder.CriticalError=true; success=false; }
+			else	{ cError.RaiseError(); success=false; }
 			if (success) thatstation.RailStationClaimTile(temptile+(2*forwardTileOf),useEntry);
 			}
 		if (tmptaker)	sigdir=fromtile+((j+1)*forwardTileOf);
@@ -1427,7 +1427,7 @@ if (closeIt)
 		thatstation.RailStationCloseExit();
 		if ((trainExitTaker+trainExitDropper) == 1)	thatstation.RailStationDeleteEntrance(false);
 		}
-	INSTANCE.main.builder.CriticalError=false; // let's get another chance to build exit/entry when fail
+	cError.ClearError(); // let's get another chance to build exit/entry when fail
 	return false;
 	}
 DInfo("Station "+cStation.StationGetName(thatstation.stationID)+" have "+(trainEntryTaker+trainEntryDropper)+" trains using its entry and "+(trainExitTaker+trainExitDropper)+" using its exit, can handle "+thatstation.max_trains+" loading trains",1);
@@ -1746,8 +1746,8 @@ for (local kk=0; kk<4; kk++)
 			{
 			if (!AIRail.BuildRail(tilepos, tilefront, tile))
 				{
-				INSTANCE.main.builder.IsCriticalError();
-				if (INSTANCE.main.builder.CriticalError)	return false;
+				cError.IsCriticalError();
+				if (cError.IsError())	return false;
 				}
 			else	{ break; }
 			}
@@ -1760,8 +1760,8 @@ if (connections.len()>1 && fullconnect && startposValid)
 			{
 			if (con1 != con2 && !AIRail.BuildRail(con1, tilefront, con2))
 				{
-				INSTANCE.main.builder.IsCriticalError();
-				if (INSTANCE.main.builder.CriticalError)	return false;
+				cError.IsCriticalError();
+				if (cError.IsError())	return false;
 				}
 			}
 	}

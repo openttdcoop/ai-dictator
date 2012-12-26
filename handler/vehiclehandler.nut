@@ -534,11 +534,11 @@ function cCarrier::VehicleListSendToDepotAndWaitSell(vehlist)
 	foreach (vehicle, dummy in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 	foreach (vehicle, dummy in vehlist)
 		{
-		local waitmax=444; // 2 month / vehicle, as 444*10(sleep)=4440/74
+		local waitmax=120; // 1 month
 		local waitcount=0;
 		local wait=true;
 		do	{
-			AIController.Sleep(10);
+			AIController.Sleep(35);
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
 			wait=(AIVehicle.IsValidVehicle(vehicle));
 			DInfo("wait? "+AIVehicle.IsValidVehicle(vehicle)+" waiting:"+wait+" waitcount="+waitcount,2);
@@ -558,7 +558,7 @@ function cCarrier::VehicleSendToDepotAndSell(uid)
 }
 
 function cCarrier::FreeDepotOfVehicle(depotID)
-// this function remove any vehicle in depot or at that depot position (stopping them)
+// this function remove any vehicle in depot
 {
 	if (!cStation.IsDepot(depotID))	return true;
 	DInfo("Selling all vehicles at depot "+depotID+" to remove it.",2);
@@ -566,22 +566,6 @@ function cCarrier::FreeDepotOfVehicle(depotID)
 	vehlist.Valuate(AIVehicle.GetLocation);
 	vehlist.KeepValue(depotID);
 	if (vehlist.IsEmpty())	return true;
-	local goodlist = AIList();
-	vehlist.Valuate(AIVehicle.IsStoppedInDepot);
-	goodlist.AddList(vehlist);
-	goodlist.KeepValue(1);
-	vehlist.RemoveValue(1);
-	foreach (veh, _ in vehlist)
-		{
-		local pause = cLooper();
-		cCarrier.StopVehicle(veh);
-		}
-	foreach (veh, _ in vehlist)
-		{
-		if (AIVehicle.GetState(veh) != AIVehicle.VS_IN_DEPOT)	cCarrier.StartVehicle(veh);
-		local pause = cLooper();
-		}
-	vehlist.AddList(goodlist);
 	foreach (veh, _ in vehlist)	{ cCarrier.VehicleSell(veh, false); local pause = cLooper(); }
 	vehlist.Valuate(AIVehicle.IsValidVehicle);
 	vehlist.RemoveValue(1);
@@ -701,24 +685,24 @@ if (INSTANCE.main.carrier.ToDepotList.HasItem(vehID))	INSTANCE.main.carrier.ToDe
 function cCarrier::StartVehicle(vehID)
 // This try to make sure we will start the vehicle and not stop it because of the weak cCarrier.StartVehicle function
 {
-if (!AIVehicle.IsValidVehicle(vehID))	return false;
-local	wait=true;
-while (AIVehicle.GetState(vehID) == AIVehicle.VS_BROKEN)	INSTANCE.Sleep(15);
-local i=0;
-local maxspeed=4000;
-while (wait)
-	{ // wait to see if its speed remain at 0
-	local speed=AIVehicle.GetCurrentSpeed(vehID);
-	if (speed == 0 || speed < maxspeed || AIVehicle.GetState(vehID)==AIVehicle.VS_STOPPED)	{ AIController.Sleep(5); i++; maxspeed=speed; }
-															else	return false;
-	if (i > 4)	wait=false;
-	}
-if ((AIVehicle.GetState(vehID) != AIVehicle.VS_STOPPED || AIVehicle.GetState(vehID) != AIVehicle.VS_IN_DEPOT) && AIVehicle.StartStopVehicle(vehID))
-	{
-	DInfo("Starting "+cCarrier.GetVehicleName(vehID)+"...",0);
-	return true;
-	}
-return false; // crash/invalid...
+	if (!AIVehicle.IsValidVehicle(vehID))	return false;
+	local	wait=true;
+	while (AIVehicle.GetState(vehID) == AIVehicle.VS_BROKEN)	INSTANCE.Sleep(15);
+	local i=0;
+	local maxspeed=4000;
+	while (wait)
+		{ // wait to see if its speed remain at 0
+		local speed=AIVehicle.GetCurrentSpeed(vehID);
+		if (speed == 0 || speed < maxspeed || AIVehicle.GetState(vehID)==AIVehicle.VS_STOPPED)	{ AIController.Sleep(5); i++; maxspeed=speed; }
+																else	return false;
+		if (i > 4)	wait=false;
+		}
+	if ((AIVehicle.GetState(vehID) != AIVehicle.VS_STOPPED || AIVehicle.GetState(vehID) != AIVehicle.VS_IN_DEPOT) && AIVehicle.StartStopVehicle(vehID))
+		{
+		DInfo("Starting "+cCarrier.GetVehicleName(vehID)+"...",0);
+		return true;
+		}
+	return false; // crash/invalid...
 }
 
 function cCarrier::StopVehicle(vehID)

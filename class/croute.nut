@@ -42,14 +42,7 @@ static	function GetRouteObject(UID)
 	StationType		= null;	// type of station (it's AIStation.StationType)
 	RailType		= null;	// type of rails in use, same as the first working station done
 	Distance		= null;	// farest distance from source station to target station
-	Status		= null;	// current status of the route
-						// 0 - need a destination pickup
-						// 1 - source/destination find compatible station or create new
-						// 2 - need build source station
-						// 3 - need build destination station
-						// 4 - need do pathfinding
-						// 5 - need checks
-						// 100 - all done, finish route
+	Status		= null;	// current status of the route, see main.RouteStatus enum
 	GroupID		= null;	// groupid of the group for that route
 	CargoID		= null;	// the cargo id
 	DateVehicleDelete = null;	// date of last time we remove a vehicle
@@ -95,7 +88,7 @@ function cRoute::Load(uid)
 	if (thatroute instanceof cRoute)	{}
 						else	return false;
 	if (thatroute == null)	{ DWarn("Invalid routeID : "+uid+". Cannot get object",1); return false; }
-	if (thatroute.Status == 100 && thatroute.UID > 1) // in theory a working one
+	if (thatroute.Status == RouteStatus.WORKING && thatroute.UID > 1) // in theory a working one
 		{
 		local damage = false;
 		if (!cMisc.ValidInstance(thatroute.SourceStation))	damage=true;
@@ -107,8 +100,8 @@ function cRoute::Load(uid)
 			DWarn("Route "+thatroute.Name+" is damage...",1);
 			}
 		}
-	if (thatroute.Status != 100)	DWarn("route "+thatroute.Name+" have a non working status : "+thatroute.Status,1);
-	if (thatroute.Status == 666)	// callback the end of destruction
+	if (thatroute.Status != RouteStatus.WORKING)	DWarn("route "+thatroute.Name+" have a non working status : "+thatroute.Status,1);
+	if (thatroute.Status == RouteStatus.DEAD)	// callback the end of destruction
 		{
 		cRoute.InRemoveList(thatroute.UID);
 		return false;
@@ -194,7 +187,7 @@ function cRoute::RouteDone()
 {
 	if (!cMisc.ValidInstance(this.SourceProcess) || !cMisc.ValidInstance(this.TargetProcess))	return;
 	this.VehicleCount=0;
-	this.Status=100;
+	this.Status=RouteStatus.WORKING;
 	switch (this.VehicleType)
 		{
 		case	RouteType.RAIL:
@@ -244,7 +237,7 @@ function cRoute::RouteInitNetwork()
 	passRoute.CargoID=cCargo.GetPassengerCargo();
 	passRoute.VehicleType = RouteType.AIRNET;
 	passRoute.StationType = AIStation.STATION_AIRPORT;
-	passRoute.Status=100;
+	passRoute.Status=RouteStatus.WORKING;
 	passRoute.Distance = 1000; // a dummy distance start value
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
 	passRoute.GroupID=n;
@@ -257,7 +250,7 @@ function cRoute::RouteInitNetwork()
 	mailRoute.CargoID=cCargo.GetMailCargo();
 	mailRoute.VehicleType = RouteType.AIRNETMAIL;
 	mailRoute.StationType = AIStation.STATION_AIRPORT;
-	mailRoute.Status=100;
+	mailRoute.Status=RouteStatus.WORKING;
 	mailRoute.Distance = 1000;
 	local n=AIGroup.CreateGroup(AIVehicle.VT_AIR);
 	mailRoute.GroupID=n;
@@ -298,28 +291,15 @@ function cRoute::RouteChangeStation(uid, o_Object, n_Object)
 // Route swap its old station with the new nStationObject
 {
 	local road = cRoute.Load(uid);
-	if (!road)	{ print("BREAK !road"); return; }
-	if (road.UID < 2) {print ("BREAK low uid "+road.UID); 	return; } // don't alter virtuals, let them reclaim it later
-	if (road.Status != 100)
-		{
-		print("BREAK !=100");
-		return;
-		}
+	if (!road)	return;
+	if (road.UID < 2) return; // don't alter virtuals, let them reclaim it later
+	if (road.Status != RouteStatus.WORKING)	return;
 	local vsource = cMisc.ValidInstance(road.SourceStation);
 	local vtarget = cMisc.ValidInstance(road.TargetStation);
 	local start = null;
 	if (vsource && o_Object.s_ID == road.SourceStation.s_ID)	start = true;
 	if (vtarget && o_Object.s_ID == road.TargetStation.s_ID)	start = false;
-	if (start == null)	{
-
-print("objectid="+o_Object.s_ID);
-if (vsource)	print("sourceID ="+road.SourceStation.s_ID);
-		else	print("sourceID = bug");
-if (vtarget)	print("targetID ="+road.TargetStation.s_ID);
-		else	print("targetID = bug");
- print("BREAK no start > source="+vsource+" target="+vtarget);
- return;
- } // no station match the old one
+	if (start == null)	{ DError("No station match in RouteChangeStation",1); return; } // no station match the old one
 	DInfo("Route "+uid+" is changing from station "+o_Object.s_Name+" to "+n_Object.s_Name,1);
 	if (start)
 		{

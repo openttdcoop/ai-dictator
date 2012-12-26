@@ -163,7 +163,7 @@ if (stationtype != (AIRoad.ROADVEHTYPE_BUS+100000) && stalink == -1) // not a de
 		if (tooclose)
 			{
 			DWarn("Road station would be too close from another station",2);
-			INSTANCE.main.builder.CriticalError=true; // force a critical error
+			cError.RaiseError(); // force a critical error
 			return -1;
 			}
 		}
@@ -375,7 +375,7 @@ function cBuilder::BuildRoadStation(start)
 	if (!success) 
 		{
 		DInfo("Can't find a good place to build the road station !",1);
-		INSTANCE.main.builder.CriticalError=true;
+		cError.RaiseError();
 		return false;
 		}
 	// if we are here all should be fine, we could build now
@@ -448,7 +448,7 @@ if (path != null && path != false)
 else	{
 	cDebug.ClearSigns();
 	DInfo("Pathfinding failed.",1);
-	INSTANCE.main.builder.CriticalError=true;
+	cError.RaiseError();
 	return false;
 	}
 }
@@ -475,7 +475,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 	if (!cBuilder.CheckRouteStationStatus(repair.SourceStation.s_ID) || !cBuilder.CheckRouteStationStatus(repair.TargetStation.s_ID))	return true;
 	// the route itself will get destroy by CheckRouteStationStatus returning false, so we return the route is ok.
 	local good=true;
-	repair.Status=99; // on hold
+	repair.Status=RouteStatus.DAMAGE; // on hold
 	local space="        ";
 	local correction=false;
 	local temp=null;
@@ -668,7 +668,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 		if (cTileTools.DemolishTile(tile))	repair.TargetStation.s_Tiles.RemoveItem(tile);
 		}
 	cDebug.ClearSigns();
-	if (good)	repair.Status=100;
+	if (good)	repair.Status=RouteStatus.WORKING;
 	return minGood;
 }
 
@@ -704,7 +704,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 {
 	local road=cRoute.Load(roadidx);
 	if (!road)	return false;
-	if (road.Status != 100)	return false;
+	if (road.Status != RouteStatus.WORKING)	return false;
 	cBanker.RaiseFundsBigTime();
 	local work=null;
 	if (start)	work=road.SourceStation;
@@ -793,8 +793,8 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 		cDebug.PutSign(direction, "o");
 
 		new_sta_pos=INSTANCE.main.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.s_ID);
-		if (!INSTANCE.main.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
-		INSTANCE.main.builder.CriticalError=false; // discard it
+		if (!cError.IsError())	allfail=false; // if we have only critical errors we're doom
+		cError.ClearError(); // discard it
 		if (new_sta_pos != -1)	break;
 		local pause = cLooper();
 		INSTANCE.NeedDelay(10);
@@ -816,8 +816,8 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 			// kill our depot if it is about to bug us building
 			if (!cTileTools.DemolishTile(tile))	{ DInfo("Cannot clean the place for the new station at "+tile,1); }
 			new_sta_pos=INSTANCE.main.builder.BuildRoadStationOrDepotAtTile(tile, direction, statype, work.s_ID);
-			if (!INSTANCE.main.builder.CriticalError)	allfail=false; // if we have only critical errors we're doom
-			INSTANCE.main.builder.CriticalError=false; // discard it
+			if (!cError.IsError())	allfail=false; // if we have only critical errors we're doom
+			cError.ClearError(); // discard it
 			if (new_sta_pos != -1)	break;
 			AIController.Sleep(1);
 			INSTANCE.NeedDelay(50);
@@ -835,7 +835,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 		DWarn("Road depot was destroy while upgrading",1);
 		new_dep_pos=INSTANCE.main.builder.BuildRoadDepotAtTile(new_sta_pos);
 		work.s_Depot=new_dep_pos;
-		INSTANCE.main.builder.CriticalError=false;
+		cError.ClearError();
 		// Should be more than enough
 		}
 	if (new_sta_pos > -1)
@@ -880,15 +880,15 @@ if (!AIRoad.IsRoadTile(direction))
 	if (!cTileTools.DemolishTile(direction))
 		{
 		DWarn("Can't remove the tile front structure to build a road at "+direction,2); cDebug.PutSign(direction,"X");
-		INSTANCE.main.builder.IsCriticalError();
+		cError.IsCriticalError();
 		return -1;
 		}
 	}
-INSTANCE.main.builder.CriticalError=false;
+cError.ClearError();
 if (!cTileTools.DemolishTile(tile))
 	{
 	DWarn("Can't remove the structure tile position at "+tile,2); cDebug.PutSign(tile,"X");
-	INSTANCE.main.builder.IsCriticalError();
+	cError.IsCriticalError();
 	return -1;
 	}
 local success=false;
@@ -910,7 +910,7 @@ if (stationtype == (AIRoad.ROADVEHTYPE_BUS+100000))
 	if (!success)
 		{
 		DWarn("Can't built a road depot at "+tile,2);
-		INSTANCE.main.builder.IsCriticalError();
+		cError.IsCriticalError();
 		}
 	else	{
 		if (hackdepot == -1)	DInfo("Built a road depot at "+tile,0);
@@ -925,7 +925,7 @@ else	{
 	if (!success)
 		{
 		DWarn("Can't built the road station at "+tile,2);
-		INSTANCE.main.builder.IsCriticalError();
+		cError.IsCriticalError();
 		}
 	else	DInfo("Built a road station at "+tile,0);
 	}
@@ -938,7 +938,7 @@ else	{
 		if (!AIRoad.BuildRoad(tile, direction))
 		{
 		DWarn("Fail to connect the road structure with the road in front of it",2);
-		INSTANCE.main.builder.IsCriticalError();
+		cError.IsCriticalError();
 		if (!cTileTools.DemolishTile(tile))
 			{
 			DWarn("Can't remove bad road structure !",2);
@@ -1036,7 +1036,7 @@ function cBuilder::BuildRoadROAD(head1, head2, stationID)
 	while (true)
 		{
 		local result = cPathfinder.GetStatus(head1, head2, stationID);
-		if (result == -1)	{ INSTANCE.main.builder.CriticalError=true; cPathfinder.CloseTask(head1, head2); return false; }
+		if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(head1, head2); return false; }
 		if (result == 2)	{ cPathfinder.CloseTask(head1, head2); return true; }
 		cPathfinder.AdvanceAllTasks();
 		}
@@ -1163,7 +1163,7 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 			badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
 			badtiles.KeepValue(-mytask.stationID);
 			foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
-			INSTANCE.main.builder.CriticalError=true;
+			cError.RaiseError();
 			return false;
 			}
 		else	{

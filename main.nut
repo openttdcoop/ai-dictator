@@ -41,6 +41,12 @@ enum DepotAction {
 	ADDWAGON=1000	// to add a train or wagons to a route
 }
 
+enum RouteStatus {
+	// from 0 to 7 are use for build steps
+	DAMAGE = 99,	// a damage route
+	WORKING = 100,	// all fine
+	DEAD = -666		// will get removed
+}
 
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
@@ -129,7 +135,7 @@ function DictatorAI::Start()
 		main.CheckAccount();
 		local dmg = AIList();
 		dmg.AddList(cRoute.RouteDamage);
-		dmg.KeepValue(-666);
+		dmg.KeepValue(RouteStatus.DEAD);
 		foreach (uid, _ in dmg)	cRoute.RouteUndoableFreeOfVehicle(uid);
 		if (main.SCP.IsAllow())	main.SCP.Check();
 		if (main.bank.canBuild)

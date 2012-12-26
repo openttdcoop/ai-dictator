@@ -25,44 +25,6 @@ function cBuilder::StationIsProviding(stationid)
 	if (!INSTANCE.main.builder.station_take.HasItem(stationid))	INSTANCE.main.builder.station_take.AddItem(stationid, 1);
 }
 
-function cBuilder::IsCriticalError()
-// Check the last error to see if the error is a critical error or temp failure
-// we return false when no error or true when error
-// we set CriticalError to true for a critcal error or false for a temp failure
-{
-	if (INSTANCE.main.builder.CriticalError) return true; // tell everyone we fail until the flag is remove
-	local lasterror=AIError.GetLastError();
-	local errcat=AIError.GetErrorCategory();
-	DInfo("Error check: "+AIError.GetLastErrorString()+" Cat: "+errcat,2);
-	switch (lasterror)
-		{
-		case AIError.ERR_NOT_ENOUGH_CASH:
-			INSTANCE.main.builder.CriticalError=false;
-			INSTANCE.main.bank.RaiseFundsBigTime();
-			return true;
-		break;
-		case AIError.ERR_NONE:
-			INSTANCE.main.builder.CriticalError=false;
-			return false;
-		break;
-		case AIError.ERR_VEHICLE_IN_THE_WAY:
-			INSTANCE.main.builder.CriticalError=false;
-			return true;
-		break;
-		case AIError.ERR_LOCAL_AUTHORITY_REFUSES:
-			INSTANCE.main.builder.CriticalError=false;
-			return true;
-		break;
-		case AIError.ERR_ALREADY_BUILT:
-			INSTANCE.main.builder.CriticalError=false;
-			return false; // let's fake we success in that case
-		break;
-		default:
-			INSTANCE.main.builder.CriticalError=true;
-			return true; // critical set
-		}
-}
-
 function cBuilder::ValidateLocation(location, direction, width, depth)
 // check a rectangle of 5 length x size width for construction
 // true if we are good to go, false on error
@@ -94,7 +56,7 @@ function cBuilder::ValidateLocation(location, direction, width, depth)
 		// Watchout for roadtile from company X crossing our rail
 		tile=cTileTools.DemolishTile(i); // can we delete that tile ? Ignore result, we will care about it on next try
 		tile=cTileTools.DemolishTile(i); // demolish it twice, this should remove the crossing roads case
-		if (!INSTANCE.main.builder.IsCriticalError()) continue;
+		if (!cError.IsCriticalError()) continue;
 			else	{ return false; }
 		}
 	return true;
@@ -164,7 +126,7 @@ function cBuilder::BuildRoadByType()
 			INSTANCE.main.route.Twoway = true; // mark it so roadrunner won't be run on next try
 			//local result = INSTANCE.main.builder.AsyncConstructRoadROAD(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
 			local result = cPathfinder.GetStatus(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
-			if (result == -1)	{ INSTANCE.main.builder.CriticalError=true; cPathfinder.CloseTask(fromsrc, todst); }
+			if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(fromsrc, todst); }
 			if (result == 2)	{ cPathfinder.CloseTask(fromsrc, todst); return true; }
 			return false;
 		case AIVehicle.VT_RAIL:
@@ -354,17 +316,17 @@ function cBuilder::TryBuildThatRoute()
 	if (!success)
 		{
 		DWarn("There's no vehicle we could use to carry that cargo: "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
-		INSTANCE.main.route.Status = 666;
+		INSTANCE.main.route.Status = RouteStatus.DEAD;
 		}
 	else	{ if (INSTANCE.main.route.Status==0)	INSTANCE.main.route.Status=1; } // advance to next phase
 	if (INSTANCE.main.route.Status==1)
 		{
 		INSTANCE.main.builder.FindCompatibleStationExists();
-		if (INSTANCE.main.builder.IsCriticalError())	// we could get an error when checking to upgrade station
+		if (cError.IsCriticalError())	// we could get an error when checking to upgrade station
 			{
-			if (INSTANCE.main.builder.CriticalError)
+			if (cError.IsError())
 				{
-				INSTANCE.main.builder.CriticalError = false; // unset it and keep going
+				cError.ClearError(); // unset it and keep going
 				}
 			else	{ // reason is not critical, lacking funds...
 				INSTANCE.builddelay=true;
@@ -379,7 +341,7 @@ function cBuilder::TryBuildThatRoute()
 				{
 				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	INSTANCE.main.builder.SetRailType(buildWithRailType);
 				success=INSTANCE.main.builder.BuildStation(true);
-				if (!success && INSTANCE.main.builder.CriticalError)	INSTANCE.main.route.SourceProcess.ZeroProcess();
+				if (!success && cError.IsError())	INSTANCE.main.route.SourceProcess.ZeroProcess();
 				}
 			else	{
 				success=true;
@@ -388,15 +350,15 @@ function cBuilder::TryBuildThatRoute()
 		if (success)
 			{ // attach the new station object to the route, stationID of the new station is hold in SourceStation
 			INSTANCE.main.route.SourceStation=cStation.Load(INSTANCE.main.route.SourceStation);
-			if (!INSTANCE.main.route.SourceStation)	{ INSTANCE.main.builder.CriticalError=true; success= false; }
+			if (!INSTANCE.main.route.SourceStation)	{ cError.RaiseError(); success= false; }
 									else	INSTANCE.main.route.SourceStation.OwnerClaimStation(INSTANCE.main.route.UID);
 
 			}
 		if (!success)
 			{ // it's bad we cannot build our source station, that's really bad !
-			if (INSTANCE.main.builder.CriticalError)
+			if (cError.IsError())
 				{
-				INSTANCE.main.route.Status = 666;
+				INSTANCE.main.route.Status = RouteStatus.DEAD;
 				}
 			else	{ INSTANCE.builddelay=true; return false; }
 			}
@@ -412,7 +374,7 @@ function cBuilder::TryBuildThatRoute()
 					INSTANCE.main.builder.SetRailType(buildWithRailType);
 					}
 				success=INSTANCE.main.builder.BuildStation(false);
-				if (!success && INSTANCE.main.builder.CriticalError)	INSTANCE.main.route.TargetProcess.ZeroProcess();
+				if (!success && cError.IsError())	INSTANCE.main.route.TargetProcess.ZeroProcess();
 				}
 			else	{
 				success=true;
@@ -421,28 +383,26 @@ function cBuilder::TryBuildThatRoute()
 		if (success)
 			{ // attach the new station object to the route, stationID of the new station is hold in TargetStation for road
 			INSTANCE.main.route.TargetStation=cStation.Load(INSTANCE.main.route.TargetStation);
-			if (!INSTANCE.main.route.TargetStation)	{ INSTANCE.main.builder.CriticalError=true; success= false; }
+			if (!INSTANCE.main.route.TargetStation)	{ cError.RaiseError(); success= false; }
 									else	INSTANCE.main.route.TargetStation.OwnerClaimStation(INSTANCE.main.route.UID);
 
 			}
 		if (!success)
 			{ // we cannot do destination station
-			if (INSTANCE.main.builder.CriticalError)	INSTANCE.main.route.Status = 666;
+			if (cError.IsError())	INSTANCE.main.route.Status = RouteStatus.DEAD;
 									else	{ INSTANCE.builddelay=true; return false; }
 			}
 		else	{ INSTANCE.main.route.Status=4 }
 		}
-print("status 4");
 	if (INSTANCE.main.route.Status==4) // pathfinding
 		{
 		success=INSTANCE.main.builder.BuildRoadByType();
 		if (success)	{ INSTANCE.main.route.Status=5; }
 			else	{
-				if (INSTANCE.main.builder.CriticalError)	INSTANCE.main.route.Status = 666;
+				if (cError.IsError())	INSTANCE.main.route.Status = RouteStatus.DEAD;
 				else	return false;
 				} // and nothing more, stay at that phase & rebuild road when possible
 		}
-print("status 5");
 	if (INSTANCE.main.route.Status==5)
 		{ // check the route is really valid
 		if (INSTANCE.main.route.VehicleType == AIVehicle.VT_ROAD)
@@ -451,7 +411,7 @@ print("status 5");
 			}
 		else	{ success=true; } // other route type for now are ok
 		if (success)	{ INSTANCE.main.route.Status=6; }
-				else	{ INSTANCE.main.route.Status=666; }
+				else	{ INSTANCE.main.route.Status=RouteStatus.DEAD; }
 		}
 	if (INSTANCE.main.route.Status==6)
 		{
@@ -462,7 +422,7 @@ print("status 5");
 		if (!bad && !cMisc.ValidInstance(INSTANCE.main.route.TargetProcess))	bad=true;
 		if (!bad && !AIStation.IsValidStation(INSTANCE.main.route.SourceStation.s_ID))	bad=true;
 		if (!bad && !AIStation.IsValidStation(INSTANCE.main.route.TargetStation.s_ID))	bad=true;
-		if (bad)	INSTANCE.main.route.Status=666;
+		if (bad)	INSTANCE.main.route.Status=RouteStatus.DEAD;
 			else	INSTANCE.main.route.Status=7;
 		}	
 	if (INSTANCE.main.route.Status==7)
@@ -493,7 +453,7 @@ print("status 5");
 		if (INSTANCE.main.route.VehicleType==RouteType.RAIL)	INSTANCE.main.route.DutyOnRailsRoute(INSTANCE.main.route.UID);
 										else	INSTANCE.main.route.DutyOnRoute();
 		}
-	if (INSTANCE.main.route.Status == 666)
+	if (INSTANCE.main.route.Status == RouteStatus.DEAD)
 		{
 		DInfo("TryBuildThatRoute mark "+INSTANCE.main.route.UID+" undoable",1);
 		INSTANCE.main.route.RouteIsNotDoable();

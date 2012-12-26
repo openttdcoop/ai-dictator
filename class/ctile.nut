@@ -166,7 +166,7 @@ function cTileTools::IsBuildable(tile)
 	if (AIMarine.IsBuoyTile(tile))	return false; 
 	if (AIMarine.IsCanalTile(tile))	return false;
 	if (AIMarine.IsLockTile(tile))	return false;
-	if (!AITile.IsWaterTile(tile))	{ print("return AITile.IsBuildable"); return AITile.IsBuildable(tile); }
+	if (!AITile.IsWaterTile(tile))	{ return AITile.IsBuildable(tile); }
 						else	return INSTANCE.terraform; // if no terraform is allow, water tile cannot be use
 	return AITile.IsBuildable(tile);
 }
