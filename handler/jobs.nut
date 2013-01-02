@@ -259,7 +259,7 @@ function cJobs::EstimateCost()
 		case	RouteType.ROAD:
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
 			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
-			if (engine==-1)	engine=INSTANCE.main.carrier.ChooseRoadVeh(this.cargoID);
+			if (engine == -1)	engine=INSTANCE.main.carrier.ChooseRoadVeh(this.cargoID);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	{ engineprice=500000000; INSTANCE.use_road=false; }
 			money+=engineprice;
@@ -273,9 +273,8 @@ function cJobs::EstimateCost()
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 			local rtype=null;
 			engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
-			if (engine==-1)	engine=INSTANCE.main.carrier.ChooseRailEngine(null,this.cargoID, true);
-			if (engine==-1)	{ engineprice=500000000; 	INSTANCE.use_train=false; }
-						else	{
+			if (engine == -1)	engine=INSTANCE.main.carrier.ChooseRailEngine(null,this.cargoID, true);
+			if (engine != null)	{
 							/*engineprice+=cEngine.GetPrice(engine.Begin());
 							engineprice+=2*cEngine.GetPrice(engine.GetValue(engine.Begin()));
 							rtype=cmain.vehicle.GetRailTypeNeedForEngine(engine.Begin());*/
@@ -283,6 +282,7 @@ function cJobs::EstimateCost()
 							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
 							if (rtype==-1)	rtype=null;
 							}
+						else	{ engineprice=500000000; 	INSTANCE.use_train=false; }
 			money+=engineprice;
 			money+=(8*clean);
 			if (rtype==null)	money+=500000000;

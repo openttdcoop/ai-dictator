@@ -71,12 +71,13 @@ return couple;
 function cCarrier::GetRailTypeNeedForEngine(engineID)
 // return the railtype the engine need to work on
 {
-local rtypelist=AIRailTypeList();
-foreach (rtype, dum in rtypelist)
-	{
-	if (AIEngine.HasPowerOnRail(engineID, rtype) && AIRail.GetMaxSpeed(rtype)==0)	return rtype;
-	}
-return -1;
+	if (engineID == null)	return -1;
+	local rtypelist=AIRailTypeList();
+	foreach (rtype, dum in rtypelist)
+		{
+		if (AIEngine.HasPowerOnRail(engineID, rtype) && AIRail.GetMaxSpeed(rtype)==0)	return rtype;
+		}
+	return -1;
 }
 
 function cCarrier::ChooseRailEngine(rtype=null, cargoID=null, cheap=false)
