@@ -104,6 +104,7 @@ function cStation::Save()
 		delete cStation.stationdatabase[this.s_ID];
 		cStation.VirtualAirports.RemoveItem(this.s_ID);
 		this.s_Owner.AddList(keepowner);
+		this.s_DateLastUpgrade = AIDate.GetCurrentDate(); // block upgrade of the new station
 		}
 	this.SetStationName();
 	DInfo("Adding station : "+this.s_Name+" to station database",2);
@@ -117,7 +118,7 @@ function cStation::DeleteStation(stationid)
 	if (!s)	return false;
 	if (s.s_Owner.Count() == 0) // no more own by anyone
 		{
-		DInfo("BREAK Removing station "+s.s_Name+" from station database",1);
+		DInfo("Removing station "+s.s_Name+" from station database",1);
 		foreach (tile, _ in s.s_Tiles)	{ cTileTools.UnBlackListTile(tile); }
 		delete cStation.stationdatabase[s.s_ID];
 		cStation.VirtualAirports.RemoveItem(s.s_ID);

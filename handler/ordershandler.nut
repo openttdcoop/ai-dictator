@@ -44,70 +44,85 @@ function cCarrier::AirNetworkOrdersHandler()
 		}
 	mailgroup.Valuate(AIVehicle.GetState);
 	passgroup.Valuate(AIVehicle.GetState);
-	mailgroup.KeepValue(AIVehicle.VS_RUNNING);
-	passgroup.KeepValue(AIVehicle.VS_RUNNING);
+	mailgroup.RemoveValue(AIVehicle.VS_CRASHED);
+	mailgroup.RemoveValue(AIVehicle.VS_IN_DEPOT);
+	passgroup.RemoveValue(AIVehicle.VS_CRASHED);
+	passgroup.RemoveValue(AIVehicle.VS_IN_DEPOT);
+	passrabbit = passgroup.Begin();
+	mailrabbit = mailgroup.Begin();
 	local numorders = null;
-	local rabbit_destination=null;
 	if (!passgroup.IsEmpty())
 		{
-		foreach (vehicle, _ in passgroup)	passgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ResolveOrderPosition(vehicle, AIOrder.ORDER_CURRENT)));
-		// save current order for each vehicle
 		passrabbit = passgroup.Begin();
-		rabbit_destination = passgroup.GetValue(passgroup.Begin());
-		passgroup.RemoveTop(1); // remove the rabbit
+		foreach (vehicle, _ in passgroup)
+			{
+			local dest = AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT);
+			if (!AIOrder.IsCurrentOrderPartOfOrderList(vehicle))	dest = AIStation.GetLocation(AIStation.GetStationID(dest));
+			// When servicing, it should be done at destination airport hangar, but won't be in the order list, so find its real destination
+			passgroup.SetValue(vehicle, dest);
+			if (vehicle == passrabbit)	continue;
+			AIOrder.ShareOrders(vehicle, passrabbit);
+			}
 		numorders = AIOrder.GetOrderCount(passrabbit);
 		if (numorders != cCarrier.VirtualAirRoute.len())
 			{
+			AIOrder.UnshareOrders(passrabbit);
+			cCarrier.VehicleOrdersReset(passrabbit);
+			numorders = 0;
 			for (local i=0; i < cCarrier.VirtualAirRoute.len(); i++)
 				{
 				local destination = cCarrier.VirtualAirRoute[i];
-				if (!AIOrder.AppendOrder(passrabbit, destination, AIOrder.OF_NONE))	{ DError("Passenger rabbit refuse order",2); }
+				if (AIOrder.AppendOrder(passrabbit, destination, AIOrder.OF_NONE))
+						{ numorders++; }
+					else	{
+						DError("Passenger rabbit refuse order, destination: "+destination,2);
+						cCarrier.VirtualAirRoute.remove(i);
+						cDebug.PutSign(destination, "REFUSE_ORDER");
+						}
 				}
-			if (numorders > 0)
+			foreach (vehicle, destination in passgroup)
 				{
-				// now remove previous rabbit orders, should not make the aircrafts gone too crazy
-				for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(passrabbit, AIOrder.ResolveOrderPosition(passrabbit,0));
-				// cCarrier.VehicleOrdersReset(passrabbit);
+				// now try to get it back to its initial station destination
+				local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
+				if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
+							else	AIOrder.SkipToOrder(vehicle, AIBase.RandRange(numorders));
 				}
-			}
-		passgroup.AddItem(passrabbit, rabbit_destination); // readd the rabbit so it will goes to its previous destination too
-		foreach (vehicle, destination in passgroup)
-			{
-			if (vehicle != passrabbit)	AIOrder.ShareOrders(vehicle, passrabbit);
-			// now try to get it back to its initial station destination
-			local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
-			if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
 			}
 		}
 	if (!mailgroup.IsEmpty())
 		{
-		foreach (vehicle, _ in mailgroup)	mailgroup.SetValue(vehicle, AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT));
+		foreach (vehicle, _ in mailgroup)
+			{
+			local dest = AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT);
+			if (!AIOrder.IsCurrentOrderPartOfOrderList(vehicle))	dest = AIStation.GetLocation(AIStation.GetStationID(dest));
+			mailgroup.SetValue(vehicle, dest);
+			if (vehicle == mailrabbit)	continue;
+			AIOrder.ShareOrders(vehicle, mailrabbit);
+			}
 		// save current order for each vehicle
-		mailrabbit = mailgroup.Begin();
-		rabbit_destination = mailgroup.GetValue(mailgroup.Begin());
-		mailgroup.RemoveTop(1); // remove the rabbit
 		numorders = AIOrder.GetOrderCount(mailrabbit);
 		if (numorders != cCarrier.VirtualAirRoute.len())
 			{
+			AIOrder.UnshareOrders(mailrabbit);
+			cCarrier.VehicleOrdersReset(mailrabbit);
+			numorders = 0;
 			for (local i=0; i < cCarrier.VirtualAirRoute.len(); i++)
 				{
 				local destination = cCarrier.VirtualAirRoute[((cCarrier.VirtualAirRoute.len()-1)-i)];
-				if (!AIOrder.AppendOrder(mailrabbit, destination, AIOrder.OF_NONE))	{ DError("Mail rabbit refuse order",2); }
+				if (AIOrder.AppendOrder(mailrabbit, destination, AIOrder.OF_NONE))
+						{ numorders++; }
+					else	{
+						DError("Mail rabbit refuse order, destination: "+destination,2);
+						cDebug.PutSign(destination, "REFUSE_ORDER");
+						}
 				}
-			if (numorders > 0)
+			foreach (vehicle, destination in mailgroup)
 				{
-				// now remove previous rabbit orders, should not make the aircrafts gone too crazy
-				for (local z=0; z < numorders; z++)	AIOrder.RemoveOrder(mailrabbit, AIOrder.ResolveOrderPosition(mailrabbit,0));
-			//	cCarrier.VehicleOrdersReset(mailrabbit);
+				// now try to get it back to its initial station destination
+				local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
+				if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
+							else	AIOrder.SkipToOrder(vehicle, AIBase.RandRange(numorders));
 				}
-			}
-		mailgroup.AddItem(mailrabbit, rabbit_destination); // readd the rabbit so it will goes to its previous destination too
-		foreach (vehicle, destination in mailgroup)
-			{
-			if (vehicle != mailrabbit)	AIOrder.ShareOrders(vehicle, mailrabbit);
-			// now try to get it back to its initial station destination
-			local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
-			if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
 			}
 		}
 }
@@ -211,16 +226,16 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 }
 
 function cCarrier::VehicleFindDestinationInOrders(vehicle, stationID)
-// browse vehicle orders and return index of order that target that destination
+// browse vehicle orders and return index of order that target that stationID
 {
 	local numorders=AIOrder.GetOrderCount(vehicle);
-	if (numorders==0) return -1;
+	if (numorders==0) { return -1; }
 	for (local j=0; j < numorders; j++)
 		{
 		local tiletarget=AIOrder.GetOrderDestination(vehicle,AIOrder.ResolveOrderPosition(vehicle, j));
 		if (!AITile.IsStationTile(tiletarget)) continue;
 		local targetID=AIStation.GetStationID(tiletarget);
-		if (targetID == stationID)	return j;
+		if (targetID == stationID)	{ return j; }
 		}
 	return -1;
 }

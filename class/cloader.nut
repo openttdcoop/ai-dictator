@@ -26,18 +26,7 @@ function cLoader::RegisterStations()
 // there's still few infos our stations will lack out of this (sadly most of them are important ones, like depot)
 {
 	DInfo("Looking the map for our stations",0);
-	local stations = AIList();
-	local temp = null;
-	temp = AIStationList(AIStation.STATION_TRAIN);
-	stations.AddList(temp);
-	temp = AIStationList(AIStation.STATION_AIRPORT);
-	stations.AddList(temp);
-	temp = AIStationList(AIStation.STATION_DOCK);
-	stations.AddList(temp);
-	temp = AIStationList(AIStation.STATION_TRUCK_STOP);
-	stations.AddList(temp);
-	temp = AIStationList(AIStation.STATION_BUS_STOP);
-	stations.AddList(temp);
+	local stations = AIStationList(AIStation.STATION_ANY);
 	foreach (stationID, _ in stations)
 		{
 		cStation.InitNewStation(stationID);
@@ -428,12 +417,16 @@ function cLoader::LoadSaveGame()
 	local saveit=true;
 	for (local i=0; i < all_stations.len(); i++)
 		{
-		//print("all_station["+i+"]="+all_stations[i]);
 		saveit=true;
 		local stationID=all_stations[i];
-		local sobj = cStation.Load(stationID);
-		if (!sobj)	saveit = false;
-		if (saveit && !AIStation.IsValidStation(sobj.s_ID))	saveit=false;
+		local sobj = null;
+		if (AIStation.IsValidStation(stationID))
+			{
+			sobj = cStation.Load(stationID);
+			if (!sobj)	sobj = cStation.InitNewStation(stationID);
+			if (!cMisc.ValidInstance(sobj))	saveit=false;
+			}
+		else	saveit = false;
 		if (saveit)	sobj.s_Depot=all_stations[i+1];
 		i+=1;
 		if (saveit && sobj instanceof cStationRail)

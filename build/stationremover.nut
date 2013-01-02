@@ -74,6 +74,8 @@ function cBuilder::DestroyStation(stationid)
 		if (!cStation.DeleteStation(stationid))	return false;
 		}
 	local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
+	tilelist.Valuate(AITile.GetOwner);
+	tilelist.KeepValue(AICompany.ResolveCompanyID(AICompany.COMPANY_SELF)); // Prevent magic bulldozer destroying platform
 	foreach (tile, dummy in tilelist)	AITile.DemolishTile(tile); // still rough to do that, could do it nicer
 	return true;
 }

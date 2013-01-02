@@ -115,12 +115,12 @@ function cRoute::VirtualAirNetworkUpdate()
 				{
 				cStation.VirtualAirports.AddItem(airportid, towns);
 				local stealgroup=AIVehicleList_Station(airportid);
-				stealgroup.Valuate(AIEngine.GetPlaneType);
-				stealgroup.RemoveValue(AIAirport.PT_HELICOPTER); // don't steal choppers
+				stealgroup.Valuate(AIVehicle.GetEngineType);
+				foreach (veh, vehtype in stealgroup)	if (AIEngine.GetPlaneType(vehtype) == AIAirport.PT_HELICOPTER)	stealgroup.RemoveItem(veh); // don't steal choppers
 				stealgroup.Valuate(AIVehicle.GetGroupID);
 				stealgroup.RemoveValue(cRoute.GetVirtualAirPassengerGroup());
 				stealgroup.RemoveValue(cRoute.GetVirtualAirMailGroup());
-				stealgroup.RemoveTop(1);
+				stealgroup.RemoveTop(2);
 				if (stealgroup.IsEmpty())	continue;
 				DInfo("Reassigning "+stealgroup.Count()+" aircrafts to the network",0);
 				local thatnetwork=0;
@@ -223,7 +223,7 @@ function cRoute::DutyOnAirNetwork()
 		DInfo("NETWORK: overcharging network capacity to increase rating",1);
 		}
 	// one because poor station rating
-	if (vehnumber < (cCarrier.VirtualAirRoute.len() / 2))	vehneed=(cCarrier.VirtualAirRoute.len() /2) - vehnumber;
+	if (vehnumber < (cCarrier.VirtualAirRoute.len() * 2))	vehneed=(cCarrier.VirtualAirRoute.len() *2) - vehnumber;
 	DInfo("NETWORK: need="+vehneed,1);
 	cDebug.PutSign(bigairportlocation,"Network Airport Reference: "+cargowaiting);
 	if (vehneed > 6)	vehneed=6; // limit to 6 aircrafts add per trys

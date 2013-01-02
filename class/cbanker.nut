@@ -70,7 +70,8 @@ function cBanker::CanBuyThat(money)
 // return true if we can spend money
 {
 	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
-	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
+	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	if (cash < 1147483647)	cash+=loan; // ahahahahah integer limit reach, glad at least openttd is kind enough to not overflow so we can detect it.
 	if (cash >= money)	return true;
 				else	return false;
 }
@@ -79,7 +80,8 @@ function cBanker::GetMaxMoneyAmount()
 // return the max amount of cash we could raise
 {
 	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
-	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF)+loan;
+	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	if (cash < 1147483647)	cash+=loan;
 	return cash;
 }
 

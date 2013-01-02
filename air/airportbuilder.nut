@@ -271,6 +271,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 						DInfo("Removing old airport : "+oldAirport.s_Name,1);
 						if (oldAirport_Remove)	{ break; }
 						}
+					else	break;
 					AIController.Sleep(10);
 					}
 				if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; break; }
@@ -303,6 +304,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 									DInfo("Removing old airport : "+oldAirport.s_Name,1);
 									if (oldAirport_Remove)	break;
 									}
+								else	break;
 								INSTANCE.Sleep(10);
 								}
 							if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; }
