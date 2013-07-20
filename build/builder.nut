@@ -130,7 +130,7 @@ function cBuilder::BuildRoadByType()
 			if (result == 2)	{ cPathfinder.CloseTask(fromsrc, todst); return true; }
 			return false;
 		case AIVehicle.VT_RAIL:
-			success=INSTANCE.main.builder.CreateStationsConnection(INSTANCE.main.route.source_stationID, INSTANCE.main.route.target_stationID);
+			success=INSTANCE.main.builder.CreateStationsConnection(INSTANCE.main.route.SourceStation.s_ID, INSTANCE.main.route.TargetStation.s_ID);
 			return success;
 		default:
 			return true;
@@ -150,10 +150,6 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 		compare = cStation.InitNewStation(stationID);
 		if (compare == null)	return false; // try add this one as known
 		}
-	if (compare.s_Owner.IsEmpty()) // known but unused
-		{
-		if (INSTANCE.main.builder.DestroyStation(stationID))	return false;
-		} // keep using that one if we didn't destroy it
 	local sourcevalid = (typeof(INSTANCE.main.route.SourceStation) == "instance");
 	local targetvalid = (typeof(INSTANCE.main.route.TargetStation) == "instance");
 	if (sourcevalid && compare.s_ID == INSTANCE.main.route.SourceStation.s_ID)	return false;
@@ -288,7 +284,7 @@ function cBuilder::TryBuildThatRoute()
 							else	success=true;
 			if (success)	buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
 			if (success==-1)	success=null;
-			if (INSTANCE.main.route.SourceStation != null && INSTANCE.main.route.rail_type == null && AIStation.IsValidStation(INSTANCE.main.route.SourceStation.s_ID))
+			if (INSTANCE.main.route.SourceStation != null && INSTANCE.main.route.RailType == null && AIStation.IsValidStation(INSTANCE.main.route.SourceStation.s_ID))
 			{ // make sure we set rails as the first station and not like the ones detect from the train
 			INSTANCE.main.route.RailType=AIRail.GetRailType(INSTANCE.main.route.SourceStation.s_Location);
 			buildWithRailType=INSTANCE.main.route.RailType;
@@ -329,7 +325,7 @@ function cBuilder::TryBuildThatRoute()
 				cError.ClearError(); // unset it and keep going
 				}
 			else	{ // reason is not critical, lacking funds...
-				INSTANCE.builddelay=true;
+				INSTANCE.buildDelay=2;
 				return false; // let's get out, so we still have a chance to upgrade the station & find its compatibility
 				}
 			}
@@ -360,7 +356,7 @@ function cBuilder::TryBuildThatRoute()
 				{
 				INSTANCE.main.route.Status = RouteStatus.DEAD;
 				}
-			else	{ INSTANCE.builddelay=true; return false; }
+			else	{ INSTANCE.buildDelay=2; return false; }
 			}
 		else { INSTANCE.main.route.Status=3; }
 		}
@@ -390,7 +386,7 @@ function cBuilder::TryBuildThatRoute()
 		if (!success)
 			{ // we cannot do destination station
 			if (cError.IsError())	INSTANCE.main.route.Status = RouteStatus.DEAD;
-									else	{ INSTANCE.builddelay=true; return false; }
+									else	{ INSTANCE.buildDelay=2; return false; }
 			}
 		else	{ INSTANCE.main.route.Status=4 }
 		}
@@ -447,7 +443,7 @@ function cBuilder::TryBuildThatRoute()
 			DInfo("Route set as oneway",1);
 			INSTANCE.main.route.Twoway=false;
 			}
-		INSTANCE.builddelay=false;
+		if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	INSTANCE.buildDelay = 2; // we delay building after a rail route has been setup
 		INSTANCE.main.builder.building_route=-1; // Allow us to work on a new route now
 		if (INSTANCE.safeStart >0 && INSTANCE.main.route.VehicleType == RouteType.ROAD)	INSTANCE.safeStart--;
 		if (INSTANCE.main.route.VehicleType==RouteType.RAIL)	INSTANCE.main.route.DutyOnRailsRoute(INSTANCE.main.route.UID);

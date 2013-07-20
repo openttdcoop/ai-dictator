@@ -10,7 +10,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    with it.  If not, see <http://www.gnu.org/licenses/>.
- *
+ * 
 **/
 
 enum RouteType {
@@ -48,6 +48,11 @@ enum RouteStatus {
 	DEAD = -666		// will get removed
 }
 
+const	DIR_NE = 2; 
+const	DIR_NW = 0; 
+const	DIR_SE = 1; 
+const	DIR_SW = 3; 
+
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
 
@@ -65,13 +70,12 @@ class DictatorAI extends AIController
 	debug = null;
 	// other
 	minRank = null;
-	builddelay=null;
+	buildDelay=null;
 	OneMonth=null;
 	OneWeek=null;
 	SixMonth=null;
 	TwelveMonth=null;
 	loadedgame = null;
-	buildTimer=null;
 	safeStart=null;
 	main=null;
 
@@ -82,13 +86,12 @@ class DictatorAI extends AIController
 	minRank = 5000;
 	fairlevel = 0;
 	debug = false;
-	builddelay=false;
+	buildDelay=0;
 	OneMonth=0;
 	OneWeek=0;
 	SixMonth=0;
 	TwelveMonth=0;
 	loadedgame = false;
-	buildTimer=0;
 	safeStart=0;
 	main = cMain();
 	}
@@ -239,7 +242,7 @@ function DictatorAI::Save()
 			temparray=cMisc.ListToArray(obj.s_Platforms);
 			all_stations.push(temparray.len());
 			for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
-			temparray=cMisc.ListToArray(obj.s_TrainSpecs);
+			temparray=cMisc.ListToArray(obj.s_Train);
 			all_stations.push(temparray.len());
 			for (local z=0; z < temparray.len(); z++)	all_stations.push(temparray[z]);
 			}
@@ -356,7 +359,7 @@ function DictatorAI::CheckCurrentSettings()
 		use_train=false;
 		use_air=false;
 		}
-use_train=false;
+//use_train=false;
 }
 
 function DictatorAI::DInfo(putMsg,debugValue=0)

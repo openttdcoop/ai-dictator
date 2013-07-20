@@ -126,7 +126,7 @@ function cMain::CheckAccount()
 		{ DInfo("Trying to repay loan",1); bank.canBuild=false; } // wait to repay loan
 	local veh=AIVehicleList();
 	if (bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle",1); bank.canBuild=false; }
-	if (INSTANCE.builddelay)	{ DInfo("Delaying build: we lack a bit of funds for construction : "+INSTANCE.buildTimer,1); bank.canBuild=false; }
+	if (INSTANCE.buildDelay > 0)	{ DInfo("Builds delayed: "+INSTANCE.buildDelay,1); bank.canBuild=false; }
 	if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade",1); bank.canBuild=false; }
 	local veh=AIVehicleList();
 	if (veh.IsEmpty())

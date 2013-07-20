@@ -475,7 +475,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 {
 	local tlist=AITileList();
 	tlist.AddRectangle(tileFrom, tileTo);
-	if (tlist.IsEmpty())	DInfo("No tiles to work with !",3);
+	if (tlist.IsEmpty())	DInfo("No tiles to work with !",4);
 	local Solve=cTileTools.TerraformHeightSolver(tlist);
 	Solve.RemoveValue(0); // discard failures
 	local bestOrder=AIList();
@@ -487,7 +487,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 		}
 	bestOrder.Sort(AIList.SORT_BY_VALUE, true);
 	local money=-1;
-	foreach (solution, prize in bestOrder)	DInfo("solve: "+solution+" prize: "+prize,3);
+	foreach (solution, prize in bestOrder)	DInfo("solve: "+solution+" prize: "+prize,4);
 	if (!Solve.IsEmpty())
 		{
 		foreach (solution, prize in bestOrder)
@@ -495,7 +495,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 			local direction=Solve.GetValue(solution);
 			if (!cBanker.CanBuyThat(prize))
 				{
-				DInfo("Stopping action. We won't have enought money to succeed",3);
+				DInfo("Stopping action. We won't have enought money to succeed",4);
 				cTileTools.terraformCost.AddItem(999999,prize);
 				break;
 				}
@@ -504,7 +504,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 						else	money=cTileTools.TerraformDoAction(tlist, solution, false, false);	
 			if (money != -1)
 				{
-				DInfo("Success, we spent "+money+" credits for the operation",3);
+				DInfo("Success, we spent "+money+" credits for the operation",4);
 				return true;
 				}
 			}
@@ -538,7 +538,7 @@ function cTileTools::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 		}
 	testrun=null;
 	moneyNeed=costs.GetCosts();	
-	DInfo("predict failure : "+error+" Money need="+moneyNeed,3);
+	DInfo("predict failure : "+error+" Money need="+moneyNeed,4);
 	if (error)	moneyNeed=-1;
 	if (evaluate)	return moneyNeed;
 	costs.ResetCosts();
@@ -554,10 +554,10 @@ function cTileTools::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 	DInfo("spent "+moneySpend+" money",3);
 	if (!error)
 		{
-		DInfo("flatten successfuly land at level : "+wantedHeight,3);
+		DInfo("flatten successfuly land at level : "+wantedHeight,4);
 		return moneySpend;
 		}
-	DInfo("fail flatten land at level : "+wantedHeight,3);
+	DInfo("fail flatten land at level : "+wantedHeight,4);
 	return -1;
 }
 
@@ -572,7 +572,7 @@ function cTileTools::TerraformHeightSolver(tlist)
 {
 	if (tlist.IsEmpty())	
 		{
-		DInfo("doesn't find any tiles to work on!",3);
+		DInfo("doesn't find any tiles to work on!",4);
 		return AIList();
 		}
 	local maxH=tlist;
@@ -607,19 +607,19 @@ function cTileTools::TerraformHeightSolver(tlist)
 				HeightIsLow=true;
 				currentHeight=l_firstitem;
 				cellLCount.RemoveItem(l_firstitem);
-				DInfo("Trying lowering tiles level to "+currentHeight,3);
+				DInfo("Trying lowering tiles level to "+currentHeight,4);
 				}
 		else		{
 				HeightIsLow=false;
 				currentHeight=h_firstitem;
 				cellHCount.RemoveItem(h_firstitem);
-				DInfo("Trying raising tiles level to "+currentHeight,3);
+				DInfo("Trying raising tiles level to "+currentHeight,4);
 				}
 		// Now we have determine what low or high height we need to reach by priority (most tiles first, with a pref to lower height)
 		terratrys++;
 		if (currentHeight == 0) // not serious to build at that level
 			{
-			DInfo("Water level detect !",3);
+			DInfo("Water level detect !",4);
 			Solve.AddItem(0,0);
 			continue;
 			}
@@ -628,7 +628,7 @@ function cTileTools::TerraformHeightSolver(tlist)
 		money=cTileTools.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);
 		if (money != -1)
 				{
-				DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,3);
+				DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,4);
 				if (money == 0)	money=1; // in case no money is need, we still ask 1 credit, else we will mistake as a failure
 				if (HeightIsLow)	money=0-money; // force negative to lower tile
 				}
@@ -639,7 +639,7 @@ function cTileTools::TerraformHeightSolver(tlist)
 				}
 			else	Solve.AddItem(currentHeight,money);
 		} while (cellHCount.Count() > 0 && cellLCount.Count() > 0); // loop until both lists are empty
-	DInfo("Solver has search "+terratrys+" time",3);
+	DInfo("Solver has search "+terratrys+" time",4);
 	return Solve;
 }
 
@@ -736,15 +736,22 @@ function cTileTools::IsAreaRemovable(area)
 	return (worklist.IsEmpty());
 }
 
-function cTileTools::IsAreaBuildable(area, owner)
-// return true if owner might build in the area
+function cTileTools::ClearArea(area)
+// Clean out an area to allow building on it
 {
+	foreach (tile, _ in area)	cTileTools.DemolishTile(tile);
+}
+
+function cTileTools::IsAreaBuildable(area)
+// return true if owner can destroy to build the area
+{
+	if (!cTileTools.IsAreaRemovable(area))	return false;
 	local owncheck=AIList();
 	owncheck.AddList(area);
-	owncheck.Valuate(cTileTools.CanUseTile, owner);
+	owncheck.Valuate(AITile.IsBuildable);
 	owncheck.KeepValue(0); // keep only non useable tiles
-	if (!owncheck.IsEmpty())	return false;
-	return cTileTools.IsAreaRemovable(area);
+	if (owncheck.Count() > 5)	return false;
+	return true;
 }
 
 // This function comes from AdmiralAI, version 22, written by Yexo
@@ -822,7 +829,7 @@ function cTileTools::GetPosRelativeFromDirection(dirswitch, direction)
 			backward=AIMap.GetTileIndex(0,1);
 		break;
 		}
-
+print("BREAK dirswitch="+dirswitch+" (should be 2) direction="+direction);
 	switch (dirswitch)
 		{
 		case 0:
@@ -834,6 +841,7 @@ function cTileTools::GetPosRelativeFromDirection(dirswitch, direction)
 		case 3:
 			return backward;
 		}
+print("CASE FAILURE");
 	return -1;
 }
 

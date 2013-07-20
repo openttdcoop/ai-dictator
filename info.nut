@@ -55,7 +55,7 @@ require("class/version.nut");
 	 description = "What tasks the AI can handle",
 	 min_value = 0,
 	 max_value = 2,
-	 easy_value = 0,
+	 easy_value = 1,
 	 medium_value = 0,
 	 hard_value = 0,
 	 custom_value = 0,
@@ -68,7 +68,7 @@ require("class/version.nut");
 	AddSetting({
 		name = "use_train",
 		description = "Use trains",
-		easy_value = 1,
+		easy_value = 0,
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
@@ -79,7 +79,7 @@ require("class/version.nut");
 		name = "use_nicetrain",
 		description = "Use trains for anything (better for economy) / Respect newGRF authors choices (better for aesthetics)",
 		easy_value = 0,
-		medium_value = 1,
+		medium_value = 0,
 		hard_value = 1,
 		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
@@ -97,7 +97,7 @@ require("class/version.nut");
 	AddSetting({
 		name = "use_air",
 		description = "Use aircrafts & choppers",
-		easy_value = 1,
+		easy_value = 0,
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
@@ -129,8 +129,8 @@ require("class/version.nut");
 		description = "Upgrade AI & towns bridges (better for aesthetics & opponents) / Upgrade only AI bridges, (better for economy)",
 		easy_value = 1,
 		medium_value = 1,
-		hard_value = 1,
-		custom_value = 1,
+		hard_value = 0,
+		custom_value = 0,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
 	});
 

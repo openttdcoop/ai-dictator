@@ -13,6 +13,32 @@
  *
 **/
 
+enum TrainSide {
+	IN,
+	OUT,
+	CROSSING,
+	IN_LINK,
+	OUT_LINK,
+	DEPOT }
+
+enum	TrainType {
+	STATUSBIT,
+	TET,
+	TXT,
+	TED,
+	TXD,
+	START_POINT,
+	END_POINT,
+	DIRECTION,
+	DEPTH,
+	PLATFORM_LEFT,
+	PLATFORM_RIGHT,
+	OWNER,
+	MAXTRAIN,
+	MAXENTRY,
+	MAXEXIT }
+
+
 class cStation extends cClass
 {
 static	stationdatabase = {};
@@ -42,6 +68,7 @@ static	function GetStationObject(stationID)
 	s_Name		= null;	// station name
 	s_Tiles		= null;	// Tiles own by station
 	s_DateBuilt		= null;	// Date we add this station as an object
+	s_UpgradeTry	= null;	// Number of trys remaining to upgrade a station
 
 	constructor()
 		{ // * are saved variables
@@ -66,6 +93,7 @@ static	function GetStationObject(stationID)
 		this.s_Name			= "Default Station Name";
 		this.s_Tiles		= AIList();
 		this.s_DateBuilt		= AIDate.GetCurrentDate();
+		this.s_UpgradeTry		= 3;
 		}
 }
 
@@ -169,14 +197,6 @@ function cStation::OwnerReleaseStation(uid)
 		}
 	}
 
-function cStation::GetStationName(stationID)
-// Return station name
-{
-	local s = cStation.Load(stationID);
-	if (!s)	return "Invalid Station #"+stationID;
-	return s.s_Name;
-}
-
 function cStation::InitNewStation(stationID)
 // Create a station object depending on station type. Add the station to base and return the station object or null on error.
 {
@@ -195,24 +215,17 @@ function cStation::InitNewStation(stationID)
 		{
 		case	AIStation.STATION_TRAIN:
 			_station = cStationRail();
-			//_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_SubType = AIRail.GetRailType(_Location); // set rail type the station use
 			_station.s_MaxSize = INSTANCE.main.carrier.rail_max;
-			for (local zz=0; zz < 23; zz++)	_station.s_TrainSpecs.AddItem(zz,-1); // create special cases for train usage
-			for (local zz=7; zz < 11; zz++)	_station.s_TrainSpecs.SetValue(zz,0);
-			_station.s_TrainSpecs.SetValue(0,1+2); // enable IN && OUT for the new station
 			_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 			_station.s_Radius = AIStation.GetCoverageRadius(_StationType);
-			_station.GetRailStationMiscInfo();
 		break;
 		case	AIStation.STATION_DOCK:		// TODO: do boat
 			_station = cStationWater();
-			//_station = cStation.KeepOwner(_oldstation, _station);
 		break;
 		case	AIStation.STATION_BUS_STOP:
 		case	AIStation.STATION_TRUCK_STOP:
 			_station = cStationRoad();
-			//_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_MaxSize = INSTANCE.main.carrier.road_max;
 			_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 			_station.s_Size = _station.s_Tiles.Count();
@@ -223,7 +236,6 @@ function cStation::InitNewStation(stationID)
 		break;
 		case	AIStation.STATION_AIRPORT:
 			_station = cStationAir();
-			//_station = cStation.KeepOwner(_oldstation, _station);
 			_station.s_MaxSize = 1000; // airport size is limited by airport avaiability
 			_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 			_station.s_Size = _station.s_Tiles.Count();
@@ -239,6 +251,7 @@ function cStation::InitNewStation(stationID)
 	_station.s_DateBuilt = AIDate.GetCurrentDate();
 	foreach (tile, _ in _station.s_Tiles)	cStation.StationClaimTile(tile, stationID);
 	_station.Save();
+	if (_station instanceof cStationRail)	_station.GetRailStationMiscInfo();
 	_station.CanUpgradeStation(); // just to set max_vehicle
 	return _station;
 }
@@ -253,6 +266,7 @@ function cStation::CanUpgradeStation()
 	// if last time we try to upgrade we have fail and it was < 60 days, give up
 	if (this.s_DateLastUpgrade != null && !cBanker.CanBuyThat(this.s_MoneyUpgrade))	return false;
 	// we fail because we need that much money and we still don't have it
+	if (this.s_UpgradeTry < 1)	return false;
 	switch (this.s_Type)
 		{
 		case	AIStation.STATION_DOCK:
@@ -492,5 +506,15 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 		}
 	}
 
+function cStation::GetLocation(stationID=null)
+// avoid errors, return station location
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	if (thatstation.s_Type == AIStation.STATION_TRAIN)	return thatstation.s_Train[TrainType.START_POINT];
+	return AIStation.GetLocation(thatstation.s_ID);
+}
 
 

@@ -67,6 +67,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	DInfo("Trying to upgrade airport #"+stationid+" "+station.s_Name,0);
 	// find traffic that use that airport & reroute it
 	// prior to reroute aircraft, make sure they have a route to go
+	station.s_UpgradeTry --;
 	foreach (ownID, dummy in station.s_Owner)
 		{
 		local dummyObj=cRoute.Load(ownID);
@@ -434,7 +435,7 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 	cDebug.ClearSigns();
 		solve.RemoveValue(0); // discard no solve
 		local bf, bt, bs, bp=null;
-		bp=99999999999999;
+		bp=1999999999;
 		foreach (solution, prize in solve)
 			{
 			/*allsolve.push(tileFrom);
@@ -444,7 +445,7 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 			if (abs(prize) < abs(bp)) { bf=tileFrom; bt=tileTo; bp=prize; bs=solution; } // find cheapest one
 			solveIndex++;
 			}
-		if (!solve.IsEmpty())
+		if (!solve.IsEmpty() && bf != null)
 			{
 			allsolve.push(bf); // this way we only keep cheapest one out of all solves found for that area
 			allsolve.push(bt); // so the area will have only 1 solution

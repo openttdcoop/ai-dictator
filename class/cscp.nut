@@ -30,6 +30,7 @@ class cSCP extends cClass
 
 function cSCP::Init()
 {
+return; // FIXME
 	this.SCPInstance=SCPLib(SELF_SHORTNAME, SELF_VERSION, null);
 	this.SCPInstance.SCPLogging_Error(true);
 	this.SCPInstance.SCPLogging_Info(false);
@@ -39,7 +40,7 @@ function cSCP::Init()
 
 function cSCP::WaitReady()
 {
-return;
+return; // FIXME
 	DInfo("Waiting SCP to get ready.",2);
 	for (local j=0; j < 10; j++)
 		{
@@ -51,6 +52,7 @@ return;
 
 function cSCP::IsAllow()
 {
+return false; //FIXME
 	return (AIController.GetSetting("allow_scp") == 1);
 }
 

@@ -167,6 +167,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 	local twoorder=null;
 	local srcplace=null;
 	local dstplace=null;
+	local noshare = false;
 	switch (road.VehicleType)
 		{
 		case AIVehicle.VT_ROAD:
@@ -182,6 +183,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 			if (!road.Twoway)	{ oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
 			srcplace= road.SourceStation.s_Location;
 			dstplace= road.TargetStation.s_Location;
+			noshare = true;
 		break;
 		case RouteType.AIR:
 		case RouteType.AIRMAIL:
@@ -221,7 +223,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 			{ DError("Second order refuse",2); }
 		}
 	vehlist.RemoveItem(veh);
-	foreach (vehicle, dummy in vehlist)	AIOrder.ShareOrders(vehicle, veh);
+	if (!noshare)	foreach (vehicle, dummy in vehlist)	AIOrder.ShareOrders(vehicle, veh);
 	return true;
 }
 
@@ -256,6 +258,30 @@ function cCarrier::FindClosestHangarForAircraft(veh)
 		return AIAirport.GetHangarOfAirport(AIStation.GetLocation(airports.Begin()));
 		}
 	return -1;
+}
+
+function cCarrier::TrainSetDepotOrder(veh)
+// Set orders to force a train going to depot
+{
+	if (veh == null)	return;
+	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
+	local road=cRoute.Load(idx);
+	if (!road)	{ DError("Gonna be a hard time, i don't know whom own that train "+cCarrier.GetVehicleName(veh),1); return false; }
+	local srcDepot = cRoute.GetDepot(idx, 1);
+	local dstDepot = cRoute.GetDepot(idx, 2);
+	if (!AIRail.IsRailDepotTile(srcDepot))	srcDepot = dstDepot;
+	if (!AIRail.IsRailDepotTile(dstDepot))	dstDepot = srcDepot;
+	if (!AIRail.IsRailDepotTile(srcDepot))	{ DError("Cannot send train to a depot as i cannot find any valid depot where sent it.",1); return false; }
+	if (AIOrder.GetOrderCount(veh) != 2)
+		{
+		DWarn("Train "+cCarrier.GetVehicleName(veh)+" doesn't have valid number of orders.",1);
+		cCarrier.VehicleOrdersReset(veh);
+		cCarrier.TrainSetOrders(veh);
+		}
+	if (!AIOrder.InsertOrder(veh, 1, srcDepot, AIOrder.OF_STOP_IN_DEPOT))
+			{ DError("Vehicle refuse goto closest airport order",2); }
+	if (!AIOrder.InsertOrder(veh, 3, dstDepot, AIOrder.OF_STOP_IN_DEPOT))
+		{ DError("Vehicle refuse goto closest airport order",2); }
 }
 
 function cCarrier::VehicleSetDepotOrder(veh)
@@ -414,19 +440,20 @@ return true;
 function cCarrier::TrainSetOrders(trainID)
 // Set orders for a train
 {
-local uid=INSTANCE.main.carrier.VehicleFindRouteIndex(trainID);
-if (uid==null)	{ DError("Cannot find uid for that train",1); return false; }
-local road=cRoute.GetRouteObject(uid);
-if (road==null)	return false;
-DInfo("Append orders to "+cCarrier.GetVehicleName(trainID),2);
-local firstorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
-local secondorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
-if (!road.twoway)	{ firstorder+=AIOrder.OF_FULL_LOAD_ANY; secondorder=AIOrder.OF_NO_LOAD; }
-if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.source.stationID), firstorder))
-	{ DError(cCarrier.GetVehicleName(trainID)+" refuse first order",2); return false; }
-if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.target.stationID), secondorder))
-	{ DError(cCarrier.GetVehicleName(trainID)+" refuse second order",2); return false; }
-return true;
+	local uid=INSTANCE.main.carrier.VehicleFindRouteIndex(trainID);
+	if (uid==null)	{ DError("Cannot find route uid for that train",1); return false; }
+	local road=cRoute.GetRouteObject(uid);
+	if (!road)	return false;
+	cCarrier.VehicleOrdersReset(trainID);
+	DInfo("Append orders to "+cCarrier.GetVehicleName(trainID),2);
+	local firstorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+	local secondorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+	if (!road.Twoway)	{ firstorder+=AIOrder.OF_FULL_LOAD_ANY; secondorder=AIOrder.OF_NO_LOAD; }
+	if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.SourceStation.s_ID), firstorder))
+		{ DError(cCarrier.GetVehicleName(trainID)+" refuse first order",2); return false; }
+	if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.TargetStation.s_ID), secondorder))
+		{ DError(cCarrier.GetVehicleName(trainID)+" refuse second order",2); return false; }
+	return true;
 }
 
 

@@ -77,7 +77,7 @@ function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
 	source = cPathfinder.GetSourceX(source);
 	target = cPathfinder.GetTargetX(target);
 	local uid=cPathfinder.GetUID(source, target);
-	if (uid == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
+	if (uid == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
 	if (uid in cPathfinder.database)	{ }
 						else	{ cPathfinder.CreateNewTask(source, target, useEntry, stationID); return 0; }
 	local pathstatus=cPathfinder.GetPathfinderObject(uid);
@@ -96,7 +96,7 @@ function cPathfinder::GetSolve(source, target)
 	source = cPathfinder.GetSourceX(source);
 	target = cPathfinder.GetTargetX(target);
 	local UID=cPathfinder.GetUID(source, target);
-	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
+	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
 	local pftask=cPathfinder.GetPathfinderObject(UID);
 	return pftask.solve;
 	}
@@ -107,7 +107,7 @@ function cPathfinder::CloseTask(source, target)
 	source = cPathfinder.GetSourceX(source);
 	target = cPathfinder.GetTargetX(target);
 	local UID=cPathfinder.GetUID(source, target);
-	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" "+source[1]+" "+target[0]+" "+target[1],1); return -1; }
+	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
 	local pftask=cPathfinder.GetPathfinderObject(UID);
 	if (pftask == null)	return;
 	if (pftask.UID in cPathfinder.database)
@@ -131,6 +131,7 @@ function cPathfinder::AdvanceTask(UID)
 			DInfo("Pathfinder task "+pftask.UID+" has end : nothing more could be done, failure.",1);
 		return;
 		case	1:
+			if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 10000)	return;
 			DInfo("Pathfinder task "+pftask.UID+" has end search: trying to build the route found.",1);
 			if (pftask.useEntry == null)	cBuilder.AsyncConstructRoadROAD(pftask.source[0], pftask.target[1], pftask.stationID);	
 							else	cBuilder.BuildRoadRAIL(pftask.source, pftask.target, pftask.useEntry, pftask.stationID);
@@ -153,7 +154,7 @@ function cPathfinder::AdvanceTask(UID)
 		}
 	if (check != null && check != false)
 		{
-		DInfo("Pathfinder found a path for task "+pftask.UID,1);
+		DInfo("Pathfinder found a path for task "+pftask.UID+" "+pftask.timer,1);
 		pftask.status=1;
 		pftask.InfoSign("Pathfinding "+pftask.UID+"... FOUND!");
 		pftask.solve=check;
@@ -220,14 +221,24 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 		}
 	else	{ // rail
 		pftask.pathHandler= MyRailPF();
-		pftask.pathHandler.cost.bridge_per_tile = 70;
-		pftask.pathHandler.cost.tunnel_per_tile = 70;
-		pftask.pathHandler.cost.turn = 200;
+		pftask.pathHandler.cost.bridge_per_tile = 70;//70
+		pftask.pathHandler.cost.tunnel_per_tile = 50;//70
+		pftask.pathHandler.cost.turn = 150;//200
 		pftask.pathHandler.cost.max_bridge_length=30;
 		pftask.pathHandler.cost.max_tunnel_length=30;
-		pftask.pathHandler.cost.tile=70;
-		pftask.pathHandler.cost.slope=80;
-		pftask.pathHandler.InitializePath(pftask.source, pftask.target);
+		pftask.pathHandler.cost.tile=100;//70
+		pftask.pathHandler.cost.slope=110;//80
+		pftask.pathHandler.cost.diagonal_tile=220;
+print("s0: "+pftask.source[0]+" s1: "+pftask.source[1]);
+print("t0: "+pftask.target[0]+" t1: "+pftask.target[1]);
+AISign.BuildSign(pftask.source[0], "S0");
+AISign.BuildSign(pftask.source[1], "S1");
+AISign.BuildSign(pftask.target[0], "T0");
+AISign.BuildSign(pftask.target[1], "T1");
+//foreach (node in pftask.source)	print("node = "+node+" type="+typeof(node));
+//foreach (node in [pftask.source])	print("node = "+node+" type="+typeof(node)+" node0="+node[0]+" node1="+node[1]);
+		//pftask.pathHandler.InitializePath([pftask.source[1],pftask.source[0]], [pftask.target[0],pftask.target[1]]);
+		pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 		}
 	DInfo("New pathfinder task : "+pftask.UID,1);
 	cPathfinder.database[pftask.UID] <- pftask;

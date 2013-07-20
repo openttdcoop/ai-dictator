@@ -34,12 +34,7 @@ function cBuilder::MonthlyChecks()
 	DInfo("Montly checks run...",1);
 	INSTANCE.main.route.VirtualAirNetworkUpdate();
 	INSTANCE.main.builder.RouteNeedRepair();
-	if (INSTANCE.builddelay)	INSTANCE.buildTimer++;
-	if (INSTANCE.buildTimer == 2) // delaying a build for 2 months
-		{
-		INSTANCE.builddelay=false;
-		INSTANCE.buildTimer=0;
-		}
+	if (INSTANCE.buildDelay > 0)	INSTANCE.buildDelay--; // lower delaying timer
 	INSTANCE.main.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
 	INSTANCE.main.carrier.VehicleMaintenance();
 	INSTANCE.main.route.DutyOnRoute();
@@ -328,7 +323,7 @@ if (airportList.Count() < 2 && vehlist.Count()>45)
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goalairport));
 		if (waitingtimer < 200)	DInfo("Operation should success...",1);
 		INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
-		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
+		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.buildDelay=0; // remove any build blockers
 		}
 	return;
 	}
@@ -352,7 +347,7 @@ if (vehlist.Count()>45 && goaltrain > 0 && trainList.Count() < 2)
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goaltrain));
 		INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
-		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
+		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.buildDelay=0; // remove any build blockers
 		}
 	return;
 	}
@@ -400,7 +395,7 @@ if (vehlist.Count()>45 && goaltrain > 0)
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goaltrain));
 		INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
-		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.builddelay=false; // remove any build blockers
+		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.buildDelay=0; // remove any build blockers
 		}
 	}
 }

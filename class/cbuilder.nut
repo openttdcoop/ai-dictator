@@ -15,10 +15,6 @@
 
 class cBuilder extends cClass
 	{
-static	DIR_NE = 2; 
-static	DIR_NW = 0; 
-static	DIR_SE = 1; 
-static	DIR_SW = 3; 
 	currentRoadType=null;
 	
 	statile=null;

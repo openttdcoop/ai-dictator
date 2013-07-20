@@ -45,6 +45,8 @@ static	function GetProcessObject(UID)
 		{
 		this.ClassName	= "cProcess";
 		}
+
+	function Load(uid) {}
 }
 
 function cProcess::GetProcessList_ProducingCargo(cargoid)

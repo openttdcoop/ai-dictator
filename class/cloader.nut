@@ -613,6 +613,8 @@ function cLoader::LoadingGame()
 		DInfo("Restarting stopped trains",0);
 		foreach (veh, dummy in trlist)	cCarrier.StartVehicle(veh);
 		}
+	trlist = AIVehicleList_DefaultGroup(AIVehicle.VT_ROAD);
+	foreach (veh, _ in trlist)	cCarrier.VehicleOrdersReset(veh); // reset ungroup vehicle so we will catch them fast
 	local alltowns=AITownList();
 	INSTANCE.main.builder.CheckRouteStationStatus();
 }

@@ -213,8 +213,8 @@ function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 	local blist=AIBridgeList_Length(length);
 	blist.Valuate(AIBridge.GetMaxSpeed);
 	blist.KeepAboveValue(needSpeed);
-	if (blist.IsEmpty() && needresult)	blist=AIBridgeList_Length(length);
-	blist.Sort(AIList.SORT_BY_VALUE, true);
+	if (blist.IsEmpty() && needresult)	{ blist=AIBridgeList_Length(length); blist.Sort(AIList.SORT_BY_VALUE, false); } // faster first
+						else	blist.Sort(AIList.SORT_BY_VALUE, true); // slowest first as this are all bridges faster than our train speed
 	if (blist.IsEmpty())	return -1;
 				else	return blist.Begin();
 	}

@@ -219,7 +219,7 @@ function cRoute::RouteReleaseStation(stationid)
 		this.Status=RouteStatus.DEAD;
 		}
 	if (INSTANCE.main.route.RouteDamage.HasItem(this.UID))	INSTANCE.main.route.RouteDamage.RemoveItem(this.UID);
-	INSTANCE.builddelay=false; INSTANCE.main.bank.canBuild=true;
+	INSTANCE.buildDelay=0; INSTANCE.main.bank.canBuild=true;
 	}
 
 function cRoute::GetDepot(uid, source=0)
@@ -237,15 +237,15 @@ function cRoute::GetDepot(uid, source=0)
 	if (road.VehicleType == RouteType.RAIL)
 		{
 		local se, sx, de, dx=-1;
-		if (road.SourceStation instanceof cStation)
+		if (road.SourceStation instanceof cStationRail)
 			{
-			se=sdepot;
-			sx=road.SourceStation.locations.GetValue(15);
+			se=road.SourceStation.s_EntrySide[TrainSide.DEPOT];
+			sx=road.SourceStation.s_ExitSide[TrainSide.DEPOT];
 			}
 		if (road.TargetStation instanceof cStation)
 			{
-			de=tdepot;
-			dx=road.target.locations.GetValue(15);
+			de=road.TargetStation.s_EntrySide[TrainSide.DEPOT];
+			dx=road.TargetStation.s_ExitSide[TrainSide.DEPOT];
 			}
 		local one, two, three, four=null;
 		if (road.Source_RailEntry)	{ one=se; three=sx; }
@@ -280,15 +280,15 @@ function cRoute::AddTrain(uid, vehID)
 	{
 	local road=cRoute.GetRouteObject(uid);
 	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID: "+vehID,2); return -1; }
-	if (road==null)	{ DError("Invalid uid : "+uid,2); return -1; }
-	cTrain.TrainSetStation(vehID, road.source_stationID, true, road.source_RailEntry, true); // train load at station
-	cTrain.TrainSetStation(vehID, road.target_stationID, false, road.target_RailEntry, road.twoway); // if twoway train load at station, else if will only drop
+	if (!road)	{ DError("Invalid uid : "+uid,2); return -1; }
+	cTrain.TrainSetStation(vehID, road.SourceStation.s_ID, true, road.Source_RailEntry, true); // train load at station
+	cTrain.TrainSetStation(vehID, road.TargetStation.s_ID, false, road.Target_RailEntry, road.Twoway); // if twoway train load at station, else it will only drop
 	// hmmm, choices: a two way route == 2 taker that are also dropper train
 	// we could then tell stations we have 2 taker == each train will have a platform
 	// or 2 dropper == station will have just 1 platform and trains must wait on the line
 	// for now i choose saying they are both taker
-	road.source.StationAddTrain(true, road.source_RailEntry);
-	road.target.StationAddTrain(road.twoway, road.target_RailEntry);
+	road.SourceStation.StationAddTrain(true, road.Source_RailEntry);
+	road.TargetStation.StationAddTrain(road.Twoway, road.Target_RailEntry);
 	}
 
 function cRoute::CanAddTrainToStation(uid)
@@ -296,11 +296,11 @@ function cRoute::CanAddTrainToStation(uid)
 // return false when the station cannot handle it
 	{
 	local road=cRoute.GetRouteObject(uid);
-	if (road==null)	{ DError("Invalid uid : "+uid,2); return -1; }
+	if (!road)	{ DError("Invalid uid : "+uid,2); return -1; }
 	local canAdd=true;
-	DInfo("src="+road.source_RailEntry+" 2way="+road.twoway+" tgt="+road.target_RailEntry,1);
-	canAdd=cBuilder.RailStationGrow(road.source_stationID, road.source_RailEntry, true);
-	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.target_stationID, road.target_RailEntry, false);
+	DInfo("src="+road.Source_RailEntry+" 2way="+road.Twoway+" tgt="+road.Target_RailEntry,1);
+	canAdd=cBuilder.RailStationGrow(road.SourceStation.s_ID, road.Source_RailEntry, true);
+	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.TargetStation.s_ID, road.Target_RailEntry, false);
 	return canAdd;
 	}
 

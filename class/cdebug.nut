@@ -33,7 +33,7 @@ function cDebug::ClearSigns()
 	if (DictatorAI.GetSetting("debug") < 3) return;
 	local sweeper=AISignList();
 	sweeper.Valuate(AISign.GetLocation);
-	sweeper.RemoveValue(INSTANCE.main.SCP.SCPTile);
+	//sweeper.RemoveValue(INSTANCE.main.SCP.SCPTile);
 	AIController.Sleep(20);
 	foreach (i, dummy in sweeper)	{ AISign.RemoveSign(i); }
 }
@@ -119,7 +119,7 @@ local alist=AIStationList(AIStation.STATION_TRAIN);
 foreach (station, dummy in alist)
 	{
 	local thatstation=cStation.GetStationObject(station);
-	AISign.BuildSign(thatstation.depot,cStation.StationGetName(station));
+	AISign.BuildSign(thatstation.depot,cStation.GetStationName(station));
 	}
 }
 

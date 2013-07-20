@@ -193,52 +193,53 @@ function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
 function cCarrier::VehicleSendToDepot(veh,reason)
 // send a vehicle to depot
 {
-if (!AIVehicle.IsValidVehicle(veh))	return false;
-if (INSTANCE.main.carrier.ToDepotList.HasItem(veh))
+	if (!AIVehicle.IsValidVehicle(veh))	return false;
+	if (INSTANCE.main.carrier.ToDepotList.HasItem(veh))
 	{
 	if (AIOrder.GetOrderCount(veh)<3)	INSTANCE.main.carrier.ToDepotList.RemoveItem(veh); // going to depot with strange orders
 						else	return false; // ignore ones going to depot already
 	}
-INSTANCE.main.carrier.VehicleSetDepotOrder(veh);
-local understood=false;
-local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
-local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
-INSTANCE.Sleep(6);	// wait it to move a bit
-local newtake=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
-if (AIVehicle.GetVehicleType(veh)!=AIVehicle.VT_RAIL && newtake > dist)
-	{
-	DInfo("Reversing direction of "+INSTANCE.main.carrier.GetVehicleName(veh),1);
-	AIVehicle.ReverseVehicle(veh);
-	}
-local rr="";
-local wagonnum=0;
-if (reason >= DepotAction.ADDWAGON)	{ wagonnum=reason-DepotAction.ADDWAGON; reason=DepotAction.ADDWAGON; }
-switch (reason)
-	{
-	case	DepotAction.SELL:
-		rr="to be sold.";
-	break;
-	case	DepotAction.LINEUPGRADE:
-	case	DepotAction.SIGNALUPGRADE:
-	case	DepotAction.UPGRADE:
-		rr="to be upgrade.";
-	break;
-	case	DepotAction.REPLACE:
-		rr="to be replace.";
-	break;
-	case	DepotAction.CRAZY:
-		rr="for a crazy action.";
-	break;
-	case	DepotAction.REMOVEROUTE:
-		rr="for removing a dead route.";
-	break;
-	case	DepotAction.ADDWAGON:
-		rr="to add "+wagonnum+" new wagons.";
-		reason=wagonnum+DepotAction.ADDWAGON;
-	break;
-	}
-DInfo("Vehicle "+INSTANCE.main.carrier.GetVehicleName(veh)+" is going to depot "+rr,0);
-INSTANCE.main.carrier.ToDepotList.AddItem(veh,reason);
+	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	INSTANCE.main.carrier.TrainSetDepotOrder(veh);
+										else	INSTANCE.main.carrier.VehicleSetDepotOrder(veh);
+	local understood=false;
+	local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
+	local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
+	INSTANCE.Sleep(6);	// wait it to move a bit
+	local newtake=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
+	if (AIVehicle.GetVehicleType(veh)!=AIVehicle.VT_RAIL && newtake > dist)
+		{
+		DInfo("Reversing direction of "+INSTANCE.main.carrier.GetVehicleName(veh),1);
+		AIVehicle.ReverseVehicle(veh);
+		}
+	local rr="";
+	local wagonnum=0;
+	if (reason >= DepotAction.ADDWAGON)	{ wagonnum=reason-DepotAction.ADDWAGON; reason=DepotAction.ADDWAGON; }
+	switch (reason)
+		{
+		case	DepotAction.SELL:
+			rr="to be sold.";
+		break;
+		case	DepotAction.LINEUPGRADE:
+		case	DepotAction.SIGNALUPGRADE:
+		case	DepotAction.UPGRADE:
+			rr="to be upgrade.";
+		break;
+		case	DepotAction.REPLACE:
+			rr="to be replace.";
+		break;
+		case	DepotAction.CRAZY:
+			rr="for a crazy action.";
+		break;
+		case	DepotAction.REMOVEROUTE:
+			rr="for removing a dead route.";
+		break;
+		case	DepotAction.ADDWAGON:
+			rr="to add "+wagonnum+" new wagons.";
+			reason=wagonnum+DepotAction.ADDWAGON;
+		break;
+		}
+	DInfo("Vehicle "+INSTANCE.main.carrier.GetVehicleName(veh)+" is going to depot "+rr,0);
+	INSTANCE.main.carrier.ToDepotList.AddItem(veh,reason);
 }
 
 function cCarrier::VehicleGetFullCapacity(veh)

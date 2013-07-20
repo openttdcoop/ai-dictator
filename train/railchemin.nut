@@ -16,57 +16,56 @@
 function cRoute::DutyOnRailsRoute(uid)
 // this is where we handle rails route, that are too specials for common handling
 {
-local firstveh=false;
-local road=cRoute.GetRouteObject(uid);
-// no checks, as this is call after DutyOnRoute checks
-if (road == null || !road.isWorking)	return;
-local maxveh=0;
-INSTANCE.main.carrier.highcostTrain=0;
-local cargoid=road.cargoID;
-local railtype=road.source.specialType;
-local futur_engine=INSTANCE.main.carrier.ChooseRailWagon(cargoid, railtype, null);
-local futur_engine_capacity=1;
-if (futur_engine != null)	futur_engine_capacity=cEngine.GetCapacity(futur_engine);
-				else	return;
-road.source.UpdateStationInfos();
-DInfo("After station update",2,"DutyOnRailsRoute");
-local vehneed=0;
-if (road.vehicle_count == 0)	{ firstveh=true; }
-local vehonroute=INSTANCE.main.carrier.GetWagonsInGroup(road.groupID);
-local cargowait=0;
-local capacity=0;
-local dual=road.source_istown; // we need to check both side if source is town we're on a dual route (pass or mail)
-cargowait=road.source.cargo_produce.GetValue(cargoid);
-capacity=road.source.vehicle_capacity.GetValue(cargoid);
-if (capacity==0)
-		{
-		if (road.source_istown)	cargowait=AITown.GetLastMonthProduction(road.sourceID, cargoid);
-					else	cargowait=AIIndustry.GetLastMonthProduction(road.sourceID, cargoid);
-		capacity=futur_engine_capacity;
-		}
-	if (dual)
-		{
-		road.target.UpdateStationInfos();
-		local src_capacity=capacity;
-		local dst_capacity= road.target.vehicle_capacity.GetValue(cargoid);
-		local src_wait = cargowait;
-		local dst_wait = road.target.cargo_produce.GetValue(cargoid);
-		if (cStation.IsStationVirtual(road.target.stationID))	dst_capacity-=cRoute.VirtualAirGroup[2];
-		if (dst_capacity == 0)	{ dst_wait=AITown.GetLastMonthProduction(road.targetID,cargoid); dst_capacity=futur_engine_capacity; }
-		if (src_wait < dst_wait)	cargowait=src_wait; // keep the lowest cargo amount
-						else	cargowait=dst_wait;
-		if (src_capacity < dst_capacity)	capacity=dst_capacity; // but keep the highest capacity we have
-							else	capacity=src_capacity;
-		DInfo("Source capacity="+src_capacity+" wait="+src_wait+" --- Target capacity="+dst_capacity+" wait="+dst_wait,2,"DutyOnRailsRoute");
-		}
-if (capacity==0)	capacity++; // avoid /0
-local remain = cargowait - capacity;
-if (remain < 0)	vehneed=0;
-		else	vehneed = (cargowait / capacity)+1;
-if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
-DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.vehicle_count+" firstveh="+firstveh,2,"DutyOnRailsRoute");
-//if (firstveh)	vehneed=1;
-if (vehneed > 0)
+	local firstveh=false;
+	local road=cRoute.Load(uid);
+	if (road == false || road.Status != RouteStatus.WORKING)	return;
+	local maxveh=0;
+	INSTANCE.main.carrier.highcostTrain=0;
+	local cargoid=road.CargoID;
+	local railtype=road.SourceStation.s_SubType;
+	local futur_engine=INSTANCE.main.carrier.ChooseRailWagon(cargoid, railtype, null);
+	local futur_engine_capacity=1;
+	if (futur_engine != null)	futur_engine_capacity=cEngine.GetCapacity(futur_engine);
+					else	return;
+	road.SourceStation.UpdateStationInfos();
+	DInfo("After station update",2);
+	local vehneed=0;
+	if (road.VehicleCount == 0)	{ firstveh=true; }
+	local vehonroute=INSTANCE.main.carrier.GetWagonsInGroup(road.GroupID);
+	local cargowait=0;
+	local capacity=0;
+	local dual=road.SourceProcess.IsTown; // we need to check both side if source is town we're on a dual route (pass or mail)
+	cargowait=road.SourceStation.s_CargoProduce.GetValue(cargoid);
+	capacity=road.SourceStation.s_VehicleCapacity.GetValue(cargoid);
+	if (capacity==0)
+			{
+			if (road.SourceProcess.IsTown)	cargowait=AITown.GetLastMonthProduction(road.SourceProcess.ID, cargoid);
+								else	cargowait=AIIndustry.GetLastMonthProduction(road.SourceProcess.ID, cargoid);
+			capacity=futur_engine_capacity;
+			}
+		if (dual)
+			{
+			road.TargetStation.UpdateStationInfos();
+			local src_capacity=capacity;
+			local dst_capacity= road.TargetStation.s_VehicleCapacity.GetValue(cargoid);
+			local src_wait = cargowait;
+			local dst_wait = road.TargetStation.s_CargoProduce.GetValue(cargoid);
+//			if (cStation.IsStationVirtual(road.TargetStation.s_ID))	dst_capacity-=cRoute.VirtualAirGroup[2];
+			if (dst_capacity == 0)	{ dst_wait=AITown.GetLastMonthProduction(road.TargetProcess.ID,cargoid); dst_capacity=futur_engine_capacity; }
+			if (src_wait < dst_wait)	cargowait=src_wait; // keep the lowest cargo amount
+							else	cargowait=dst_wait;
+			if (src_capacity < dst_capacity)	capacity=dst_capacity; // but keep the highest capacity we have
+								else	capacity=src_capacity;
+			DInfo("Source capacity="+src_capacity+" wait="+src_wait+" --- Target capacity="+dst_capacity+" wait="+dst_wait,2);
+			}
+	if (capacity==0)	capacity++; // avoid /0
+	local remain = cargowait - capacity;
+	if (remain < 0)	vehneed=0;
+			else	vehneed = (cargowait / capacity)+1;
+	if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
+	DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.VehicleCount+" firstveh="+firstveh,2);
+	//if (firstveh)	vehneed=1;
+	if (vehneed > 0)
 	if (!INSTANCE.main.carrier.AddWagon(uid,vehneed))	INSTANCE.main.bank.busyRoute=true;
 }
 
