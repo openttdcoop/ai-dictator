@@ -85,6 +85,7 @@ function cBridge::Load(bUID)
 		{
 		cobj.bridgeUID=cBridge.GetBridgeUID(bUID);
 		if (cobj.bridgeUID!=null)	cobj.firstside=bUID;
+						else	return null;
 		bUID=cobj.bridgeUID;
 		}
 	else	cobj.bridgeUID=bUID;
@@ -185,6 +186,7 @@ function cBridge::IsRoadBridge(tile)
 // return true if that bridge is a road bridge
 	{
 	local cobj=cBridge.Load(tile);
+	if (cobj == null)	return false;
 	if (cBridge.IsBridgeTile(cobj.firstside) && AITile.HasTransportType(cobj.firstside, AITile.TRANSPORT_ROAD))	return true;
 	return false;
 	}
@@ -193,6 +195,7 @@ function cBridge::IsRailBridge(bUID)
 // return true if that bridge is a rail bridge
 	{
 	local cobj=cBridge.Load(bUID);
+	if (cobj == null)	return false;
 	if (cBridge.IsBridgeTile(cobj.firstside) && AITile.HasTransportType(cobj.firstside, AITile.TRANSPORT_RAIL))	return true;
 	return false;
 	}

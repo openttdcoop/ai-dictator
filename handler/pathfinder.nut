@@ -81,6 +81,7 @@ function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
 	if (uid in cPathfinder.database)	{ }
 						else	{ cPathfinder.CreateNewTask(source, target, useEntry, stationID); return 0; }
 	local pathstatus=cPathfinder.GetPathfinderObject(uid);
+print("pathfinder status : "+pathstatus.status);
 	return pathstatus.status;
 	}	
 
@@ -154,7 +155,7 @@ function cPathfinder::AdvanceTask(UID)
 		}
 	if (check != null && check != false)
 		{
-		DInfo("Pathfinder found a path for task "+pftask.UID+" "+pftask.timer,1);
+		DInfo("Pathfinder found a path for task "+pftask.UID+" @"+pftask.timer,1);
 		pftask.status=1;
 		pftask.InfoSign("Pathfinding "+pftask.UID+"... FOUND!");
 		pftask.solve=check;
@@ -209,13 +210,13 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 	if (entrance == null)
 		{ // road
 		pftask.pathHandler= MyRoadPF();
-		pftask.pathHandler.cost.bridge_per_tile = 70;
-		pftask.pathHandler.cost.tunnel_per_tile = 70;
+		pftask.pathHandler.cost.bridge_per_tile = 90;
+		pftask.pathHandler.cost.tunnel_per_tile = 90;
 		pftask.pathHandler.cost.turn = 200;
 		pftask.pathHandler.cost.max_bridge_length=30;
 		pftask.pathHandler.cost.max_tunnel_length=30;
 		pftask.pathHandler.cost.tile=70;
-		pftask.pathHandler.cost.slope=80;
+		pftask.pathHandler.cost.slope=90;
 		pftask.pathHandler._cost_level_crossing = 120;
 		pftask.pathHandler.InitializePath([pftask.source[0]], [pftask.target[1]]);
 		}
@@ -223,12 +224,12 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 		pftask.pathHandler= MyRailPF();
 		pftask.pathHandler.cost.bridge_per_tile = 70;//70
 		pftask.pathHandler.cost.tunnel_per_tile = 50;//70
-		pftask.pathHandler.cost.turn = 150;//200
+		pftask.pathHandler.cost.turn = 240;//200
 		pftask.pathHandler.cost.max_bridge_length=30;
 		pftask.pathHandler.cost.max_tunnel_length=30;
 		pftask.pathHandler.cost.tile=100;//70
-		pftask.pathHandler.cost.slope=110;//80
-		pftask.pathHandler.cost.diagonal_tile=220;
+		pftask.pathHandler.cost.slope=130;//80
+		pftask.pathHandler.cost.diagonal_tile=110;
 print("s0: "+pftask.source[0]+" s1: "+pftask.source[1]);
 print("t0: "+pftask.target[0]+" t1: "+pftask.target[1]);
 AISign.BuildSign(pftask.source[0], "S0");

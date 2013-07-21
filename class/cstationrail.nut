@@ -49,14 +49,15 @@ class cStationRail extends cStation
 /*	station bit:
 	bit0 entry is working on/off
 	bit1 exit is working on/off
-	bit2 south/west escape line is working on/off
-	bit3 north/east escape line is working on/off
+	bit2 unused
+	bit3 unused
 	bit4 main train line fire done
 	bit5 alt train line fire done
 */
 	s_Platforms		= null;	// AIList of platforms: item=platform location
 						// value= bit0 on/off entry status
 						// value= bit1 on/off exit status
+						// value= bit2 on/off healthy connect
 
 	constructor()
 		{
@@ -71,7 +72,7 @@ class cStationRail extends cStation
 		this.s_Train[TrainType.TED]=0;
 		this.s_Train[TrainType.TXT]=0;
 		this.s_Train[TrainType.TXD]=0;
-		this.s_Train[TrainType.MAXTRAIN]=0;
+		this.s_Train[TrainType.MAXTRAIN]=1;
 		this.s_Train[TrainType.MAXENTRY]=0;
 		this.s_Train[TrainType.MAXEXIT]=0;
 		}
@@ -230,12 +231,38 @@ function cStationRail::IsRailStationPrimarySignalBuilt(stationID=null)
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
 	local exit=thatstation.s_Train[TrainType.STATUSBIT];
-print("exit="+exit+" will return ="+cMisc.CheckBit(exit, 4));
 	if (cMisc.CheckBit(exit, 4))
 		{
 		DInfo("Station "+thatstation.s_Name+" signals are built on primary track",2);
 		return true;
 		}
+	return false;
+}
+
+function cStationRail::SetPlatformWorking(platformID, status, stationID = null)
+// Set or unset the working state of a platform
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return false;
+	if (!thatstation.s_Platforms.HasItem(platformID))	return false;
+	local platf = thatstation.s_Platforms.GetValue(platformID);
+	if (status)	platf = cMisc.SetBit(platf, 2);
+		else	platf = cMisc.ClearBit(platf, 2);
+	thatstation.s_Platforms.SetValue(platformID, platf);
+}
+
+function cStationRail::IsPlatformWorking(platformID, stationID = null)
+// return true if the platform is working (connect to the rails route)
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return false;
+	if (!thatstation.s_Platforms.HasItem(platformID))	return false;
+	local platvalue = thatstation.s_Platforms.GetValue(platformID);
+	if (cMisc.CheckBit(platvalue, 2))	return true;
 	return false;
 }
 
@@ -307,6 +334,7 @@ function cStationRail::DefinePlatform(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
+
 	local frontTile, backTile, leftTile, rightTile= null;
 	local direction=thatstation.GetRailStationDirection();
 	local staloc=thatstation.GetLocation();
@@ -323,97 +351,47 @@ function cStationRail::DefinePlatform(stationID=null)
 		leftTile=AIMap.GetTileIndex(0,-1);
 		rightTile=AIMap.GetTileIndex(0,1);
 		}
-	local isEntryClear, isExitClear=null;
 	local lookup=0;
-	local start=thatstation.GetLocation();
+	local start=staloc;
 	local end=thatstation.s_Train[TrainType.END_POINT];
 	local topLeftPlatform=start;
 	local topRightPlatform=start;
-	local usable=false;
 // search up
 	while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.s_ID))
 		{
+cDebug.PutSign(lookup+start,"*");
 		topLeftPlatform=lookup+start;
 		if (!thatstation.s_Platforms.HasItem(lookup+start))	thatstation.s_Platforms.AddItem(lookup+start,0);
-		if (thatstation.s_Platforms.HasItem(lookup+start)) // now retest, might be just added
-			{
-			local value=thatstation.s_Platforms.GetValue(lookup+start);
-			usable=AIRail.IsRailTile(lookup+start+frontTile);
-			if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.s_ID);
-			if (usable)
-				{
-				local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
-				usable=((rtrack & direction) == direction);
-				}
-			if (usable)	value=cMisc.SetBit(value, 0);
-				else	value=cMisc.ClearBit(value, 0);
-			usable=AIRail.IsRailTile(lookup+end+backTile);
-			if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.s_ID);
-			if (usable)
-				{
-				local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
-				usable=((rtrack & direction) == direction);
-				}
-			if (usable)	value=cMisc.SetBit(value, 1);
-				else	value=cMisc.ClearBit(value, 1);
-			thatstation.s_Platforms.SetValue(lookup+start,value);
-			}
 		lookup+=leftTile;
 		}
 	// search down
 	lookup=rightTile;
 	while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.s_ID))
 		{
+cDebug.PutSign(lookup+start,"*");
 		topRightPlatform=lookup+start;
 		if (!thatstation.s_Platforms.HasItem(lookup+start))	thatstation.s_Platforms.AddItem(lookup+start,0);
-		if (thatstation.s_Platforms.HasItem(lookup+start)) // now retest, might be just added
-			{
-			local value=thatstation.s_Platforms.GetValue(lookup+start);
-			usable=AIRail.IsRailTile(lookup+start+frontTile);
-			if (usable)	usable=cTileTools.CanUseTile(lookup+start+frontTile, thatstation.s_ID);
-			if (usable)
-				{
-				local rtrack=AIRail.GetRailTracks(lookup+start+frontTile);
-				usable=((rtrack & direction) == direction);
-				}
-			if (usable)	value=cMisc.SetBit(value, 0);
-				else	value=cMisc.ClearBit(value, 0);
-			usable=AIRail.IsRailTile(lookup+end+backTile);
-			if (usable)	usable=cTileTools.CanUseTile(lookup+end+backTile, thatstation.s_ID);
-			if (usable)
-				{
-				local rtrack=AIRail.GetRailTracks(lookup+end+backTile);
-				usable=((rtrack & direction) == direction);
-				}
-			if (usable)	value=cMisc.SetBit(value, 1);
-				else	value=cMisc.ClearBit(value, 1);
-			thatstation.s_Platforms.SetValue(lookup+start,value);
-			cDebug.PutSign(lookup+start+frontTile,value);
-			}
 		lookup+=rightTile;
 		}
-	local goodPlatforms=AIList();
-	goodPlatforms.AddList(thatstation.s_Platforms);
-	if (thatstation.s_Owner.Count() == 0)
-		goodPlatforms.RemoveValue(0);	// no one own it yet, we just validate a platform if its rail in front is built
-	else	{
+	local goodCounter=0;
+	/*if (thatstation.s_Owner.Count() == 0)	thatstation.s_Platforms.SetValue(thatstation.s_Platforms.Begin(), 7);
+	// no one own it yet, we just validate a platform if its rail in front is built
+	else	{*/
 		local runTarget=cStationRail.RailStationGetRunnerTarget(thatstation.s_ID);
-		cDebug.PutSign(runTarget,"Checker");
-		foreach (platidx, openclose in goodPlatforms)
+		cDebug.PutSign(runTarget,"Checker "+runTarget);
+		foreach (platidx, value in thatstation.s_Platforms)
 			{
-			local value=0;
 			if (runTarget == -1)	break;
-			if (cMisc.CheckBit(openclose,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,0);
-																		else	value=cMisc.ClearBit(value, 0);
-			if (cMisc.CheckBit(openclose,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value, 1);
-																		else	value=cMisc.ClearBit(value, 1);
+	print("platform="+ platidx+" result ="+cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL)+" value="+value);
+			if (!cMisc.CheckBit(value,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,0);
+			if (!cMisc.CheckBit(value,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,1);
 			thatstation.s_Platforms.SetValue(platidx, value);
-			if (value == 0)	goodPlatforms.RemoveItem(platidx); // not so true if we connect both side of a station, but good for now
+			if (cMisc.CheckBit(value,0) || cMisc.CheckBit(value, 1))	{ goodCounter++; thatstation.SetPlatformWorking(platidx, true); }
 			}	
-		}
-	DInfo("Station "+thatstation.s_Name+" have "+thatstation.s_Platforms.Count()+" platforms, "+goodPlatforms.Count()+" platforms are ok",2);
+//		}
+	DInfo("Station "+thatstation.s_Name+" have "+thatstation.s_Platforms.Count()+" platforms, "+goodCounter+" platforms are ok",2);
+	thatstation.s_Train[TrainType.MAXTRAIN]=goodCounter;
 	thatstation.s_Size=thatstation.s_Platforms.Count();
-	thatstation.s_Train[TrainType.MAXTRAIN]=thatstation.s_Platforms.Count();
 	thatstation.s_Train[TrainType.PLATFORM_LEFT]=topLeftPlatform;
 	thatstation.s_Train[TrainType.PLATFORM_RIGHT]=topRightPlatform;
 }
@@ -430,12 +408,12 @@ function cStationRail::RailStationGetRunnerTarget(runnerID)
 	local primary=(mainOwner.SourceStation.s_ID == runnerID);
 	if (primary)
 		{
-		if (mainOwner.Source_RailEntry)	return thatstation.s_ExitSide[TrainSide.OUT];
+		if (mainOwner.Source_RailEntry)	return thatstation.s_EntrySide[TrainSide.IN];
 							else	return thatstation.s_ExitSide[TrainSide.IN];
 		}
 	else	{
 		if (mainOwner.Target_RailEntry)	return thatstation.s_EntrySide[TrainSide.OUT];
-							else	return thatstation.s_EntrySide[TrainSide.IN];
+							else	return thatstation.s_ExitSide[TrainSide.OUT];
 		}
 	return -1;
 }
@@ -675,3 +653,24 @@ function cStationRail::StationRemoveTrain(taker, useEntry, stationID=null)
 	thatstation.s_Train[TrainType.TXT]= txt;
 	DInfo("Station "+cStation.GetStationName(thatstation.s_ID)+" remove train: taker="+taker+" useEntry="+useEntry,2);
 }
+
+function cStationRail::RailStationPhaseUpdate()
+// Update platform and build missing parts
+// thatstation is a cStationRail instance
+{
+	local needUpdate=false;
+	if (this instanceof cStationRail)
+		{
+		this.DefinePlatform();
+		foreach (platform, status in this.s_Platforms)
+			{
+		//	if (cMisc.CheckBit(status,2))	continue; // if set platform is good, so don't rerun that on this one
+			if (this.s_EntrySide[TrainSide.CROSSING] >= 0)	{ needUpdate = true; cBuilder.PlatformConnectors(platform, true); }
+			if (this.s_ExitSide[TrainSide.CROSSING] >= 0)	{ needUpdate = true; cBuilder.PlatformConnectors(platform, false); }
+			}
+		}
+	else return;
+	if (needUpdate)	this.DefinePlatform();
+}
+
+

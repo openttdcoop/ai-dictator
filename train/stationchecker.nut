@@ -35,8 +35,12 @@ cDebug.ClearSigns();
 	cDebug.PutSign(topRightPlatform,"R");
 	cDebug.PutSign(idxLeftPlatform,"IL");
 	cDebug.PutSign(idxRightPlatform,"IR");
-	local station_left=leftTileOf;
-	local station_right=rightTileOf;
+	local station_right = cBuilder.GetDirection(cStationRail.GetPlatformIndex(topRightPlatform, false), cStationRail.GetPlatformIndex(topRightPlatform, true));
+	local station_left=cTileTools.GetLeftRelativeFromDirection(station_right);
+	station_right=cTileTools.GetRightRelativeFromDirection(station_right);
+cDebug.PutSign(station_left+idxLeftPlatform,"LS");
+cDebug.PutSign(station_right+idxRightPlatform,"RS");
+print("BREAK direction");
 	if (stationObj.s_Train[TrainType.DIRECTION] == AIRail.RAILTRACK_NE_SW)	print("station is NE_SW = "+AIRail.RAILTRACK_NE_SW);
 												else	print("station is NW_SE = "+AIRail.RAILTRACK_NW_SE);
 print("NE_SW="+AIRail.RAILTRACK_NE_SW+" NW_SE="+AIRail.RAILTRACK_NW_SE);
@@ -334,8 +338,8 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 			else	{ cError.RaiseError(); return false; }
 			if (success) stationObj.RailStationClaimTile(temptile+(2*forwardTileOf),useEntry);
 			}
-		if (tmptaker)	sigdir=fromtile+((j+1)*forwardTileOf);
-				else	sigdir=fromtile+((j-1)*forwardTileOf);
+		if (tmptaker)	sigdir=fromtile+((j-1)*forwardTileOf);
+				else	sigdir=fromtile+((j+1)*forwardTileOf);
 		DInfo("Building "+in_str+" point signal",1);
 		success=AIRail.BuildSignal(temptile, sigdir, sigtype);
 		if (success)	{
@@ -348,7 +352,6 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 							stationObj.s_EntrySide[TrainSide.IN]= se_IN;
 							if (building_maintrack)	stationObj.s_EntrySide[TrainSide.IN_LINK]= se_IN+(3*forwardTileOf); // link
 										else	stationObj.s_EntrySide[TrainSide.IN_LINK]= se_IN+forwardTileOf;
-//							stationObj.s_EntrySide[TrainSide.IN_LINK]= temptile + (3*forwardTileOf);
 							if (!cTileTools.DemolishTile(stationObj.s_EntrySide[TrainSide.IN_LINK]))
 									{ cError.RaiseError(); return false;}
 							}
@@ -357,7 +360,6 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 							stationObj.s_ExitSide[TrainSide.IN]= sx_IN;
 							if (building_maintrack)	stationObj.s_ExitSide[TrainSide.IN_LINK]= sx_IN+(3*forwardTileOf); // link
 										else	stationObj.s_ExitSide[TrainSide.IN_LINK]= sx_IN+forwardTileOf;
-//							stationObj.s_ExitSide[TrainSide.IN_LINK]= fromtile + (3*forwardTileOf);
 							if (!cTileTools.DemolishTile(stationObj.s_ExitSide[TrainSide.IN_LINK]))
 									{ cError.RaiseError(); return false;}
 							}
@@ -372,7 +374,6 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 							stationObj.s_EntrySide[TrainSide.OUT]= se_OUT;
 							if (building_maintrack)	stationObj.s_EntrySide[TrainSide.OUT_LINK]= se_OUT+(3*forwardTileOf); // link
 										else	stationObj.s_EntrySide[TrainSide.OUT_LINK]= se_OUT+(1*forwardTileOf);
-//							stationObj.s_EntrySide[OUT_LINK] = temptile + forwardTileOf;
 							if (!cTileTools.DemolishTile(stationObj.s_EntrySide[TrainSide.OUT_LINK]))
 									{ cError.RaiseError(); return false;}
 							cBuilder.RailConnectorSolver(fromtile+forwardTileOf, fromtile, true);
@@ -384,7 +385,6 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 							stationObj.s_ExitSide[TrainSide.OUT]= sx_OUT;
 							if (building_maintrack)	stationObj.s_ExitSide[TrainSide.OUT_LINK]= sx_OUT+(3*forwardTileOf); // link
 										else	stationObj.s_ExitSide[TrainSide.OUT_LINK]= sx_OUT+(1*forwardTileOf);
-//							stationObj.s_ExitSide[TrainSide.OUT_LINK] = temptile + forwardTileOf;
 							if (!cTileTools.DemolishTile(stationObj.s_ExitSide[TrainSide.OUT_LINK]))
 									{ cError.RaiseError(); return false;}
 							cBuilder.RailConnectorSolver(fromtile, fromtile+forwardTileOf ,true);
@@ -393,7 +393,6 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 						}
 					}
 		j++;
-		//INSTANCE.NeedDelay(100);
 		} while (j < 4 && !success);
 	
 	return success;
@@ -411,15 +410,16 @@ function cBuilder::RailStationPathfindAltTrack(stationObj, roadObj)
 	dstpos=dstlink+cStationRail.GetRelativeTileBackward(roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
 	DInfo("Calling rail pathfinder: srcpos="+srcpos+" srclink="+srclink+" dstpos="+dstpos+" dstlink="+dstlink,2);
 	local result=INSTANCE.main.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], roadObj.Target_RailEntry, roadObj.TargetStation.s_ID);
-	if (result != 1)
+print("result from pathfinder task for alttrack ="+result);
+	if (result != 2)
 		{
 		if (result == -1)
 			{
 			DError("We cannot build the alternate track for that station ",1);
-		if (roadObj.Source_RailEntry)	cStationRail.RailStationCloseEntry(roadObj.SourceStation.s_ID);
-						else	cStationRail.RailStationCloseExit(roadObj.SourceStation.s_ID);
-		if (roadObj.Target_RailEntry)	cStationRail.RailStationCloseEntry(roadObj.TargetStation.s_ID);
-						else	cStationRail.RailStationCloseExit(roadObj.TargetStation.s_ID);
+			if (roadObj.Source_RailEntry)	cStationRail.RailStationCloseEntry(roadObj.SourceStation.s_ID);
+								else	cStationRail.RailStationCloseExit(roadObj.SourceStation.s_ID);
+			if (roadObj.Target_RailEntry)	cStationRail.RailStationCloseEntry(roadObj.TargetStation.s_ID);
+							else	cStationRail.RailStationCloseExit(roadObj.TargetStation.s_ID);
 			cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 			cError.RaiseError();
 			return false;
@@ -440,15 +440,10 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
 	DInfo("--- Phase7: building signals",1);
 	cBanker.RaiseFundsBigTime();
 	local vehlist=AIList();
-	local vehlistRestart=AIList();
-	vehlist.AddList(AIVehicleList_Group(road.GroupID));
-	vehlist.Valuate(AIVehicle.GetState);
-	vehlistRestart.AddList(vehlist);
-	vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
-	vehlistRestart.KeepValue(AIVehicle.VS_IN_DEPOT);
+	vehlist.AddList(AIVehicleList_Station(road.SourceStation.s_ID)); // because station can be in use by more than 1 route
 	if (!vehlist.IsEmpty())
 		{ // erf, easy solve, not really nice, but this won't prevent our work on signal (that could stuck a train else)
-		foreach (vehicle, dummy in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle,DepotAction.SIGNALUPGRADE)
+		foreach (vehicle, dummy in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle,DepotAction.SIGNALUPGRADE+road.SourceStation.s_ID);
 		return false;
 		}
 	local srcpos, dstpos = null;
@@ -462,7 +457,7 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
 	if (!road.SourceStation.IsRailStationPrimarySignalBuilt())
 		{
 		DInfo("Building signals on primary track",2);
-		if (cBuilder.SignalBuilder(dstpos, srcpos))
+		if (cBuilder.SignalBuilder(srcpos, dstpos))
 			{
 			DInfo("...done",2);
 			road.SourceStation.RailStationSetPrimarySignalBuilt();
@@ -479,15 +474,16 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
 	if (!road.TargetStation.IsRailStationSecondarySignalBuilt())
 		{
 		DInfo("Building signals on secondary track",2);
-		if (cBuilder.SignalBuilder(srcpos, dstpos))
+		if (cBuilder.SignalBuilder(dstpos, srcpos))
 			{
 			DInfo("...done",2);
 			road.TargetStation.RailStationSetSecondarySignalBuilt();
 			}
 		else	{ DInfo("... not all signals were built",2); success = false; }
 		}
-	foreach (vehicle, dummy in vehlistRestart)
+	foreach (vehicle, dummy in vehlist)
 		{
+		if (INSTANCE.main.carrier.ToDepotList.HasItem(vehicle))	INSTANCE.main.carrier.ToDepotList.RemoveItem(vehicle);
 		cCarrier.TrainExitDepot(vehicle);
 		}
 	return success;
@@ -566,7 +562,12 @@ function cBuilder::RailStationPhaseBuildDepot(stationObj, useEntry)
 				local depot_Front=AIRail.GetRailDepotFrontTile(depotlocations[h]);
 				
 				if (AIMap.IsValidTile(depot_Front))	success=cBuilder.RailConnectorSolver(depotlocations[h],depot_Front,true);
-				if (success) success=cStation.IsDepot(depotlocations[h]);
+				if (success)	success=cStation.IsDepot(depotlocations[h]);
+				if (success)
+						{
+						local runTarget=cStationRail.RailStationGetRunnerTarget(stationObj.s_ID);
+						success= cBuilder.RoadRunner(depotlocations[h], runTarget, AIVehicle.VT_RAIL);
+						}
 				if (success)
 						{
 						DInfo("We built depot at "+depotlocations[h],1);
@@ -618,8 +619,9 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local allDropper = trainExitDropper + trainEntryDropper;
 	local needTaker = allTaker;
 	local needDropper = allDropper;
-	if (allDropper > 2)	{ needDropper = (allDropper >> 2) + (allDropper % 2); }
+	if (allDropper > 2)	{ needDropper = (allDropper >> 1) + (allDropper % 2); }
 	local newStationSize = needTaker + needDropper;
+	if (allDropper+allTaker == 1)	newStationSize = 0; // don't grow the station until we have a real train using it
 	DInfo("STATION : "+thatstation.s_Name,1);
 print("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" needDropper="+needDropper+" newsize="+newStationSize);
 	// find route that use the station
@@ -639,7 +641,10 @@ print("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" n
 	local cangrow = (thatstation.s_Size != thatstation.s_MaxSize);
 	if (cangrow)	DInfo("Station can be upgrade",1);
 			else	DInfo("Station is at its maximum size",1);
-	if (newStationSize > thatstation.s_Size)
+	local cmpsize = thatstation.s_Train[TrainType.MAXTRAIN];
+	if (newStationSize > cmpsize)		thatstation.RailStationPhaseUpdate();
+	DInfo("Station have "+cmpsize+" working platforms",1);
+	if (newStationSize > cmpsize)
 		{
 		local success = false;
 		if (cangrow)	success = cBuilder.RailStationPhaseGrowing(thatstation, newStationSize, useEntry);
@@ -681,33 +686,26 @@ print("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" n
 		sx_OUT=thatstation.GetRailStationOUT(false);
 		PlatformNeedUpdate=true;
 		}
-print("se_IN="+se_IN+" se_OUT="+se_OUT+" sx_IN="+sx_IN+" sx_OUT="+sx_OUT);
+print("se_IN="+se_IN+" se_OUT="+se_OUT+" sx_IN="+sx_IN+" sx_OUT="+sx_OUT+" canAddTrain="+canAddTrain);
 	local result=true;
 	if (cMisc.ValidInstance(road) && road.Secondary_RailLink == false && road.SourceStation.s_ID != thatstation.s_ID && (trainEntryTotal >1 || trainExitTotal > 1))
 			{
 			result = cBuilder.RailStationPathfindAltTrack(thatstation, road);
+print("pathfinder alttrack result="+result);
 			if (!result)	canAddTrain=false;
 			PlatformNeedUpdate=true; // give the destination station an update chance
 			}
-	if (PlatformNeedUpdate)
-		{
-		thatstation.DefinePlatform();
-		foreach (platform, status in thatstation.s_Platforms)
-			{
-			if (se_IN != -1 || se_OUT != -1)	cBuilder.PlatformConnectors(platform, true);
-			if (sx_IN != -1 || sx_OUT != -1)	cBuilder.PlatformConnectors(platform, false);
-			}
-		PlatformNeedUpdate = false;
-		thatstation.DefinePlatform();
-		}
+else print("cannot make alt track");
+	if (PlatformNeedUpdate) thatstation.RailStationPhaseUpdate();
 
 	if (cMisc.ValidInstance(road) && road.GroupID != null && road.Secondary_RailLink && (trainEntryTotal > 2 || trainExitTotal > 2) && (!road.SourceStation.IsRailStationPrimarySignalBuilt() || !road.TargetStation.IsRailStationSecondarySignalBuilt()))
 		{ // build signals
-		cBuilder.RailStationPhaseSignalBuilder(road);
+		if (!cBuilder.RailStationPhaseSignalBuilder(road))	canAddTrain=false;
 		}
 	local r_depot = null;
 	if (useEntry)	r_depot = AIRail.IsRailDepotTile(thatstation.s_EntrySide[TrainSide.DEPOT]);
 			else	r_depot = AIRail.IsRailDepotTile(thatstation.s_ExitSide[TrainSide.DEPOT]);
 	if (!r_depot)	cBuilder.RailStationPhaseBuildDepot(thatstation, useEntry);
+	if (newStationSize > thatstation.s_Train[TrainType.MAXTRAIN])	{ print("refuse more train"); return false; }
 	return canAddTrain;
 }

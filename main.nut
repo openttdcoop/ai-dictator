@@ -30,15 +30,16 @@ enum AircraftType {
 	CHOPPER
 }
 enum DepotAction {
-	SELL=0,		// to just sell a vehicle
-	UPGRADE=1,		// to upgrade a vehicle
-	REPLACE=2,		// to replace a vehicle, well this should also upgrade it
-	CRAZY=3,		// to get a big amount of money
-	REMOVEROUTE=4,	// to remove a route
-	LINEUPGRADE=5,	// to upgrade a train line to a newer railtype
-	SIGNALUPGRADE=6,	// when a station need build signal on rails
-	WAITING=7,		// wait at depot: it's a state to ignore that vehicle already in depot, not to send it and wait at depot
-	ADDWAGON=1000	// to add a train or wagons to a route
+	SELL=0,			// to just sell a vehicle
+	UPGRADE=1,			// to upgrade a vehicle
+	REPLACE=2,			// to replace a vehicle, well this should also upgrade it
+	CRAZY=3,			// to get a big amount of money
+	REMOVEROUTE=4,		// to remove a route
+	ADDWAGON=500		// to add a train or wagons to a route
+	LINEUPGRADE=1000,		// to upgrade a train route (passing the StationID with it), passing using DepotAction.LINEUPGRADE+StationID
+	SIGNALUPGRADE=5000,	// when a station need build signal on rails (passing the StationID with it)
+	WAITING=9000,		// it's a state send a vehicle to depot and wait x iterations of vehicle in depot check (passing x with it)
+
 }
 
 enum RouteStatus {

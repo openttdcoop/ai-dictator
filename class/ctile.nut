@@ -121,10 +121,12 @@ function cTileTools::StationIsWithinTownInfluence(stationid, townid)
 }
 
 function cTileTools::DemolishTile(tile)
-// same as AITile.DemolishTile but retry after a little wait
+// same as AITile.DemolishTile but retry after a little wait, protect rails, tunnel and bridge
 {
 	if (cTileTools.IsBuildable(tile)) return true;
 	if (AIRail.IsRailTile(tile))	return false;
+	if (AIBridge.IsBridgeTile(tile) && cBridge.IsRailBridge(tile))	return false;
+	if (AITunnel.IsTunnelTile(tile))	return false;
 	local res=AITile.DemolishTile(tile);
 	if (!res)
 		{
@@ -829,7 +831,6 @@ function cTileTools::GetPosRelativeFromDirection(dirswitch, direction)
 			backward=AIMap.GetTileIndex(0,1);
 		break;
 		}
-print("BREAK dirswitch="+dirswitch+" (should be 2) direction="+direction);
 	switch (dirswitch)
 		{
 		case 0:
@@ -841,7 +842,6 @@ print("BREAK dirswitch="+dirswitch+" (should be 2) direction="+direction);
 		case 3:
 			return backward;
 		}
-print("CASE FAILURE");
 	return -1;
 }
 
