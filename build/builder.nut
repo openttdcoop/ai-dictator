@@ -396,7 +396,7 @@ function cBuilder::TryBuildThatRoute()
 		if (success)	{ INSTANCE.main.route.Status=5; }
 			else	{
 				if (cError.IsError())	INSTANCE.main.route.Status = RouteStatus.DEAD;
-				else	return false;
+				else	{ INSTANCE.buildDelay = 1; return false; }
 				} // and nothing more, stay at that phase & rebuild road when possible
 		}
 	if (INSTANCE.main.route.Status==5)

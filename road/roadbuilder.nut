@@ -1178,7 +1178,6 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 				AIRoad.RemoveRoad(prev, curr);
 				curr=prev;
 				}
-			//cBuilder.RailCleaner(alist); // TODO: Fix for road
 			local newtarget=[0, prev];
 			DInfo("Pathfinder is calling an helper task",1);
 			// Create the helper task
@@ -1209,6 +1208,7 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 			}
 		DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
 		mytask.status=2;
+		INSTANCE.buildDelay = 0;
 		local bltiles=AIList();
 		bltiles.AddList(cTileTools.TilesBlackList);
 		bltiles.KeepValue(-stationID);

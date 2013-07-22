@@ -266,7 +266,7 @@ function cCarrier::TrainSetDepotOrder(veh)
 	if (veh == null)	return;
 	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
 	local road=cRoute.Load(idx);
-	if (!road)	{ DError("Gonna be a hard time, i don't know whom own that train "+cCarrier.GetVehicleName(veh),1); return false; }
+	if (!road)	{ DError("Gonna be a hard time, i don't know who own that train "+cCarrier.GetVehicleName(veh),1); return false; }
 	local srcDepot = cRoute.GetDepot(idx, 1);
 	local dstDepot = cRoute.GetDepot(idx, 2);
 	if (!AIRail.IsRailDepotTile(srcDepot))	srcDepot = dstDepot;
@@ -278,6 +278,7 @@ function cCarrier::TrainSetDepotOrder(veh)
 		cCarrier.VehicleOrdersReset(veh);
 		cCarrier.TrainSetOrders(veh);
 		}
+	AIOrder.SetOrderFlags(veh, 0, AIOrder.OF_NON_STOP_INTERMEDIATE); // avoid cargodist bug
 	if (!AIOrder.InsertOrder(veh, 1, srcDepot, AIOrder.OF_STOP_IN_DEPOT))
 			{ DError("Vehicle refuse goto closest airport order",2); }
 	if (!AIOrder.InsertOrder(veh, 3, dstDepot, AIOrder.OF_STOP_IN_DEPOT))

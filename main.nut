@@ -315,7 +315,10 @@ function DictatorAI::CheckCurrentSettings()
 	if (AIGameSettings.GetValue("ai.ai_disable_veh_aircraft") == 1)	use_air = false;
 	if (AIGameSettings.GetValue("ai.ai_disable_veh_ship") == 1)	use_boat = false;
 
-	main.carrier.train_length=5;
+	main.carrier.train_length = AIGameSettings.GetValue("max_train_length");
+	if (main.carrier.train_length > 5)	main.carrier.train_length=5;
+	if (main.carrier.train_length < 3)	use_train = false;
+
 	switch (fairlevel)
 		{
 		case 0: // easiest

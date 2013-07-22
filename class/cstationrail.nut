@@ -43,7 +43,7 @@ class cStationRail extends cStation
 						// 9: most left platform position
 						// 10: most right platform position
 						// 11: main route owner
-						// 12: it's the number of maximum trains the station could handle
+						// 12: it's the number of all working platforms
 						// 13: the station entry capacity (max trains that could use it)
 						// 14: the station exit capacity
 /*	station bit:
@@ -394,6 +394,11 @@ cDebug.PutSign(lookup+start,"*");
 	thatstation.s_Size=thatstation.s_Platforms.Count();
 	thatstation.s_Train[TrainType.PLATFORM_LEFT]=topLeftPlatform;
 	thatstation.s_Train[TrainType.PLATFORM_RIGHT]=topRightPlatform;
+	if (thatstation.s_Platforms.Count() > 1 && !thatstation.IsPlatformWorking(topLeftPlatform) && !thatstation.IsPlatformWorking(topRightPlatform))
+		{
+		DInfo("Closing station "+thatstation.s_Name+" as it cannot grow anymore",1);
+		thatstation.s_MaxSize = thatstation.s_Size;
+		}
 }
 
 function cStationRail::RailStationGetRunnerTarget(runnerID)

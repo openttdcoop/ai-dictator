@@ -409,7 +409,7 @@ function cBuilder::RailStationPathfindAltTrack(stationObj, roadObj)
 	srcpos=srclink+cStationRail.GetRelativeTileBackward(roadObj.SourceStation.s_ID, roadObj.Source_RailEntry);
 	dstpos=dstlink+cStationRail.GetRelativeTileBackward(roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
 	DInfo("Calling rail pathfinder: srcpos="+srcpos+" srclink="+srclink+" dstpos="+dstpos+" dstlink="+dstlink,2);
-	local result=INSTANCE.main.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], roadObj.Target_RailEntry, roadObj.TargetStation.s_ID);
+	local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
 print("result from pathfinder task for alttrack ="+result);
 	if (result != 2)
 		{
@@ -566,7 +566,7 @@ function cBuilder::RailStationPhaseBuildDepot(stationObj, useEntry)
 				if (success)
 						{
 						local runTarget=cStationRail.RailStationGetRunnerTarget(stationObj.s_ID);
-						success= cBuilder.RoadRunner(depotlocations[h], runTarget, AIVehicle.VT_RAIL);
+						if (runTarget != -1) success= cBuilder.RoadRunner(depotlocations[h], runTarget, AIVehicle.VT_RAIL);
 						}
 				if (success)
 						{
@@ -642,16 +642,19 @@ print("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" n
 	if (cangrow)	DInfo("Station can be upgrade",1);
 			else	DInfo("Station is at its maximum size",1);
 	local cmpsize = thatstation.s_Train[TrainType.MAXTRAIN];
-	if (newStationSize > cmpsize)		thatstation.RailStationPhaseUpdate();
+	if (newStationSize > cmpsize && cangrow)		thatstation.RailStationPhaseUpdate();
 	DInfo("Station have "+cmpsize+" working platforms",1);
 	if (newStationSize > cmpsize)
 		{
 		local success = false;
-		if (cangrow)	success = cBuilder.RailStationPhaseGrowing(thatstation, newStationSize, useEntry);
-				else	canAddTrain=false;
-		if (!success)	{ cError.RaiseError(); return false; }
-		thatstation.DefinePlatform();
-		PlatformNeedUpdate = true;
+		if (cangrow)	
+			{
+			success = cBuilder.RailStationPhaseGrowing(thatstation, newStationSize, useEntry);
+			if (!success)	{ cError.RaiseError(); return false; }
+			thatstation.DefinePlatform();
+			PlatformNeedUpdate = true;
+			}
+		else	canAddTrain=false;
 		}
 	if ((useEntry && thatstation.s_EntrySide[TrainSide.CROSSING] == -1) || (!useEntry && thatstation.s_ExitSide[TrainSide.CROSSING] == -1))
 		{
@@ -690,13 +693,17 @@ print("se_IN="+se_IN+" se_OUT="+se_OUT+" sx_IN="+sx_IN+" sx_OUT="+sx_OUT+" canAd
 	local result=true;
 	if (cMisc.ValidInstance(road) && road.Secondary_RailLink == false && road.SourceStation.s_ID != thatstation.s_ID && (trainEntryTotal >1 || trainExitTotal > 1))
 			{
-			result = cBuilder.RailStationPathfindAltTrack(thatstation, road);
-print("pathfinder alttrack result="+result);
-			if (!result)	canAddTrain=false;
-			PlatformNeedUpdate=true; // give the destination station an update chance
+			if (road.Target_RailEntry)	result = thatstation.IsRailStationEntryOpen();
+							else	result = thatstation.IsRailStationExitOpen();
+print("roadrailentry="+road.Target_RailEntry);
+			if (result) // don't test if we knows it's dead already
+				{
+				result = cBuilder.RailStationPathfindAltTrack(thatstation, road);
+				if (!result)	canAddTrain=false;
+				}
+			else	PlatformNeedUpdate=true; // give the destination station an update chance
 			}
-else print("cannot make alt track");
-	if (PlatformNeedUpdate) thatstation.RailStationPhaseUpdate();
+	if (PlatformNeedUpdate && cangrow) thatstation.RailStationPhaseUpdate();
 
 	if (cMisc.ValidInstance(road) && road.GroupID != null && road.Secondary_RailLink && (trainEntryTotal > 2 || trainExitTotal > 2) && (!road.SourceStation.IsRailStationPrimarySignalBuilt() || !road.TargetStation.IsRailStationSecondarySignalBuilt()))
 		{ // build signals

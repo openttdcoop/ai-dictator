@@ -290,7 +290,7 @@ switch (status)
 	case	-1:	// failure
 	return -1;
 	case	2:	// succeed
-	return 1;
+	return 2;
 	case	3:	// waiting child to end
 	return 0;
 	}
@@ -458,7 +458,6 @@ else	{ // we cannot get smallerror==-1 because on -1 it always return, so limit 
 			source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
 			if (source != null)
 				{
-				//DInfo("Pathfinder helper task "+source+" succeed !",1,"cBuilder::BuildRoadRail");
 				cPathfinder.CloseTask(mytask.source, mytask.target);
 				mytask=cPathfinder.GetPathfinderObject(source);
 				}
@@ -466,6 +465,7 @@ else	{ // we cannot get smallerror==-1 because on -1 it always return, so limit 
 		}
 	DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
 	mytask.status=2;
+	INSTANCE.buildDelay=0;
 	local bltiles=AIList();
 	bltiles.AddList(cTileTools.TilesBlackList);
 	bltiles.KeepValue(-stationID);
@@ -611,8 +611,8 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 					{
 	
 					DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos+" srclink="+srclink+" dstlink="+dstlink,2);
-					local result=INSTANCE.main.builder.BuildRoadRAIL([srclink,srcpos],[dstlink,dstpos], srcUseEntry, srcStation.s_ID);
-					if (result != 1)
+					local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], srcStation.s_ID, srcUseEntry);
+					if (result != 2)
 						{
 						if (result == -1)	cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 						return false;

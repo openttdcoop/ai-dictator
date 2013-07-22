@@ -330,7 +330,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 			homedepot=AIVehicle.GetLocation(vehID);
 			local numwagon=cCarrier.GetNumberOfWagons(vehID);
 			INSTANCE.main.carrier.VehicleSell(vehID,false);
-			DInfo("Train vehicle "+oldenginename+" replace, a new train will be built",0);
+			DInfo("Train vehicle "+oldenginename+" removed, a new train will be built with "+numwagon+" wagons",0);
 			INSTANCE.main.carrier.AddWagon(idx, numwagon);
 			return; // for now cannot do more than that
 		break;
@@ -407,7 +407,6 @@ allroadveh.Valuate(AIVehicle.GetVehicleType);
 allroadveh.KeepValue(AIVehicle.VT_ROAD);
 allroadveh.Valuate(AIVehicle.GetState);
 allroadveh.RemoveValue(AIVehicle.VS_STOPPED);
-//allroadveh.RemoveValue(AIVehicle.VS_IN_DEPOT);
 allroadveh.RemoveValue(AIVehicle.VS_CRASHED);
 allroadveh.RemoveValue(AIVehicle.VS_INVALID);
 
@@ -717,15 +716,14 @@ foreach (i, dummy in tlist)
 function cCarrier::TrainExitDepot(vehID)
 // release a train that was in depot, setting its order, starting it and moving it to the best station
 {
-if (!AIVehicle.GetVehicleType(vehID) == AIVehicle.VT_RAIL || !AIVehicle.GetState(vehID) == AIVehicle.VS_IN_DEPOT) return;
-local loaded=cCarrier.VehicleGetCargoLoad(vehID);
-print("loaded with "+loaded);
-DInfo("Starting "+cCarrier.GetVehicleName(vehID)+"...",0);
-INSTANCE.main.carrier.TrainSetOrders(vehID);
-if (loaded > 0)	AIOrder.SkipToOrder(vehID, 1);
-		else	AIOrder.SkipToOrder(vehID, 0);
-cCarrier.StartVehicle(vehID);
-if (INSTANCE.main.carrier.ToDepotList.HasItem(vehID))	INSTANCE.main.carrier.ToDepotList.RemoveItem(vehID);
+	if (!AIVehicle.GetVehicleType(vehID) == AIVehicle.VT_RAIL || !AIVehicle.GetState(vehID) == AIVehicle.VS_IN_DEPOT) return;
+	local loaded=cCarrier.VehicleGetCargoLoad(vehID);
+	DInfo("Starting "+cCarrier.GetVehicleName(vehID)+"...",0);
+	INSTANCE.main.carrier.TrainSetOrders(vehID);
+	if (loaded > 0)	AIOrder.SkipToOrder(vehID, 1);
+			else	AIOrder.SkipToOrder(vehID, 0);
+	cCarrier.StartVehicle(vehID);
+	if (INSTANCE.main.carrier.ToDepotList.HasItem(vehID))	INSTANCE.main.carrier.ToDepotList.RemoveItem(vehID);
 }
 
 function cCarrier::StartVehicle(vehID)
@@ -743,7 +741,7 @@ function cCarrier::StartVehicle(vehID)
 																else	return false;
 		if (i > 4)	wait=false;
 		}
-	if ((AIVehicle.GetState(vehID) != AIVehicle.VS_STOPPED || AIVehicle.GetState(vehID) != AIVehicle.VS_IN_DEPOT) && AIVehicle.StartStopVehicle(vehID))
+	if ((AIVehicle.GetState(vehID) == AIVehicle.VS_STOPPED || AIVehicle.GetState(vehID) == AIVehicle.VS_IN_DEPOT) && AIVehicle.StartStopVehicle(vehID))
 		{
 		DInfo("Starting "+cCarrier.GetVehicleName(vehID)+"...",0);
 		return true;

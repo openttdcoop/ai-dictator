@@ -71,9 +71,10 @@ function cBanker::CanBuyThat(money)
 {
 	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
 	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	if (cash < 1147483647)	cash+=loan; // ahahahahah integer limit reach, glad at least openttd is kind enough to not overflow so we can detect it.
 	if (cash >= money)	return true;
-				else	return false;
+	if (cash + loan < cash)	return true;
+	if (cash + loan >= money)	return true;
+	return false;
 }
 
 function cBanker::GetMaxMoneyAmount()
@@ -81,8 +82,8 @@ function cBanker::GetMaxMoneyAmount()
 {
 	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
 	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	if (cash < 1147483647)	cash+=loan;
-	return cash;
+	if (cash+loan < cash)	return cash; //overflow
+	return cash+loan;
 }
 
 function cBanker::SaveMoney()
@@ -121,10 +122,10 @@ function cBanker::PayLoan()
 function cBanker::CashFlow()
 {
 	this.PayLoan();
-	this.RaiseFundsTo(this.mincash);
+	this.RaiseFundsTo(this.mincash*cBanker.GetInflationRate());
 }
 
 function cBanker::GetInflationRate()
 {
-	return (AICompany.GetMaxLoanAmount() / AIGameSettings.GetValue("difficulty.max_loan") );
+	return (AICompany.GetMaxLoanAmount() / (AIGameSettings.GetValue("difficulty.max_loan")) );
 }

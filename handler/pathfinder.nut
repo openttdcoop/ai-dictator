@@ -14,7 +14,8 @@
 **/
 
 class cPathfinder extends cClass
-// Use it with cPathfinder.GetStatus(src, dst); to create and manage tasks
+// Use it with cPathfinder.GetStatus function to create and manage tasks
+// Return state is -1= error, 2=success, so while -1 or 2 keep querying GetStatus
 	{
 static	database = {};
 static	function GetPathfinderObject(UID)
@@ -160,6 +161,16 @@ function cPathfinder::AdvanceTask(UID)
 		pftask.InfoSign("Pathfinding "+pftask.UID+"... FOUND!");
 		pftask.solve=check;
 		return;
+		}
+	if (pftask.timer % 10 == 0)
+		{
+//		AISign.BuildSign(pftask.source[0], "S0");
+		local clean = AITile.IsBuildable(pftask.target[0]);
+	print("pathfinder state of "+pftask.target[0]+" = "+clean);
+		clean = (!clean && cTileTools.DemolishTile(pftask.target[0]));
+		clean = (clean && AITile.IsBuildable(pftask.source[0]));
+		clean = (!clean && cTileTools.DemolishTile(pftask.source[0]));
+		if (!clean)	maxTimer = pftask.timer - 1;
 		}
 	if (check == null || pftask.timer > maxTimer)
 		{

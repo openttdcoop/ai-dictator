@@ -119,15 +119,16 @@ function cMain::CheckAccount()
 	local maxLoan = AICompany.GetMaxLoanAmount();
 	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	local goodcash = bank.mincash * cBanker.GetInflationRate();
+print("bank.mincash="+bank.mincash+" inflation="+cBanker.GetInflationRate());
 	if (ourLoan == 0 && cash >= bank.mincash)	bank.unleash_road=true;
 	if (!cBanker.CanBuyThat(goodcash))	{ DInfo("Low on cash, disabling build : "+goodcash,1); bank.canBuild=false; }
 	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
 	if (maxLoan > 2000000 && ourLoan > 0 && route.RouteIndexer.Count() > 6)
 		{ DInfo("Trying to repay loan",1); bank.canBuild=false; } // wait to repay loan
 	local veh=AIVehicleList();
-	if (bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle",1); bank.canBuild=false; }
+	if (bank.busyRoute)	{ DInfo("Delaying build: we have work to do with vehicle : money="+carrier.vehnextprice,1); bank.canBuild=false; }
 	if (INSTANCE.buildDelay > 0)	{ DInfo("Builds delayed: "+INSTANCE.buildDelay,1); bank.canBuild=false; }
-	if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade",1); bank.canBuild=false; }
+	if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade : money="+carrier.vehnextprice,1); bank.canBuild=false; }
 	local veh=AIVehicleList();
 	if (veh.IsEmpty())
 		{

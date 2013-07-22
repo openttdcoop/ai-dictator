@@ -261,7 +261,7 @@ function cJobs::EstimateCost()
 			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
 			if (engine == -1)	engine=INSTANCE.main.carrier.ChooseRoadVeh(this.cargoID);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
-						else	{ engineprice=500000000; INSTANCE.use_road=false; }
+						else	{ engineprice=100000; INSTANCE.use_road=false; }
 			money+=engineprice;
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP))*cBanker.GetInflationRate();
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT))*cBanker.GetInflationRate();
@@ -282,10 +282,10 @@ function cJobs::EstimateCost()
 							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
 							if (rtype==-1)	rtype=null;
 							}
-						else	{ engineprice=500000000; 	INSTANCE.use_train=false; }
+						else	{ engineprice=500000; 	INSTANCE.use_train=false; }
 			money+=engineprice;
 			money+=(8*clean);
-			if (rtype==null)	money+=500000000;
+			if (rtype==null)	money+=500000;
 					else	{
 						money+=((20+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)))*cBanker.GetInflationRate();
 						money+=((2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)))*cBanker.GetInflationRate(); // station train 5 length
@@ -297,7 +297,7 @@ function cJobs::EstimateCost()
 			// 2 vehicle + 2 stations + 2 depot
 			engine=null;
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
-						else	{ engineprice=500000000; INSTANCE.use_air=false; }
+						else	{ engineprice=500000; INSTANCE.use_air=false; }
 			money+=engineprice*2;
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK))*cBanker.GetInflationRate();
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT))*cBanker.GetInflationRate();
@@ -308,7 +308,7 @@ function cJobs::EstimateCost()
 			engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIR);
 			if (engine==-1)	engine=INSTANCE.main.carrier.ChooseAircraft(this.cargoID, this.distance, AircraftType.EFFICIENT);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
-						else	engineprice=500000000;
+						else	engineprice=500000;
 			money+=engineprice*2;
 			money+=2*(AIAirport.GetPrice(INSTANCE.main.builder.GetAirportType()));
 			daystransit=6;
@@ -634,7 +634,7 @@ function cJobs::RawJobHandling()
 // Find a raw Job and add possible jobs from it to jobs database
 	{
 	if (cJobs.rawJobs.IsEmpty())	return;
-	local looper = (4 - cRoute.RouteIndexer.Count());
+	local looper = (2 - cRoute.RouteIndexer.Count());
 	if (looper < 1)	looper=1;
 	for (local j=0; j < looper; j++)
 		{
