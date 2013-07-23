@@ -65,7 +65,7 @@ function cRoute::SetRouteGroupName(groupID, r_source, r_target, r_stown, r_ttown
 	if (r_ttown)	dt="T";
 	if (r_source==null)	r_source="B";
 	if (r_target==null)	r_target="B";
-	local endname="*"+r_cargo+"*"+st+r_source+"*"+dt+r_target+"*"+sourceStaID+"*"+targetStaID;
+	local endname="*"+r_cargo+"*"+st+r_source+"*"+dt+r_target+"*"+sourceStaID+"*"+targetStaID+"*0"; // *0 reserved for saving purpose
 	if (isVirtual)	endname="-NETWORK "+AICargo.GetCargoLabel(r_cargo);
 	dummychar=dummycount.tochar();
 	local groupname=dummychar+endname;
@@ -76,6 +76,23 @@ function cRoute::SetRouteGroupName(groupID, r_source, r_target, r_stown, r_ttown
 		groupname=dummychar+endname;
 		}
 	}
+
+function cRoute::Route_GroupNameSave()
+// This update groupname with new state of the 4 properites we save in its name
+// "this" must be an instance of cRoute
+{
+	local newstate = this instanceof cRoute;
+	if (!newstate)	{ DError("must be called by an instance of cRoute",1);	return false; }
+	if (this.GroupID == null || !AIGroup.IsValidGroup(this.GroupID))	return false;
+	newstate = 0;
+	newstate = this.Source_RailEntry ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
+	newstate = this.Target_RailEntry ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
+	newstate = this.Primary_RailLink ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
+	newstate = this.Secondary_RailLink ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
+	local gname = AIGroup.GetName(GroupID);
+	gname = gname.slice(0, gname.len()) + "*" + newstate; // replace last char
+	return AIGroup.SetName(this.GroupID, gname);
+}
 
 function cRoute::RouteBuildGroup()
 // Build a group for that route

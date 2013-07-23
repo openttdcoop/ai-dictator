@@ -37,16 +37,16 @@ static	function GetTrainObject(vehicleID)
 	extraengine		= null;	// true if we have two engines
 	
 	constructor()
-		{ // * are saved variables
-		vehicleID		= null;	// *
+		{
+		vehicleID		= null;
 		numberLocos		= 0;
 		numberWagons	= 0;
 		length		= 0;
-		srcStationID	= null;	// *
-		dstStationID	= null;	// *
-		src_useEntry	= null;	// *
-		dst_useEntry	= null;	// *
-		stationbit		= 0;		// *
+		srcStationID	= null;
+		dstStationID	= null;
+		src_useEntry	= null;
+		dst_useEntry	= null;
+		stationbit		= 0;
 		full			= false;
 		wagonPrice		= 0;
 		lastdepotvisit	= 0;
@@ -96,12 +96,12 @@ function cTrain::TrainSetStation(vehID, stationID, isSource, useEntry, taker)
 		{
 		train.src_useEntry=useEntry;
 		train.srcStationID=stationID;
-		if (taker)	train.stationbit+=1;
+		if (taker)	train.stationbit=cMisc.SetBit(train.stationbit, 0);
 		}
 	else	{
 		train.dst_useEntry=useEntry;
 		train.dstStationID=stationID;
-		if (taker)	train.stationbit+=2;
+		if (taker)	train.stationbit=cMisc.SetBit(train.stationbit, 1);
 		}
 	DInfo("Train "+cCarrier.GetVehicleName(vehID)+" assign to station "+cStation.GetStationName(stationID),2);
 	}
@@ -115,9 +115,9 @@ function cTrain::DeleteVehicle(vehID)
 		if (AIVehicle.IsValidVehicle(vehID))	atrain=cTrain.Load(vehID); // if invalid cTrain.Load would call DeleteVehicle and infinite loop
 								else	{ atrain=cTrain(); atrain.vehicleID=vehID; }
 		DInfo("Removing train "+cCarrier.GetVehicleName(vehID)+" from database",2);
-		local taker=((atrain.stationbit & 1) == 1);
+		local taker = cMisc.CheckBit(atrain.stationbit, 0);
 		if (atrain.srcStationID != null)	cStationRail.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID);
-		taker=((atrain.stationbit & 2) == 2);
+		taker = cMisc.CheckBit(atrain.stationbit, 1);
 		if (atrain.dstStationID != null)	cStationRail.StationRemoveTrain(taker, atrain.dst_useEntry, atrain.dstStationID);
 		delete cTrain.vehicledatabase[vehID];
 		}

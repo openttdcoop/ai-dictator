@@ -175,7 +175,7 @@ function cCarrier::CreateTrainsEngine(engineID, depot, cargoID)
 		{
 		DInfo("Failure to buy "+AIEngine.GetName(engineID)+" at "+depot+" err: "+AIError.GetLastErrorString(),1);
 		INSTANCE.main.carrier.highcostTrain=price;
-		INSTANCE.carrier.vehnextprice+=price;
+		INSTANCE.main.carrier.vehnextprice+=price;
 		return -1;
 		}
 	else	{

@@ -47,11 +47,12 @@ static	function GetRouteObject(UID)
 	CargoID		= null;	// the cargo id
 	DateVehicleDelete = null;	// date of last time we remove a vehicle
 	DateHealthCheck	= null;	// date of last time we check route health
-	Source_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
-	Target_RailEntry	= null;	// if rail, do trains use that station entry=true, or exit=false
-	Primary_RailLink	= null;	// true if we have build the main connecting rails from source to target station
-	Secondary_RailLink= null;	// true if we also buld the alternate path from source to target
+	Source_RailEntry	= null;	// * if rail, do trains use that station entry=true, or exit=false
+	Target_RailEntry	= null;	// * if rail, do trains use that station entry=true, or exit=false
+	Primary_RailLink	= null;	// * true if we have build the main connecting rails from source to target station
+	Secondary_RailLink= null;	// * true if we also build the alternate path from source to target
 	Twoway		= null;	// if source station and target station accept but also produce, it's a twoway route
+// the state of * are store within the group name to help loading game
 
 	constructor()
 		{ // * are saved variables
@@ -66,15 +67,15 @@ static	function GetRouteObject(UID)
 		StationType		= null;
 		RailType		= null;
 		Distance		= 0;
-		Status		= 0;			// *
+		Status		= 0;
 		GroupID		= null;		// *
 		CargoID		= null;
 		DateVehicleDelete = 0;
 		DateHealthCheck	= 0;
-		Source_RailEntry	= null;		// *
-		Target_RailEntry	= null;		// *
-		Primary_RailLink	= false;		// *
-		Secondary_RailLink= false;		// *
+		Source_RailEntry	= null;
+		Target_RailEntry	= null;
+		Primary_RailLink	= false;
+		Secondary_RailLink= false;
 		Twoway		= false;
 		this.ClassName = "cRoute";
 		}

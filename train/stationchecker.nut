@@ -428,6 +428,7 @@ print("result from pathfinder task for alttrack ="+result);
 		}
 	else	{
 		roadObj.Secondary_RailLink=true;
+		roadObj.Route_GroupNameSave();
 		cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 		cBuilder.RailConnectorSolver(dstpos, dstpos+cTileTools.GetForwardRelativeFromDirection(cBuilder.GetDirection(dstlink, dstpos)), true);
 		}
@@ -641,7 +642,7 @@ print("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" n
 	local cangrow = (thatstation.s_Size != thatstation.s_MaxSize);
 	if (cangrow)	DInfo("Station can be upgrade",1);
 			else	DInfo("Station is at its maximum size",1);
-	local cmpsize = thatstation.s_Train[TrainType.MAXTRAIN];
+	local cmpsize = thatstation.s_Train[TrainType.GOODPLATFORM];
 	if (newStationSize > cmpsize && cangrow)		thatstation.RailStationPhaseUpdate();
 	DInfo("Station have "+cmpsize+" working platforms",1);
 	if (newStationSize > cmpsize)
@@ -713,6 +714,6 @@ print("roadrailentry="+road.Target_RailEntry);
 	if (useEntry)	r_depot = AIRail.IsRailDepotTile(thatstation.s_EntrySide[TrainSide.DEPOT]);
 			else	r_depot = AIRail.IsRailDepotTile(thatstation.s_ExitSide[TrainSide.DEPOT]);
 	if (!r_depot)	cBuilder.RailStationPhaseBuildDepot(thatstation, useEntry);
-	if (newStationSize > thatstation.s_Train[TrainType.MAXTRAIN])	{ print("refuse more train"); return false; }
+	if (newStationSize > thatstation.s_Train[TrainType.GOODPLATFORM])	{ print("refuse more train"); return false; }
 	return canAddTrain;
 }

@@ -263,10 +263,10 @@ function cJobs::EstimateCost()
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	{ engineprice=100000; INSTANCE.use_road=false; }
 			money+=engineprice;
-			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP))*cBanker.GetInflationRate();
-			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT))*cBanker.GetInflationRate();
+			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
+			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT));
 			money+=4*clean;
-			money+=(4+distance)*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD))*cBanker.GetInflationRate();
+			money+=(4+distance)*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD));
 			daystransit=16;
 		break;
 		case	RouteType.RAIL:
@@ -275,9 +275,6 @@ function cJobs::EstimateCost()
 			engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
 			if (engine == -1)	engine=INSTANCE.main.carrier.ChooseRailEngine(null,this.cargoID, true);
 			if (engine != null)	{
-							/*engineprice+=cEngine.GetPrice(engine.Begin());
-							engineprice+=2*cEngine.GetPrice(engine.GetValue(engine.Begin()));
-							rtype=cmain.vehicle.GetRailTypeNeedForEngine(engine.Begin());*/
 							engineprice+=cEngine.GetPrice(engine);
 							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
 							if (rtype==-1)	rtype=null;
@@ -287,20 +284,20 @@ function cJobs::EstimateCost()
 			money+=(8*clean);
 			if (rtype==null)	money+=500000;
 					else	{
-						money+=((20+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)))*cBanker.GetInflationRate();
-						money+=((2+5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION)))*cBanker.GetInflationRate(); // station train 5 length
-						money+=(2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT)))*cBanker.GetInflationRate();
+						money+=((20+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)));
+						money+=((5)*(AIRail.GetBuildCost(rtype, AIRail.BT_STATION))); // station train 5 length
+						money+=(2*(AIRail.GetBuildCost(rtype, AIRail.BT_DEPOT)));
 						}
 			daystransit=4;
 		break;
-		case	RouteType.WATER: //TODO: fixme boat
+		case	RouteType.WATER:
 			// 2 vehicle + 2 stations + 2 depot
 			engine=null;
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	{ engineprice=500000; INSTANCE.use_air=false; }
 			money+=engineprice*2;
-			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK))*cBanker.GetInflationRate();
-			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT))*cBanker.GetInflationRate();
+			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK));
+			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT));
 			daystransit=32;
 		break;
 		case	RouteType.AIR:

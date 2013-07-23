@@ -138,6 +138,7 @@ function cLoader::LoadOldSave()
 		if (saveit && cMisc.ValidInstance(obj.SourceStation) && cMisc.ValidInstance(obj.TargetStation) && cMisc.ValidInstance(obj.SourceProcess) && cMisc.ValidInstance(obj.TargetProcess))
 			{
 			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
+			obj.Route_GroupNameSave();
 			obj.RouteDone();
 			DInfo("Validate... "+obj.Name,0);
 			}
@@ -248,6 +249,7 @@ function cLoader::Load154()
 			obj.TargetStation = cStation.Load(obj.TargetStation);
 			if (cMisc.ValidInstance(obj.TargetStation))	obj.TargetStation.OwnerClaimStation(obj.UID);
 			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
+			obj.Route_GroupNameSave();
 			obj.RouteDone();
 			DInfo("Validate... "+obj.Name,0);
 			iter++;
@@ -372,6 +374,7 @@ function cLoader::Load166()
 			if (cMisc.ValidInstance(obj.SourceStation))	obj.SourceStation.OwnerClaimStation(obj.UID);
 			if (cMisc.ValidInstance(obj.TargetStation))	obj.TargetStation.OwnerClaimStation(obj.UID);
 			cRoute.SetRouteGroupName(obj.GroupID, obj.SourceProcess.ID, obj.TargetProcess.ID, obj.SourceProcess.IsTown, obj.TargetProcess.IsTown, obj.CargoID, false, obj.SourceStation.s_ID, obj.TargetStation.s_ID);
+			obj.Route_GroupNameSave();
 			obj.RouteDone();
 			DInfo("Validate... "+obj.Name,0);
 			}

@@ -633,6 +633,7 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 	INSTANCE.main.route.Source_RailEntry=srcUseEntry;
 	INSTANCE.main.route.Target_RailEntry=dstUseEntry;
 	INSTANCE.main.route.Primary_RailLink=true;
+	INSTANCE.main.route.Route_GroupNameSave();
 	cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 	return true;
 }

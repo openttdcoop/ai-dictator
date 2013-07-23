@@ -22,7 +22,7 @@ enum TrainSide {
 	DEPOT }
 
 enum	TrainType {
-	STATUSBIT,
+	STATIONBIT,
 	TET,
 	TXT,
 	TED,
@@ -34,9 +34,8 @@ enum	TrainType {
 	PLATFORM_LEFT,
 	PLATFORM_RIGHT,
 	OWNER,
-	MAXTRAIN,
-	MAXENTRY,
-	MAXEXIT }
+	GOODPLATFORM
+	}
 
 
 class cStation extends cClass
@@ -73,7 +72,7 @@ static	function GetStationObject(stationID)
 	constructor()
 		{ // * are saved variables
 		this.ClassName="cStation";
-		this.s_ID			= -1;
+		this.s_ID			= -1;						// *
 		this.s_Type			= -1;
 		this.s_SubType		= -1;
 		this.s_Location		= -1;

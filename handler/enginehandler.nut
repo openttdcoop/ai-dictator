@@ -202,10 +202,10 @@ function cEngine::CanPullCargo(engineID, cargoID)
 // if NicePlay is true we return the AIEngine.CanPullCargo version
 // else we return real usable wagons list for a train
 	{
-	local NicePlay=DictatorAI.GetSetting("use_nicetrain");
+	local NicePlay = !DictatorAI.GetSetting("use_nicetrain");
 	if (!AIEngine.IsValidEngine(engineID) || !AICargo.IsValidCargo(cargoID) || AIEngine.IsWagon(engineID))
 		{ INSTANCE.DError("Preconditions fail engineID="+engineID+" cargoID="+cargoID,2); return false; }
-	if (!NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
+	if (NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
 	local engine=cEngine.Load(engineID);
 	local wagonlist=AIEngineList(AIVehicle.VT_RAIL);
 	wagonlist.Valuate(AIEngine.IsWagon);

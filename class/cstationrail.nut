@@ -31,7 +31,7 @@ class cStationRail extends cStation
 						// 4: exit_out_link
 						// 5: exit_depot
 	s_Train		= null;	// Special list holding train infos
-						// 0: station bit, see bellow
+						// 0: STATIONBIT, see bellow
 						// 1: number of train dropper using entry
 						// 2: number of train dropper using exit
 						// 3: number of train taker using entry
@@ -44,15 +44,14 @@ class cStationRail extends cStation
 						// 10: most right platform position
 						// 11: main route owner
 						// 12: it's the number of all working platforms
-						// 13: the station entry capacity (max trains that could use it)
-						// 14: the station exit capacity
-/*	station bit:
-	bit0 entry is working on/off
-	bit1 exit is working on/off
-	bit2 unused
-	bit3 unused
-	bit4 main train line fire done
-	bit5 alt train line fire done
+
+/*	STATIONBIT
+	bit0 entry is built 1 / not working 0
+	bit1 exit is built 1 / not working 0
+	bit2 as source station entry is use 1, exit is use 0
+	bit3 as target station entry is use 1, exit is use 0
+	bit4 main train line fire done yes 1/0 no
+	bit5 alt train line fire done yes 1/0 no
 */
 	s_Platforms		= null;	// AIList of platforms: item=platform location
 						// value= bit0 on/off entry status
@@ -67,14 +66,12 @@ class cStationRail extends cStation
 		this.s_Platforms = AIList();
 		this.s_EntrySide = array(6,-1);
 		this.s_ExitSide = array(6,-1);
-		this.s_Train[TrainType.STATUSBIT]=3; // enable IN & OUT of station
+		this.s_Train[TrainType.STATIONBIT]=3; // enable IN & OUT of station
 		this.s_Train[TrainType.TET]=0;
 		this.s_Train[TrainType.TED]=0;
 		this.s_Train[TrainType.TXT]=0;
 		this.s_Train[TrainType.TXD]=0;
-		this.s_Train[TrainType.MAXTRAIN]=1;
-		this.s_Train[TrainType.MAXENTRY]=0;
-		this.s_Train[TrainType.MAXEXIT]=0;
+		this.s_Train[TrainType.GOODPLATFORM]=1;
 		}
 }
 
@@ -154,7 +151,7 @@ function cStationRail::IsRailStationEntryOpen(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local entry=thatstation.s_Train[TrainType.STATUSBIT];
+	local entry=thatstation.s_Train[TrainType.STATIONBIT];
 	if (cMisc.CheckBit(entry,0))	{ DInfo("Station "+thatstation.s_Name+" entry is open",2); return true; }
 	DInfo("Station "+thatstation.s_Name+" entry is CLOSE",2);
 	return false;
@@ -167,7 +164,7 @@ function cStationRail::IsRailStationExitOpen(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local exit=thatstation.s_Train[TrainType.STATUSBIT];
+	local exit=thatstation.s_Train[TrainType.STATIONBIT];
 	if (cMisc.CheckBit(exit,1))	{ DInfo("Station "+thatstation.s_Name+" exit is open",2); return true; }
 	DInfo("Station "+thatstation.s_Name+" exit is CLOSE",2);
 	return false;
@@ -180,9 +177,9 @@ function cStationRail::RailStationCloseEntry(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local entry=thatstation.s_Train[TrainType.STATUSBIT];
+	local entry=thatstation.s_Train[TrainType.STATIONBIT];
 	entry=cMisc.ClearBit(entry, 0); //entry=entry ^ 1;
-	thatstation.s_Train[TrainType.STATUSBIT]= entry;
+	thatstation.s_Train[TrainType.STATIONBIT]= entry;
 	DInfo("Closing the entry of station "+thatstation.s_Name,1);
 }
 
@@ -193,9 +190,9 @@ function cStationRail::RailStationCloseExit(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local exit=thatstation.s_Train[TrainType.STATUSBIT];
+	local exit=thatstation.s_Train[TrainType.STATIONBIT];
 	exit=cMisc.ClearBit(exit, 1); //exit=exit ^ 2;
-	thatstation.s_Train[TrainType.STATUSBIT]= exit;
+	thatstation.s_Train[TrainType.STATIONBIT]= exit;
 	DInfo("Closing the exit of station "+thatstation.s_Name,1);
 }
 
@@ -206,9 +203,9 @@ function cStationRail::RailStationSetPrimarySignalBuilt(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local entry=thatstation.s_Train[TrainType.STATUSBIT];
+	local entry=thatstation.s_Train[TrainType.STATIONBIT];
 	entry=cMisc.SetBit(entry, 4);
-	thatstation.s_Train[TrainType.STATUSBIT]= entry;
+	thatstation.s_Train[TrainType.STATIONBIT]= entry;
 }
 
 function cStationRail::RailStationSetSecondarySignalBuilt(stationID=null)
@@ -218,9 +215,9 @@ function cStationRail::RailStationSetSecondarySignalBuilt(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local entry=thatstation.s_Train[TrainType.STATUSBIT];
+	local entry=thatstation.s_Train[TrainType.STATIONBIT];
 	entry=cMisc.SetBit(entry, 5);
-	thatstation.s_Train[TrainType.STATUSBIT]= entry;
+	thatstation.s_Train[TrainType.STATIONBIT]= entry;
 }
 
 function cStationRail::IsRailStationPrimarySignalBuilt(stationID=null)
@@ -230,7 +227,7 @@ function cStationRail::IsRailStationPrimarySignalBuilt(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local exit=thatstation.s_Train[TrainType.STATUSBIT];
+	local exit=thatstation.s_Train[TrainType.STATIONBIT];
 	if (cMisc.CheckBit(exit, 4))
 		{
 		DInfo("Station "+thatstation.s_Name+" signals are built on primary track",2);
@@ -273,7 +270,7 @@ function cStationRail::IsRailStationSecondarySignalBuilt(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
-	local exit=thatstation.s_Train[TrainType.STATUSBIT];
+	local exit=thatstation.s_Train[TrainType.STATIONBIT];
 	if (cMisc.CheckBit(exit, 5))
 		{
 		DInfo("Station "+thatstation.s_Name+" signals are built on secondary track",2);
@@ -390,7 +387,7 @@ cDebug.PutSign(lookup+start,"*");
 			}	
 //		}
 	DInfo("Station "+thatstation.s_Name+" have "+thatstation.s_Platforms.Count()+" platforms, "+goodCounter+" platforms are ok",2);
-	thatstation.s_Train[TrainType.MAXTRAIN]=goodCounter;
+	thatstation.s_Train[TrainType.GOODPLATFORM]=goodCounter;
 	thatstation.s_Size=thatstation.s_Platforms.Count();
 	thatstation.s_Train[TrainType.PLATFORM_LEFT]=topLeftPlatform;
 	thatstation.s_Train[TrainType.PLATFORM_RIGHT]=topRightPlatform;
