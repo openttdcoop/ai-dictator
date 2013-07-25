@@ -162,11 +162,9 @@ function cPathfinder::AdvanceTask(UID)
 		pftask.solve=check;
 		return;
 		}
-	if (pftask.timer % 10 == 0)
+	if (pftask.timer % 10 == 0 && pftask.useEntry != null)
 		{
-//		AISign.BuildSign(pftask.source[0], "S0");
 		local clean = AITile.IsBuildable(pftask.target[0]);
-	print("pathfinder state of "+pftask.target[0]+" = "+clean);
 		clean = (!clean && cTileTools.DemolishTile(pftask.target[0]));
 		clean = (clean && AITile.IsBuildable(pftask.source[0]));
 		clean = (!clean && cTileTools.DemolishTile(pftask.source[0]));
@@ -241,15 +239,7 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 		pftask.pathHandler.cost.tile=100;//70
 		pftask.pathHandler.cost.slope=130;//80
 		pftask.pathHandler.cost.diagonal_tile=110;
-print("s0: "+pftask.source[0]+" s1: "+pftask.source[1]);
-print("t0: "+pftask.target[0]+" t1: "+pftask.target[1]);
-AISign.BuildSign(pftask.source[0], "S0");
-AISign.BuildSign(pftask.source[1], "S1");
-AISign.BuildSign(pftask.target[0], "T0");
-AISign.BuildSign(pftask.target[1], "T1");
-//foreach (node in pftask.source)	print("node = "+node+" type="+typeof(node));
-//foreach (node in [pftask.source])	print("node = "+node+" type="+typeof(node)+" node0="+node[0]+" node1="+node[1]);
-		//pftask.pathHandler.InitializePath([pftask.source[1],pftask.source[0]], [pftask.target[0],pftask.target[1]]);
+
 		pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 		}
 	DInfo("New pathfinder task : "+pftask.UID,1);

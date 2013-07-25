@@ -56,6 +56,7 @@ const	DIR_SW = 3;
 
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
+import("Library.cEngineLib", "", 1);
 
 require("require.nut");
 
@@ -205,26 +206,27 @@ function DictatorAI::Save()
 { // save
 	local table = 
 		{
-		routes = null,
+	//	routes = null,
 		stations = null,
-		busyroute = null,
+		//busyroute = null,
 		virtualpass = null,
 		virtualmail = null,
 		}
 	local all_stations=[];
-	local all_routes=[];
-	local temparray=[];
-
+	//local all_routes=[];
+	//local temparray=[];
+/*
 	// routes
 	foreach (obj in cRoute.database)
 		{
 		if (obj.UID < 2 || obj.UID == null)	continue; // don't save virtual route
 		all_routes.push(obj.VehicleType);
 		all_routes.push(obj.GroupID);
-		}
+		}*/
 	// stations
 	foreach(obj in cStation.stationdatabase)
 		{
+		if (!AIStation.IsValidStation(obj.s_ID))	continue;
 		all_stations.push(obj.s_ID);
 		all_stations.push(obj.s_Depot);
 		if (obj instanceof cStationRail)
@@ -235,9 +237,9 @@ function DictatorAI::Save()
 			}
 		}
 
-	table.routes=all_routes;
+	//table.routes=all_routes;
 	table.stations=all_stations;
-	table.busyroute=main.builder.building_route;
+	//table.busyroute=main.builder.building_route;
 	local netair=cRoute.VirtualAirGroup[0];
 	table.virtualpass=netair;
 	netair=cRoute.VirtualAirGroup[1];
@@ -249,10 +251,10 @@ function DictatorAI::Save()
 function DictatorAI::Load(version, data)
 {
 	DInfo("Loading a saved game with DictatorAI version "+version,0);
-	if ("routes" in data) main.bank.canBuild=data.routes;
+	//if ("routes" in data) main.bank.canBuild=data.routes;
 	if ("stations" in data) main.bank.unleash_road=data.stations;
-	if ("busyroute" in data) main.builder.building_route=data.busyroute;
-	if ("vehicle" in data)	SixMonth=data.vehicle;
+	//if ("busyroute" in data) main.builder.building_route=data.busyroute;
+	//if ("vehicle" in data)	SixMonth=data.vehicle;
 	if ("virtualmail" in data)	TwelveMonth=data.virtualmail;
 	if ("virtualpass" in data)	main.bank.mincash=data.virtualpass;
 	main.bank.busyRoute=version;

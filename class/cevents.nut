@@ -87,7 +87,6 @@ while (AIEventController.IsEventWaiting())
 			local engineID=AIVehicle.GetEngineType(vehicle);
 			INSTANCE.main.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
 			if (engineID != null)	cEngine.RabbitUnset(engineID);
-			INSTANCE.main.carrier.VehicleSellAndDestroyRoute(vehicle); // try to see if the crash vehicle was going to remove a route
 		break;
 		case AIEvent.ET_VEHICLE_WAITING_IN_DEPOT:
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot();

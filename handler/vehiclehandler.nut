@@ -506,72 +506,6 @@ function cCarrier::VehicleSell(veh, recordit)
 	if (recordit)	road.DateVehicleDelete=AIDate.GetCurrentDate();
 }
 
-function cCarrier::VehicleSellAndDestroyRoute(vehicle)
-// This is to watch a group of vehicle to sell, to remove a dead station/route
-// We will callback the handler to remove the route, this might fail if last vehicle is crash
-{
-	local reason = null;
-	if (INSTANCE.main.carrier.ToDepotList.HasItem(vehicle))
-		{
-		reason = INSTANCE.main.carrier.ToDepotList.GetValue(vehicle);
-		INSTANCE.main.carrier.ToDepotList.RemoveItem(vehicle);
-		}
-	if (reason != DepotAction.REMOVEROUTE)	return;
-	if (!AIVehicle.IsValidVehicle(vehicle))	return;
-	local groupID=AIVehicle.GetGroupID(vehicle);
-	local allvehicles=AIVehicleList_Group(groupID);
-	allvehicles.Valuate(AIVehicle.GetState);
-	allvehicles.RemoveValue(AIVehicle.VS_CRASHED);
-	if (allvehicles.Count() > 1)	INSTANCE.main.carrier.VehicleSell(vehicle, false);
-					else	{ // ok we are handling the last one of the group
-						local idx=cRoute.GroupIndexer.GetValue(groupID);
-						local road=cRoute.Load(idx);
-						if (!road)	{ DError("Cannot load that route : "+idx,1); return; }
-						INSTANCE.main.carrier.VehicleSell(vehicle, false);
-						cRoute.InRemoveList(road.UID);
-						}
-}
-
-function cCarrier::VehicleGroupSendToDepotAndSell(idx)
-// Send & sell all vehicles from that route to remove the route
-{
-	local road=cRoute.Load(idx);
-	if (!road)	return false;
-	local vehlist=null;
-	if (road.GroupID != null)
-		{
-		vehlist=AIVehicleList_Group(road.GroupID);
-		if (!vehlist.IsEmpty())	{
-						DInfo("Removing a group of vehicle : "+vehlist.Count(),1);
-						foreach (vehicle, dummy in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.REMOVEROUTE);
-						}
-		}
-	else	return false;
-return true;
-}
-
-function cCarrier::VehicleListSendToDepotAndWaitSell(vehlist)
-// Send & sell all vehicles from an AIList of vehicles, we will wait 2 months or if all vehicles are sold
-{
-	if (vehlist instanceof AIList)	{}
-						else	return;
-	foreach (vehicle, dummy in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
-	foreach (vehicle, dummy in vehlist)
-		{
-		local waitmax=120; // 1 month
-		local waitcount=0;
-		local wait=true;
-		do	{
-			AIController.Sleep(35);
-			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
-			wait=(AIVehicle.IsValidVehicle(vehicle));
-			DInfo("wait? "+AIVehicle.IsValidVehicle(vehicle)+" waiting:"+wait+" waitcount="+waitcount,2);
-			waitcount++;
-			if (waitcount > waitmax)	wait=false;
-			} while (wait);
-		}
-	}
-
 function cCarrier::VehicleSendToDepotAndSell(uid)
 // Send and sell all vehicles from route uid, used by checks.nut to repair road
 {
@@ -606,6 +540,7 @@ tlist.Valuate(AIVehicle.IsStoppedInDepot);
 tlist.KeepValue(1);
 foreach (i, dummy in tlist)
 	{
+	print("WAGONS :"+AIVehicle.GetNumWagons(i)+" in "+AIVehicle.GetName(i));
 	INSTANCE.Sleep(1);
 	local reason=DepotAction.SELL;
 	local parameter=0;
@@ -673,7 +608,7 @@ foreach (i, dummy in tlist)
 			INSTANCE.main.carrier.VehicleSell(i,false);
 		break;
 		case	DepotAction.REMOVEROUTE:
-			INSTANCE.main.carrier.VehicleSellAndDestroyRoute(i);
+			INSTANCE.main.carrier.VehicleSell(i, false);
 		break;
 		case	DepotAction.ADDWAGON:
 			DInfo("Vehicle "+name+" is waiting at depot to get "+parameter+" wagons",1);

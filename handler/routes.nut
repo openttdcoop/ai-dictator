@@ -85,10 +85,10 @@ function cRoute::Route_GroupNameSave()
 	if (!newstate)	{ DError("must be called by an instance of cRoute",1);	return false; }
 	if (this.GroupID == null || !AIGroup.IsValidGroup(this.GroupID))	return false;
 	newstate = 0;
-	newstate = this.Source_RailEntry ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
-	newstate = this.Target_RailEntry ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
-	newstate = this.Primary_RailLink ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
-	newstate = this.Secondary_RailLink ? cMisc.SetBit(newstate, 0) : cMisc.SetBit(newstate, 1);
+	newstate = this.Source_RailEntry ? cMisc.SetBit(newstate, 0) : cMisc.ClearBit(newstate, 0);
+	newstate = this.Target_RailEntry ? cMisc.SetBit(newstate, 1) : cMisc.ClearBit(newstate, 1);
+	newstate = this.Primary_RailLink ? cMisc.SetBit(newstate, 2) : cMisc.ClearBit(newstate, 2);
+	newstate = this.Secondary_RailLink ? cMisc.SetBit(newstate, 3) : cMisc.ClearBit(newstate, 3);
 	local gname = AIGroup.GetName(GroupID);
 	gname = gname.slice(0, gname.len()) + "*" + newstate; // replace last char
 	return AIGroup.SetName(this.GroupID, gname);
@@ -160,10 +160,8 @@ function cRoute::InRemoveList(uid)
 // Add a route to route damage with dead status so it will get clear
 {
 	local road = cRoute.GetRouteObject(uid);
-	if (road == null)	return;
-	local good = (road.GroupID != null);
-	if (good && AIGroup.IsValidGroup(road.GroupID) && !AIVehicleList_Group(road.GroupID).IsEmpty())	return;
 	if (cRoute.RouteDamage.HasItem(uid))	cRoute.RouteDamage.RemoveItem(uid);
+	if (road == null)	{ return; }
 	cRoute.RouteDamage.AddItem(uid, RouteStatus.DEAD);
 }
 
@@ -174,16 +172,27 @@ function cRoute::RouteIsNotDoable()
 	DInfo("Marking route "+cRoute.GetRouteName(this.UID)+" undoable !!!",1);
 	cJobs.JobIsNotDoable(this.UID);
 	this.Status = RouteStatus.DEAD;
-	if (!INSTANCE.main.carrier.VehicleGroupSendToDepotAndSell(this.UID))	{ cRoute.InRemoveList(this.UID); }
+	cRoute.InRemoveList(this.UID);
 	}
 
 function cRoute::RouteUndoableFreeOfVehicle(uid)
 // This is the last step of marking a route undoable
 	{
+	if (uid < 2)	return; // don't touch virtuals
 	local route = cRoute.GetRouteObject(uid); // the Load function will return false has route is mark DEAD
 	if (route != null)
 		{
-		if (route.UID < 2)	return; // don't touch virtual routes
+		local vehlist = AIList();
+		if (route.GroupID != null && AIGroup.IsValidGroup(route.GroupID))
+			{
+			vehlist = AIVehicleList_Group(route.GroupID);
+			vehlist.Valuate(AIVehicle.GetState);
+			vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
+			if (!vehlist.IsEmpty())	foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSell(veh, false);
+			vehlist = AIVehicleList_Group(route.GroupID);
+			foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.REMOVEROUTE);
+			}
+		if (!vehlist.IsEmpty())	return;	
 		local stasrc = null;
 		local stadst = null;
 		if (cMisc.ValidInstance(route.SourceStation)) route.RouteReleaseStation(route.SourceStation.s_ID);
@@ -193,7 +202,7 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 		if (route.GroupID != null)	{ AIGroup.DeleteGroup(route.GroupID); cRoute.GroupIndexer.RemoveItem(route.GroupID); }
 		if (route.UID in cRoute.database)
 			{
-			DInfo("BREAK ROUTE -> Removing route "+route.UID+" from database",1);
+			DInfo("-> Removing route "+route.UID+" from database",1);
 			cRoute.RouteIndexer.RemoveItem(route.UID);
 			delete cRoute.database[route.UID];
 			}

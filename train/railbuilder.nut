@@ -615,6 +615,7 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 					if (result != 2)
 						{
 						if (result == -1)	cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
+						cError.RaiseError();
 						return false;
 						}
 					else	retry=false;

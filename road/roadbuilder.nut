@@ -709,6 +709,9 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 	local work=null;
 	if (start)	work=road.SourceStation;
 		else	work=road.TargetStation;
+	local in_town = false;
+	if (start)	in_town = road.SourceProcess.IsTown;
+		else	in_town = road.TargetProcess.IsTown;
 	DInfo("Upgrading road station "+work.s_Name,0);
 	work.s_DateLastUpgrade = AIDate.GetCurrentDate(); // setup the date in case of failure
 	local depot_id=work.s_Depot;
@@ -803,7 +806,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 		}
 	DInfo("2nd try don't care roads",2);
 	// same as upper but destructive
-	if (new_sta_pos == -1)
+	if (new_sta_pos == -1 && !in_town)
 		{
 		for (local i=0; i < upgradepos.len()-1; i++)
 			{

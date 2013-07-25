@@ -35,31 +35,13 @@ function cBuilder::DestroyStation(stationid)
 			DInfo("Can't remove station "+wasnamed+" ! Station is still used by "+temp.s_Owner.Count()+" routes",1);
 			return false;
 			}
-		// check station is old enough, it cost money, but keeping it we could reuse it without paying again the rating costs to rebuild one
 		local now = AIDate.GetCurrentDate();
-		if (now - temp.s_DateBuilt < 180) // kept stations for half a year
+		if (now - temp.s_DateBuilt < 30 && !AIController.GetSetting("infrastructure_maintenance"))
 			{
 			DInfo("Station "+wasnamed+" is not old enough. Keeping it for now.",1);
 			return false;
 			}
 		}
-	// check if we have vehicle using it
-	local vehcheck=AIVehicleList_Station(stationid);
-	vehcheck.Valuate(AIVehicle.GetGroupID);
-	vehcheck.RemoveValue(cRoute.GetVirtualAirPassengerGroup()); // don't touch network aircrafts
-	vehcheck.RemoveValue(cRoute.GetVirtualAirMailGroup());
-	if (!vehcheck.IsEmpty())
-		{
-		DWarn("Sending "+vehcheck.Count()+" vehicles using station "+wasnamed+" to depot",1);
-		cCarrier.VehicleListSendToDepotAndWaitSell(vehcheck)
-		vehcheck=AIVehicleList_Station(stationid); // recheck
-		if (!vehcheck.IsEmpty())
-			{
-			DWarn("We still have vehicle using station "+wasnamed,1);
-			return false;
-			}
-		}
-	// now remove it
 	DInfo("Destroying station "+wasnamed,0);
 	if (exist)
 		{
@@ -70,7 +52,7 @@ function cBuilder::DestroyStation(stationid)
 			}
 		if (!cBuilder.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
 								else	{ DInfo("Removing depot link to station "+wasnamed,0); }
-		AIController.Sleep(10);
+		AIController.Sleep(1);
 		if (!cStation.DeleteStation(stationid))	return false;
 		}
 	local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));

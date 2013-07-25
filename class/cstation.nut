@@ -209,7 +209,7 @@ function cStation::InitNewStation(stationID)
 	local _Location = AIStation.GetLocation(stationID);
 	local _oldstation = cStation.GetStationObject(stationID); // lookout if we knows this one already
 	local _station = null;
-	local nothing = 0; // make sure no foreach bug is bugging us
+	local nothing = 0; // make sure no foreach bug is bugging us, keep this here to prevent it
 	switch (_StationType)
 		{
 		case	AIStation.STATION_TRAIN:

@@ -108,7 +108,7 @@ if (!sta_list.IsEmpty())	foreach (sta_id, dummy in sta_list)
 	{
 	stations=cStation.Load(sta_id);
 	if (!stations)	continue;
-	if (stations.s_Owner.IsEmpty())	{ cDebug.PutSign(stations.s_Location, "NOT OWN"); print("BUG NOT OWN"); }
+	if (stations.s_Owner.IsEmpty())	{ cDebug.PutSign(stations.s_Location, "NOT OWN"); print("station "+AIStation.GetName(sta_id)+" BUG NOT OWN"); }
 	}
 }
 
