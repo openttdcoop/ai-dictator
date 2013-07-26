@@ -25,7 +25,7 @@ require("class/version.nut");
    function GetDate()          { return "2010-12-26"; }
    function CreateInstance()   { return "DictatorAI"; }
    function GetShortName()     { return "DCTR"; }
-   function GetAPIVersion()    { return "1.2"; }
+   function GetAPIVersion()    { return "1.3"; }
    
    function GetSettings() {
 

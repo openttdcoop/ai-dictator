@@ -85,12 +85,12 @@ function cRoute::Route_GroupNameSave()
 	if (!newstate)	{ DError("must be called by an instance of cRoute",1);	return false; }
 	if (this.GroupID == null || !AIGroup.IsValidGroup(this.GroupID))	return false;
 	newstate = 0;
-	newstate = this.Source_RailEntry ? cMisc.SetBit(newstate, 0) : cMisc.ClearBit(newstate, 0);
-	newstate = this.Target_RailEntry ? cMisc.SetBit(newstate, 1) : cMisc.ClearBit(newstate, 1);
-	newstate = this.Primary_RailLink ? cMisc.SetBit(newstate, 2) : cMisc.ClearBit(newstate, 2);
-	newstate = this.Secondary_RailLink ? cMisc.SetBit(newstate, 3) : cMisc.ClearBit(newstate, 3);
+	newstate = this.Source_RailEntry ? newstate=cMisc.SetBit(newstate, 0) : newstate=cMisc.ClearBit(newstate, 0);
+	newstate = this.Target_RailEntry ? newstate=cMisc.SetBit(newstate, 1) : newstate=cMisc.ClearBit(newstate, 1);
+	newstate = this.Primary_RailLink ? newstate=cMisc.SetBit(newstate, 2) : newstate=cMisc.ClearBit(newstate, 2);
+	newstate = this.Secondary_RailLink ? newstate=cMisc.SetBit(newstate, 3) : newstate=cMisc.ClearBit(newstate, 3);
 	local gname = AIGroup.GetName(GroupID);
-	gname = gname.slice(0, gname.len()) + "*" + newstate; // replace last char
+	gname = gname.slice(0, gname.len()-1) + newstate; // replace last char
 	return AIGroup.SetName(this.GroupID, gname);
 }
 
@@ -190,7 +190,7 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 			vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
 			if (!vehlist.IsEmpty())	foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSell(veh, false);
 			vehlist = AIVehicleList_Group(route.GroupID);
-			foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.REMOVEROUTE);
+			foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(veh, DepotAction.REMOVEROUTE);
 			}
 		if (!vehlist.IsEmpty())	return;	
 		local stasrc = null;
@@ -321,6 +321,7 @@ function cRoute::CanAddTrainToStation(uid)
 // return true if we can add another train to that rail station
 // return false when the station cannot handle it
 	{
+	if (!INSTANCE.use_train)	return false;
 	local road=cRoute.GetRouteObject(uid);
 	if (!road)	{ DError("Invalid uid : "+uid,2); return -1; }
 	local canAdd=true;
@@ -343,6 +344,7 @@ function cRoute::DiscoverWorldTiles()
 	INSTANCE.Sleep(1);
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 	allmap.KeepValue(weare);
-	cRoute.WorldTiles.AddList(allmap);
+	//cRoute.WorldTiles.AddList(allmap);
+	cRoute.RouteDamage.AddList(allmap); //FIXME
 }
 

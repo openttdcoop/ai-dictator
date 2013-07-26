@@ -79,6 +79,11 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	local maxcount=100;
 	local result=false;
 	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID, true);
+	if (!AIStation.IsAirportClosed(station.s_ID))
+		{
+		AIStation.OpenCloseAirport(station.s_ID);
+		DInfo("Closing "+station.s_Name);
+		}
 	// time to pray a bit for success, we could invalidate a working route here
 	do	{
 		local test=AITestMode();
@@ -92,6 +97,10 @@ function cBuilder::AirportNeedUpgrade(stationid)
 			}
 		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);	
 	result=INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
+	if (result != -1 && AIStation.IsAirportClosed(result))
+		{
+		AIStation.OpenCloseAirport(result);
+		}
 	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,false);
 	if (result == -1)	return false;
 	DInfo("Airport was upgrade successfuly !",1);

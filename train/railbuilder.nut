@@ -607,22 +607,21 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 						else	dstlink=dstStation.s_ExitSide[TrainSide.OUT_LINK];//14
 				srcpos=srclink+cStationRail.GetRelativeTileBackward(srcStation.s_ID, srcUseEntry);
 				dstpos=dstlink+cStationRail.GetRelativeTileBackward(dstStation.s_ID, dstUseEntry);
-				if (mainowner == -1)
+				DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos+" srclink="+srclink+" dstlink="+dstlink,2);
+				local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], srcStation.s_ID, srcUseEntry);
+				switch (result)
 					{
-	
-					DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos+" srclink="+srclink+" dstlink="+dstlink,2);
-					local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], srcStation.s_ID, srcUseEntry);
-					if (result != 2)
-						{
-						if (result == -1)	cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
-						cError.RaiseError();
-						return false;
-						}
-					else	retry=false;
-					dstStation.s_Train[TrainType.OWNER]= INSTANCE.main.route.UID;
-					srcStation.s_Train[TrainType.OWNER]= INSTANCE.main.route.UID;
+					case	-1:
+						cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
+					break;
+					case	2:
+						retry = false;
+					break;
+					default:
+					return false;
 					}
-				else	retry=false;
+				dstStation.s_Train[TrainType.OWNER]= INSTANCE.main.route.UID;
+				srcStation.s_Train[TrainType.OWNER]= INSTANCE.main.route.UID;
 				}
 			}
 		} while (retry);

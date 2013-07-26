@@ -65,7 +65,8 @@ static	function GetStationObject(stationID)
 	s_DateLastUpgrade	= null;	// record last date we try upgrade the station
 	s_MoneyUpgrade	= null;	// money we need for upgrading the station
 	s_Name		= null;	// station name
-	s_Tiles		= null;	// Tiles own by station
+	s_Tiles		= null;	// Tiles where the station is
+	s_TilesOther	= null;	// Tiles own by station that aren't station tiles
 	s_DateBuilt		= null;	// Date we add this station as an object
 	s_UpgradeTry	= null;	// Number of trys remaining to upgrade a station
 
@@ -91,6 +92,7 @@ static	function GetStationObject(stationID)
 		this.s_MoneyUpgrade	= 0;
 		this.s_Name			= "Default Station Name";
 		this.s_Tiles		= AIList();
+		this.s_TilesOther		= AIList();
 		this.s_DateBuilt		= AIDate.GetCurrentDate();
 		this.s_UpgradeTry		= 3;
 		}
@@ -269,14 +271,17 @@ function cStation::CanUpgradeStation()
 	switch (this.s_Type)
 		{
 		case	AIStation.STATION_DOCK:
+			if (!INSTANCE.use_boat)	return false;
 			this.s_VehicleMax=INSTANCE.main.carrier.water_max;
 			return false;
 		break;
 		case	AIStation.STATION_TRAIN:
+			if (!INSTANCE.use_train)	return false;
 			if (this.s_Size >= this.s_MaxSize)	return false;
 			return true;
 		break;
 		case	AIStation.STATION_AIRPORT:
+			if (!INSTANCE.use_air)	return false;
 			local canupgrade=false;
 			local newairport = cBuilder.GetAirportType();
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
@@ -289,7 +294,8 @@ function cStation::CanUpgradeStation()
 			return canupgrade;
 		break;
 		default: // bus or truck
-			this.s_VehicleMax=this.s_Size * INSTANCE.main.carrier.road_upgrade;
+			if (!INSTANCE.use_road)	return false;
+			this.s_VehicleMax = this.s_Size * INSTANCE.main.carrier.road_upgrade;
 			if (this.s_Size >= this.s_MaxSize)	return false;
 								else	return true;
 		break;		
@@ -414,12 +420,8 @@ function cStation::UpdateCapacity(stationID=null)
 	thatstation.s_VehicleCapacity.AddList(allcargos);
 	}
 
-
-// old to check
-
-function cStation::IsCargoProduceAccept(cargoID, produce_query, stationID=null)
-// Warper to anwer to cStation::IsCargoProduce and IsCargoAccept
-// produce_query to true to answer produce, false to answer accept
+function cStation::IsCargoProduce(cargoID, stationID=null)
+// return true/false if cargo is produce at that station
 	{
 	local thatstation=false;
 	if (stationID == null)	thatstation=this;
@@ -427,82 +429,54 @@ function cStation::IsCargoProduceAccept(cargoID, produce_query, stationID=null)
 	if (!thatstation)	return false;
 	foreach (tiles, sdummy in thatstation.s_Tiles)
 		{
-		local success=false;
-		local value=0;
-		if (produce_query)
-			{
-			value=AITile.GetCargoProduction(tiles, cargoID, 1, 1, thatstation.s_Radius);
-			success=(value > 0);
-			}
-		else	{
-			value=AITile.GetCargoAcceptance(tiles, cargoID, 1, 1, thatstation.s_Radius);
-			success=(value > 7);
-			}
-		//if (success)	cDebug.PutSign(tiles,"C");
-		if (success)	return true;
+		local value=AITile.GetCargoProduction(tiles, cargoID, 1, 1, thatstation.s_Radius);
+		if (value > 0)	return true;
 		}
 	return false;
 	}
 
-function cStation::IsCargoProduce(cargoID, stationID=null)
-// Check if a cargo is produce at that station
-	{
-	local thatstation=false;
-	if (stationID == null)	thatstation=this;
-				else	thatstation=cStation.Load(stationID);
-	return thatstation.IsCargoProduceAccept(cargoID, true, stationID);
-	}
-
 function cStation::IsCargoAccept(cargoID, stationID=null)
-// Check if a cargo is accept at that station
+// return true/false if cargo is accept at that station
 	{
 	local thatstation=false;
 	if (stationID == null)	thatstation=this;
 				else	thatstation=cStation.Load(stationID);
-	return thatstation.IsCargoProduceAccept(cargoID, false, stationID);
+	if (!thatstation)	return false;
+	local cargoaccept = AICargoList_StationAccepting(thatstation.s_ID);
+	return cargoaccept.HasItem(cargoID);
 	}
 
 function cStation::CheckCargoHandleByStation(stationID=null)
 // Check what cargo is accept or produce at station
-// This doesn't really check if the cargo is produce/accept, but only if the station know that cargo should be accept/produce
-// This so, doesn't include unknown cargos that the station might handle but is not aware of
-// Use cStation::IsCargoProduceAccept for a real answer
-// That function is there to faster checks, not to gave true answer
+// This doesn't really check if all cargos are produce/accept, but only if the station know that cargo should be accept/produce
+// This so, doesn't include any cargos no route handle, so station report only in use ones
+// Use cStation.IsCargoAccept && cStation.IsCargoProduce for a real answers
+// That function is there to faster checks (as it answer only cargo we care not all cargo the station can use), not to gave true answer
 {
 	local thatstation = false;
 	if (stationID == null)	thatstation=this;
 				else	thatstation=cStation.Load(stationID);
 	if (!thatstation)	return;
-	local cargolist=AIList();
-	cargolist.AddList(thatstation.s_CargoAccept);
-	cargolist.AddList(thatstation.s_CargoProduce);
-	local cargomail=cCargo.GetMailCargo();
-	local cargopass=cCargo.GetPassengerCargo();
-	//local staloc=cTileTools.FindStationTiles(stationID);
-	foreach (cargo_id, cdummy in cargolist)
+	local test = AICargoList_StationAccepting(thatstation.s_ID);
+	local change = false;
+	if (thatstation.s_CargoAccept.Count() < test.Count())
 		{
-		local valid_produce=false;
-		local valid_accept=false;
+		foreach (cargo, _ in thatstation.s_CargoAccept)	if (!test.HasItem(cargo))	{ change = true; thatstation.RemoveItem(cargo); }
+		}
+	else	{ change = true; thatstation.s_CargoAccept.AddList(test); }
+	if (change)	DInfo("Station "+thatstation.s_Name+" cargo accepting list change : "+thatstation.s_CargoAccept.Count()+" cargos",1);
+	test = AIList();
+	foreach (cargo_id, cdummy in thatstation.s_CargoProduce)
+		{
 		foreach (tiles, sdummy in thatstation.s_Tiles)
 			{
-			if (valid_accept && valid_produce)	break;
-			local accept=AITile.GetCargoAcceptance(tiles, cargo_id, 1, 1, thatstation.s_Radius);
-			local produce=AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.s_Radius);
-			if (!valid_produce && produce > 0)	valid_produce=true;
-			if (!valid_accept && accept > 7)	valid_accept=true;
-			}
-		if (!valid_produce && thatstation.s_CargoProduce.HasItem(cargo_id))
-			{
-			DInfo("Station "+thatstation.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargo_id),1);
-			thatstation.s_CargoProduce.RemoveItem(cargo_id);
-			}
-		if (!valid_accept && thatstation.s_CargoAccept.HasItem(cargo_id))
-			{
-			DInfo("Station "+thatstation.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargo_id),1);
-			thatstation.s_CargoAccept.RemoveItem(cargo_id);
+			local produce = AITile.GetCargoProduction(tiles, cargo_id, 1, 1, thatstation.s_Radius);
+			if (produce > 0)	{ test.AddItem(cargo_id, AIStation.GetCargoWaiting(thatstation.s_ID, cargo_id)); break; }
 			}
 		local pause = cLooper();
 		}
+	if (thatstation.s_CargoProduce.Count() != test.Count())	DInfo("Station "+thatstation.s_Name+" cargo producing list change : "+test.Count()+" cargos",1);
+	thatstation.s_CargoProduce.AddList(test); // because even we didn't report it as change, one cargo less and one new cargo may change the list in real
 	}
 
 function cStation::GetLocation(stationID=null)

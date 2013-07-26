@@ -137,6 +137,7 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 		local pause1 = cLooper();
 		local stobj = cStation.Load(stationID);
 		if (!stobj)	continue;
+		if (stobj.s_Owner.IsEmpty())	{ DInfo("Trying to remove unused station "+stobj.s_Name,1); cBuilder.DestroyStation(stationID); continue; }
 		foreach (uid, odummy in stobj.s_Owner)
 			{
 			local pause2 = cLooper();
@@ -147,22 +148,19 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 			if (road.VehicleType >= RouteType.AIR)	cargoID=cCargo.GetPassengerCargo(); // always check passenger to avoid mail cargo
 			if (road.SourceStation.s_ID == stobj.s_ID)
 				{
-				if (stobj.IsCargoProduce(cargoID))
-					{ stobj.s_CargoProduce.AddItem(cargoID, 0); } // rediscover cargo
-				else	{
+				if (!stobj.IsCargoProduce(cargoID))
+					{ // we need that cargo produce but it's not
 					DWarn("Station "+stobj.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
 					road.RouteIsNotDoable();
 					healthy = false;
 					continue;
 					}
-				if (stobj.IsCargoAccept(cargoID))	{ stobj.s_CargoAccept.AddItem(cargoID, 0); }
 				}
 			if (road.TargetStation.s_ID == stobj.s_ID)
 				{
-				if (stobj.IsCargoAccept(cargoID))
-					{ stobj.s_CargoAccept.AddItem(cargoID, 0); } // rediscover cargo
-				else	{
+				if (!stobj.IsCargoAccept(cargoID))
+					{ // we need that cargo accept but it's not
 					DWarn("Station "+stobj.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
 					road.RouteIsNotDoable();

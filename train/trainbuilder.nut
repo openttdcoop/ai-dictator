@@ -256,7 +256,7 @@ function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength, extraE
 		if (lackMoney)
 			{
 			DError("We don't have enough money to buy "+cEngine.GetName(wagontype),2);
-			if (pullID != trainID)	AIVehicle.SellVehicle(pullerID); // sell the train loco engine on failure to buy a wagon before returning
+			if (pullerID != trainID)	AIVehicle.SellVehicle(pullerID); // sell the train loco engine on failure to buy a wagon before returning
 			return -1;
 			}
 		else	wagonID=INSTANCE.main.carrier.CreateTrainsEngine(wagontype, depot, road.CargoID);

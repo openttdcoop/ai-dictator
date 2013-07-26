@@ -110,7 +110,7 @@ function DictatorAI::Start()
 		{
 		main.bank.SaveMoney();
 		cRoute.DiscoverWorldTiles();
-		cBridge.BridgeDiscovery();
+		//cBridge.BridgeDiscovery();
 		cLoader.LoadingGame();
 		main.jobs.PopulateJobs();
 		local stationList=AIList();	// check for no more working station if cargo disapears...
@@ -120,7 +120,6 @@ function DictatorAI::Start()
 			cStation.CheckCargoHandleByStation(stationID);
 			}
 		INSTANCE.main.route.VirtualAirNetworkUpdate();
-//		RailFollower.FindRailOwner(cRoute.WorldTiles);
 		DInfo("...Loading game end",0);
 		}
 	 else {
@@ -206,23 +205,11 @@ function DictatorAI::Save()
 { // save
 	local table = 
 		{
-	//	routes = null,
 		stations = null,
-		//busyroute = null,
 		virtualpass = null,
 		virtualmail = null,
 		}
 	local all_stations=[];
-	//local all_routes=[];
-	//local temparray=[];
-/*
-	// routes
-	foreach (obj in cRoute.database)
-		{
-		if (obj.UID < 2 || obj.UID == null)	continue; // don't save virtual route
-		all_routes.push(obj.VehicleType);
-		all_routes.push(obj.GroupID);
-		}*/
 	// stations
 	foreach(obj in cStation.stationdatabase)
 		{
@@ -237,9 +224,7 @@ function DictatorAI::Save()
 			}
 		}
 
-	//table.routes=all_routes;
 	table.stations=all_stations;
-	//table.busyroute=main.builder.building_route;
 	local netair=cRoute.VirtualAirGroup[0];
 	table.virtualpass=netair;
 	netair=cRoute.VirtualAirGroup[1];
@@ -251,10 +236,7 @@ function DictatorAI::Save()
 function DictatorAI::Load(version, data)
 {
 	DInfo("Loading a saved game with DictatorAI version "+version,0);
-	//if ("routes" in data) main.bank.canBuild=data.routes;
 	if ("stations" in data) main.bank.unleash_road=data.stations;
-	//if ("busyroute" in data) main.builder.building_route=data.busyroute;
-	//if ("vehicle" in data)	SixMonth=data.vehicle;
 	if ("virtualmail" in data)	TwelveMonth=data.virtualmail;
 	if ("virtualpass" in data)	main.bank.mincash=data.virtualpass;
 	main.bank.busyRoute=version;
@@ -264,7 +246,6 @@ function DictatorAI::Load(version, data)
 function DictatorAI::CheckCurrentSettings()
 {
 // this are settings we should take care of (one day ^^ )
-// max_train_length
 // max_bridge_length = 64
 // max_tunnel_length 
 // join_stations = true

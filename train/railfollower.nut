@@ -26,7 +26,6 @@
  */
 class RailFollower extends RailPathFinder
 {
-static	RailList = AIList();		// list of rails, item=tile index, value=owner route or -1 if none own it
 }
 
 function RailFollower::_Neighbours(path, cur_node, self)
@@ -80,101 +79,67 @@ function RailFollower::_Neighbours(path, cur_node, self)
 	return tiles;
 }
 
-function RailFollower::SetRailOwner(railsource, routeUID)
-// Set a rail own by a route
+function RailFollower::FindRouteRails(source, target, stationID)
 {
-	if (RailFollower.RailList.HasItem(railsource))	RailFollower.RailList.SetValue(railsource, routeUID);
-								else	RailFollower.RailList.AddItem(railsource, routeUID);
+	local solve = cBuilder.RoadRunnerHelper(source, target, AIVehicle.VT_RAIL);
+	cDebug.ClearSigns();
+	cDebug.showLogic(solve);
+	return solve;
 }
 
-function RailFollower::RailRunner(source, walkedtiles=null)
-// Follow rail from rail source to find a rail station attach to it
-{
-local found = -1;
-if (walkedtiles == null)	{ walkedtiles=AIList(); }
-				else	{ if (!walkedtiles.IsEmpty())	found=walkedtiles.GetValue(walkedtiles.Begin()); }
-local valid=false;
-local direction=null;
-//if (RailFollower.RailList.HasItem(source) && RailFollower.RailList.GetValue(source) != -1)	return -1;
-if (AIRail.IsRailStationTile(source))
-	{
-	local staID=AIStation.GetStationID(source);
-print("rail station ! "+AIStation.GetName(staID));
-	local staobj=cStation.GetStationObject(staID);
-	if (staobj != null && !staobj.owner.IsEmpty())
-		{
-		local r_own=staobj.owner.Begin();
-//		print("station "+r_own);
-		foreach (tiles, owner in walkedtiles)	{ RailFollower.SetRailOwner(tiles, r_own); walkedtiles.SetValue(tiles, r_own); }
-		}
-	}
-local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
-foreach (voisin in directions)
-	{
-	direction=source+voisin;
-	if (cBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
-		{
-		local endat=null;
-		endat=cBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
-		// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
-		// if we are connect to someone, i reset "source" to be "someone" and continue
-		local guessTile=null;	
-		foreach (where in directions)
-			{
-			if (cBuilder.AreRailTilesConnected(endat, endat+where))	{ guessTile=endat+where; }
-			}
-		if (guessTile != null)
-			{
-			source=guessTile;
-			direction=source+voisin;
-			}
-		}
-	valid=cBuilder.AreRailTilesConnected(source, direction);
-	if (walkedtiles.HasItem(direction))	{ valid=false; }
-	if (valid) { walkedtiles.AddItem(direction,found); found=RailFollower.RailRunner(direction, walkedtiles); }
-	if (valid)	RailFollower.SetRailOwner(direction, found);
-	//if (INSTANCE.debug) DInfo("Valid="+valid+" dir="+direction,2);
-//	if (found == -1 && valid)	found=RailFollower.RailRunner(direction, walkedtiles);
-	if (valid && INSTANCE.debug)	PutSign(direction,"X");
-	//if (found != -1) return found;
-	}
-return found;
-}
-
-function RailFollower::FindRailOwner(tilelist)
+function RailFollower::FindRailOwner()
 // find route owning rails
 {
-local clearList=AIList();
-clearList.AddList(RailFollower.RailList);
-clearList.RemoveValue(-1); // Remove rail with no owner
-tilelist.RemoveList(clearList); // So we in removed all rails we know the owner
-tilelist.Valuate(AIRail.IsRailTile);
-tilelist.KeepValue(1); // keep only rails
-if (tilelist.IsEmpty())	{ DInfo("All rails are known or no rails.",1,"RailFollower.FindRailOwner"); return; }
-local runnercount=0;
-local tiletocheck=tilelist.Count();
-ClearSigns();
-//foreach (tiles, dummy in tilelist)	PutSign(tiles, ".");
-print("tile to check : "+tiletocheck);
-foreach (tiles, dummy in tilelist)
-	{
-	ClearSigns();
-	//foreach (tiles, owner in RailFollower.RailList)	PutSign(tiles, "+");
-	//if (RailFollower.RailList.HasItem(tiles) && RailFollower.RailList.GetValue(tiles) != -1)	{ print("known tile"); continue; }
-	//PutSign(tiles,"o");
-//foreach (tiles, owner in RailFollower.RailList)	print("dumping RailList ="+tiles+" own="+owner);
-
-	print("following tiles="+tiles+" res="+RailFollower.RailRunner(tiles)+" runnercount="+runnercount+" RailList.Count="+RailFollower.RailList.Count()+" tilelist.Count="+tilelist.Count()); runnercount++;
-	tilelist.RemoveList(RailFollower.RailList);
-	}
-print("SUMUP tile to check : "+tiletocheck+" runnercount="+runnercount);
-ClearSigns();
-print("Cleaning dead line...");
-local deadrails=AIList();
-deadrails.AddList(RailFollower.RailList);
-deadrails.KeepValue(-1);
-print("dead rails : "+deadrails.Count());
-cBuilder.RailCleaner(deadrails);
-print("SUMUP");
-ClearSigns();
+	cRoute.RouteDamage.Valuate(AIRail.IsRailTile);
+	cRoute.RouteDamage.KeepValue(1);
+	foreach (tile, value in cRoute.RouteDamage)	cRoute.RouteDamage.SetValue(tile, -1);
+	local rail_routes = AIGroupList();
+	rail_routes.Valuate(AIGroup.GetVehicleType);
+	rail_routes.KeepValue(AIVehicle.VT_RAIL);
+	local uid_list = [];
+	foreach (grp, value in rail_routes)	if (cRoute.GroupIndexer.HasItem(grp))	uid_list.push(cRoute.GroupIndexer.GetValue(grp));
+	foreach (uid in uid_list)
+		{
+		local road = cRoute.Load(uid);
+		if (!road)	continue;
+		// first re-assign trains state to each station (taker, droppper, using entry/exit)
+		local train_list = AIVehicleList_Group(road.GroupID);	
+		foreach (trains, _ in train_list)
+			{
+			road.SourceStation.StationAddTrain(true, road.Source_RailEntry);
+			road.TargetStation.StationAddTrain(false, road.Target_RailEntry);
+			}
+		DInfo("Finding rails for route "+road.Name);
+		if (!road.Primary_RailLink)	{ DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
+		local stationID = road.SourceStation.s_ID;
+		local start, end = null;
+		if (road.Source_RailEntry)	start = road.SourceStation.s_EntrySide[TrainSide.IN_LINK];
+						else	start = road.SourceStation.s_ExitSide[TrainSide.IN_LINK];
+		if (road.Target_RailEntry)	end = road.TargetStation.s_EntrySide[TrainSide.OUT_LINK];
+						else	end = road.TargetStation.s_ExitSide[TrainSide.OUT_LINK];
+		local bad = false;
+		local station_tiles = RailFollower.FindRouteRails(start, end, road.SourceStation.s_ID);
+		local more_tiles;
+		bad = (station_tiles.IsEmpty());
+		if (!bad)	{
+				more_tiles = RailFollower.FindRouteRails(road.SourceStation.s_Location, end, road.SourceStation.s_ID);
+				bad = (more_tiles.IsEmpty());
+				}
+		station_tiles.AddList(more_tiles);
+		if (!bad)	{
+				more_tiles = RailFollower.FindRouteRails(road.TargetStation.s_Location, start, road.TargetStation.s_ID);
+				bad = (more_tiles.IsEmpty());
+				}
+		station_tiles.AddList(more_tiles);
+		foreach (tiles, _ in station_tiles)	{
+								cStationRail.RailStationClaimTile(tiles, road.Source_RailEntry, road.SourceStation.s_ID);
+								cRoute.RouteDamage.RemoveItem(tiles);
+								}
+		if (bad)	{
+				DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
+				road.RouteIsNotDoable();
+				}
+		}
+	DInfo("Unknown rails remaining : "+cRoute.RouteDamage.Count());
+	cRoute.RouteDamage.Clear();
 }

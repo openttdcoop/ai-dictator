@@ -291,9 +291,11 @@ function cRoute::DutyOnRoute()
 		switch (road.VehicleType)
 			{
 			case AIVehicle.VT_ROAD:
+				if (!INSTANCE.use_road)	continue;
 				maxveh=INSTANCE.main.carrier.road_max_onroute;
 			break;
 			case RouteType.CHOPPER:
+				if (!INSTANCE.use_air)	continue;
 				chopper=true;
 				maxveh=4;
 				cargoid=cCargo.GetPassengerCargo();
@@ -303,11 +305,13 @@ function cRoute::DutyOnRoute()
 			case RouteType.AIRMAIL:
 			case RouteType.SMALLAIR:
 			case RouteType.SMALLMAIL:
+				if (!INSTANCE.use_air)	continue;
 				maxveh=INSTANCE.main.carrier.air_max;
 				cargoid=cCargo.GetPassengerCargo(); // for aircraft, force a check vs passenger
 				// so mail aircraft runner will be add if passenger is high enough, this only affect routes not in the network
 			break;
 			case AIVehicle.VT_WATER:
+				if (!INSTANCE.use_boat)	continue;
 				maxveh=INSTANCE.main.carrier.water_max;
 			break;
 			}
@@ -406,8 +410,8 @@ function cRoute::DutyOnRoute()
 				if (INSTANCE.main.bank.CanBuyThat(vehvalue+INSTANCE.main.carrier.vehnextprice))	goodbuy=INSTANCE.main.carrier.BuildAndStartVehicle(uid);
 				if (goodbuy)
 					{
-					local rinfo=cRoute.GetRouteObject(uid);
-					DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+cRoute.GetRouteName(rinfo.UID),0);
+					//local rinfo=cRoute.GetRouteObject(uid);
+					//DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+cRoute.GetRouteName(rinfo.UID),0);
 					allbuy++;
 					}
 				}

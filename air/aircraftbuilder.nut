@@ -33,7 +33,7 @@ function cCarrier::CreateAircraftEngine(engineID, depot)
 }
 
 function cCarrier::CreateAirVehicle(routeidx)
-// Build first vehicule of an air route
+// Build an aircraft
 {
 	local road = cRoute.Load(routeidx);
 	if (!road)	return;

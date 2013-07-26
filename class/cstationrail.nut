@@ -573,7 +573,8 @@ function cStationRail::RailStationClaimTile(tile, useEntry, stationID=null)
 	if (!thatstation)	{ DError("Invalid stationID:"+stationID,2); return -1; }
 	local value=0;
 	if (useEntry)	value=1;
-	thatstation.s_Tiles.AddItem(tile,value);
+	if (AITile.IsStationTile(tile))	thatstation.s_Tiles.AddItem(tile, value);
+						else	thatstation.s_TilesOther.AddItem(tile, value);
 	thatstation.StationClaimTile(tile, thatstation.s_ID);
 }
 

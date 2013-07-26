@@ -126,7 +126,8 @@ function cBuilder::BuildRoadByType()
 			INSTANCE.main.route.Twoway = true; // mark it so roadrunner won't be run on next try
 			//local result = INSTANCE.main.builder.AsyncConstructRoadROAD(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
 			local result = cPathfinder.GetStatus(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
-			if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(fromsrc, todst); }
+			cError.ClearError();
+			if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(fromsrc, todst); return false;}
 			if (result == 2)	{ cPathfinder.CloseTask(fromsrc, todst); return true; }
 			return false;
 		case AIVehicle.VT_RAIL:
@@ -396,7 +397,8 @@ function cBuilder::TryBuildThatRoute()
 		if (success)	{ INSTANCE.main.route.Status=5; }
 			else	{
 				if (cError.IsError())	INSTANCE.main.route.Status = RouteStatus.DEAD;
-				else	{ INSTANCE.buildDelay = 1; return false; }
+							else	{ INSTANCE.buildDelay = 1; return false; }
+
 				} // and nothing more, stay at that phase & rebuild road when possible
 		}
 	if (INSTANCE.main.route.Status==5)
@@ -425,6 +427,7 @@ function cBuilder::TryBuildThatRoute()
 		{
 		INSTANCE.main.route.RouteDone();
 		INSTANCE.main.route.RouteBuildGroup();
+		INSTANCE.main.route.Route_GroupNameSave();
 		DInfo("Route contruction complete ! "+INSTANCE.main.route.Name,0);
 		local srcprod=INSTANCE.main.route.SourceStation.IsCargoProduce(INSTANCE.main.route.CargoID);
 		local srcacc=INSTANCE.main.route.SourceStation.IsCargoAccept(INSTANCE.main.route.CargoID);

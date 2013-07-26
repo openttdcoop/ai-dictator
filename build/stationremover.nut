@@ -46,9 +46,10 @@ function cBuilder::DestroyStation(stationid)
 	if (exist)
 		{
 		foreach (tile, dummy in temp.s_Tiles)	{ cTileTools.UnBlackListTile(tile); }
-		if (!temp.s_Tiles.IsEmpty())
+		foreach (tile, dummy in temp.s_TilesOther)	{ cTileTools.UnBlackListTile(tile); }
+		if (!temp.s_TilesOther.IsEmpty())
 			{
-			if (temp.s_Type == AIStation.STATION_TRAIN)	cBuilder.RailCleaner(temp.s_Tiles);
+			if (temp.s_Type == AIStation.STATION_TRAIN)	cBuilder.RailCleaner(temp.s_TilesOther);
 			}
 		if (!cBuilder.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
 								else	{ DInfo("Removing depot link to station "+wasnamed,0); }

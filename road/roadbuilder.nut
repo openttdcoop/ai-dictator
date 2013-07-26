@@ -955,7 +955,7 @@ else	{
 function cBuilder::RoadRunnerHelper(source, target, road_type, walkedtiles=null, origin=null)
 // Follow all directions to walk through the path starting at source, ending at target
 // check if the path is valid by using road_type (railtype, road)
-// return true if we reach target by running the path
+// return solve in an AIList() if we reach target by running the path
 {
 local max_wrong_direction=15;
 if (origin == null)	origin=AITile.GetDistanceManhattanToTile(source, target);

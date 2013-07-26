@@ -82,7 +82,6 @@ function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
 	if (uid in cPathfinder.database)	{ }
 						else	{ cPathfinder.CreateNewTask(source, target, useEntry, stationID); return 0; }
 	local pathstatus=cPathfinder.GetPathfinderObject(uid);
-print("pathfinder status : "+pathstatus.status);
 	return pathstatus.status;
 	}	
 
@@ -162,14 +161,14 @@ function cPathfinder::AdvanceTask(UID)
 		pftask.solve=check;
 		return;
 		}
-	if (pftask.timer % 10 == 0 && pftask.useEntry != null)
+/*	if (pftask.timer % 10 == 0 && pftask.useEntry != null)
 		{
 		local clean = AITile.IsBuildable(pftask.target[0]);
 		clean = (!clean && cTileTools.DemolishTile(pftask.target[0]));
 		clean = (clean && AITile.IsBuildable(pftask.source[0]));
 		clean = (!clean && cTileTools.DemolishTile(pftask.source[0]));
 		if (!clean)	maxTimer = pftask.timer - 1;
-		}
+		}*/
 	if (check == null || pftask.timer > maxTimer)
 		{
 		DInfo("Pathfinder task "+pftask.UID+" failure",1);

@@ -54,6 +54,7 @@ function cCarrier::CreateRoadEngine(engineID, depot, cargoID)
 function cCarrier::CreateRoadVehicle(roadidx)
 // Build a road vehicle for route roadidx
 {
+	if (!INSTANCE.use_road)	return false;
 	local road=cRoute.Load(roadidx);
 	if (!road)	return false;
 	local srcplace = road.SourceStation.s_Location;

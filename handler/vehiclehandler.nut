@@ -665,19 +665,13 @@ function cCarrier::StartVehicle(vehID)
 // This try to make sure we will start the vehicle and not stop it because of the weak cCarrier.StartVehicle function
 {
 	if (!AIVehicle.IsValidVehicle(vehID))	return false;
-	local	wait=true;
-	while (AIVehicle.GetState(vehID) == AIVehicle.VS_BROKEN)	INSTANCE.Sleep(15);
-	local i=0;
-	local maxspeed=4000;
-	while (wait)
-		{ // wait to see if its speed remain at 0
-		local speed=AIVehicle.GetCurrentSpeed(vehID);
-		if (speed == 0 || speed < maxspeed || AIVehicle.GetState(vehID)==AIVehicle.VS_STOPPED)	{ AIController.Sleep(5); i++; maxspeed=speed; }
-																else	return false;
-		if (i > 4)	wait=false;
-		}
-	if ((AIVehicle.GetState(vehID) == AIVehicle.VS_STOPPED || AIVehicle.GetState(vehID) == AIVehicle.VS_IN_DEPOT) && AIVehicle.StartStopVehicle(vehID))
+	local	wait=false;
+	while (AIVehicle.GetState(vehID) == AIVehicle.VS_BROKEN)	{ wait=true; INSTANCE.Sleep(15); }
+	if (wait)	INSTANCE.Sleep(40); // wait a few it just restart
+	local state = AIVehicle.GetState(vehID);
+	if (state == AIVehicle.VS_STOPPED || state == AIVehicle.VS_IN_DEPOT)
 		{
+		AIVehicle.StartStopVehicle(vehID);
 		DInfo("Starting "+cCarrier.GetVehicleName(vehID)+"...",0);
 		return true;
 		}
@@ -687,20 +681,9 @@ function cCarrier::StartVehicle(vehID)
 function cCarrier::StopVehicle(vehID)
 // Try to stop a vehicle that is running, and not restart it...
 {
-	local	wait=true;
-	local i=0;
-	while (wait)
-		{ // wait to see if its speed remain >0
-		local speed=AIVehicle.GetCurrentSpeed(vehID);
-		local state=AIVehicle.GetState(vehID);
-		if (state == AIVehicle.VS_CRASHED || state == AIVehicle.VS_INVALID)	return false;
-		if (speed > 0 || state == AIVehicle.VS_AT_STATION || state == AIVehicle.VS_IN_DEPOT)	{ AIController.Sleep(15); i++; }
-		if (state == AIVehicle.VS_BROKEN)	i=0; // wait until broken status is remove
-		if (i > 4)	wait=false;
-		}
-	if ((AIVehicle.GetState(vehID) == AIVehicle.VS_RUNNING || AIVehicle.GetState(vehID) == AIVehicle.VS_AT_STATION) && AIVehicle.StartStopVehicle(vehID))
+	if (AIVehicle.GetState(vehID) == VS_RUNNING && AIVehicle.StartStopVehicle(vehID))
 		{
-		DInfo("Stoping "+cCarrier.GetVehicleName(vehID)+"...",0);
+		DInfo("Stopping "+cCarrier.GetVehicleName(vehID)+"...",0);
 		return true;
 		}
 	return false;

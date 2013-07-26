@@ -269,7 +269,9 @@ function cLoader::LoadSaveGame()
 			}
 		}
 	cRoute.RouteRebuildIndex();
-//FIXME : find trains properties for stations
+	RailFollower.FindRailOwner();
+	cRoute.RouteDamage.Clear(); // static, only clear it
+AIController.Break("end of loading");
 }
 
 function cLoader::LoadingGame()
@@ -294,21 +296,12 @@ function cLoader::LoadingGame()
 		AILog.Error("Cannot load that savegame !");
 		AILog.Info("As a last chance, the AI will try to continue ignoring the error, with a total random result...");
 		local grouplist=AIGroupList();
-		grouplist.RemoveItem(cRoute.VirtualAirGroup[0]);
-		grouplist.RemoveItem(cRoute.VirtualAirGroup[1]);
 		foreach (grp, dummy in grouplist)	AIGroup.DeleteGroup(grp);
 		local vehlist=AIVehicleList();
-		foreach (obj, _ in cJobs.database)	{ obj.isUse = false; }
 		foreach (veh, dummy in vehlist)	AIVehicle.SendVehicleToDepot(veh);
 		foreach (item in cRoute.database)	if (item.UID > 1)	delete cRoute.database[item.UID];
 		cRoute.RouteIndexer.Clear();
 		cRoute.GroupIndexer.Clear();
-		foreach (veh, dummy in vehlist)
-			{
-			cCarrier.VehicleOrdersReset(veh);
-			INSTANCE.main.carrier.VehicleMaintenance_Orders(veh);
-			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
-			}
 		}
 	OneWeek=0;
 	OneMonth=0;
@@ -323,7 +316,7 @@ function cLoader::LoadingGame()
 	trlist.Valuate(AIVehicle.GetVehicleType);
 	trlist.KeepValue(AIVehicle.VT_RAIL);
 	trlist.Valuate(AIVehicle.GetState);
-	trlist.KeepValue(AIVehicle.VS_IN_DEPOT);
+	trlist.RemoveValue(AIVehicle.VS_RUNNING);
 	if (!trlist.IsEmpty())
 		{
 		DInfo("Restarting stopped trains",0);
