@@ -283,6 +283,17 @@ function cLoader::LoadingGame()
 	foreach (veh, dummy in planelist)	AIGroup.MoveVehicle(cRoute.VirtualAirGroup[1],veh);
 	AIGroup.DeleteGroup(INSTANCE.main.bank.mincash);
 	AIGroup.DeleteGroup(TwelveMonth);
+	local trlist=AIVehicleList();
+	trlist.Valuate(AIVehicle.GetVehicleType);
+	trlist.KeepValue(AIVehicle.VT_RAIL);
+	trlist.Valuate(AIVehicle.GetState);
+	trlist.RemoveValue(AIVehicle.VS_RUNNING);
+	if (!trlist.IsEmpty())
+		{
+		DInfo("Restarting stopped trains",0);
+		foreach (veh, dummy in trlist)	cCarrier.StartVehicle(veh);
+		}
+
 	try
 	{
 	if (INSTANCE.main.bank.busyRoute < 170)	cLoader.Load169();
@@ -312,16 +323,6 @@ function cLoader::LoadingGame()
 	INSTANCE.main.bank.busyRoute=false;
 	INSTANCE.main.bank.mincash=10000;
 	cCargo.SetCargoFavorite();
-	local trlist=AIVehicleList();
-	trlist.Valuate(AIVehicle.GetVehicleType);
-	trlist.KeepValue(AIVehicle.VT_RAIL);
-	trlist.Valuate(AIVehicle.GetState);
-	trlist.RemoveValue(AIVehicle.VS_RUNNING);
-	if (!trlist.IsEmpty())
-		{
-		DInfo("Restarting stopped trains",0);
-		foreach (veh, dummy in trlist)	cCarrier.StartVehicle(veh);
-		}
 	trlist = AIVehicleList_DefaultGroup(AIVehicle.VT_ROAD);
 	foreach (veh, _ in trlist)	AIVehicle.SendVehicleToDepot(veh); // reset ungroup vehicle so we will catch them fast
 	local alltowns=AITownList();

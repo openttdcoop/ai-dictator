@@ -24,9 +24,6 @@ And with that option ON, the AI will discard the "puller" flag, and try each wag
 - Upgrade AI & towns bridges:
 If set to OFF it's easy, the AI will only take care of its briges, when set to ON the AI will also take care of town briges the AI (or others players) use, so the AI will upgrade these town bridges for the benefits of everyone. As the AI may not use a bridge but will upgrade it for others, in economical point of view, it's a pure lost of money, but from an aesthetical or real life playing, the AI is kind to help others players or AI (without a bridge upgrade function) and the town by allowing better speed on bridges.
 
-- Use Trains, buses, aircrafts... :
-This doesn't prevent the AI from using them, but it prevent the AI from building new tasks that will use them : so if the AI have an aircraft task running, and you disable aircraft for the AI, the AI won't make any new task using aircrafts, but will still handle the ones already made : buying aircrafts for it, upgrading aircrafts... anything to made the task keep going.
-
 - Alter how the AI act with others :
 Many internals paramaters depend on those options, but to sum up the Dictator mode allow the AI to do anything to battle against others, while the lazzy mode restrict the AI to be kind (like not building anything if someone is doing the job already) and set some hard settings for the AI (disallowing terraforming)... Well, the AI will be a bit stupid, playing the hard way and fairer with anyone, making it far easier to battle against it.
 
