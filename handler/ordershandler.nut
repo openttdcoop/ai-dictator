@@ -266,7 +266,11 @@ function cCarrier::TrainSetDepotOrder(veh)
 	if (veh == null)	return;
 	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
 	local road=cRoute.Load(idx);
-	if (!road)	{ DError("Gonna be a hard time, i don't know who own that train "+cCarrier.GetVehicleName(veh),1); return false; }
+	if (!road)	{
+			DError("Gonna be a hard time, i don't know who own that train "+cCarrier.GetVehicleName(veh),1);
+			if (AIVehicle.SendVehicleToDepot(veh))	cCarrier.ToDepotList.AddItem(veh, DepotAction.SELL);
+			return false;
+			}
 	local srcDepot = cRoute.GetDepot(idx, 1);
 	local dstDepot = cRoute.GetDepot(idx, 2);
 	if (!AIRail.IsRailDepotTile(srcDepot))	srcDepot = dstDepot;
@@ -283,7 +287,11 @@ function cCarrier::TrainSetDepotOrder(veh)
 			{ DError("Vehicle refuse goto closest airport order",2); }
 	if (!AIOrder.InsertOrder(veh, 3, dstDepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto closest airport order",2); }
-	if (!AIOrder.IsGotoDepotOrder(veh, AIOrder.ResolveOrderPosition(veh, AIOrder.ORDER_CURRENT)))	VehicleOrderSkipCurrent(veh);
+	if (!AIOrder.IsGotoDepotOrder(veh, AIOrder.ResolveOrderPosition(veh, AIOrder.ORDER_CURRENT)))
+		{
+		VehicleOrderSkipCurrent(veh);
+		DInfo("Avoiding current train order",1);
+		}
 }
 
 function cCarrier::VehicleSetDepotOrder(veh)
@@ -446,6 +454,7 @@ function cCarrier::TrainSetOrders(trainID)
 	if (uid==null)	{ DError("Cannot find route uid for that train",1); return false; }
 	local road=cRoute.GetRouteObject(uid);
 	if (!road)	return false;
+	//if (road.status == 
 	cCarrier.VehicleOrdersReset(trainID);
 	DInfo("Append orders to "+cCarrier.GetVehicleName(trainID),2);
 	local firstorder=AIOrder.OF_NON_STOP_INTERMEDIATE;

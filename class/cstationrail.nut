@@ -331,6 +331,8 @@ function cStationRail::DefinePlatform(stationID=null)
 	if (stationID == null)	thatstation=this;
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
+	local priorUpdate = thatstation.s_Platforms.Count();
+print("platform post update : "+priorUpdate);
 
 	local frontTile, backTile, leftTile, rightTile= null;
 	local direction=thatstation.GetRailStationDirection();
@@ -391,7 +393,7 @@ cDebug.PutSign(lookup+start,"*");
 	thatstation.s_Size=thatstation.s_Platforms.Count();
 	thatstation.s_Train[TrainType.PLATFORM_LEFT]=topLeftPlatform;
 	thatstation.s_Train[TrainType.PLATFORM_RIGHT]=topRightPlatform;
-	if (thatstation.s_Platforms.Count() > 1 && !thatstation.IsPlatformWorking(topLeftPlatform) && !thatstation.IsPlatformWorking(topRightPlatform))
+	if (thatstation.s_Platforms.Count() > 1 && !thatstation.IsPlatformWorking(topLeftPlatform) && !thatstation.IsPlatformWorking(topRightPlatform) && thatstation.s_Platforms.Count() == priorUpdate)
 		{
 		DInfo("Closing station "+thatstation.s_Name+" as it cannot grow anymore",1);
 		thatstation.s_MaxSize = thatstation.s_Size;

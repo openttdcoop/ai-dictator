@@ -190,13 +190,21 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 			vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
 			if (!vehlist.IsEmpty())	foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSell(veh, false);
 			vehlist = AIVehicleList_Group(route.GroupID);
-			foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSendToDepot(veh, DepotAction.REMOVEROUTE);
+			foreach (veh, _ in vehlist)	
+				{
+				if (!AIOrder.IsGotoDepotOrder(veh, AIOrder.ResolveOrderPosition(veh, AIOrder.ORDER_CURRENT)))
+					{
+					INSTANCE.main.carrier.ToDepotList.RemoveItem(veh);
+					cCarrier.VehicleOrdersReset(veh);
+					INSTANCE.main.carrier.VehicleSendToDepot(veh, DepotAction.REMOVEROUTE);
+					}
+				}
 			}
 		if (!vehlist.IsEmpty())	return;	
 		local stasrc = null;
 		local stadst = null;
-		if (cMisc.ValidInstance(route.SourceStation)) route.RouteReleaseStation(route.SourceStation.s_ID);
-		if (cMisc.ValidInstance(route.TargetStation)) route.RouteReleaseStation(route.TargetStation.s_ID);
+		if (cMisc.ValidInstance(route.SourceStation)) { stasrc = route.SourceStation.s_ID; route.RouteReleaseStation(route.SourceStation.s_ID); }
+		if (cMisc.ValidInstance(route.TargetStation)) { stadst = route.TargetStation.s_ID; route.RouteReleaseStation(route.TargetStation.s_ID); }
 		cBuilder.DestroyStation(stasrc);
 		cBuilder.DestroyStation(stadst);
 		if (route.GroupID != null)	{ AIGroup.DeleteGroup(route.GroupID); cRoute.GroupIndexer.RemoveItem(route.GroupID); }

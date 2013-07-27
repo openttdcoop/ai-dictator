@@ -221,6 +221,11 @@ function cLoader::LoadSaveGame()
 		if (!cMisc.ValidInstance(temp_route.TargetProcess))	{ DInfo("Bad target process: "+temp_route.SourceProcess,1); continue; }
 		if (!cMisc.ValidInstance(temp_route.SourceStation))	{ DInfo("Bad source station: "+temp_route.SourceStation,1); continue; }
 		if (!cMisc.ValidInstance(temp_route.TargetStation))	{ DInfo("Bad target station: "+temp_route.TargetStation,1); continue; }
+		if (temp_route.VehicleType == AIVehicle.VT_AIR)
+			{
+			if (AIStation.IsAirportClosed(temp_route.SourceStation.s_ID))	AIStation.OpenCloseAirport(temp_route.SourceStation.s_ID);
+			if (AIStation.IsAirportClosed(temp_route.TargetStation.s_ID))	AIStation.OpenCloseAirport(temp_route.TargetStation.s_ID);
+			}
 		temp = cJobs();
 		temp.UID = null;
 		temp.cargoID = temp_route.CargoID;
@@ -291,7 +296,10 @@ function cLoader::LoadingGame()
 	if (!trlist.IsEmpty())
 		{
 		DInfo("Restarting stopped trains",0);
-		foreach (veh, dummy in trlist)	cCarrier.StartVehicle(veh);
+		foreach (veh, dummy in trlist)
+			{
+			cCarrier.StartVehicle(veh);
+			}
 		}
 
 	try

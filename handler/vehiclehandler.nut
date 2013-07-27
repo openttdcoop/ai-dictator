@@ -235,7 +235,6 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 		}
 	local rr="";
 	local wagonnum = cCarrier.VehicleSendToDepot_GetParam(reason);
-print("reason= "+reason+" real_reason="+real_reason+" param="+wagonnum);
 	switch (real_reason)
 		{
 		case	DepotAction.SELL:
@@ -403,16 +402,21 @@ local name="";
 local tx, ty, price=0; // temp variable to use freely
 INSTANCE.main.carrier.warTreasure=0;
 local allroadveh=AIVehicleList();
-allroadveh.Valuate(AIVehicle.GetVehicleType);
-allroadveh.KeepValue(AIVehicle.VT_ROAD);
 allroadveh.Valuate(AIVehicle.GetState);
 allroadveh.RemoveValue(AIVehicle.VS_STOPPED);
 allroadveh.RemoveValue(AIVehicle.VS_CRASHED);
 allroadveh.RemoveValue(AIVehicle.VS_INVALID);
+allroadveh.RemoveValue(AIVehicle.VS_IN_DEPOT);
 
 local checkallvehicle=(allroadveh.Count()==tlist.Count());
+	if (checkallvehicle)
+		{
+		allroadveh.Valuate(AIVehicle.GetVehicleType);
+		allroadveh.KeepValue(AIVehicle.VT_ROAD);
+		}
 foreach (vehicle, dummy in tlist)
 	{
+	cCarrier.VehicleMaintenance_Orders(vehicle);
 	local vehtype=AIVehicle.GetVehicleType(vehicle);
 	if (AIVehicle.GetVehicleType(vehicle)==AIVehicle.VT_ROAD)	INSTANCE.main.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
 	local topengine=cEngine.IsVehicleAtTop(vehicle); // new here
@@ -420,12 +424,14 @@ foreach (vehicle, dummy in tlist)
 				else	price=cEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	name=INSTANCE.main.carrier.GetVehicleName(vehicle);
 	tx=AIVehicle.GetAgeLeft(vehicle);
+	//DInfo("->Vehicle "+name+" age left="+tx);
 	if (tx < cCarrier.OldVehicle)
 		{
-		if (!cBanker.CanBuyThat(price+INSTANCE.main.carrier.vehnextprice)) continue;
+		if (!cBanker.CanBuyThat(price)) continue;
 		DInfo("-> Vehicle "+name+" is getting old ("+tx+" days left), replacing it",0);
 		INSTANCE.main.carrier.VehicleSendToDepot(vehicle,DepotAction.REPLACE);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
+		continue;
 		}
 	tx=INSTANCE.main.carrier.VehicleGetProfit(vehicle);
 	ty=AIVehicle.GetAge(vehicle);
@@ -456,9 +462,9 @@ foreach (vehicle, dummy in tlist)
 		INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 		}
-	cCarrier.VehicleMaintenance_Orders(vehicle);
 	local pause = cLooper();
 	}
+AIController.Break("VEHICLECHECK BREAK");
 if (!checkallvehicle)
 	{ // we need to estimate the fleet value
 	local midvalue=0;
@@ -602,7 +608,8 @@ foreach (i, dummy in tlist)
 		break;
 		case	DepotAction.REPLACE:
 			DInfo("Vehicle "+name+" is waiting in depot to be replace",1);
-			INSTANCE.main.carrier.VehicleSell(i,false);
+			//INSTANCE.main.carrier.VehicleSell(i,false);
+			INSTANCE.main.carrier.VehicleUpgradeEngine(i);
 		break;
 		case	DepotAction.CRAZY:
 			INSTANCE.main.carrier.VehicleSell(i,false);
