@@ -112,17 +112,17 @@ function cMisc::checkHQ()
 }
 
 
-//function GetCurrentGoalCallback(message, self)
-//{
-//print("Received answer goal with ");
-//for (local i=0; i < message.Data.len(); i++)	print(" Goal #"+i+" - "+message.Data[i]);
-//local goal_to_do=AIList();
-//if (message.Data[3] < message.Data[2])	goal_to_do.AddItem(message.Data[1],0);
-//if (message.Data[6] < message.Data[5])	goal_to_do.AddItem(message.Data[4],0);
-//if (message.Data[9] < message.Data[8])	goal_to_do.AddItem(message.Data[7],0);
-//if (goal_to_do.IsEmpty())	return;
-//INSTANCE.SetCargoFavorite(goal_to_do.Begin());
-//}
+function GetCurrentGoalCallback(message, self)
+{
+DInfo("Received answer goal with ",2);
+for (local i=0; i < message.Data.len(); i++)	DInfo(" Goal #"+i+" - "+message.Data[i],2);
+local goal_to_do=AIList();
+if (message.Data[3] < message.Data[2])	goal_to_do.AddItem(message.Data[1],0);
+if (message.Data[6] < message.Data[5])	goal_to_do.AddItem(message.Data[4],0);
+if (message.Data[9] < message.Data[8])	goal_to_do.AddItem(message.Data[7],0);
+if (goal_to_do.IsEmpty())	return;
+INSTANCE.SetCargoFavorite(goal_to_do.Begin());
+}
 
 function cMisc::ListToArray(list)
 {

@@ -31,60 +31,39 @@ cDebug.ClearSigns();
 	local direction = stationObj.GetRailStationDirection();
 	local station_left = null;
 	local station_right = null;
-	cDebug.PutSign(topLeftPlatform,"L");
-	cDebug.PutSign(topRightPlatform,"R");
-	cDebug.PutSign(idxLeftPlatform,"IL");
-	cDebug.PutSign(idxRightPlatform,"IR");
 	local station_right = cBuilder.GetDirection(cStationRail.GetPlatformIndex(topRightPlatform, false), cStationRail.GetPlatformIndex(topRightPlatform, true));
 	local station_left=cTileTools.GetLeftRelativeFromDirection(station_right);
 	station_right=cTileTools.GetRightRelativeFromDirection(station_right);
 cDebug.PutSign(station_left+idxLeftPlatform,"LS");
 cDebug.PutSign(station_right+idxRightPlatform,"RS");
-print("BREAK direction");
-	if (stationObj.s_Train[TrainType.DIRECTION] == AIRail.RAILTRACK_NE_SW)	print("station is NE_SW = "+AIRail.RAILTRACK_NE_SW);
-												else	print("station is NW_SE = "+AIRail.RAILTRACK_NW_SE);
-print("NE_SW="+AIRail.RAILTRACK_NE_SW+" NW_SE="+AIRail.RAILTRACK_NW_SE);
-
 	// default: main station + exit in use = best place to build a platform : left side
 	local plat_main=idxLeftPlatform;
 	local plat_alt=idxRightPlatform;
 	local pside=station_left;
 	local platopenclose=cMisc.CheckBit(stationObj.s_Platforms.GetValue(topLeftPlatform), 1);
-print("left platform ="+stationObj.s_Platforms.GetValue(topLeftPlatform)+" platopenclose="+platopenclose);
 	if (useEntry) // main station + entry in use = best place : right side
 		{
-print("using right side");
 		pside=station_right;
 		plat_main=idxRightPlatform;
 		plat_alt=idxLeftPlatform;
 		platopenclose=cMisc.CheckBit(stationObj.s_Platforms.GetValue(topRightPlatform), 0);
-print("right platform ="+stationObj.s_Platforms.GetValue(topRightPlatform)+" platopenclose="+platopenclose);
-print("isbitset "+cMisc.CheckBit(stationObj.s_Platforms.GetValue(topRightPlatform),1));
 		}
 	local	success = false;
 	local displace=plat_main+pside;
 	local areaclean = AITileList();
-
-print("BREAK");
 	if (platopenclose)
 		{
 		areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
-		//areaclean.Valuate(AITile.IsBuildable);
-print("BREAK 1");
 		local canDestroy=cTileTools.IsAreaBuildable(areaclean);
 		cDebug.showLogic(areaclean); // deb
-print("canDestroy="+canDestroy);
 		if (canDestroy)	cTileTools.ClearArea(areaclean);
 		cTileTools.TerraformLevelTiles(plat_main, displace+(backwardTileOf*(station_depth-1)));
 		success=INSTANCE.main.builder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_main,true)+pside, direction, stationObj.s_ID);
-print("success="+success+" platindex="+(cStationRail.GetPlatformIndex(plat_main,true)+pside)+" direction="+direction);
 cDebug.PutSign(cStationRail.GetPlatformIndex(plat_main,true)+pside,"+");
-print("BREAK 2");
 		if (success)	foreach (tile, dummy in areaclean)	stationObj.StationClaimTile(tile, stationObj.s_ID);
 		}
 	if (!success)
 		{
-print("BREAK 3 on failure");
 		cError.IsCriticalError();
 		allfail=cError.IsError();
 		cError.ClearError();
@@ -97,9 +76,7 @@ print("BREAK 3 on failure");
 		if (cTileTools.IsAreaBuildable(areaclean))	cTileTools.ClearArea(areaclean);
 		cTileTools.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
 		success=INSTANCE.main.builder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, stationObj.s_ID);
-print("success="+success+" platindex="+(cStationRail.GetPlatformIndex(plat_alt,true)+pside)+" direction="+direction);
 cDebug.PutSign(cStationRail.GetPlatformIndex(plat_alt,true)+pside,"+");
-print("BREAK 4");
 		if (success)	foreach (tile, dummy in areaclean)	stationObj.StationClaimTile(tile, stationObj.s_ID);
 		if (!success)	
 			{
@@ -410,7 +387,6 @@ function cBuilder::RailStationPathfindAltTrack(stationObj, roadObj)
 	dstpos=dstlink+cStationRail.GetRelativeTileBackward(roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
 	DInfo("Calling rail pathfinder: srcpos="+srcpos+" srclink="+srclink+" dstpos="+dstpos+" dstlink="+dstlink,2);
 	local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
-print("result from pathfinder task for alttrack ="+result);
 	if (result != 2)
 		{
 		if (result == -1)
@@ -624,7 +600,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local newStationSize = needTaker + needDropper;
 	if (allDropper+allTaker == 1)	newStationSize = 0; // don't grow the station until we have a real train using it
 	DInfo("STATION : "+thatstation.s_Name,1);
-print("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" needDropper="+needDropper+" newsize="+newStationSize);
+	DInfo("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" needDropper="+needDropper+" newsize="+newStationSize,1);
 	// find route that use the station
 	local road=null;
 	if (thatstation.s_Owner.IsEmpty())
@@ -690,13 +666,12 @@ print("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" n
 		sx_OUT=thatstation.GetRailStationOUT(false);
 		PlatformNeedUpdate=true;
 		}
-print("se_IN="+se_IN+" se_OUT="+se_OUT+" sx_IN="+sx_IN+" sx_OUT="+sx_OUT+" canAddTrain="+canAddTrain);
+	DInfo("se_IN="+se_IN+" se_OUT="+se_OUT+" sx_IN="+sx_IN+" sx_OUT="+sx_OUT+" canAddTrain="+canAddTrain,2);
 	local result=true;
 	if (cMisc.ValidInstance(road) && road.Secondary_RailLink == false && road.SourceStation.s_ID != thatstation.s_ID && (trainEntryTotal >1 || trainExitTotal > 1))
 			{
 			if (road.Target_RailEntry)	result = thatstation.IsRailStationEntryOpen();
 							else	result = thatstation.IsRailStationExitOpen();
-print("roadrailentry="+road.Target_RailEntry);
 			if (result) // don't test if we knows it's dead already
 				{
 				result = cBuilder.RailStationPathfindAltTrack(thatstation, road);
@@ -714,6 +689,6 @@ print("roadrailentry="+road.Target_RailEntry);
 	if (useEntry)	r_depot = AIRail.IsRailDepotTile(thatstation.s_EntrySide[TrainSide.DEPOT]);
 			else	r_depot = AIRail.IsRailDepotTile(thatstation.s_ExitSide[TrainSide.DEPOT]);
 	if (!r_depot)	cBuilder.RailStationPhaseBuildDepot(thatstation, useEntry);
-	if (newStationSize > thatstation.s_Train[TrainType.GOODPLATFORM])	{ print("refuse more train"); return false; }
+	if (newStationSize > thatstation.s_Train[TrainType.GOODPLATFORM])	{ DInfo("station refuse more trains",2); return false; }
 	return canAddTrain;
 }

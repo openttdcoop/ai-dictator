@@ -30,7 +30,6 @@ class cSCP extends cClass
 
 function cSCP::Init()
 {
-return; // FIXME
 	this.SCPInstance=SCPLib(SELF_SHORTNAME, SELF_VERSION, null);
 	this.SCPInstance.SCPLogging_Error(true);
 	this.SCPInstance.SCPLogging_Info(false);
@@ -40,7 +39,6 @@ return; // FIXME
 
 function cSCP::WaitReady()
 {
-return; // FIXME
 	DInfo("Waiting SCP to get ready.",2);
 	for (local j=0; j < 10; j++)
 		{
@@ -52,7 +50,6 @@ return; // FIXME
 
 function cSCP::IsAllow()
 {
-return false; //FIXME
 	return (AIController.GetSetting("allow_scp") == 1);
 }
 
@@ -96,5 +93,5 @@ function cSCP::GetCurrentGoalCallback(message, self)
 
 function cSCP::ReceivedGSSettingCommand(message, self)
 {
-	print("Received GSSetting Comnand answer");
+	AILog.Info("Received GSSetting Comnand answer");
 }

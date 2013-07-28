@@ -277,7 +277,6 @@ function cCarrier::CheckOneVehicleOrGroup(vehID, doGroup)
 	if (vehList.IsEmpty())	vehList.AddItem(vehID,0);
 	foreach (vehicle, dummy in vehList)
 		cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
-print("Pool size of vehicle to test : "+cCarrier.MaintenancePool.len());
 }
 
 function cCarrier::CheckOneVehicleOfGroup(doGroup)

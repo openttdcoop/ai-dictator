@@ -276,7 +276,6 @@ function cLoader::LoadSaveGame()
 	cRoute.RouteRebuildIndex();
 	RailFollower.FindRailOwner();
 	cRoute.RouteDamage.Clear(); // static, only clear it
-AIController.Break("end of loading");
 }
 
 function cLoader::LoadingGame()

@@ -101,7 +101,7 @@ function cStationRail::GetRailStationMiscInfo(stationID=null)
 	DInfo("Detecting station depth",1);
 	cDebug.PutSign(entrypos,"Start");
 	local scanner=entrypos;
-	while (AIRail.IsRailStationTile(scanner))	{ stalength++; scanner+=backTile; cDebug.PutSign(scanner,"."); INSTANCE.NeedDelay(10); }
+	while (AIRail.IsRailStationTile(scanner))	{ stalength++; scanner+=backTile; cDebug.PutSign(scanner,"."); }
 	exitpos=scanner+frontTile;
 	cDebug.PutSign(exitpos,"End");
 	DInfo("Station "+thatstation.s_Name+" depth is "+stalength+" direction="+direction+" start="+entrypos+" end="+exitpos,1);
@@ -332,8 +332,6 @@ function cStationRail::DefinePlatform(stationID=null)
 			else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
 	local priorUpdate = thatstation.s_Platforms.Count();
-print("platform post update : "+priorUpdate);
-
 	local frontTile, backTile, leftTile, rightTile= null;
 	local direction=thatstation.GetRailStationDirection();
 	local staloc=thatstation.GetLocation();
@@ -367,27 +365,22 @@ cDebug.PutSign(lookup+start,"*");
 	lookup=rightTile;
 	while (AIRail.IsRailStationTile(lookup+start) && (AIStation.GetStationID(lookup+start)==thatstation.s_ID))
 		{
-cDebug.PutSign(lookup+start,"*");
+		cDebug.PutSign(lookup+start,"*");
 		topRightPlatform=lookup+start;
 		if (!thatstation.s_Platforms.HasItem(lookup+start))	thatstation.s_Platforms.AddItem(lookup+start,0);
 		lookup+=rightTile;
 		}
 	local goodCounter=0;
-	/*if (thatstation.s_Owner.Count() == 0)	thatstation.s_Platforms.SetValue(thatstation.s_Platforms.Begin(), 7);
-	// no one own it yet, we just validate a platform if its rail in front is built
-	else	{*/
-		local runTarget=cStationRail.RailStationGetRunnerTarget(thatstation.s_ID);
-		cDebug.PutSign(runTarget,"Checker "+runTarget);
-		foreach (platidx, value in thatstation.s_Platforms)
-			{
-			if (runTarget == -1)	break;
-	print("platform="+ platidx+" result ="+cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL)+" value="+value);
-			if (!cMisc.CheckBit(value,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,0);
-			if (!cMisc.CheckBit(value,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,1);
-			thatstation.s_Platforms.SetValue(platidx, value);
-			if (cMisc.CheckBit(value,0) || cMisc.CheckBit(value, 1))	{ goodCounter++; thatstation.SetPlatformWorking(platidx, true); }
-			}	
-//		}
+	local runTarget=cStationRail.RailStationGetRunnerTarget(thatstation.s_ID);
+	cDebug.PutSign(runTarget,"RT");
+	foreach (platidx, value in thatstation.s_Platforms)
+		{
+		if (runTarget == -1)	break;
+		if (!cMisc.CheckBit(value,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,0);
+		if (!cMisc.CheckBit(value,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,1);
+		thatstation.s_Platforms.SetValue(platidx, value);
+		if (cMisc.CheckBit(value,0) || cMisc.CheckBit(value, 1))	{ goodCounter++; thatstation.SetPlatformWorking(platidx, true); }
+		}	
 	DInfo("Station "+thatstation.s_Name+" have "+thatstation.s_Platforms.Count()+" platforms, "+goodCounter+" platforms are ok",2);
 	thatstation.s_Train[TrainType.GOODPLATFORM]=goodCounter;
 	thatstation.s_Size=thatstation.s_Platforms.Count();

@@ -464,7 +464,6 @@ foreach (vehicle, dummy in tlist)
 		}
 	local pause = cLooper();
 	}
-AIController.Break("VEHICLECHECK BREAK");
 if (!checkallvehicle)
 	{ // we need to estimate the fleet value
 	local midvalue=0;
@@ -546,7 +545,6 @@ tlist.Valuate(AIVehicle.IsStoppedInDepot);
 tlist.KeepValue(1);
 foreach (i, dummy in tlist)
 	{
-	print("WAGONS :"+AIVehicle.GetNumWagons(i)+" in "+AIVehicle.GetName(i));
 	INSTANCE.Sleep(1);
 	local reason=DepotAction.SELL;
 	local parameter=0;
@@ -688,7 +686,7 @@ function cCarrier::StartVehicle(vehID)
 function cCarrier::StopVehicle(vehID)
 // Try to stop a vehicle that is running, and not restart it...
 {
-	if (AIVehicle.GetState(vehID) == VS_RUNNING && AIVehicle.StartStopVehicle(vehID))
+	if (AIVehicle.GetState(vehID) == AIVehicle.VS_RUNNING && AIVehicle.StartStopVehicle(vehID))
 		{
 		DInfo("Stopping "+cCarrier.GetVehicleName(vehID)+"...",0);
 		return true;

@@ -79,12 +79,31 @@ function RailFollower::_Neighbours(path, cur_node, self)
 	return tiles;
 }
 
-function RailFollower::FindRouteRails(source, target, stationID)
+function RailFollower::FindRouteRails(source, target)
 {
+	if (!AIMap.IsValidTile(source) || !AIMap.IsValidTile(target))	return AIList();
 	local solve = cBuilder.RoadRunnerHelper(source, target, AIVehicle.VT_RAIL);
-	cDebug.ClearSigns();
-	cDebug.showLogic(solve);
 	return solve;
+}
+
+function RailFollower::GetRailPathing(source, source_link, target, target_link)
+{
+	cDebug.ClearSigns();
+	local pathwalker = RailFollower();
+	pathwalker.InitializePath([[source, source_link]], [[target, target_link]]);// start beforestart    end afterend
+	local path = pathwalker.FindPath(20000);
+	if (path == null)	{ DError("Pathwalking failure.",2); return AIList(); }
+	local toAIList=AIList();
+	local prev = path.GetTile();
+	local tile = null;
+	while (path != null)
+		{
+		local tile = path.GetTile();
+		toAIList.AddItem(tile, 0);
+		prev = tile;
+		path = path.GetParent();
+		}
+	return toAIList;
 }
 
 function RailFollower::FindRailOwner()
@@ -92,7 +111,6 @@ function RailFollower::FindRailOwner()
 {
 	cRoute.RouteDamage.Valuate(AIRail.IsRailTile);
 	cRoute.RouteDamage.KeepValue(1);
-	foreach (tile, value in cRoute.RouteDamage)	cRoute.RouteDamage.SetValue(tile, -1);
 	local rail_routes = AIGroupList();
 	rail_routes.Valuate(AIGroup.GetVehicleType);
 	rail_routes.KeepValue(AIVehicle.VT_RAIL);
@@ -103,43 +121,101 @@ function RailFollower::FindRailOwner()
 		local road = cRoute.Load(uid);
 		if (!road)	continue;
 		// first re-assign trains state to each station (taker, droppper, using entry/exit)
-		local train_list = AIVehicleList_Group(road.GroupID);	
+		local train_list = AIVehicleList_Group(road.GroupID);
+		foreach (plat, _ in road.SourceStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Source_RailEntry);
+		foreach (plat, _ in road.TargetStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Target_RailEntry);
 		foreach (trains, _ in train_list)
 			{
 			road.SourceStation.StationAddTrain(true, road.Source_RailEntry);
 			road.TargetStation.StationAddTrain(false, road.Target_RailEntry);
 			}
+		// Find each station state by tell it we want add a train to it
+		//cRoute.CanAddTrainToStation(uid);
 		DInfo("Finding rails for route "+road.Name);
 		if (!road.Primary_RailLink)	{ DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
 		local stationID = road.SourceStation.s_ID;
-		local start, end = null;
-		if (road.Source_RailEntry)	start = road.SourceStation.s_EntrySide[TrainSide.IN_LINK];
-						else	start = road.SourceStation.s_ExitSide[TrainSide.IN_LINK];
-		if (road.Target_RailEntry)	end = road.TargetStation.s_EntrySide[TrainSide.OUT_LINK];
-						else	end = road.TargetStation.s_ExitSide[TrainSide.OUT_LINK];
+		local src_target, dst_target, src_link, dst_link = null;
+		if (road.Source_RailEntry)	src_target = road.SourceStation.s_EntrySide[TrainSide.IN];
+						else	src_target = road.SourceStation.s_ExitSide[TrainSide.IN];
+		if (road.Target_RailEntry)	dst_target = road.TargetStation.s_EntrySide[TrainSide.OUT];
+						else	dst_target = road.TargetStation.s_ExitSide[TrainSide.OUT];
 		local bad = false;
-		local station_tiles = RailFollower.FindRouteRails(start, end, road.SourceStation.s_ID);
-		local more_tiles;
-		bad = (station_tiles.IsEmpty());
-		if (!bad)	{
-				more_tiles = RailFollower.FindRouteRails(road.SourceStation.s_Location, end, road.SourceStation.s_ID);
-				bad = (more_tiles.IsEmpty());
+		local src_tiles = AIList();
+		local dst_tiles = AIList();
+		local test_tiles = AIList();
+		// Find main line tracks (source station -> destination station)
+		src_link = src_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry);
+		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry)
+		src_tiles = RailFollower.GetRailPathing(src_target, src_link, dst_target, dst_link);
+		bad = (src_tiles.IsEmpty());
+		local notbad = false; // to find if at least 1 platform is working, else the station is bad/unusable
+		// Find each source station platform tracks
+		foreach (platnum, _ in road.SourceStation.s_Platforms)
+			{
+			test_tiles = RailFollower.FindRouteRails(src_target, platnum);
+			if (!notbad)	notbad = (!test_tiles.IsEmpty());
+			src_tiles.AddList(test_tiles);
+			}
+			if (!notbad && !bad)	bad = true;
+			notbad = false;
+		// Find each target station platform tracks
+		foreach (platnum, _ in road.TargetStation.s_Platforms)
+			{
+			test_tiles = RailFollower.FindRouteRails(dst_target, platnum);
+			if (!notbad)	notbad = (!test_tiles.IsEmpty());
+			dst_tiles.AddList(test_tiles);
+			}
+		if (!notbad && !bad)	bad = true;
+		local bad_alt = false;
+		// Find the tracks from source depot -> source station
+		local depot = null;
+		if (road.Source_RailEntry)	depot = road.SourceStation.s_EntrySide[TrainSide.DEPOT];
+						else	depot = road.SourceStation.s_ExitSide[TrainSide.DEPOT];
+		test_tiles = RailFollower.FindRouteRails(src_target, depot);
+		src_tiles.AddList(test_tiles);
+		// Find the tracks from target depot -> target station
+		if (road.Target_RailEntry)	depot = road.TargetStation.s_EntrySide[TrainSide.DEPOT];
+						else	depot = road.TargetStation.s_ExitSide[TrainSide.DEPOT];
+		test_tiles = RailFollower.FindRouteRails(dst_target, depot);
+		dst_tiles.AddList(test_tiles);
+		// Find alternate line tracks (target station -> source station)
+		if (road.Source_RailEntry)	dst_target = road.SourceStation.s_EntrySide[TrainSide.OUT];
+						else	dst_target = road.SourceStation.s_ExitSide[TrainSide.OUT];
+		if (road.Target_RailEntry)	src_target = road.TargetStation.s_EntrySide[TrainSide.IN];
+						else	src_target = road.TargetStation.s_ExitSide[TrainSide.IN];
+		src_link = src_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry);
+		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry)
+		test_tiles = RailFollower.GetRailPathing(src_target, src_link, dst_target, dst_link);
+		if (!bad_alt)	bad_alt = (test_tiles.IsEmpty());
+		dst_tiles.AddList(test_tiles);
+		// Remove station tiles out of founded tiles : we don't want any station tile assign as a non station tiles
+		src_tiles.Valuate(AITile.IsStationTile);
+		src_tiles.KeepValue(0);
+		dst_tiles.Valuate(AITile.IsStationTile);
+		dst_tiles.KeepValue(0);
+		// Remove all tiles we found from the "unknown" tiles list
+		cRoute.RouteDamage.RemoveList(src_tiles);
+		cRoute.RouteDamage.RemoveList(dst_tiles);
+		// Now assign tiles to their station OtherTiles list, and claim them
+		foreach (tiles, _ in src_tiles)	cStationRail.RailStationClaimTile(tiles, road.Source_RailEntry, road.SourceStation.s_ID);
+		foreach (tiles, _ in dst_tiles)	cStationRail.RailStationClaimTile(tiles, road.Target_RailEntry, road.TargetStation.s_ID);
+		road.SourceStation.s_TilesOther = src_tiles;
+		road.TargetStation.s_TilesOther = dst_tiles;
+		local killit = false;
+		if (bad)	killit = true;
+			else	{
+				// Change alternate track state if it doesn't match its real state
+				if (road.Secondary_RailLink && bad_alt)	{ road.Secondary_RailLink = false; road.Route_GroupNameSave(); }
+				if (!road.Secondary_RailLink && !bad_alt)	{ road.Secondary_RailLink = true; road.Route_GroupNameSave(); }
 				}
-		station_tiles.AddList(more_tiles);
-		if (!bad)	{
-				more_tiles = RailFollower.FindRouteRails(road.TargetStation.s_Location, start, road.TargetStation.s_ID);
-				bad = (more_tiles.IsEmpty());
-				}
-		station_tiles.AddList(more_tiles);
-		foreach (tiles, _ in station_tiles)	{
-								cStationRail.RailStationClaimTile(tiles, road.Source_RailEntry, road.SourceStation.s_ID);
-								cRoute.RouteDamage.RemoveItem(tiles);
-								}
-		if (bad)	{
+		if (killit)	{
 				DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
 				road.RouteIsNotDoable();
 				}
 		}
+	cRoute.RouteDamage.Valuate(AITile.IsStationTile);
+	cRoute.RouteDamage.RemoveValue(1);
 	DInfo("Unknown rails remaining : "+cRoute.RouteDamage.Count());
+	cBuilder.RailCleaner(cRoute.RouteDamage);
 	cRoute.RouteDamage.Clear();
 }

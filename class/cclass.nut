@@ -119,7 +119,6 @@ function cMain::CheckAccount()
 	local maxLoan = AICompany.GetMaxLoanAmount();
 	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	local goodcash = bank.mincash * cBanker.GetInflationRate();
-print("bank.mincash="+bank.mincash+" inflation="+cBanker.GetInflationRate());
 	if (ourLoan == 0 && cash >= bank.mincash)	bank.unleash_road=true;
 	if (!cBanker.CanBuyThat(goodcash))	{ DInfo("Low on cash, disabling build : "+goodcash,1); bank.canBuild=false; }
 	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }

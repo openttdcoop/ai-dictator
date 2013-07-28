@@ -456,7 +456,6 @@ function cCarrier::AddWagon(uid, wagonNeed)
 						DInfo("Added an extra engine to pull freight",1);
 						}
 					}
-print("BREAK train add engine");
 			if (AIVehicle.IsValidVehicle(tID))
 				{
 				local newwagon=cCarrier.GetNumberOfWagons(tID)-beforesize;

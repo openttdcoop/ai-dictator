@@ -352,21 +352,7 @@ while (path != null && smallerror==0)
 			walked.push(prev);
 			}
 		 else {
-			// check for small up/down hills correction
 			local targetTile=path.GetTile();
-			//print("prevprev="+AITile.GetSlope(prevprev)+"("+AITile.GetMinHeight(prevprev)+","+AITile.GetMaxHeight(prevprev)+")"+" prev="+AITile.GetSlope(prev)+"("+AITile.GetMinHeight(prev)+","+AITile.GetMaxHeight(prev)+")"+" targetTile="+AITile.GetSlope(targetTile)+"("+AITile.GetMinHeight(targetTile)+","+AITile.GetMaxHeight(targetTile)+")");
-		//	local equal= (AITile.GetMinHeight(prev) == AITile.GetMinHeight(targetTile));
-			//if (!equal)	equal = (AITile.GetMaxHeight(prev) == AITile.GetMaxHeight(targetTile));
-			//local smooth=false;
-			//if (AITile.GetSlope(prevprev) == AITile.SLOPE_FLAT && AITile.GetMaxHeight(targetTile) < AITile.GetMaxHeight(prev) && AITile.GetMaxHeight(prev) > AITile.GetMaxHeight(prevprev))	{ smooth=true; print("should smooth going up"); }
-			//if (AITile.GetSlope(prevprev) == AITile.SLOPE_FLAT && AITile.GetMinHeight(targetTile) >  AITile.GetMinHeight(prev) && AITile.GetMinHeight(prev) < AITile.GetMinHeight(prevprev))	{ smooth=true; print("should smooth going down"); }
-
-//			if (false && equal && AITile.GetSlope(prev) != AITile.SLOPE_FLAT && AITile.GetSlope(targetTile) != AITile.SLOPE_FLAT && AITile.GetSlope(prevprev) == AITile.SLOPE_FLAT)
-			//if (false)
-			//	{
-			//	DInfo("Smoothing land to build rails",1);
-			//	cTileTools.TerraformLevelTiles(prevprev, targetTile);
-			//	}
 			if (!AIRail.BuildRail(prevprev, prev, targetTile))
 				{
 				smallerror=cBuilder.EasyError(AIError.GetLastError());
@@ -762,7 +748,10 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 			signaldone = (AIRail.GetSignalType(i, i+backwardTileOf) != AIRail.SIGNALTYPE_NONE);
 			if (!signaldone)	signaldone=AIRail.BuildSignal(i, i+backwardTileOf, AIRail.SIGNALTYPE_PBS);
 			}
-		else	{ error=true; break; }
+		else	{
+			error=cTileTools.CanUseTile(i, thatstation.s_ID);
+			if (error)	break;
+			}
 		i+=forwardTileOf;
 		}
 	if (!error)	
