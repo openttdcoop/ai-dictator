@@ -293,7 +293,7 @@ function cBuilder::TryBuildThatRoute()
 		DInfo("Building using "+buildWithRailType+" rail type",2);
 		break;
 		case	RouteType.ROAD:
-			success=INSTANCE.main.carrier.ChooseRoadVeh(INSTANCE.main.route.CargoID);
+			success=cCarrier.GetRoadVehicle(null, INSTANCE.main.route.CargoID);
 		break;
 		case	RouteType.WATER:
 			success=null;

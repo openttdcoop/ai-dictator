@@ -13,103 +13,25 @@
  *
 **/
 
-class cEngine extends AIEngine
+class cEngine extends cEngineLib
 {
-static	enginedatabase= {};
-static	EngineBL=AIList();		// list of truck/bus engines we have blacklist to avoid bug with IsArticalted
+//static	enginedatabase= {};
+//static	EngineBL=AIList();		// list of truck/bus engines we have blacklist to avoid bug with IsArticalted
 static	BestEngineList=AIList();	// list of best engine for a couple engine/cargos, item=EUID, value=best engineID
 
-static	function GetEngineObject(engineID)
-		{
-		return engineID in cEngine.enginedatabase ? cEngine.enginedatabase[engineID] : null;
-		}
-
-	engineID		= null;	// id of the engine
-	name			= null;	// name
-	cargo_capacity	= null;	// capacity per cargo item=cargoID, value=capacity when refit
-	cargo_price		= null;	// price to refit item=cargoID, value=refit cost
-	cargo_length	= null;	// that's the length of a vehicle depending on its current cargo setting
-	isKnown		= null;	// -1 seen that engine, -2 tests made or vehicleID when a vehicle is going for test
-	incompatible	= null;	// AIList of wagons imcompatible with a train engine
-	
 	constructor()
 		{
-		engineID		= null;
-		name			= "unknow";
-		cargo_capacity	= AIList();
-		cargo_price		= AIList();
-		cargo_length	= AIList();
-		isKnown		= -1;
-		incompatible	= AIList();
+		::cEngineLib.constructor();
 		}
 }
-
-function cEngine::Save()
-// Save the engine in the database
-	{
-	if (this.engineID == null)	{ this.isKnown=-2; return; }
-	if (this.engineID in cEngine.enginedatabase)	return;
-	local crglist=AICargoList();
-	foreach (crg, dummy in crglist)
-		{
-		this.cargo_length.AddItem(crg, 8); // default to 8, a classic length
-		this.cargo_price.AddItem(crg,-1);
-// 2 reasons: make the engine appears cheaper by 1 vs an already test one & allow us to know if we met it already (see SetRefitCost)
-		if (AIEngine.CanRefitCargo(this.engineID, crg))
-				this.cargo_capacity.AddItem(crg,255);
-// 255 so it will appears to be a better carrier vs an already test engine
-// This two properties set as-is will force the AI to think a non-test engine is better to use than an already test one
-			else	this.cargo_capacity.AddItem(crg,0);
-		}
-	local crgtype=AIEngine.GetCargoType(this.engineID);
-	this.cargo_capacity.SetValue(crgtype, AIEngine.GetCapacity(this.engineID));
-	this.name=AIEngine.GetName(this.engineID);
-	cEngine.enginedatabase[this.engineID] <- this;
-	INSTANCE.DInfo("Adding engine "+this.engineID+" "+this.name+" to cEngine database",2);
-	INSTANCE.DInfo("List of known engines : "+(cEngine.enginedatabase.len()),1);
-	if (AIEngine.GetVehicleType(this.engineID) == AIVehicle.VT_AIR && this.AIEngine.GetMaximumOrderDistance(this.engineID) != 0)	cEngine.BlacklistEngine(this.engineID);
-	}
-
-function cEngine::Load(eID)
-	{
-	local cobj=cEngine();
-	cobj.engineID=eID;
-	if (eID in cEngine.enginedatabase)	cobj=cEngine.GetEngineObject(eID);
-						else	cobj.Save();
-	return cobj;
-	}
-	
-function cEngine::GetLength(eID, cargoID=null)
-	{
-	local eng=cEngine.Load(eID);
-	if (cargoID==null)	cargoID=AIEngine.GetCargoType(eID);
-	return eng.cargo_length.GetValue(cargoID);
-	}
-
-function cEngine::Update(vehID)
-	{
-	local new_engine=AIVehicle.GetEngineType(vehID);
-	local engObj=cEngine.Load(new_engine);
-	if (engObj.isKnown==-2)	return;
-	INSTANCE.DInfo("Grabbing vehicle properties for "+engObj.name,2);
-	local crgList=AICargoList();
-	foreach (cargoID, dummy in crgList)
-		{
-		local testing=AIVehicle.GetRefitCapacity(vehID, cargoID);
-		if (testing < 0)	testing=0;
-		engObj.cargo_capacity.SetValue(cargoID, testing);
-		engObj.cargo_length.SetValue(cargoID, AIVehicle.GetLength(vehID)); // assume all cargo will gave same length
-		}
-	engObj.isKnown=-2;
-	}
 
 function cEngine::IsRabbitSet(vehicleID)
 // return true if we have a test vehicle already
 	{
 	local engineID=AIVehicle.GetEngineType(vehicleID);
 	local eng=cEngine.Load(engineID);
-	if (eng.isKnown >= 0 && !AIVehicle.IsValidVehicle(eng.isKnown))	eng.isKnown=-1;
-	return (eng.isKnown >= 0);
+	if (eng.is_known >= 0 && !AIVehicle.IsValidVehicle(eng.is_known))	eng.is_known=-1;
+	return (eng.is_known >= 0);
 	}
 
 function cEngine::RabbitSet(vehicleID)
@@ -119,7 +41,7 @@ function cEngine::RabbitSet(vehicleID)
 	local engineID=AIVehicle.GetEngineType(vehicleID);
 	if (engineID == null)	return ;
 	local eng=cEngine.Load(engineID);
-	if (eng.isKnown == -1)	{ eng.isKnown=vehicleID; INSTANCE.DInfo("Using that vehicle as test vehicle for engine checks",2); }
+	if (eng.is_known == -1)	{ eng.is_known=vehicleID; INSTANCE.DInfo("Using that vehicle as test vehicle for engine checks",2); }
 	}
 
 function cEngine::RabbitUnset(vehicleID)
@@ -129,72 +51,7 @@ function cEngine::RabbitUnset(vehicleID)
 	local engineID=AIVehicle.GetEngineType(vehicleID);
 	if (engineID==null)	return ;
 	local eng=cEngine.Load(engineID);
-	if (eng.isKnown >= 0)	eng.isKnown = -1;
-	}
-
-function cEngine::GetCapacity(eID, cargoID=null)
-// can be use as valuator
-	{
-	local engObj=cEngine.Load(eID);
-	if (cargoID==null)	cargoID=AIEngine.GetCargoType(eID);
-	//INSTANCE.DInfo(engObj.name+" have a capacity of "+engObj.cargo_capacity.GetValue(cargoID)+" for "+AICargo.GetCargoLabel(cargoID),2,"cEngine::GetCapacity");
-	return engObj.cargo_capacity.GetValue(cargoID);
-	}
-
-function cEngine::Incompatible(eng1, eng2)
-// mark eng1 incompatible with eng2 (one must be a wagon, other must not)
-	{
-	if ( (!AIEngine.IsWagon(eng1) && !AIEngine.IsWagon(eng2)) || (AIEngine.IsWagon(eng1) && AIEngine.IsWagon(eng2)) )
-		{ INSTANCE.DError("One engine must be a wagon and the other must not",1); return false; }
-	local eng1O=cEngine.Load(eng1);
-	local eng2O=cEngine.Load(eng2);
-	eng1O.incompatible.AddItem(eng2,eng1);
-	eng2O.incompatible.AddItem(eng1,eng2);
-	INSTANCE.DInfo("Setting "+eng1O.name+":"+eng1O.engineID+" incompatible with "+eng2O.name+":"+eng2O.engineID,2);
-	}
-
-function cEngine::SetRefitCost(engine, cargo, cost, vlen)
-// set the refit cost for an engine to use cargo
-// per default, assume all refit costs will be == for all cargos
-	{
-	local eng=cEngine.Load(engine);
-	local update=false;
-	if (eng.cargo_price.GetValue(cargo) == -1) // this test prove we never met a refitprice for that engine
-		{
-		foreach (crg, refitprice in eng.cargo_price)	if (refitprice == -1)	eng.cargo_price.SetValue(crg, cost);
-		update=true;
-		}
-	if (eng.cargo_length.GetValue(cargo) != vlen)
-		{
-		eng.cargo_length.SetValue(cargo, vlen);
-		INSTANCE.DInfo("Setting "+eng.name+" length to "+vlen+" when handling "+AICargo.GetCargoLabel(cargo),2);
-		}
-	if (eng.cargo_price.GetValue(cargo) != cost)	update=true;
-	if (update)
-		{
-		eng.cargo_price.SetValue(cargo, cost);
-		INSTANCE.DInfo("Setting "+eng.name+" refit costs to "+cost+" when handling "+AICargo.GetCargoLabel(cargo),2);
-		}
-	}
-
-function cEngine::IsCompatible(engine, compareengine)
-// return true/false if both are compatible
-// can be use as valuator
-	{
-	local engO=cEngine.Load(compareengine);
-	return !(engO.incompatible.HasItem(engine));
-	}
-
-function cEngine::GetPrice(engine, cargo=null)
-// return the price to build an engine, add refit cost when we must refit the vehicle to handle cargo
-// can be use as valuator
-	{
-	local eng=cEngine.Load(engine);
-	if (engine==null)	return 0;
-	if (cargo==null)	return AIEngine.GetPrice(engine);
-	local refitcost=0;
-	if (eng.cargo_price.HasItem(cargo))	refitcost=eng.cargo_price.GetValue(cargo);
-	return (AIEngine.GetPrice(engine)+refitcost);
+	if (eng.is_known >= 0)	eng.is_known = -1;
 	}
 
 function cEngine::CanPullCargo(engineID, cargoID)
@@ -202,30 +59,17 @@ function cEngine::CanPullCargo(engineID, cargoID)
 // if NicePlay is true we return the AIEngine.CanPullCargo version
 // else we return real usable wagons list for a train
 	{
-	local NicePlay = !DictatorAI.GetSetting("use_nicetrain");
-	if (!AIEngine.IsValidEngine(engineID) || !AICargo.IsValidCargo(cargoID) || AIEngine.IsWagon(engineID))
-		{ INSTANCE.DError("Preconditions fail engineID="+engineID+" cargoID="+cargoID,2); return false; }
-	if (NicePlay)	return AIEngine.CanPullCargo(engineID, cargoID);
-	local engine=cEngine.Load(engineID);
-	local wagonlist=AIEngineList(AIVehicle.VT_RAIL);
-	wagonlist.Valuate(AIEngine.IsWagon);
-	wagonlist.KeepValue(1);
-	wagonlist.Valuate(cEngine.IsCompatible, engineID);
-	wagonlist.KeepValue(1);
-	wagonlist.Valuate(AIEngine.CanRefitCargo, cargoID);
-	wagonlist.KeepValue(1);
-	wagonlist.Valuate(AIEngine.IsBuildable);
-	wagonlist.KeepValue(1);
-	wagonlist.Valuate(AIEngine.CanRunOnRail, AIEngine.GetRailType(engineID));
-	wagonlist.KeepValue(1);
-	return (!wagonlist.IsEmpty());
+	local setting = DictatorAI.GetSetting("use_nicetrain");
+	return cEngineLib.CanPullCargo(engineID, cargoID, setting);
 	}
 
 function cEngine::GetName(eID)
 // return the name of the engine
 	{
-	local eng=cEngine.Load(eID);
-	return eng.name;
+	local name = "Invalid engine";
+	if (AIEngine.IsValidEngine(eID))	name = AIEngine.GetName(eID);
+	name+=" (#"+eID+")";
+	return name;
 	}
 
 function cEngine::GetEUID(engineType, cargoID)
@@ -241,20 +85,21 @@ function cEngine::GetEUID(engineType, cargoID)
 
 function cEngine::GetEngineByCache(engineType, cargoID)
 // return the top engine if we knows it already
-// return -1 if we have no match
+// return -1 if we have no match but try to find an engine before
 	{
 	local EUID=cEngine.GetEUID(engineType, cargoID);
 	if (cEngine.BestEngineList.HasItem(EUID))	return cEngine.BestEngineList.GetValue(EUID);
-							else	INSTANCE.DInfo("Engine cache miss for "+EUID,2);
+	INSTANCE.DInfo("Engine cache miss for "+EUID,2);	
+	switch (engineType)
+		{
+		case	AIVehicle.VT_ROAD:
+			return cCarrier.GetRoadVehicle(null, cargoID);
+		case	AIVehicle.VT_RAIL:
+			return -1;
+		case	AIVehicle.VT_AIR:
+			return -1;
+		}
 	return -1;
-	}
-
-function cEngine::EngineCacheInit()
-// browse vehicle so our cache will get fill
-	{
-	local engList=AIEngineList(AIVehicle.VT_ROAD);
-	INSTANCE.DInfo("Caching engines: "+engList.Count(),0);
-	foreach (engID, dummy in engList)	local dum=cEngine.GetName(engID);
 	}
 
 function cEngine::SetBestEngine(EUID, engineID)
@@ -336,16 +181,27 @@ function cEngine::IsVehicleAtTop(vehID)
 	return cEngine.EngineIsTop(engineID, cargoID, false);
 	}
 
-function cEngine::IsEngineBlacklist(engineID)
-// return true if the engine is blacklist
-	{
-	return (cEngine.EngineBL.HasItem(engineID));
-	}
+function cEngine::CheckMaxSpeed(engineID)
+// Check the max speed of vehicle and see if top speed for that vehicle type should be this one or not
+{
+	local topspeed = cEngine.GetMaxSpeed(engineID);
+	local typeveh = cEngine.GetVehicleType(engineID);
+	switch (typeveh)
+		{
+		case	AIVehicle.VT_RAIL:
+			if (INSTANCE.main.carrier.speed_MaxTrain < topspeed)
+				{
+				INSTANCE.DInfo("Setting maximum speed for trains vehicle to "+topspeed,0);
+				INSTANCE.main.carrier.speed_MaxTrain = topspeed;
+				}
+		return;
+		case	AIVehicle.VT_ROAD:
+			if (INSTANCE.main.carrier.speed_MaxRoad < topspeed)
+				{
+				INSTANCE.DInfo("Setting maximum speed for roads vehicle to "+topspeed,0);
+				INSTANCE.main.carrier.speed_MaxRoad = topspeed;
+				}
+		return;
+		}
+}
 
-function cEngine::BlacklistEngine(engineID)
-// Add a truck/bus as a blacklist engine, handle the IsArticlatedBug
-	{
-	if (cEngine.IsEngineBlacklist(engineID))	return;
-	cEngine.EngineBL.AddItem(engineID,0);
-	INSTANCE.DInfo("Adding "+cEngine.GetName(engineID)+" to blacklist engine list",0);
-	}

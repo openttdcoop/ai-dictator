@@ -166,6 +166,7 @@ function cCarrier::CreateTrainsEngine(engineID, depot, cargoID)
 // return vehicleID
 // return -1 when we lack money
 {
+	if (engineID == null)	return -1;
 	if (!AIEngine.IsValidEngine(engineID))	return -1;
 	local price=cEngine.GetPrice(engineID);
 	INSTANCE.main.bank.RaiseFundsBy(price);

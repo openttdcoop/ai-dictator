@@ -319,8 +319,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 	local homedepot=cRoute.GetDepot(idx);
 	if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
 	DInfo("Upgrading using depot at "+homedepot,2);
-	cDebug.PutSign(homedepot,"D");
-	if (cEngine.IsRabbitSet(vehID))	cEngine.Update(vehID); // Discover an already created engine status
+//	if (cEngine.IsRabbitSet(vehID))	cEngine.Update(vehID); // Discover an already created engine status
 	local money=0;
 	switch (vehtype)
 		{
@@ -335,11 +334,11 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 		break;
 		case AIVehicle.VT_ROAD:
 			INSTANCE.main.carrier.VehicleSell(vehID,false);
-			new_vehID = INSTANCE.main.carrier.CreateRoadEngine(betterEngine, homedepot, road.CargoID);
+			new_vehID = cEngineLib.CreateVehicle(homedepot, betterEngine, road.CargoID);
 		break;
 		case AIVehicle.VT_AIR:
 			INSTANCE.main.carrier.VehicleSell(vehID,false);
-			new_vehID = INSTANCE.main.carrier.CreateAircraftEngine(betterEngine, homedepot);
+			new_vehID = cEngineLib.CreateVehicle(homedepot, betterEngine, road.CargoID);
 		break;
 		case AIVehicle.VT_WATER:
 			INSTANCE.main.carrier.VehicleSell(vehID,false);

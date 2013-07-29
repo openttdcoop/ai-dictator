@@ -293,3 +293,24 @@ function cCarrier::CheckOneVehicleOfGroup(doGroup)
 		local pause = cLooper();
 		}
 }
+
+function cCarrier::VehicleFilterRoad(vehlist, object)
+{
+print("post op = "+vehlist.Count());
+	cEngineLib.EngineFilter(vehlist, object.cargo_id, object.engine_roadtype, -1, DictatorAI.GetSetting("use_nicetrain"));
+print("1st filter ="+vehlist.Count());
+foreach (eng, value in vehlist)	print("eng="+cEngine.GetName(eng)+" value="+value);
+	vehlist.Valuate(AIEngine.GetPrice);
+	vehlist.RemoveValue(0); // remove towncars toys
+	vehlist.Valuate(AIEngine.IsArticulated);
+	vehlist.KeepValue(0);
+	vehlist.Valuate(cEngineLib.GetCapacity, object.cargo_id);
+	vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
+print("2nd filter ="+vehlist.Count());
+	if (INSTANCE.main.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, object.cargo_id, true);
+							else	vehlist.Valuate(cCarrier.GetEngineEfficiency, object.cargo_id);
+	vehlist.Sort(AIList.SORT_BY_VALUE,true);
+	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trucks
+print("end of filter = "+vehlist.Count());
+}
+

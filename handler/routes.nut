@@ -300,7 +300,7 @@ function cRoute::GetDepot(uid, source=0)
 	else	{
 		if ((source==0 || source==1)	&& cStation.IsDepot(sdepot))	return sdepot;
 		if ((source==0 || source==2)	&& cStation.IsDepot(tdepot))	return tdepot;
-		if (road.VehicleType == RouteType.ROAD)	cBuilder.RouteIsDamage(uid);
+		if (road.VehicleType == RouteType.ROAD && road.Status == RouteStatus.WORKING)	cBuilder.RouteIsDamage(uid);
 		}
 	if (source==0)	DError("Route "+cRoute.GetRouteName(road.UID)+" doesn't have any valid depot !",2);
 			else	DError("Route "+cRoute.GetRouteName(road.UID)+" doesn't have the request depot ! source="+source,2);

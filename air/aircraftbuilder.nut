@@ -19,14 +19,13 @@ function cCarrier::CreateAircraftEngine(engineID, depot)
 {
 	local price = cEngine.GetPrice(engineID);
 	INSTANCE.main.bank.RaiseFundsBy(price);
-	local vehID = AIVehicle.BuildVehicle(depot, engineID);
+	local vehID = cEngine.CreateVehicle(depot, engineID);
 	if (!AIVehicle.IsValidVehicle(vehID))
 				{
 				cDebug.PutSign(depot,"A");
 				DError("Cannot create the air vehicle at "+depot,2);
 				return -1;
 				}
-	cEngine.Update(vehID);
 	INSTANCE.main.carrier.vehnextprice-=price;
 	if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
 	return vehID;

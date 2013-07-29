@@ -187,7 +187,10 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 		temptile=workTile+(j*forwardTileOf);
 		cTileTools.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
+			{
+			cTileTools.DemolishTile(temptile);
 			success=INSTANCE.main.builder.DropRailHere(rail, temptile);
+			}
 		else	return false;
 		if (success)	{
 					if (useEntry)	{ se_crossing=temptile; crossing=se_crossing; }

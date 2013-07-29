@@ -259,8 +259,7 @@ function cJobs::EstimateCost()
 		case	RouteType.ROAD:
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
 			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
-			if (engine == -1)	engine=INSTANCE.main.carrier.ChooseRoadVeh(this.cargoID);
-			if (engine != null)	engineprice=cEngine.GetPrice(engine);
+			if (engine != -1)		engineprice=cEngine.GetPrice(engine);
 						else	{ engineprice=100000; INSTANCE.use_road=false; }
 			money+=engineprice;
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
