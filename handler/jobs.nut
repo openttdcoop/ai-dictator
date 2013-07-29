@@ -302,7 +302,7 @@ function cJobs::EstimateCost()
 		case	RouteType.AIR:
 			// 2 vehicle + 2 airports
 			engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIR);
-			if (engine==-1)	engine=INSTANCE.main.carrier.ChooseAircraft(this.cargoID, this.distance, AircraftType.EFFICIENT);
+			if (engine==-1)	engine= cCarrier.GetAirVehicle(null, this.cargoID, AircraftType.EFFICIENT);
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000;
 			money+=engineprice*2;

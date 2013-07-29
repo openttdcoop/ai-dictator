@@ -183,8 +183,8 @@ function cRoute::DutyOnAirNetwork()
 	local vehneed=0;
 	local vehnumber=maillist.Count()+passlist.Count();
 	DInfo("NETWORK: Aircrafts in network: "+vehnumber+" max dist: "+virtroad.Distance,1);
-	local futurveh=INSTANCE.main.carrier.ChooseAircraft(cCargo.GetMailCargo(), virtroad.Distance, AircraftType.BEST); // force discovery of new engine for the virtual mail network
-	futurveh=INSTANCE.main.carrier.ChooseAircraft(passengerID, virtroad.Distance, AircraftType.BEST);
+	local futurveh= cCarrier.GetAirVehicle(null, cCargo.GetMailCargo(), AircraftType.BEST); // force discovery of new engine for the virtual mail network
+	futurveh= cCarrier.GetAirVehicle(null, passengerID, AircraftType.BEST);
 	if (futurveh == null)	return; // when aircrafts are disable, return null
 	if (vehlist.IsEmpty())
 		{

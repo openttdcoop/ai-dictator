@@ -307,7 +307,7 @@ function cBuilder::TryBuildThatRoute()
 		case	RouteType.CHOPPER:
 			local modele=AircraftType.EFFICIENT;
 			if (!INSTANCE.main.route.SourceProcess.IsTown)	modele=AircraftType.CHOPPER;
-			success=INSTANCE.main.carrier.ChooseAircraft(INSTANCE.main.route.CargoID, INSTANCE.main.route.Distance, modele);
+			success= cCarrier.GetAirVehicle(null, INSTANCE.main.route.CargoID, modele);
 		break;
 		}
 	if (!success)

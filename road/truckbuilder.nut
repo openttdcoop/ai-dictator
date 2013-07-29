@@ -53,6 +53,9 @@ function cCarrier::CreateRoadVehicle(roadidx)
 	if (vehID != -1)
 			{
 			DInfo("Just brought a new road vehicle: "+cCarrier.GetVehicleName(vehID),0);
+			INSTANCE.main.carrier.vehnextprice -= price;
+			if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
+
 			}
 		else	{
 			DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2);

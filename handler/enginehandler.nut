@@ -97,7 +97,7 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 		case	AIVehicle.VT_RAIL:
 			return -1;
 		case	AIVehicle.VT_AIR:
-			return -1;
+			return cCarrier.GetAirVehicle(null, cargoID);
 		}
 	return -1;
 	}
