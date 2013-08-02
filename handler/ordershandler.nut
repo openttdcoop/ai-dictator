@@ -287,11 +287,6 @@ function cCarrier::TrainSetDepotOrder(veh)
 			{ DError("Vehicle refuse goto closest airport order",2); }
 	if (!AIOrder.InsertOrder(veh, 3, dstDepot, AIOrder.OF_STOP_IN_DEPOT))
 		{ DError("Vehicle refuse goto closest airport order",2); }
-	if (!AIOrder.IsGotoDepotOrder(veh, AIOrder.ResolveOrderPosition(veh, AIOrder.ORDER_CURRENT)))
-		{
-		VehicleOrderSkipCurrent(veh);
-		DInfo("Avoiding current train order",1);
-		}
 }
 
 function cCarrier::VehicleSetDepotOrder(veh)

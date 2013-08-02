@@ -83,8 +83,8 @@ function cTrain::Update(vehID)
 	{
 	local train=cTrain.Load(vehID);
 	DInfo("Updating vehicle properties for "+cCarrier.GetVehicleName(vehID),2);
-	train.numberWagons=cCarrier.GetNumberOfWagons(vehID);
-	train.numberLocos=cCarrier.GetNumberOfLocos(vehID);
+	train.numberWagons=cEngineLib.GetNumberOfWagons(vehID);
+	train.numberLocos=cEngineLib.GetNumberOfLocomotive(vehID);
 	train.length=AIVehicle.GetLength(vehID);
 	}
 

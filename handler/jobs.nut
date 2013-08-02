@@ -65,7 +65,7 @@ function cJobs::Save()
 	this.Name=jobinfo;
 	if (this.UID in database)	DInfo("Job "+this.UID+" already in database",2);
 		else	{
-			DInfo("Adding job #"+this.UID+" ("+parentID+") to job database: "+jobinfo,2);
+			//DInfo("Adding job #"+this.UID+" ("+parentID+") to job database: "+jobinfo,2);
 			database[this.UID] <- this;
 			cJobs.jobIndexer.AddItem(this.UID, 0);
 			}
@@ -260,7 +260,7 @@ function cJobs::EstimateCost()
 			// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
 			engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
 			if (engine != -1)		engineprice=cEngine.GetPrice(engine);
-						else	{ engineprice=100000; INSTANCE.use_road=false; }
+						else	{ engineprice=100000; }
 			money+=engineprice;
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
 			money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_DEPOT));
@@ -271,14 +271,13 @@ function cJobs::EstimateCost()
 		case	RouteType.RAIL:
 			// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 			local rtype=null;
-			engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
-			if (engine == -1)	engine=INSTANCE.main.carrier.ChooseRailEngine(null,this.cargoID, true);
-			if (engine != null)	{
-							engineprice+=cEngine.GetPrice(engine);
-							rtype=cCarrier.GetRailTypeNeedForEngine(engine);
-							if (rtype==-1)	rtype=null;
-							}
-						else	{ engineprice=500000; 	INSTANCE.use_train=false; }
+			engine=cEngine.GetEngineByCache(RouteType.CHOPPER+1, this.cargoID);
+			if (engine != -1)	{
+						engineprice+=cEngine.GetPrice(engine);
+						rtype=cCarrier.GetRailTypeNeedForEngine(engine);
+						if (rtype==-1)	rtype=null;
+						}
+					else	{ engineprice=500000; }
 			money+=engineprice;
 			money+=(8*clean);
 			if (rtype==null)	money+=500000;
@@ -293,7 +292,7 @@ function cJobs::EstimateCost()
 			// 2 vehicle + 2 stations + 2 depot
 			engine=null;
 			if (engine != null)	engineprice=cEngine.GetPrice(engine);
-						else	{ engineprice=500000; INSTANCE.use_air=false; }
+						else	{ engineprice=500000; }
 			money+=engineprice*2;
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK));
 			money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DEPOT));
@@ -302,8 +301,8 @@ function cJobs::EstimateCost()
 		case	RouteType.AIR:
 			// 2 vehicle + 2 airports
 			engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIR);
-			if (engine==-1)	engine= cCarrier.GetAirVehicle(null, this.cargoID, AircraftType.EFFICIENT);
-			if (engine != null)	engineprice=cEngine.GetPrice(engine);
+			//if (engine==-1)	engine= cCarrier.GetAirVehicle(null, this.cargoID, AircraftType.EFFICIENT);
+			if (engine != -1)	engineprice=cEngine.GetPrice(engine);
 						else	engineprice=500000;
 			money+=engineprice*2;
 			money+=2*(AIAirport.GetPrice(INSTANCE.main.builder.GetAirportType()));
@@ -441,6 +440,8 @@ function cJobs::UpdateDoableJobs()
 		// not doable if already done, also record the parentID to block similar jobs
 		if (doable && myjob.ranking==0)	{ doable=false; }
 		// not doable if ranking is at 0
+		if (doable && (myjob.sourceObject.ScoreRating == 0 || myjob.targetObject.ScoreRating ==0))	doable = false;
+		// not doable if score rating is at 0
 		if (doable)
 		// not doable if max distance is limited and lower the job distance
 			{
@@ -458,6 +459,8 @@ function cJobs::UpdateDoableJobs()
 		// not doable if the industry no longer exist
 		if (doable && myjob.roadType == RouteType.AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 40 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 40))	doable=false;
 		// not doable because aircraft with poor towns don't make good jobs
+		if (doable && !INSTANCE.main.bank.unleash_road && myjob.roadType == RouteType.RAIL && myjob.cargoID == cCargo.GetPassengerCargo())	doable=false;
+		// not doable until roads are unleash, trains aren't nice in town, so wait at least a nice big town to build them
 		if (doable && myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 1)	doable=false;
 		// not doable if town jobs is not allow
 		if (doable && !myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 2)	doable=false;
@@ -555,8 +558,10 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	// disable any boat jobs
 	if (road_type == RouteType.AIR && cargo_id != cCargo.GetPassengerCargo()) return;
 	// only pass for aircraft, we will randomize if pass or mail later
-	if (cargo_id == cCargo.GetPassengerCargo() && !newjob.sourceObject.IsTown && AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && road_type != RouteType.AIR && road_type != RouteType.WATER) return;
+	if (cargo_id == cCargo.GetPassengerCargo() && AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && road_type != RouteType.AIR && road_type != RouteType.WATER) return;
 	// only aircraft & boat will do industry on water (platforms)
+	if (AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID) && cargo_id != cCargo.GetPassengerCargo())	return;
+	// disable platforms except for passengers for now
 	if (cargo_id == cCargo.GetPassengerCargo() && !newjob.sourceObject.IsTown && road_type == RouteType.AIR && !AIIndustry.HasHeliport(newjob.sourceObject.ID))	return;
 	// make sure the industry have an heliport we could use for aircraft (choppers), should fix FIRS Industry hotels.
 	newjob.distance = _distance;

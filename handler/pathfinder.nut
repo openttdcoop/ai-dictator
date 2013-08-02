@@ -224,19 +224,19 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 		pftask.pathHandler.cost.max_bridge_length=30;
 		pftask.pathHandler.cost.max_tunnel_length=30;
 		pftask.pathHandler.cost.tile=70;
-		pftask.pathHandler.cost.slope=90;
+		pftask.pathHandler.cost.slope=120;
 		pftask.pathHandler._cost_level_crossing = 120;
 		pftask.pathHandler.InitializePath([pftask.source[0]], [pftask.target[1]]);
 		}
 	else	{ // rail
 		pftask.pathHandler= MyRailPF();
-		pftask.pathHandler.cost.bridge_per_tile = 70;//70
-		pftask.pathHandler.cost.tunnel_per_tile = 50;//70
+		pftask.pathHandler.cost.bridge_per_tile = 110;//70
+		pftask.pathHandler.cost.tunnel_per_tile = 110;//70
 		pftask.pathHandler.cost.turn = 240;//200
 		pftask.pathHandler.cost.max_bridge_length=30;
 		pftask.pathHandler.cost.max_tunnel_length=30;
 		pftask.pathHandler.cost.tile=100;//70
-		pftask.pathHandler.cost.slope=130;//80
+		pftask.pathHandler.cost.slope=240;//80
 		pftask.pathHandler.cost.diagonal_tile=110;
 
 		pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);

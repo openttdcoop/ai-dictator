@@ -19,7 +19,6 @@ static	database = {};
 static	RouteIndexer = AIList();	// list all UID of routes we are handling
 static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
 static	RouteDamage = AIList(); 	// list of routes that need repairs
-static	WorldTiles = AIList();		// tiles we own, hard to get
 static	VirtualAirGroup = [-1,-1,0];	// [0]=networkpassenger groupID, [1]=networkmail groupID [2]=total capacity of aircrafts in network
 
 static	function GetRouteObject(UID)
@@ -65,7 +64,7 @@ static	function GetRouteObject(UID)
 		VehicleCount	= 0;
 		VehicleType		= null;		// *
 		StationType		= null;
-		RailType		= null;
+		RailType		= -1;
 		Distance		= 0;
 		Status		= 0;
 		GroupID		= null;		// *

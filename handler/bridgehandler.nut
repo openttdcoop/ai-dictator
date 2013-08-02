@@ -203,7 +203,7 @@ function cBridge::IsRailBridge(bUID)
 function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 // return a bridge ID to build a bridge of that size and type at needed speed
 	{
-	local needSpeed=INSTANCE.main.carrier.speed_MaxTrain;
+	local needSpeed=cEngineLib.GetTrainMaximumSpeed();//INSTANCE.main.carrier.speed_MaxTrain;
 	if (btype == AIVehicle.VT_ROAD)	needSpeed=INSTANCE.main.carrier.speed_MaxRoad;
 	if (needSpeed == 0)
 		{
@@ -220,14 +220,4 @@ function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 	if (blist.IsEmpty() && needresult)	{ blist=AIBridgeList_Length(length); blist.Sort(AIList.SORT_BY_VALUE, false); } // faster first
 	if (blist.IsEmpty())	return -1;
 				else	return blist.Begin();
-	}
-
-function cBridge::BridgeDiscovery()
-// Use when loading a game to discover all bridges in the game and save ones we own
-	{
-	INSTANCE.Sleep(1);
-	local allmap=AIList();
-	allmap.AddList(cRoute.WorldTiles);
-	INSTANCE.Sleep(1);
-	allmap.Valuate(cBridge.IsBridgeTile); // enough to just valuate them, bridge will get catch
 	}

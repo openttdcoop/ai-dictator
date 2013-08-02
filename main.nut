@@ -56,7 +56,7 @@ const	DIR_SW = 3;
 
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
-import("Library.cEngineLib", "cEngineLib", 1);
+import("Library.cEngineLib", "cEngineLib", 2);
 
 require("require.nut");
 
@@ -102,7 +102,6 @@ class DictatorAI extends AIController
 
 function DictatorAI::Start()
 {
-	cEngineLib.EngineCacheInit();
 	this.CheckCurrentSettings();
 	main.Init();
 	main.DInfo("DicatorAI started.",0);
@@ -111,7 +110,6 @@ function DictatorAI::Start()
 		{
 		main.bank.SaveMoney();
 		cRoute.DiscoverWorldTiles();
-		//cBridge.BridgeDiscovery();
 		cLoader.LoadingGame();
 		main.jobs.PopulateJobs();
 		local stationList=AIList();	// check for no more working station if cargo disapears...

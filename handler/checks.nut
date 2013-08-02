@@ -56,14 +56,6 @@ function cBuilder::HalfYearChecks()
 		DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 		}
 	if (INSTANCE.TwelveMonth == 2)	INSTANCE.main.builder.YearlyChecks();
-/*
-	local stationList=AIList();	// check for no more working station if cargo disapears...
-	stationList.AddList(AIStationList(AIStation.STATION_ANY));
-	foreach (stationID, dummy in stationList)
-		{
-		local pause = cLooper();
-		cStation.CheckCargoHandleByStation(stationID);
-		}*/
 	if (cCarrier.ToDepotList.IsEmpty())	INSTANCE.main.carrier.vehnextprice=0; // avoid strange result from vehicle crash...
 }
 
@@ -109,8 +101,10 @@ function cBuilder::RouteNeedRepair()
 	if (deletethatone != -1)
 		{
 		local trys=cRoute.GetRouteObject(deletethatone);
-		DInfo("RouteNeedRepair mark "+trys.UID+" undoable",1);
-		trys.RouteIsNotDoable();
+		if (trys instanceof cRoute)	{
+							DInfo("RouteNeedRepair mark "+trys.UID+" undoable",1);
+							trys.RouteIsNotDoable();
+							}
 		}
 }
 

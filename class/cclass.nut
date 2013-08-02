@@ -129,7 +129,7 @@ function cMain::CheckAccount()
 	if (INSTANCE.buildDelay > 0)	{ DInfo("Builds delayed: "+INSTANCE.buildDelay,1); bank.canBuild=false; }
 	if (carrier.vehnextprice >0 && !cBanker.CanBuyThat(carrier.vehnextprice))	{ DInfo("Delaying build: we save money for upgrade : money="+carrier.vehnextprice,1); bank.canBuild=false; }
 	local veh=AIVehicleList();
-	if (veh.IsEmpty())
+	if (veh.IsEmpty() && cRoute.database.len()==0)
 		{
 		DInfo("Forcing build: We have 0 vehicle running !");
 		bank.canBuild=true;

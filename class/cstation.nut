@@ -265,23 +265,20 @@ function cStation::CanUpgradeStation()
 	local now = AIDate.GetCurrentDate();
 	if (this.s_DateLastUpgrade != null && now - this.s_DateLastUpgrade < 60)	return false;
 	// if last time we try to upgrade we have fail and it was < 60 days, give up
-	if (this.s_DateLastUpgrade != null && !cBanker.CanBuyThat(this.s_MoneyUpgrade))	return false;
+	if (!cBanker.CanBuyThat(this.s_MoneyUpgrade))	return false;
 	// we fail because we need that much money and we still don't have it
 	if (this.s_UpgradeTry < 1)	return false;
 	switch (this.s_Type)
 		{
 		case	AIStation.STATION_DOCK:
-			if (!INSTANCE.use_boat)	return false;
 			this.s_VehicleMax=INSTANCE.main.carrier.water_max;
 			return false;
 		break;
 		case	AIStation.STATION_TRAIN:
-			if (!INSTANCE.use_train)	return false;
 			if (this.s_Size >= this.s_MaxSize)	return false;
 			return true;
 		break;
 		case	AIStation.STATION_AIRPORT:
-			if (!INSTANCE.use_air)	return false;
 			local canupgrade=false;
 			local newairport = cBuilder.GetAirportType();
 			// the per airport type limit doesn't apply to network aircrafts that bypass this check
@@ -294,7 +291,6 @@ function cStation::CanUpgradeStation()
 			return canupgrade;
 		break;
 		default: // bus or truck
-			if (!INSTANCE.use_road)	return false;
 			this.s_VehicleMax = this.s_Size * INSTANCE.main.carrier.road_upgrade;
 			if (this.s_Size >= this.s_MaxSize)	return false;
 								else	return true;

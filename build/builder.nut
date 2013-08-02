@@ -273,24 +273,24 @@ function cBuilder::TryBuildThatRoute()
 // advance the route construction
 {
 	local success=false;
-	local buildWithRailType=null;
+	local buildWithRailType = -1;
 	DInfo("Route "+INSTANCE.main.route.Name,1);
 	DInfo("Status:"+INSTANCE.main.route.Status,1);
 	// not using switch/case so we can advance steps in one pass
 	switch (INSTANCE.main.route.VehicleType)
 		{
 		case	RouteType.RAIL:
-			local trainspec=INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID);
-			if (trainspec.IsEmpty())	success=null;
-							else	success=true;
-			if (success)	buildWithRailType=cCarrier.GetRailTypeNeedForEngine(trainspec.Begin());
-			if (success==-1)	success=null;
-			if (INSTANCE.main.route.SourceStation != null && INSTANCE.main.route.RailType == null && AIStation.IsValidStation(INSTANCE.main.route.SourceStation.s_ID))
-			{ // make sure we set rails as the first station and not like the ones detect from the train
-			INSTANCE.main.route.RailType=AIRail.GetRailType(INSTANCE.main.route.SourceStation.s_Location);
-			buildWithRailType=INSTANCE.main.route.RailType;
+			if (INSTANCE.main.route.SourceStation != null && INSTANCE.main.route.RailType == -1 && AIStation.IsValidStation(INSTANCE.main.route.SourceStation.s_ID))
+			{ // make sure we set rails as the first station to get a train that will run on them
+			INSTANCE.main.route.RailType = AIRail.GetRailType(INSTANCE.main.route.SourceStation.s_Location);
+			buildWithRailType = INSTANCE.main.route.RailType;
 			}
-		DInfo("Building using "+buildWithRailType+" rail type",2);
+			local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, buildWithRailType);
+			if (trainspec[0] == -1)	success=null;
+						else	success=true;
+			if (success && buildWithRailType == -1)	buildWithRailType = trainspec[2];
+			DInfo("Building using "+buildWithRailType+" rail type",2);
+			cBuilder.SetRailType(buildWithRailType);
 		break;
 		case	RouteType.ROAD:
 			success=cCarrier.GetRoadVehicle(null, INSTANCE.main.route.CargoID);
@@ -337,6 +337,7 @@ function cBuilder::TryBuildThatRoute()
 		if (INSTANCE.main.route.SourceStation == null)
 				{
 				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	INSTANCE.main.builder.SetRailType(buildWithRailType);
+				if (INSTANCE.main.route.SourceProcess.IsTown && AITown.GetRating(INSTANCE.main.route.SourceProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID);
 				success=INSTANCE.main.builder.BuildStation(true);
 				if (!success && cError.IsError())	INSTANCE.main.route.SourceProcess.ZeroProcess();
 				}
@@ -368,6 +369,7 @@ function cBuilder::TryBuildThatRoute()
 				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)
 					{
 					buildWithRailType=AIRail.GetRailType(AIStation.GetLocation(INSTANCE.main.route.SourceStation.s_ID));
+				if (INSTANCE.main.route.TargetProcess.IsTown && AITown.GetRating(INSTANCE.main.route.TargetProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID);
 					INSTANCE.main.builder.SetRailType(buildWithRailType);
 					}
 				success=INSTANCE.main.builder.BuildStation(false);

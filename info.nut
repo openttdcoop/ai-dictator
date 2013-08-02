@@ -26,6 +26,7 @@ require("class/version.nut");
    function CreateInstance()   { return "DictatorAI"; }
    function GetShortName()     { return "DCTR"; }
    function GetAPIVersion()    { return "1.3"; }
+   function GetURL()		 { return "http://www.tt-forums.net/viewtopic.php?f=65&t=52982"; }
    
    function GetSettings() {
 

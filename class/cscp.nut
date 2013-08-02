@@ -40,9 +40,10 @@ function cSCP::Init()
 function cSCP::WaitReady()
 {
 	DInfo("Waiting SCP to get ready.",2);
+	cEngineLib.EngineCacheInit();
 	for (local j=0; j < 10; j++)
 		{
-		if (!this.SCPInstance.CanSpeakWith())	{ AIController.Sleep(1); this.SCPInstance.Check(); }
+		if (!this.SCPInstance.CanSpeakWith())	{ AIController.Sleep(10); this.SCPInstance.Check(); }
 								else	return;
 		}
 	this.GetCurrentGoal();

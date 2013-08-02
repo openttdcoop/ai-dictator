@@ -217,8 +217,9 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 	local real_reason = cCarrier.VehicleSendToDepot_GetReason(reason);
 	if (INSTANCE.main.carrier.ToDepotList.HasItem(veh))
 		{
-		if (AIOrder.GetOrderCount(veh)<3)	INSTANCE.main.carrier.ToDepotList.RemoveItem(veh); // going to depot with strange orders
-							else	if (reason < DepotAction.LINEUPGRADE)	return false;
+//		if (AIOrder.GetOrderCount(veh)<3)	INSTANCE.main.carrier.ToDepotList.RemoveItem(veh); // going to depot with strange orders
+//							else	if (reason < DepotAction.LINEUPGRADE)	return false;
+		if (reason < DepotAction.LINEUPGRADE)	return false;
 							// ignore order if we already have one, but not ignoring LINEUPGRADE, SIGNALUPGRADE or WAITING to crush previous one
 		}
 	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	INSTANCE.main.carrier.TrainSetDepotOrder(veh);
@@ -235,6 +236,7 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 		}
 	local rr="";
 	local wagonnum = cCarrier.VehicleSendToDepot_GetParam(reason);
+print("reason = "+reason+" real_reason = "+real_reason);
 	switch (real_reason)
 		{
 		case	DepotAction.SELL:
@@ -326,7 +328,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 		case AIVehicle.VT_RAIL:
 		// Upgrading the loco engine is doable, but it might get too complexe for nothing, so i will destroy the train, and tell the AddWagon function we need X more wagons, as the train is now removed, the function will have no choice then build another one. This new one (if it's doable) will be an upgraded version of loco and wagons. Problem solve.
 			homedepot=AIVehicle.GetLocation(vehID);
-			local numwagon=cCarrier.GetNumberOfWagons(vehID);
+			local numwagon=cEngineLib.GetNumberOfWagons(vehID);
 			INSTANCE.main.carrier.VehicleSell(vehID,false);
 			DInfo("Train vehicle "+oldenginename+" removed, a new train will be built with "+numwagon+" wagons",0);
 			INSTANCE.main.carrier.AddWagon(idx, numwagon);
@@ -385,6 +387,16 @@ numorders=AIOrder.GetOrderCount(vehID);
 		}
 }
 
+function cCarrier::TrainRouteCanBeUpgrade()
+{
+	foreach (veh, reason in cCarrier.ToDepotList)
+		{
+		local real = cCarrier.VehicleSendToDepot_GetReason(reason);
+		if (real == DepotAction.LINEUPGRADE)	return false;
+		}
+	return true;
+}
+
 function cCarrier::VehicleMaintenance()
 // lookout our vehicles for troubles
 {
@@ -413,17 +425,22 @@ local checkallvehicle=(allroadveh.Count()==tlist.Count());
 		allroadveh.Valuate(AIVehicle.GetVehicleType);
 		allroadveh.KeepValue(AIVehicle.VT_ROAD);
 		}
+local line_upgrade = cCarrier.TrainRouteCanBeUpgrade();
 foreach (vehicle, dummy in tlist)
 	{
 	cCarrier.VehicleMaintenance_Orders(vehicle);
 	local vehtype=AIVehicle.GetVehicleType(vehicle);
-	if (AIVehicle.GetVehicleType(vehicle)==AIVehicle.VT_ROAD)	INSTANCE.main.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
-	local topengine=cEngine.IsVehicleAtTop(vehicle); // new here
+	if (vehtype == AIVehicle.VT_ROAD)	INSTANCE.main.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
+	local topengine=cEngine.IsVehicleAtTop(vehicle);
 	if (topengine != -1)	price=cEngine.GetPrice(topengine);
 				else	price=cEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	name=INSTANCE.main.carrier.GetVehicleName(vehicle);
+	if (vehtype == AIVehicle.VT_RAIL && line_upgrade)
+		{ // check train can use better rails
+		if (RailFollower.TryUpgradeLine(vehicle))	continue;
+		line_upgrade = false; // only 1 vehicle got the chance
+		}
 	tx=AIVehicle.GetAgeLeft(vehicle);
-	//DInfo("->Vehicle "+name+" age left="+tx);
 	if (tx < cCarrier.OldVehicle)
 		{
 		if (!cBanker.CanBuyThat(price)) continue;
@@ -619,7 +636,21 @@ foreach (i, dummy in tlist)
 			INSTANCE.main.carrier.AddWagon(uid, parameter);
 		break;
 		case	DepotAction.LINEUPGRADE:
-			//TODO: upgrade the train line
+			cCarrier.ToDepotList.AddItem(i, DepotAction.LINEUPGRADE);
+			local all_vehicle = AIList();
+			all_vehicle.AddList(cCarrier.ToDepotList);
+			foreach (veh, reason in all_vehicle)
+				{
+				local real_reason = cCarrier.VehicleSendToDepot_GetReason(reason);
+				if (real_reason != DepotAction.LINEUPGRADE)	all_vehicle.RemoveItem(veh);
+											else	all_vehicle.SetValue(veh, AIVehicle.GetState(veh));
+				}
+			local runnercount = all_vehicle.Count();
+			all_vehicle.KeepValue(AIVehicle.VS_IN_DEPOT);
+			runnercount -= all_vehicle.Count();
+			if (runnercount == 0)	RailFollower.TryUpgradeLine(all_vehicle.Begin());
+						else	{ DInfo("Waiting "+runnercount+" more trains to upgrade line.",1); }
+AIController("Check waiting in depot");
 		break;
 		case	DepotAction.WAITING:
 			DInfo("Vehicle "+name+" is waiting at depot for "+parameter+" times",1);

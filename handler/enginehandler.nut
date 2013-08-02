@@ -47,10 +47,11 @@ function cEngine::RabbitSet(vehicleID)
 function cEngine::RabbitUnset(vehicleID)
 // Unset the status of the rabbit vehicle, only useful if the rabbit vehicle never reach a depot (crash)
 	{
-	if (vehicleID == null) return ;
+	if (vehicleID == null || !AIVehicle.IsValidVehicle(vehicleID)) return ;
 	local engineID=AIVehicle.GetEngineType(vehicleID);
-	if (engineID==null)	return ;
+	if (!AIEngine.IsValidEngine(engineID))	return ;
 	local eng=cEngine.Load(engineID);
+	if (eng == null)	return;
 	if (eng.is_known >= 0)	eng.is_known = -1;
 	}
 
@@ -75,7 +76,7 @@ function cEngine::GetName(eID)
 function cEngine::GetEUID(engineType, cargoID)
 // return the EUID
 // engineType : it's AIVehicle.GetEngineType() result for an engine except trains
-// engineType : for trains it's RouteType.CHOPPER+1+Railtype value
+// engineType : for trains it's RouteType.CHOPPER+2+Railtype value
 // cargoID : for road/water/train it's the cargo ID
 // cargoID : for aircraft it's the value of RouteType.AIR/AIRNET/CHOPPER
 	{
@@ -89,15 +90,24 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 	{
 	local EUID=cEngine.GetEUID(engineType, cargoID);
 	if (cEngine.BestEngineList.HasItem(EUID))	return cEngine.BestEngineList.GetValue(EUID);
-	INSTANCE.DInfo("Engine cache miss for "+EUID,2);	
-	switch (engineType)
+	INSTANCE.DInfo("Engine cache miss for "+EUID,2);
+	local etype = engineType;
+	local rtype = -1;
+	if (etype > RouteType.CHOPPER)	{ etype = AIVehicle.VT_RAIL; rtype = engineType - RouteType.CHOPPER - 2; }
+	switch (etype)
 		{
 		case	AIVehicle.VT_ROAD:
-			return cCarrier.GetRoadVehicle(null, cargoID);
+			local engine = cCarrier.GetRoadVehicle(null, cargoID);
+			if (engine != -1)	cEngine.SetBestEngine(EUID, engine);
+			return engine;
 		case	AIVehicle.VT_RAIL:
-			return -1;
+			local engine = cCarrier.ChooseRailCouple(cargoID, rtype);
+			if (engine[0] != -1)	cEngine.SetBestEngine(EUID, engine[0]);
+			return engine[0];
 		case	AIVehicle.VT_AIR:
-			return cCarrier.GetAirVehicle(null, cargoID);
+			local engine = cCarrier.GetAirVehicle(null, cargoID);
+			if (engine != -1)	cEngine.SetBestEngine(EUID, engine);
+			return engine;
 		}
 	return -1;
 	}
@@ -122,13 +132,13 @@ function cEngine::RailTypeIsTop(engineID, cargoID, setTopRail)
 // return -1 if we are at top already
 // return the engineID if we could upgrade
 	{
-	if (cargoID==null)	return -1;
-	if (AIEngine.GetVehicleType(engineID)!=AIVehicle.VT_RAIL)	return -1;
-	local EUID=cEngine.GetEUID(RouteType.RAIL, cargoID);
-	local topengine=engineID;
-	if (!cEngine.BestEngineList.HasItem(EUID))	setTopRail=true;
+	//if (cargoID == -1)	return -1;
+	if (AIEngine.GetVehicleType(engineID) != AIVehicle.VT_RAIL)	return -1;
+	local EUID = cEngine.GetEUID(RouteType.RAIL, cargoID);
+	local topengine = engineID;
+	if (!cEngine.BestEngineList.HasItem(EUID))	setTopRail = true;
 	if (setTopRail)	cEngine.SetBestEngine(EUID, engineID);
-	topengine=cEngine.BestEngineList.GetValue(EUID);
+	topengine = cEngine.BestEngineList.GetValue(EUID);
 	if (engineID == topengine)	return -1;
 					else	return AIEngine.GetRailType(topengine); // we return the railtype need to upgrade
 	}
@@ -142,13 +152,13 @@ function cEngine::EngineIsTop(engineID, cargoID, setTopEngine)
 // return -1 if we are at top engine already
 // return engineID if we can upgrade to a better version
 	{
-	if (cargoID==null)	return -1;
-	local vehicleType=AIEngine.GetVehicleType(engineID);
-	local special=null;
-	if (vehicleType==AIVehicle.VT_RAIL)
+	//if (cargoID == -1)	return -1;
+	local vehicleType = AIEngine.GetVehicleType(engineID);
+	local special = null;
+	if (vehicleType == AIVehicle.VT_RAIL)
 		{
-		local RT=AIEngine.GetRailType(engineID);
-		special=RT+RouteType.CHOPPER+1;
+		local RT = AIEngine.GetRailType(engineID);
+		special = RT+RouteType.CHOPPER+2;
 		}
 	else	special=vehicleType;
 	local EUID=cEngine.GetEUID(special, cargoID);

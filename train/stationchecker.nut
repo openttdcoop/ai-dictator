@@ -296,6 +296,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 		else	if (road.Primary_RailLink)	building_maintrack=false;
 	do	{
 		local temptile=fromtile+(j*forwardTileOf);
+		for (local kb = 0; kb < 6; kb++)	cTileTools.DemolishTile(j+(kb*forwardTileOf));
 		cTileTools.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				success=INSTANCE.main.builder.DropRailHere(rail, temptile);
@@ -378,18 +379,23 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 	return success;
 }
 
-function cBuilder::RailStationPathfindAltTrack(stationObj, roadObj)
+function cBuilder::RailStationPathfindAltTrack(roadObj)
 {
 	DInfo("--- Phase6: building alternate track",1);
 	local srcpos, srclink, dstpos, dstlink= null;
+/*
 	if (roadObj.Source_RailEntry)	srclink=roadObj.SourceStation.s_EntrySide[TrainSide.OUT_LINK];
 					else	srclink=roadObj.SourceStation.s_ExitSide[TrainSide.OUT_LINK];
 	if (roadObj.Target_RailEntry)	dstlink=roadObj.TargetStation.s_EntrySide[TrainSide.IN_LINK];
 					else	dstlink=roadObj.TargetStation.s_ExitSide[TrainSide.IN_LINK];
 	srcpos=srclink+cStationRail.GetRelativeTileBackward(roadObj.SourceStation.s_ID, roadObj.Source_RailEntry);
-	dstpos=dstlink+cStationRail.GetRelativeTileBackward(roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
+	dstpos=dstlink+cStationRail.GetRelativeTileBackward(roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);*/
+	local pval = cRoute.RouteRailGetPathfindingLine(roadObj.UID, false);
+	if (pval == -1)	{ cError.RaiseError(); return false; }
+	srclink = pval[0]; srcpos = pval[1]; dstlink=pval[2], dstpos=pval[3];
 	DInfo("Calling rail pathfinder: srcpos="+srcpos+" srclink="+srclink+" dstpos="+dstpos+" dstlink="+dstlink,2);
 	local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
+//	local result=cPathfinder.GetStatus([pval[0],pval[1]],[pval[2],pval[3]], roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
 	if (result != 2)
 		{
 		if (result == -1)
@@ -613,7 +619,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	else	{
 		local uidowner=thatstation.s_Train[TrainType.OWNER];
 		road=cRoute.Load(uidowner);
-		if (!road)	DWarn("The route owner ID "+uidowner+" is invalid",1);
+		if (!road)	{ DWarn("The route owner ID "+uidowner+" is invalid",1); }
 			else	DWarn("Station main owner "+uidowner,1);
 		}
 	if (useEntry)	DInfo("Working on station entry", 1);
@@ -622,7 +628,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	if (cangrow)	DInfo("Station can be upgrade",1);
 			else	DInfo("Station is at its maximum size",1);
 	local cmpsize = thatstation.s_Train[TrainType.GOODPLATFORM];
-	if (newStationSize > cmpsize && cangrow)		thatstation.RailStationPhaseUpdate();
+	if (newStationSize > cmpsize && cangrow)		{ thatstation.RailStationPhaseUpdate(); cmpsize = thatstation.s_Train[TrainType.GOODPLATFORM]; }
 	DInfo("Station have "+cmpsize+" working platforms",1);
 	if (newStationSize > cmpsize)
 		{
@@ -673,15 +679,18 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local result=true;
 	if (cMisc.ValidInstance(road) && road.Secondary_RailLink == false && road.SourceStation.s_ID != thatstation.s_ID && (trainEntryTotal >1 || trainExitTotal > 1))
 			{
+print("in pathfinding");
 			if (road.Target_RailEntry)	result = thatstation.IsRailStationEntryOpen();
 							else	result = thatstation.IsRailStationExitOpen();
+print("result = "+result);
 			if (result) // don't test if we knows it's dead already
 				{
-				result = cBuilder.RailStationPathfindAltTrack(thatstation, road);
+				result = cBuilder.RailStationPathfindAltTrack(road);
 				if (!result)	canAddTrain=false;
 				}
 			else	PlatformNeedUpdate=true; // give the destination station an update chance
 			}
+print("after pathfinding");
 	if (PlatformNeedUpdate && cangrow) thatstation.RailStationPhaseUpdate();
 
 	if (cMisc.ValidInstance(road) && road.GroupID != null && road.Secondary_RailLink && (trainEntryTotal > 2 || trainExitTotal > 2) && (!road.SourceStation.IsRailStationPrimarySignalBuilt() || !road.TargetStation.IsRailStationSecondarySignalBuilt()))

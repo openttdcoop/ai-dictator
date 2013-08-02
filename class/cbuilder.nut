@@ -39,16 +39,3 @@ class cBuilder extends cClass
 		}
 	}
 
-function cBuilder::SetRailType(rtype=null)
-// set current railtype
-{
-	if (rtype == null)
-		{
-		local railtypes = AIRailTypeList();
-		if (railtypes.IsEmpty())	{ DWarn("There's no railtype available !",1); return false; }
-		rtype=railtypes.Begin();
-		}
-	if (!AIRail.IsRailTypeAvailable(rtype))	{ DWarn("Railtype "+rtype+" is not available !",1); return false; }
-	AIRail.SetCurrentRailType(rtype);
-}
-

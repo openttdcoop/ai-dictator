@@ -93,7 +93,7 @@ function cBuilder::BuildTrainStation(start)
 // for town, saddly it's contrary, station is best -- when left/right and | when up/down
 // because that configuration will almost always cut entry or exit point of station, but offer higher
 // chance to enlarge the station without going too much into the city
-	local dir, tilelist, otherplace, isneartown = null;
+	local dir, tilelist, otherplace = null;
 	local rad = AIStation.GetCoverageRadius(AIStation.STATION_TRAIN);
 	local istown=false;
 	local srcpoint=null;
@@ -125,74 +125,41 @@ function cBuilder::BuildTrainStation(start)
 				}
 			else	{
 				tilelist = AITileList_IndustryAccepting(INSTANCE.main.route.TargetProcess.ID, rad);
-				isneartown=false; istown=false;
+				istown=false;
 				}
 			otherplace=INSTANCE.main.route.SourceProcess.Location; sourceplace=INSTANCE.main.route.TargetProcess.Location;
 			}
 
-//tilelist.Valuate(cTileTools.IsBuildable);
-//tilelist.KeepValue(1);
 	local success = false;
-	local saveList=AIList();
-	saveList.AddList(tilelist);
-//DInfo("isneartown="+isneartown+" istown="+istown,2,"BuildTrainStation");
+	//local saveList=AIList();
+	//saveList.AddList(tilelist);
 	local buildmode=0;
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
 	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate()),2);
-	INSTANCE.main.bank.RaiseFundsBy(cost);
+	INSTANCE.main.bank.RaiseFundsBy(cost*4);
 	local ssize=6+INSTANCE.main.carrier.train_length;
-	do
-		{
-	/* 5 build mode:
-	- try find a place with stationsize+4 tiles flatten and buildable
-	- same other direction
-	- try find a place with stationsize+4 tiles maybe not flat and buildable
-	- same other direction
-	- try find a place with stationsize+4 tiles maybe not flat and buildable even on water
+	/* 3 build mode:
+	- try find a place with stationsize+11 tiles flatten and buildable
+	- try find a place with stationsize+11 tiles maybe not flat and buildable
+	- try find a place with stationsize+11 tiles maybe not flat and buildable even on water
 	*/
-		tilelist.Clear();
-		tilelist.AddList(saveList);
-		tilelist=cTileTools.PurgeBlackListTiles(tilelist, true);
-		// remove known bad spot for creating a station
-		switch (buildmode)
+	// find where that point is compare to the target
+	//saveList.Clear();
+	//saveList.AddList(tilelist);
+//	foreach (tile, _ in tilelist)	if (!AITile.IsBuildable(tile))	tilelist.RemoveItem(tile);
+	tilelist.Valuate(AITile.IsBuildable);
+	tilelist.KeepValue(1);
+	tilelist.Valuate(AIMap.DistanceSquare, otherplace);
+	tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+	cDebug.showLogic(tilelist);
+
+
+	do	{
+		foreach (tile, _ in tilelist)
 			{
-			case	0:
-				tilelist.Valuate(cTileTools.IsBuildableRectangleFlat,2,ssize);
-				tilelist.KeepValue(1);
-				break;
-			case	1:
-				tilelist.Valuate(cTileTools.IsBuildableRectangleFlat,ssize,1);
-				tilelist.KeepValue(1);
-				break;
-			case	2:
-				tilelist.Valuate(AITile.IsBuildableRectangle,1,ssize); // allow terraform19
-				tilelist.KeepValue(1);
-				break;
-			case	3:
-				tilelist.Valuate(AITile.IsBuildableRectangle,ssize,1); // allow terraform91
-				tilelist.KeepValue(1);
-				break;
-			case	4:
-				tilelist.Valuate(cTileTools.IsBuildable); // even water will be terraform
-				tilelist.KeepValue(1);
-				break;
-			}
-		DInfo("Tilelist set to "+tilelist.Count()+" in mode "+buildmode,1);
-		// restore previous valuated values...
-		foreach (ltile, lvalue in saveList)	if (tilelist.HasItem(ltile))	tilelist.SetValue(ltile, lvalue);
-		if (!istown)
-			{
-			tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-			tilelist.Sort(AIList.SORT_BY_VALUE, true);
-			}
-		else	{ tilelist.Sort(AIList.SORT_BY_VALUE, false); }
-		cDebug.showLogic(tilelist); 
-		cDebug.ClearSigns();
-		foreach (tile, dummy in tilelist)
-			{
-			// find where that point is compare to its source for the station
-			if (start)	dir=INSTANCE.main.builder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location);
-				else	dir=INSTANCE.main.builder.GetDirection(INSTANCE.main.route.TargetProcess.Location,tile);
+			cDebug.PutSign(tile, buildmode+"");
+			if (start)	dir = cBuilder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location);
+				else	dir = cBuilder.GetDirection(tile, INSTANCE.main.route.TargetProcess.Location);
 			switch (dir)
 				{
 				case DIR_NW: //0 south
@@ -212,36 +179,34 @@ function cBuilder::BuildTrainStation(start)
 						else	dir=AIRail.RAILTRACK_NW_SE;
 					break;
 				}
-			DInfo("New station direction set to "+dir,1);
-			if (buildmode==4)
+			local checkit = false;
+			switch (buildmode)
 				{
-				if (dir == AIRail.RAILTRACK_NW_SE)	statile=cTileTools.CheckLandForConstruction(tile, 1, INSTANCE.main.carrier.train_length);
-									else	statile=cTileTools.CheckLandForConstruction(tile, INSTANCE.main.carrier.train_length, 1);
+				case	0:
+					if (dir == AIRail.RAILTRACK_NW_SE)	checkit = cTileTools.IsBuildableRectangleFlat(tile, 2, ssize);
+										else	checkit = cTileTools.IsBuildableRectangleFlat(tile, ssize, 2);
+					if (checkit)	checkit = tile;
+					break;
+				case	1:
+					if (dir == AIRail.RAILTRACK_NW_SE)	checkit = AITile.IsBuildableRectangle(tile, 2, ssize);
+										else	checkit = AITile.IsBuildableRectangle(tile, ssize, 2);
+					if (checkit)	checkit = tile;
+					break;
+				case	2:
+					if (dir == AIRail.RAILTRACK_NW_SE)	checkit = cTileTools.CheckLandForConstruction(tile, 2, ssize);
+										else	checkit = cTileTools.CheckLandForConstruction(tile, ssize, 2);
+					break;
 				}
-			else	statile=tile;
-			if (statile == -1)	continue; // we have no solve to build a station here
-			success=INSTANCE.main.builder.CreateAndBuildTrainStation(statile, dir);
-			if (!success)
+			if (checkit != false)
 				{
-				// switch again station direction, a solve exist there
-				if (dir == AIRail.RAILTRACK_NE_SW)	dir=AIRail.RAILTRACK_NW_SE;
-									else	dir=AIRail.RAILTRACK_NE_SW;
-				success=INSTANCE.main.builder.CreateAndBuildTrainStation(statile, dir);
-				if (!success && AIError.GetLastError()==AIError.ERR_LOCAL_AUTHORITY_REFUSES)	{ break; }
+				success = cBuilder.CreateAndBuildTrainStation(checkit, dir);
+				if (!success && cError.IsCriticalError())	break;
+				statile = tile;
+				break;
 				}
-			if (success)	{
-						statile=tile;
-						break;
-						}
-					else	{ // see why we fail
-						if (buildmode==4)	cTileTools.BlackListTileSpot(statile);
-						cError.IsCriticalError();
-						if (cError.IsError())	{ break; }
-						}
 			}
 		buildmode++;
-		} while (!success && buildmode!=5);
-	cDebug.ClearSigns();
+		} while (buildmode != 4 && !success);
 
 	if (!success) 
 		{
@@ -250,9 +215,9 @@ function cBuilder::BuildTrainStation(start)
 		return false;
 		}
 	// here, so we success to build one
-	local staID=AIStation.GetStationID(statile);
-	if (start)	INSTANCE.main.route.SourceStation=staID;
-		else	INSTANCE.main.route.TargetStation=staID;
+	local staID = AIStation.GetStationID(statile);
+	if (start)	INSTANCE.main.route.SourceStation = staID;
+		else	INSTANCE.main.route.TargetStation = staID;
 	INSTANCE.main.route.CreateNewStation(start);
 	return true;
 }
@@ -300,6 +265,7 @@ local prev = null;
 local prevprev = null;
 local pp1, pp2, pp3 = null;
 local walked=[];
+cBuilder.SetRailType(AIRail.GetRailType(AIStation.GetLocation(stationID)));
 while (path != null && smallerror==0)
 	{
 	if (prevprev != null)
@@ -599,6 +565,8 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 					{
 					case	-1:
 						cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
+						cError.RaiseError();
+						return false;
 					break;
 					case	2:
 						retry = false;
@@ -827,7 +795,7 @@ foreach (tile, dummy in many)
 	if (AIRail.IsRailStationTile(tile))	continue; // protect station
 	if (AIRail.IsRailDepotTile(tile))
 		{
-		AITile.DemolishTile(tile);
+		cBuilder.DestroyDepot(tile);
 		continue;
 		}
 	if (AITile.HasTransportType(tile, AITile.TRANSPORT_RAIL) && (AIBridge.IsBridgeTile(tile) || AITunnel.IsTunnelTile(tile)) ) 
@@ -1162,5 +1130,12 @@ while (path != null)
 	path = path.GetParent();
 	}
 return allsuccess;
+}
+
+function cBuilder::ConvertRailTrack(tile, new_railtype)
+// Convert a tile to the same but with new_railtype
+{
+	cDebug.PutSign(tile, "<>");
+	print("convert "+tile+" -> "+AIRail.ConvertRailType(tile, tile, new_railtype));
 }
 

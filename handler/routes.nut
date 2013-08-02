@@ -175,6 +175,33 @@ function cRoute::RouteIsNotDoable()
 	cRoute.InRemoveList(this.UID);
 	}
 
+function cRoute::RouteRailGetPathfindingLine(uid, mainline)
+// return [] of pathfinding value of mainline or alternate line
+{
+	local road = cRoute.GetRouteObject(uid); // can't use Load() to not get caught by the patrol
+	if (typeof(road) != "instance")	return -1;
+	if (typeof(road.SourceStation) != "instance")	return -1;
+	if (typeof(road.TargetStation) != "instance")	return -1;
+	local path = [];
+	local srclink, dstlink, srcpos, dstpos;
+	if (mainline)
+		{
+		if (road.Source_RailEntry)	srclink=road.SourceStation.s_EntrySide[TrainSide.IN_LINK];//11
+						else	srclink=road.SourceStation.s_ExitSide[TrainSide.IN_LINK];//13
+		if (road.Target_RailEntry)	dstlink=road.TargetStation.s_EntrySide[TrainSide.OUT_LINK];//12
+						else	dstlink=road.TargetStation.s_ExitSide[TrainSide.OUT_LINK];//14
+		}
+	else	{
+		if (road.Source_RailEntry)	srclink=road.SourceStation.s_EntrySide[TrainSide.OUT_LINK];
+						else	srclink=road.SourceStation.s_ExitSide[TrainSide.OUT_LINK];
+		if (road.Target_RailEntry)	dstlink=road.TargetStation.s_EntrySide[TrainSide.IN_LINK];
+						else	dstlink=road.TargetStation.s_ExitSide[TrainSide.IN_LINK];
+		}
+	srcpos = srclink+cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry);
+	dstpos = dstlink+cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry);
+	return [srclink, srcpos, dstlink, dstpos];
+}
+
 function cRoute::RouteUndoableFreeOfVehicle(uid)
 // This is the last step of marking a route undoable
 	{
@@ -203,8 +230,10 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 		if (!vehlist.IsEmpty())	return;	
 		local stasrc = null;
 		local stadst = null;
+		local pval = cRoute.RouteRailGetPathfindingLine(uid, false)
 		if (cMisc.ValidInstance(route.SourceStation)) { stasrc = route.SourceStation.s_ID; route.RouteReleaseStation(route.SourceStation.s_ID); }
 		if (cMisc.ValidInstance(route.TargetStation)) { stadst = route.TargetStation.s_ID; route.RouteReleaseStation(route.TargetStation.s_ID); }
+		if (pval != -1)	cPathfinder.CloseTask([pval[0],pval[1]],[pval[2],pval[3]]); // try closing alternate track if any
 		cBuilder.DestroyStation(stasrc);
 		cBuilder.DestroyStation(stadst);
 		if (route.GroupID != null)	{ AIGroup.DeleteGroup(route.GroupID); cRoute.GroupIndexer.RemoveItem(route.GroupID); }
@@ -352,7 +381,6 @@ function cRoute::DiscoverWorldTiles()
 	INSTANCE.Sleep(1);
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 	allmap.KeepValue(weare);
-	//cRoute.WorldTiles.AddList(allmap);
-	cRoute.RouteDamage.AddList(allmap); //FIXME
+	cRoute.RouteDamage.AddList(allmap);
 }
 

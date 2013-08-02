@@ -288,6 +288,13 @@ function cLoader::LoadingGame()
 	AIGroup.DeleteGroup(INSTANCE.main.bank.mincash);
 	AIGroup.DeleteGroup(TwelveMonth);
 	local trlist=AIVehicleList();
+	try
+	{
+	if (INSTANCE.main.bank.busyRoute < 170)	cLoader.Load169();
+							else	cLoader.LoadSaveGame();
+	local grouplist = AIGroupList();
+	grouplist.RemoveList(cRoute.GroupIndexer);
+	foreach (grp, _ in grouplist)	AIGroup.DeleteGroup(grp);
 	trlist.Valuate(AIVehicle.GetVehicleType);
 	trlist.KeepValue(AIVehicle.VT_RAIL);
 	trlist.Valuate(AIVehicle.GetState);
@@ -297,18 +304,9 @@ function cLoader::LoadingGame()
 		DInfo("Restarting stopped trains",0);
 		foreach (veh, dummy in trlist)
 			{
-			cCarrier.StartVehicle(veh);
+			cCarrier.TrainExitDepot(veh);
 			}
 		}
-
-	try
-	{
-	if (INSTANCE.main.bank.busyRoute < 170)	cLoader.Load169();
-							else	cLoader.LoadSaveGame();
-	local grouplist = AIGroupList();
-	grouplist.RemoveList(cRoute.GroupIndexer);
-	foreach (grp, _ in grouplist)	AIGroup.DeleteGroup(grp);
-
 	} catch (e)
 		{
 		AILog.Error("Cannot load that savegame !");
