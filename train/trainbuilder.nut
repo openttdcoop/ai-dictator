@@ -31,7 +31,10 @@ function cCarrier::ChooseRailCouple(cargo, rtype = -1, depot = -1, forengine = -
 		{
 		DInfo("selected train couple : "+cEngine.GetName(veh[0])+" to pull "+cEngine.GetName(veh[1])+" for "+cCargo.GetCargoLabel(cargo)+" using railtype "+veh[2],1);
 		}
-	else DInfo("ChooseRailCouple return error "+AIError.GetLastErrorString()+" * "+cEngineLib.GetAPIError(),2);
+	else	{
+		DInfo("ChooseRailCouple return error "+AIError.GetLastErrorString()+" * "+cEngineLib.GetAPIError(),2);
+		
+		}
 	return veh;
 }
 
@@ -147,7 +150,7 @@ function cCarrier::AddWagon(uid, wagonNeed)
 	foreach (veh, dummy in vehlist)
 		{
 		local state = AIVehicle.GetState(veh);
-		if (state != AIVehicle.VS_IN_DEPOT && state != AIVehicle.VS_RUNNING)	{ vehlist.RemoveItem(veh); continue; }
+		if (state != AIVehicle.VS_IN_DEPOT && state != AIVehicle.VS_RUNNING)	{ continue; }
 		if (state == AIVehicle.VS_IN_DEPOT)	{ indepot.push(veh); continue; } //wait handling
 		if (cCarrier.ToDepotList.HasItem(veh) && cCarrier.VehicleSendToDepot_GetReason(cCarrier.ToDepotList.GetValue(veh)) == DepotAction.ADDWAGON)
 			{

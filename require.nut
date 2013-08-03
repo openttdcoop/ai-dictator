@@ -18,7 +18,6 @@ require("class/cevents.nut");
 require("handler/routes.nut");
 require("handler/pathfinder.nut");
 require("handler/bridgehandler.nut");
-require("build/stationbuilder.nut");
 require("build/builder.nut");
 require("class/cdebug.nut");
 require("air/airportbuilder.nut");

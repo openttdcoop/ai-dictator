@@ -215,15 +215,15 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 			vehlist = AIVehicleList_Group(route.GroupID);
 			vehlist.Valuate(AIVehicle.GetState);
 			vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
-			if (!vehlist.IsEmpty())	foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSell(veh, false);
+			foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSell(veh, false);
 			vehlist = AIVehicleList_Group(route.GroupID);
 			foreach (veh, _ in vehlist)	
 				{
 				if (!AIOrder.IsGotoDepotOrder(veh, AIOrder.ResolveOrderPosition(veh, AIOrder.ORDER_CURRENT)))
 					{
-					INSTANCE.main.carrier.ToDepotList.RemoveItem(veh);
+					cCarrier.ToDepotList.RemoveItem(veh);
 					cCarrier.VehicleOrdersReset(veh);
-					INSTANCE.main.carrier.VehicleSendToDepot(veh, DepotAction.REMOVEROUTE);
+					cCarrier.VehicleSendToDepot(veh, DepotAction.REMOVEROUTE);
 					}
 				}
 			}

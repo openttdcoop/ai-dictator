@@ -1079,9 +1079,6 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 		local par = path.GetParent();
 		if (par != null)
 			{
-//cDebug.PutSign(path.GetTile(), "a");
-//cDebug.PutSign(par.GetTile(), "r");
-
 			if (AIMap.DistanceManhattan(path.GetTile(), par.GetTile()) == 1)
 				{
 				if (!AIRoad.BuildRoad(path.GetTile(), par.GetTile()))

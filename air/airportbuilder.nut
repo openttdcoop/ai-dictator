@@ -410,8 +410,6 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 // height: height of an airport
 {
 	local allsolve=[];
-//foreach (tile, dummy in workTileList)	if (cTileTools.IsTilesBlackList(tile))	workTileList.RemoveItem(tile);
-// remove bad tile locations
 	if (workTileList.IsEmpty())	return [];
 	cDebug.showLogic(workTileList);
 	cDebug.ClearSigns();
@@ -433,7 +431,9 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 	cDebug.ClearSigns();
 
 	randomTile.KeepTop(6);
-	foreach (tile, dummy in randomTile)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
+	local ttr = AIList();
+	ttr.AddList(randomTile);
+	foreach (tile, dummy in ttr)	randomTile.SetValue(tile, tile+AIMap.GetTileIndex(width-1, height-1));
 	workTileList.Clear();
 	workTileList.AddList(randomTile);
 	cDebug.showLogic(workTileList);
@@ -444,10 +444,10 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 		{
 		templist.Clear();
 		templist.AddRectangle(tileFrom, tileTo);
-	cDebug.showLogic(templist);
-	cDebug.PutSign(tileFrom,"F"); cDebug.PutSign(tileTo,"T");
+		cDebug.showLogic(templist);
+		cDebug.PutSign(tileFrom,"F"); cDebug.PutSign(tileTo,"T");
 		local solve=cTileTools.TerraformHeightSolver(templist);
-	cDebug.ClearSigns();
+		cDebug.ClearSigns();
 		solve.RemoveValue(0); // discard no solve
 		local bf, bt, bs, bp=null;
 		bp=1999999999;

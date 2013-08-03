@@ -502,10 +502,12 @@ function cJobs::UpdateDoableJobs()
 		// disable as we lack money
 		if (doable)	myjob.jobDoable.AddItem(id, myjob.ranking);
 		}
-	foreach (jobID, rank in INSTANCE.main.jobs.jobDoable)
+	local temp_doable = AIList();
+	temp_doable.AddList(cJobs.jobDoable);
+	foreach (jobID, rank in temp_doable)
 		{	// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
 			// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
-		local myjob=cJobs.Load(jobID);
+		local myjob =  cJobs.Load(jobID);
 		if (!myjob)	continue;
 		local airValid=(cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && INSTANCE.use_air);
 		local trainValid=(cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && INSTANCE.use_train);
@@ -697,7 +699,9 @@ function cJobs::CheckTownStatue()
 	{
 	if (INSTANCE.fairlevel==0)	return; // no action if we play easy
 	DInfo(cProcess.statueTown.Count()+" towns to build statue found.",1);
-	foreach (townID, dummy in cProcess.statueTown)
+	local temp = AIList();
+	temp.AddList(cProcess.statueTown);
+	foreach (townID, dummy in temp)
 		{
 		if (AITown.IsActionAvailable(townID, AITown.TOWN_ACTION_BUILD_STATUE))
 			{
@@ -709,7 +713,7 @@ function cJobs::CheckTownStatue()
 				cProcess.statueTown.RemoveItem(townID);
 				}
 			}
-		INSTANCE.Sleep(1);
+		local zzz = cLooper();
 		}
 	}
 

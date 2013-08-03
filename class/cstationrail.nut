@@ -373,7 +373,9 @@ cDebug.PutSign(lookup+start,"*");
 	local goodCounter=0;
 	local runTarget=cStationRail.RailStationGetRunnerTarget(thatstation.s_ID);
 	cDebug.PutSign(runTarget,"RT");
-	foreach (platidx, value in thatstation.s_Platforms)
+	local plat_temp=AIList();
+	plat_temp.AddList(thatstation.s_Platforms);
+	foreach (platidx, value in plat_temp)
 		{
 		if (runTarget == -1)	break;
 		if (!cMisc.CheckBit(value,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,0);
@@ -662,7 +664,6 @@ function cStationRail::RailStationPhaseUpdate()
 		this.DefinePlatform();
 		foreach (platform, status in this.s_Platforms)
 			{
-		//	if (cMisc.CheckBit(status,2))	continue; // if set platform is good, so don't rerun that on this one
 			if (this.s_EntrySide[TrainSide.CROSSING] >= 0)	{ needUpdate = true; cBuilder.PlatformConnectors(platform, true); }
 			if (this.s_ExitSide[TrainSide.CROSSING] >= 0)	{ needUpdate = true; cBuilder.PlatformConnectors(platform, false); }
 			}

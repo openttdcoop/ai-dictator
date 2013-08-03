@@ -168,7 +168,9 @@ function cProcess::UpdateScoreProduction()
 {
 	local best=0;
 	local bestcargo=-1;
-	foreach (cargoID, value in this.CargoProduce)
+	local temp = AIList();
+	temp.AddList(this.CargoProduce);
+	foreach (cargoID, value in temp)
 		{
 		local api=null;
 		if (this.IsTown)	api=AITown;

@@ -54,23 +54,6 @@ if (!vehlist.IsEmpty())	top=vehlist.GetValue(vehlist.Begin());
 return top;
 }
 
-function cCarrier::VehicleListBusyAtAirport(stationID)
-// return the list of vehicles that are waiting at the station
-{
-local vehicles=AIVehicleList_Station(stationID);
-local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID),24); // grab tiles around the station
-tilelist.Valuate(AIStation.GetStationID); // look all station ID there
-tilelist.KeepValue(stationID); // and keep only tiles with our stationID
-vehicles.Valuate(AIVehicle.GetLocation);
-foreach (vehicle, location in vehicles)
-	{ if (!tilelist.HasItem(location))	vehicles.SetValue(vehicle, -1); }
-vehicles.RemoveValue(-1);
-//DInfo(vehicles.Count()+" vehicles near that station",2);
-vehicles.Valuate(AIVehicle.GetState);
-vehicles.KeepValue(AIVehicle.VS_AT_STATION);
-return vehicles;
-}
-
 function cCarrier::VehicleList_KeepStuckVehicle(vehicleslist)
 // Filter a list of vehicle to only keep running ones with a 0 speed (stuck vehicle)
 // @param vehicleslist The list of vehicle we should filter
@@ -98,11 +81,11 @@ function cCarrier::VehicleNearStation(stationID)
 // @param stationID the station id to check
 // @return the vehicle list
 {
-	local vehicles=AIVehicleList_Station(stationID);
-	local tilelist=cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID),24);
+	local vehicles = AIVehicleList_Station(stationID);
+	local tilelist = cTileTools.GetTilesAroundPlace(AIStation.GetLocation(stationID),24);
 	tilelist.Valuate(AIStation.GetStationID);
 	tilelist.KeepValue(stationID); // now tilelist = only the tiles of the station we were looking for
-	local check_tiles=AITileList();
+	local check_tiles = AITileList();
 	local stationloc=AIStation.GetLocation(stationID);
 	foreach (tiles, stationid_found in tilelist)
 		{
@@ -110,43 +93,32 @@ function cCarrier::VehicleNearStation(stationID)
 		local lower=stationloc+AIMap.GetTileIndex(1,1);
 		check_tiles.AddRectangle(upper,lower);
 		}
-	vehicles.Valuate(AIVehicle.GetLocation);
-	foreach (vehicle, location in vehicles)
-		{ if (!check_tiles.HasItem(location))	vehicles.SetValue(vehicle, -1); }
-	vehicles.RemoveValue(-1);
-	vehicles.Valuate(AIVehicle.GetState);
-	vehicles.RemoveValue(AIVehicle.VS_STOPPED);
-	vehicles.RemoveValue(AIVehicle.VS_IN_DEPOT);
-	vehicles.RemoveValue(AIVehicle.VS_BROKEN);
-	vehicles.RemoveValue(AIVehicle.VS_CRASHED);
-	vehicles.RemoveValue(AIVehicle.VS_INVALID);
-	//DInfo("VehicleListAtRoadStation = "+vehicles.Count(),2);
-return vehicles;
+	local altVehicle = AIList();
+	foreach (vehicle, _ in vehicles)
+		{
+		if (check_tiles.HasItem(AIVehicle.GetLocation(vehicle)))	altVehicle.AddItem(vehicle, AIVehicle.GetState(vehicle));
+		}
+	altVehicle.RemoveValue(AIVehicle.VS_STOPPED);
+	altVehicle.RemoveValue(AIVehicle.VS_IN_DEPOT);
+	altVehicle.RemoveValue(AIVehicle.VS_BROKEN);
+	altVehicle.RemoveValue(AIVehicle.VS_CRASHED);
+	altVehicle.RemoveValue(AIVehicle.VS_INVALID);
+return altVehicle;
 }
 
 function cCarrier::VehicleGetCargoLoad(veh)
 // return amout of any cargo loaded in the vehicle
 {
-if (!AIVehicle.IsValidVehicle(veh)) return 0;
-local cargoList=AICargoList();
-local amount=0;
-local topamount=0;
-foreach (i, dummy in cargoList)
-	{
-	amount=AIVehicle.GetCargoLoad(veh,i);
-	if (amount > topamount)	topamount=amount;
-	}
-return amount;
-}
-
-function cCarrier::VehicleGetLoadingPercent(veh)
-// return the % load of any cargo on a vehicle
-{
-if (!AIVehicle.IsValidVehicle(veh)) return 0;
-local full=cCarrier.VehicleGetFullCapacity(veh);
-local actual=cCarrier.VehicleGetCargoLoad(veh);
-local toret=(actual * 100) / full;
-return toret;
+	if (!AIVehicle.IsValidVehicle(veh)) return 0;
+	local cargoList=AICargoList();
+	local amount=0;
+	local topamount=0;
+	foreach (i, dummy in cargoList)
+		{
+		amount = AIVehicle.GetCargoLoad(veh,i);
+		if (amount > topamount)	topamount=amount;
+		}
+	return amount;
 }
 
 function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
@@ -169,15 +141,14 @@ function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
 		if (!road || road.Status != 100)	continue;
 		if (reroute)
 			{
-			vehlist=AIVehicleList_Group(road.GroupID);
+			vehlist = AIVehicleList_Group(road.GroupID);
 			vehlist.Valuate(AIVehicle.GetState);
 			vehlist.RemoveValue(AIVehicle.VS_STOPPED);
 			vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 			vehlist.RemoveValue(AIVehicle.VS_CRASHED);
-			foreach (veh, dummy in vehlist)
-				if (cCarrier.ToDepotList.HasItem(veh))	vehlist.RemoveItem(veh); // remove vehicle on their way to depot
+			vehlist.RemoveList(cCarrier.ToDepotList); // remove vehicle on their way to depot
 			if (vehlist.IsEmpty()) continue;
-			veh=vehlist.Begin();
+			veh = vehlist.Begin();
 			local orderindex=VehicleFindDestinationInOrders(veh, stationID);
 			if (orderindex != -1)
 				{
@@ -217,8 +188,6 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 	local real_reason = cCarrier.VehicleSendToDepot_GetReason(reason);
 	if (INSTANCE.main.carrier.ToDepotList.HasItem(veh))
 		{
-//		if (AIOrder.GetOrderCount(veh)<3)	INSTANCE.main.carrier.ToDepotList.RemoveItem(veh); // going to depot with strange orders
-//							else	if (reason < DepotAction.LINEUPGRADE)	return false;
 		if (reason < DepotAction.LINEUPGRADE)	return false;
 							// ignore order if we already have one, but not ignoring LINEUPGRADE, SIGNALUPGRADE or WAITING to crush previous one
 		}
@@ -236,7 +205,6 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 		}
 	local rr="";
 	local wagonnum = cCarrier.VehicleSendToDepot_GetParam(reason);
-print("reason = "+reason+" real_reason = "+real_reason);
 	switch (real_reason)
 		{
 		case	DepotAction.SELL:
@@ -321,7 +289,6 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 	local homedepot=cRoute.GetDepot(idx);
 	if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
 	DInfo("Upgrading using depot at "+homedepot,2);
-//	if (cEngine.IsRabbitSet(vehID))	cEngine.Update(vehID); // Discover an already created engine status
 	local money=0;
 	switch (vehtype)
 		{
@@ -361,9 +328,9 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 function cCarrier::VehicleMaintenance_Orders(vehID)
 // try to repair orders for a vehicle, else send it to depot
 {
-local numorders=AIOrder.GetOrderCount(vehID);
-local name=cCarrier.GetVehicleName(vehID);
-for (local z=AIOrder.GetOrderCount(vehID)-1; z >=0; z--)
+	local numorders=AIOrder.GetOrderCount(vehID);
+	local name=cCarrier.GetVehicleName(vehID);
+	for (local z=AIOrder.GetOrderCount(vehID)-1; z >=0; z--)
 		{ // I check backward to prevent z index gone wrong if an order is remove
 		if (!INSTANCE.main.carrier.VehicleOrderIsValid(vehID, z))
 			{
@@ -371,14 +338,14 @@ for (local z=AIOrder.GetOrderCount(vehID)-1; z >=0; z--)
 			AIOrder.RemoveOrder(vehID, z);
 			}
 		}
-numorders=AIOrder.GetOrderCount(vehID);
-if (numorders < 2)
+	numorders=AIOrder.GetOrderCount(vehID);
+	if (numorders < 2)
 		{
 		local groupid=AIVehicle.GetGroupID(vehID);
 		DInfo("-> Vehicle "+name+" have too few orders, trying to correct it",0);
 		INSTANCE.main.carrier.VehicleBuildOrders(groupid,false);
 		}
-numorders=AIOrder.GetOrderCount(vehID);
+	numorders=AIOrder.GetOrderCount(vehID);
 	if (numorders < 2)
 		{
 		DInfo("-> Vehicle "+name+" have too few orders, sending it to depot",0);
@@ -494,20 +461,20 @@ if (!checkallvehicle)
 function cCarrier::CrazySolder(moneytoget)
 // this function send & sold nearly all road vehicle to get big money back
 {
-local allvehicle=AIVehicleList();
-allvehicle.Valuate(AIVehicle.GetVehicleType);
-allvehicle.KeepValue(AIVehicle.VT_ROAD);
-allvehicle.Valuate(AIVehicle.GetProfitThisYear);
-allvehicle.Sort(AIList.SORT_BY_VALUE, false);
-allvehicle.RemoveTop(2);
-allvehicle.Sort(AIList.SORT_BY_VALUE, true);
-foreach (vehicle, dummy in allvehicle)
-	{
-	INSTANCE.Sleep(1);
-	INSTANCE.main.carrier.VehicleSendToDepot(vehicle,DepotAction.CRAZY);
-	if (moneytoget < 0)	break;
-	moneytoget-=AIVehicle.GetCurrentValue(vehicle);
-	}
+	local allvehicle=AIVehicleList();
+	allvehicle.Valuate(AIVehicle.GetVehicleType);
+	allvehicle.KeepValue(AIVehicle.VT_ROAD);
+	allvehicle.Valuate(AIVehicle.GetProfitThisYear);
+	allvehicle.Sort(AIList.SORT_BY_VALUE, false);
+	allvehicle.RemoveTop(2);
+	allvehicle.Sort(AIList.SORT_BY_VALUE, true);
+	foreach (vehicle, dummy in allvehicle)
+		{
+		local c = cLooper();
+		INSTANCE.main.carrier.VehicleSendToDepot(vehicle,DepotAction.CRAZY);
+		if (moneytoget < 0)	break;
+		moneytoget -= AIVehicle.GetCurrentValue(vehicle);
+		}
 }
 
 function cCarrier::VehicleSell(veh, recordit)
@@ -567,7 +534,6 @@ foreach (i, dummy in tlist)
 	local parameter=0;
 	local uid=0;
 	local name=INSTANCE.main.carrier.GetVehicleName(i);
-print(">> "+name);
 	INSTANCE.main.carrier.VehicleOrdersReset(i);
 	if (INSTANCE.main.carrier.ToDepotList.HasItem(i))
 		{
@@ -612,7 +578,6 @@ print(">> "+name);
 		}
 	if (onlydelete && (AIVehicle.GetVehicleType(i) == AIVehicle.VT_AIR || AIVehicle.GetVehicleType(i) == AIVehicle.VT_ROAD))
 		{ DInfo("We've been ask to delete all vehicles waiting in depot",1); reason=DepotAction.CRAZY; }
-print("Reason : "+reason);
 	switch (reason)
 		{
 		case	DepotAction.SELL:
@@ -642,21 +607,17 @@ print("Reason : "+reason);
 			cCarrier.ToDepotList.AddItem(i, DepotAction.LINEUPGRADE);
 			local all_vehicle = AIList();
 			all_vehicle.AddList(cCarrier.ToDepotList);
-print("verify : "+all_vehicle.Count());
 			local good_vehicle = AIList();
 			foreach (veh, reason in all_vehicle)
 				{
 				local real_reason = cCarrier.VehicleSendToDepot_GetReason(reason);
-print("veh="+cCarrier.GetVehicleName(veh)+" real reason ="+real_reason+" lineupgrade="+DepotAction.LINEUPGRADE);
 				if (real_reason == DepotAction.LINEUPGRADE)	good_vehicle.AddItem(veh, AIVehicle.GetState(veh));
 				}
-print("after loop "+good_vehicle.Count());
 			local runnercount = good_vehicle.Count();
 			good_vehicle.KeepValue(AIVehicle.VS_IN_DEPOT);
 			runnercount -= good_vehicle.Count();
 			if (runnercount == 0)	RailFollower.TryUpgradeLine(i);
 						else	{ DInfo("Waiting "+runnercount+" more trains to upgrade line.",1); }
-AIController("Check waiting in depot");
 		break;
 		case	DepotAction.WAITING:
 			DInfo("Vehicle "+name+" is waiting at depot for "+parameter+" times",1);
@@ -729,3 +690,4 @@ function cCarrier::StopVehicle(vehID)
 		}
 	return false;
 }
+

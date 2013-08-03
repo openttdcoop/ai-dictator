@@ -84,7 +84,7 @@ function cTileTools::PurgeBlackListTiles(alist, creation=false)
 	purgelist.Valuate(cTileTools.GetTileOwner);
 	purgelist.RemoveValue(-1); // keep only ones that are not own by anyone
 	if (!creation)	purgelist.RemoveValue(-100); // but not own because of bad spot
-	foreach (tile, dummy in purgelist)	{ alist.RemoveItem(tile); INSTANCE.Sleep(1); }
+	foreach (tile, dummy in purgelist)	{ alist.RemoveItem(tile); local c = cLooper(); }
 	return alist;
 }
 
@@ -482,13 +482,13 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 	Solve.RemoveValue(0); // discard failures
 	local bestOrder=AIList();
 	bestOrder.AddList(Solve);
-	foreach (level, prize in bestOrder)
+	foreach (level, prize in Solve)
 		{
 		local c=abs(prize);
 		bestOrder.SetValue(level,prize);
 		}
 	bestOrder.Sort(AIList.SORT_BY_VALUE, true);
-	local money=-1;
+	local money = -1;
 	foreach (solution, prize in bestOrder)	DInfo("solve: "+solution+" prize: "+prize,4);
 	if (!Solve.IsEmpty())
 		{

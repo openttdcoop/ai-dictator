@@ -404,6 +404,7 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 		{
 		vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
 		vehlist.Sort(AIList.SORT_BY_VALUE, false);
+print("filter wagon : "+cEngine.GetName(vehlist.Begin()));
 		}
 	else	{
 		vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
@@ -419,6 +420,7 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 			}
 		//else	object.engine_roadtype = cCarrier.GetRailTypeNeedForEngine(vehlist.Begin()); // get what rails the train want
 		if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trains
+print("filter train : "+cEngine.GetName(vehlist.Begin()));
 		}
 }
 

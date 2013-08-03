@@ -136,7 +136,7 @@ while (AIEventController.IsEventWaiting())
 				foreach (vehicle, value in vehlist)
 					{
 					do	{
-						INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+						cCarrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 						AIController.Sleep(150);
 						INSTANCE.main.carrier.VehicleIsWaitingInDepot();
 						} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);

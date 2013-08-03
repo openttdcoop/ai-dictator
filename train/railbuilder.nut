@@ -131,8 +131,6 @@ function cBuilder::BuildTrainStation(start)
 			}
 
 	local success = false;
-	//local saveList=AIList();
-	//saveList.AddList(tilelist);
 	local buildmode=0;
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
 	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate()),2);
@@ -144,9 +142,6 @@ function cBuilder::BuildTrainStation(start)
 	- try find a place with stationsize+11 tiles maybe not flat and buildable even on water
 	*/
 	// find where that point is compare to the target
-	//saveList.Clear();
-	//saveList.AddList(tilelist);
-//	foreach (tile, _ in tilelist)	if (!AITile.IsBuildable(tile))	tilelist.RemoveItem(tile);
 	tilelist.Valuate(AITile.IsBuildable);
 	tilelist.KeepValue(1);
 	tilelist.Valuate(AIMap.DistanceSquare, otherplace);
@@ -157,7 +152,7 @@ function cBuilder::BuildTrainStation(start)
 	do	{
 		foreach (tile, _ in tilelist)
 			{
-			cDebug.PutSign(tile, buildmode+"");
+			cDebug.PutSign(tile, buildmode);
 			if (start)	dir = cBuilder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location);
 				else	dir = cBuilder.GetDirection(tile, INSTANCE.main.route.TargetProcess.Location);
 			switch (dir)
@@ -818,25 +813,25 @@ foreach (tile, dummy in many)
 function cBuilder::GetRailBitMask(rails)
 // Return a nibble bitmask with each NE,SW,NW,SE direction set to 1
 {
-local NE = 1; // we will use them as bitmask
-local	SW = 2;
-local	NW = 4;
-local	SE = 8;
-local trackMap=AIList();
-trackMap.AddItem(AIRail.RAILTRACK_NE_SW,	NE + SW);	// AIRail.RAILTRACK_NE_SW
-trackMap.AddItem(AIRail.RAILTRACK_NW_SE,	NW + SE);	// AIRail.RAILTRACK_NW_SE
-trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE
-trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE
-trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW
-trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE
-if (rails==255)	return 0; // invalid rail
-local railmask=0;
-foreach (tracks, value in trackMap)
-	{
-	if ((rails & tracks)==tracks)	{ railmask=railmask | value; }
-	if (railmask==(NE+SW+NW+SE))	return railmask; // no need to test more tracks
-	}
-return railmask;
+	local NE = 1; // we will use them as bitmask
+	local	SW = 2;
+	local	NW = 4;
+	local	SE = 8;
+	local trackMap=AIList();
+	trackMap.AddItem(AIRail.RAILTRACK_NE_SW,	NE + SW);	// AIRail.RAILTRACK_NE_SW
+	trackMap.AddItem(AIRail.RAILTRACK_NW_SE,	NW + SE);	// AIRail.RAILTRACK_NW_SE
+	trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	NW + NE);	// AIRail.RAILTRACK_NW_NE
+	trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	SW + SE);	// AIRail.RAILTRACK_SW_SE
+	trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	NW + SW);	// AIRail.RAILTRACK_NW_SW
+	trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	NE + SE);	// AIRail.RAILTRACK_NE_SE
+	if (rails==255)	return 0; // invalid rail
+	local railmask=0;
+	foreach (tracks, value in trackMap)
+		{
+		if ((rails & tracks)==tracks)	{ railmask=railmask | value; }
+		if (railmask==(NE+SW+NW+SE))	return railmask; // no need to test more tracks
+		}
+	return railmask;
 }
 
 function cBuilder::AreRailTilesConnected(tilefrom, tileto, stricttype=true)

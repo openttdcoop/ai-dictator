@@ -31,7 +31,7 @@ function cDebug::ClearSigns()
 	if (!DictatorAI.GetSetting("debug_sign")) return;
 	local sweeper=AISignList();
 	sweeper.Valuate(AISign.GetLocation);
-	//sweeper.RemoveValue(INSTANCE.main.SCP.SCPTile);
+	sweeper.RemoveValue(INSTANCE.main.SCP.SCPTile);
 	AIController.Sleep(20);
 	foreach (i, dummy in sweeper)	{ AISign.RemoveSign(i); }
 }

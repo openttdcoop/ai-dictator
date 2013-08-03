@@ -75,7 +75,9 @@ function cBuilder::RouteNeedRepair()
 	if (INSTANCE.main.route.RouteDamage.IsEmpty()) return;
 	local deletethatone=-1;
 	local runLimit=2; // number of routes to repair per run
-	foreach (routes, state in INSTANCE.main.route.RouteDamage)
+	local temp_dmg = AIList();
+	temp_dmg.AddList(cRoute.RouteDamage);
+	foreach (routes, state in temp_dmg)
 		{
 		if (state == RouteStatus.DEAD)	continue; // dead route state
 		runLimit--;
@@ -290,11 +292,8 @@ function cBuilder::BoostedBuys()
 {
 local airportList=AIStationList(AIStation.STATION_AIRPORT);
 local waitingtimer=0;
-local vehlist=AIVehicleList();
-foreach (veh, dummy in vehlist) // remove vehicle going to depot already
-		if (cCarrier.ToDepotList.HasItem(veh))	vehlist.SetValue(veh,1);
-								else	vehlist.SetValue(veh,0);
-vehlist.KeepValue(0);
+local vehlist = AIVehicleList();
+vehlist.RemoveList(cCarrier.ToDepotList);
 if (airportList.Count() < 2 && vehlist.Count()>45)
 	{ // try to boost a first air route creation
 	local goalairport=cJobs.CostTopJobs[AIVehicle.VT_AIR];

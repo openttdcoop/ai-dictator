@@ -249,8 +249,8 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local road = cRoute.Load(uid);
 	if (!road)	return false;
 	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
-print("money_upgrade now ="+upgrade_cost);
-	if (!cBanker.CanBuyThat(upgrade_cost))	{ print("need money "+upgrade_cost); return false; }
+	DInfo("Cost to upgrade rails : "+upgrade_cost);
+	if (!cBanker.CanBuyThat(upgrade_cost))	{ return false; }
 	local temp = AIList();
 	local all_owners = AIList();
 	local all_vehicle = AIList();
@@ -273,10 +273,9 @@ print("money_upgrade now ="+upgrade_cost);
 		local veh = AIVehicleList_Group(r.GroupID);
 		all_vehicle.AddList(veh);
 		}
-foreach (uid in savetable)	{ print("detect railtype = "+uid.SourceStation.s_SubType); }
 	if (upgrade_cost == 0)
 		{
-		print("number of affected rails : "+all_rails.Count());
+		DInfo("Number of affected rails : "+all_rails.Count());
 		cDebug.showLogic(all_rails);
 		local raw_basic_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_TRACK) * all_rails.Count();
 		local raw_sig_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_SIGNAL) * (all_rails.Count() / 2);
@@ -308,13 +307,12 @@ foreach (uid in savetable)	{ print("detect railtype = "+uid.SourceStation.s_SubT
 				local why = cCarrier.VehicleSendToDepot_GetReason(cCarrier.ToDepotList.GetValue(veh));
 				if (why != DepotAction.LINEUPGRADE)	sendit = true;
 				}
-print("veh "+AIVehicle.GetName(veh)+" sendit = "+sendit);
 			if (sendit)	cCarrier.VehicleSendToDepot(veh, DepotAction.LINEUPGRADE);
 			}
 		}
 	if (!temp)	return false; // if all stopped or no vehicle, temp will remain true
 	cBanker.RaiseFundsBigTime();
-print("Upgrade rail to "+new_railtype);
+	DInfo("Upgrade rail to "+new_railtype,1);
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local all_ok = true;
@@ -322,7 +320,7 @@ print("Upgrade rail to "+new_railtype);
 	foreach (veh, _ in all_vehicle)	{ cCarrier.VehicleSell(veh, false); }
 	all_rails.RemoveItem(safekeeper_depot);
 	foreach (tiles, _ in all_rails)	if (!cBuilder.ConvertRailType(tiles, new_railtype))	all_ok = false;
-	if (!all_ok)	{ DWarn("Error at converting rails !"); return false; }
+	if (!all_ok)	{ DWarn("Error at converting rails !",1); return false; }
 	cCarrier.VehicleSell(safekeeper, false);
 	cBuilder.ConvertRailType(safekeeper_depot, new_railtype);
 	foreach (uid in savetable)

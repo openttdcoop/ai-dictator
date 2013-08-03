@@ -45,13 +45,15 @@ function cRoute::VirtualAirNetworkUpdate()
 	towns.RemoveBelowValue(INSTANCE.main.carrier.AIR_NET_CONNECTOR);
 	DInfo("NETWORK: Found "+towns.Count()+" towns for network",1);
 	if (towns.Count()<2)	return; // give up
-	local airports=AIStationList(AIStation.STATION_AIRPORT);
-	foreach (airID, dummy in airports)
+	local airports = AIStationList(AIStation.STATION_AIRPORT);
+	local ztemp = AIStationList(AIStation.STATION_AIRPORT);
+	ztemp.Valuate(AIStation.GetLocation);
+	foreach (airID, location in ztemp)
 		{
 		local dummy = cLooper();
 		airports.SetValue(airID,1);
-		if (AIAirport.GetAirportType(AIStation.GetLocation(airID)) == AIAirport.AT_SMALL)	airports.SetValue(airID, 0);
-		if (AIAirport.GetNumHangars(AIStation.GetLocation(airID)) == 0)	airports.SetValue(airID, 0);
+		if (AIAirport.GetAirportType(location) == AIAirport.AT_SMALL)	airports.SetValue(airID, 0);
+		if (AIAirport.GetNumHangars(location) == 0)	airports.SetValue(airID, 0);
 		local not_own = cStation.Load(airID);
 		if (!not_own || not_own.s_Owner.IsEmpty())	airports.SetValue(airID, 0);
 		}
@@ -110,14 +112,18 @@ function cRoute::VirtualAirNetworkUpdate()
 	if (INSTANCE.main.carrier.VirtualAirRoute.len() > 1)
 		foreach (towns, airportid in validairports)
 			{
-			INSTANCE.Sleep(1);
+			local zzz = cLooper();
 			if (!cStation.VirtualAirports.HasItem(airportid))
 				{
 				cStation.VirtualAirports.AddItem(airportid, towns);
-				local stealgroup=AIVehicleList_Station(airportid);
-				stealgroup.Valuate(AIVehicle.GetEngineType);
-				foreach (veh, vehtype in stealgroup)	if (AIEngine.GetPlaneType(vehtype) == AIAirport.PT_HELICOPTER)	stealgroup.RemoveItem(veh); // don't steal choppers
-				stealgroup.Valuate(AIVehicle.GetGroupID);
+				local stealgroup = AIList();
+				local steal_temp = AIVehicleList_Station(airportid);
+				steal_temp.Valuate(AIVehicle.GetEngineType);
+				foreach (veh, vehtype in steal_temp)
+					{
+					if (AIEngine.GetPlaneType(vehtype) == AIAirport.PT_HELICOPTER)	continue; // don't steal choppers
+					stealgroup.AddItem(veh, AIVehicle.GetGroupID(veh));
+					}
 				stealgroup.RemoveValue(cRoute.GetVirtualAirPassengerGroup());
 				stealgroup.RemoveValue(cRoute.GetVirtualAirMailGroup());
 				stealgroup.RemoveTop(2);
@@ -130,7 +136,7 @@ function cRoute::VirtualAirNetworkUpdate()
 					if (vehnumber % 6 == 0)	thatnetwork=cRoute.GetVirtualAirMailGroup();
 								else	thatnetwork=cRoute.GetVirtualAirPassengerGroup();
 					AIGroup.MoveVehicle(thatnetwork, vehicle);
-					INSTANCE.main.carrier.VehicleOrdersReset(vehicle); // reset order, force order change
+					cCarrier.VehicleOrdersReset(vehicle); // reset order, force order change
 					vehnumber++;
 					}
 				}
@@ -144,25 +150,25 @@ function cRoute::GetAmountOfCompetitorStationAround(IndustryID)
 // Like AIIndustry::GetAmountOfStationAround but doesn't count our stations, so we only grab competitors stations
 // return 0 or numbers of stations not own by us near the place
 {
-local counter=0;
-local place=AIIndustry.GetLocation(IndustryID);
-local radius=AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
-local tiles=AITileList();
-local produce=AITileList_IndustryAccepting(IndustryID, radius);
-local accept=AITileList_IndustryProducing(IndustryID, radius);
-tiles.AddList(produce);
-tiles.AddList(accept);
-tiles.Valuate(AITile.IsStationTile);
-tiles.KeepValue(1); // keep station only
-tiles.Valuate(AIStation.GetStationID);
-local uniq=AIList();
-foreach (i, dummy in tiles)
-	{ // remove duplicate id
-	if (!uniq.HasItem(dummy))	uniq.AddItem(dummy,i);
-	}
-uniq.Valuate(AIStation.IsValidStation);
-uniq.KeepValue(0);
-return uniq.Count();
+	local counter=0;
+	local place = AIIndustry.GetLocation(IndustryID);
+	local radius = AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
+	local tiles = AITileList();
+	local produce = AITileList_IndustryAccepting(IndustryID, radius);
+	local accept = AITileList_IndustryProducing(IndustryID, radius);
+	tiles.AddList(produce);
+	tiles.AddList(accept);
+	tiles.Valuate(AITile.IsStationTile); // force keeping only station tile
+	tiles.KeepValue(1);
+	tiles.Valuate(AIStation.GetStationID); // hmmm unsure we get opponent stationId...
+	local uniq = AIList();
+	foreach (i, dummy in tiles)
+		{ // remove duplicate id
+		if (!uniq.HasItem(dummy))	uniq.AddItem(dummy, i);
+		}
+	uniq.Valuate(AIStation.IsValidStation);
+	uniq.KeepValue(0); // remove our station tiles
+	return uniq.Count();
 }
 
 function cRoute::DutyOnAirNetwork()
@@ -250,17 +256,15 @@ function cRoute::VehicleGroupProfitRatio(groupID)
 // check a vehicle group and return a ratio representing it's value
 // it's just (groupprofit * 1000 / numbervehicle)
 {
-if (!AIGroup.IsValidGroup(groupID))	return 0;
-local vehlist=AIVehicleList_Group(groupID);
-local vehnumber=vehlist.Count();
-local vehtype=AIGroup.GetVehicleType(groupID);
-if (vehtype==AIVehicle.VT_AIR)
-if (vehnumber == 0) return 1000000; // avoid / per 0 and set high value to group without vehicle
-local totalvalue=0;
-vehlist.Valuate(AIVehicle.GetProfitThisYear);
-foreach (vehicle, value in vehlist)
-	{ totalvalue+=value*1000; }
-return totalvalue / vehnumber;
+	if (!AIGroup.IsValidGroup(groupID))	return 0;
+	local vehlist=AIVehicleList_Group(groupID);
+	local vehnumber=vehlist.Count();
+	if (vehnumber == 0) return 1000000; // avoid / per 0 and set high value to group without vehicle
+	local totalvalue=0;
+	vehlist.Valuate(AIVehicle.GetProfitThisYear);
+	foreach (vehicle, value in vehlist)
+		{ totalvalue+=value*100; }
+	return totalvalue / vehnumber;
 }
 
 function cRoute::DutyOnRoute()
@@ -410,8 +414,6 @@ function cRoute::DutyOnRoute()
 				if (INSTANCE.main.bank.CanBuyThat(vehvalue+INSTANCE.main.carrier.vehnextprice))	goodbuy=INSTANCE.main.carrier.BuildAndStartVehicle(uid);
 				if (goodbuy)
 					{
-					//local rinfo=cRoute.GetRouteObject(uid);
-					//DInfo("Adding a vehicle "+AIEngine.GetName(vehmodele)+" to route "+cRoute.GetRouteName(rinfo.UID),0);
 					allbuy++;
 					}
 				}

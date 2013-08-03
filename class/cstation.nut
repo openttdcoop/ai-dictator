@@ -390,21 +390,24 @@ function cStation::UpdateCapacity(stationID=null)
 	if (!thatstation)	return;
 	local vehlist=AIVehicleList_Station(thatstation.s_ID);
 	local allcargos=AICargoList();
+	local tmpcargos = AICargoList();
 	local mail = cCargo.GetMailCargo();
 	local pass = cCargo.GetPassengerCargo();
-	foreach (cargoID, dummy in allcargos)
+	foreach (cargoID, dummy in tmpcargos)
 		{
 		local newcap = 0;
-		vehlist.Valuate(AIVehicle.GetCapacity, cargoID);
-		foreach (vehID, capacity in vehlist)
+		local short_list = [];
+		foreach (vehID, value in vehlist)	if (value != -1)	short_list.push(vehID);
+		foreach (vehID in short_list)
 			{
+			local capacity = AIVehicle.GetCapacity(vehID, cargoID);
 			if (capacity > 0)
 				{
 				// We will speedup checks, lowering vehicle list on each found cargo. It will then create a lost of cargo for multi-cargo vehicle
 				// like aircrafts that use mail/passenger, only mail or passenger will be count as the vehicle is removed from list.
 				// That's why we kept the vehicle for these cargos.
 				newcap += capacity;
-				if (cargoID != mail && cargoID != pass)	vehlist.RemoveItem(vehID);
+				if (cargoID != mail && cargoID != pass)	vehlist.SetValue(vehID, -1);
 				}
 			local sleeper = cLooper();
 			}
@@ -454,13 +457,12 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 				else	thatstation=cStation.Load(stationID);
 	if (!thatstation)	return;
 	local test = AICargoList_StationAccepting(thatstation.s_ID);
-	local change = false;
-	if (thatstation.s_CargoAccept.Count() < test.Count())
+	if (thatstation.s_CargoAccept.Count() != test.Count())
 		{
-		foreach (cargo, _ in thatstation.s_CargoAccept)	if (!test.HasItem(cargo))	{ change = true; thatstation.RemoveItem(cargo); }
+		thatstation.s_CargoAccept.Clear();
+		thatstation.s_CargoAccept.AddList(test);
+		DInfo("Station "+thatstation.s_Name+" cargo accepting list change : "+thatstation.s_CargoAccept.Count()+" cargos",1);
 		}
-	else	{ change = true; thatstation.s_CargoAccept.AddList(test); }
-	if (change)	DInfo("Station "+thatstation.s_Name+" cargo accepting list change : "+thatstation.s_CargoAccept.Count()+" cargos",1);
 	test = AIList();
 	foreach (cargo_id, cdummy in thatstation.s_CargoProduce)
 		{
@@ -472,7 +474,8 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 		local pause = cLooper();
 		}
 	if (thatstation.s_CargoProduce.Count() != test.Count())	DInfo("Station "+thatstation.s_Name+" cargo producing list change : "+test.Count()+" cargos",1);
-	thatstation.s_CargoProduce.AddList(test); // because even we didn't report it as change, one cargo less and one new cargo may change the list in real
+	thatstation.s_CargoProduce.Clear();
+	thatstation.s_CargoProduce.AddList(test);
 	}
 
 function cStation::GetLocation(stationID=null)

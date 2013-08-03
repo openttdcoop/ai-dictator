@@ -32,16 +32,8 @@ function cCarrier::AirNetworkOrdersHandler()
 	local passrabbit=null;
 	local mailgroup=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
 	local passgroup=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
-	foreach (vehicle, _ in mailgroup)
-		{ // if vehicle is in our todepotlist, it's going to depot for something, so set it as in depot -> it will be remove from list
-		if (cCarrier.ToDepotList.HasItem(vehicle))	mailgroup.RemoveItem(vehicle);
-		local pause = cLooper();
-		}
-	foreach (vehicle, _ in passgroup)
-		{ // if vehicle is in our todepotlist, it's going to depot for something, so set it as in depot -> it will be remove from list
-		if (cCarrier.ToDepotList.HasItem(vehicle))	passgroup.RemoveItem(vehicle);
-		local pause = cLooper();
-		}
+	mailgroup.RemoveList(cCarrier.ToDepotList);
+	passgroup.RemoveList(cCarrier.ToDepotList);
 	mailgroup.Valuate(AIVehicle.GetState);
 	passgroup.Valuate(AIVehicle.GetState);
 	mailgroup.RemoveValue(AIVehicle.VS_CRASHED);
@@ -54,7 +46,8 @@ function cCarrier::AirNetworkOrdersHandler()
 	if (!passgroup.IsEmpty())
 		{
 		passrabbit = passgroup.Begin();
-		foreach (vehicle, _ in passgroup)
+		local temp = AIList(); temp.AddList(passgroup);
+		foreach (vehicle, _ in temp)
 			{
 			local dest = AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT);
 			if (!AIOrder.IsCurrentOrderPartOfOrderList(vehicle))	dest = AIStation.GetLocation(AIStation.GetStationID(dest));
@@ -77,13 +70,12 @@ function cCarrier::AirNetworkOrdersHandler()
 					else	{
 						DError("Passenger rabbit refuse order, destination: "+destination,2);
 						cCarrier.VirtualAirRoute.remove(i);
-						cDebug.PutSign(destination, "REFUSE_ORDER");
 						}
 				}
 			foreach (vehicle, destination in passgroup)
 				{
 				// now try to get it back to its initial station destination
-				local wasorder=VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
+				local wasorder = VehicleFindDestinationInOrders(vehicle, AIStation.GetStationID(destination));
 				if (wasorder != -1)	AIOrder.SkipToOrder(vehicle, wasorder);
 							else	AIOrder.SkipToOrder(vehicle, AIBase.RandRange(numorders));
 				}
@@ -91,7 +83,9 @@ function cCarrier::AirNetworkOrdersHandler()
 		}
 	if (!mailgroup.IsEmpty())
 		{
-		foreach (vehicle, _ in mailgroup)
+		local temp = AIList();
+		temp.AddList(mailgroup);
+		foreach (vehicle, _ in temp)
 			{
 			local dest = AIOrder.GetOrderDestination(vehicle, AIOrder.ORDER_CURRENT);
 			if (!AIOrder.IsCurrentOrderPartOfOrderList(vehicle))	dest = AIStation.GetLocation(AIStation.GetStationID(dest));
@@ -148,10 +142,9 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 	vehlist.RemoveValue(AIVehicle.VS_STOPPED);
 	vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
 	vehlist.RemoveValue(AIVehicle.VS_CRASHED);
-	foreach (veh, dummy in vehlist)
-		if (cCarrier.ToDepotList.HasItem(veh))	vehlist.RemoveItem(veh); // remove ones going to depot
+	vehlist.RemoveList(cCarrier.ToDepotList);
 	if (vehlist.IsEmpty())	return true;
-	local veh=vehlist.Begin();
+	local veh = vehlist.Begin();
 	local filterveh=AIList();
 	filterveh.AddList(vehlist);
 	filterveh.Valuate(AIOrder.GetOrderCount);
@@ -247,9 +240,10 @@ function cCarrier::FindClosestHangarForAircraft(veh)
 {
 	if (AIVehicle.GetVehicleType(veh) != AIVehicle.VT_AIR) return -1; // only for aircraft
 	local vehloc=AIVehicle.GetLocation(veh);
-	local airports=AIStationList(AIStation.STATION_AIRPORT);
-	airports.Valuate(AIStation.GetLocation);
-	foreach (staID, locations in airports)	if (AIAirport.GetNumHangars(locations)==0)	airports.RemoveItem(staID);
+	local temp = AIStationList(AIStation.STATION_AIRPORT);
+	local airports = AIList();
+	temp.Valuate(AIStation.GetLocation);
+	foreach (staID, locations in temp)	if (AIAirport.GetNumHangars(locations) != 0)	airports.AddItem(staID,0);
 	// remove station without hangars
 	if (!airports.IsEmpty())
 		{
@@ -461,6 +455,4 @@ function cCarrier::TrainSetOrders(trainID)
 		{ DError(cCarrier.GetVehicleName(trainID)+" refuse second order",2); return false; }
 	return true;
 }
-
-
 

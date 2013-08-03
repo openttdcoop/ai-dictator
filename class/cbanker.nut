@@ -71,7 +71,6 @@ function cBanker::CanBuyThat(money)
 {
 	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
 	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-print("DEBUG CanBuyThat: cash="+cash+" load="+loan+" money="+money);
 	if (cash >= money)	return true;
 	if (cash + loan < cash)	return true;
 	if (cash + loan >= money)	return true;
@@ -92,7 +91,7 @@ function cBanker::SaveMoney()
 {
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 	local balance=AICompany.GetBankBalance(weare);
-	DInfo("Saving our money",0);
+	DInfo("Saving our money",1);
 	local canrepay=cBanker.GetLoanValue(balance);
 	local newLoan=AICompany.GetLoanAmount()-canrepay;
 	if (newLoan <=0) newLoan=0;

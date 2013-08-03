@@ -56,7 +56,7 @@ const	DIR_SW = 3;
 
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
-import("Library.cEngineLib", "cEngineLib", 2);
+import("Library.cEngineLib", "cEngineLib", 3);
 
 require("require.nut");
 
@@ -102,22 +102,10 @@ class DictatorAI extends AIController
 
 function DictatorAI::Start()
 {
+	cEngineLib.SetAPIErrorHandling(true);
 	this.CheckCurrentSettings();
 	main.Init();
 	main.DInfo("DicatorAI started.",0);
-	local test = AITownList();
-	local test2 = [];
-	local i = 0;
-	local z = 0;
-	local k = 0;
-	foreach (t, _ in test)	{ i++; test2.push(_); }
-	foreach (t, _ in test)	{ z++; if (t > 20)	test.SetValue(t, -1); }
-	foreach (t, _ in test2)	{ k++; if (t > 20)	test2[t] = -1; }
-print("count    = "+test.Count());
-print("normal i = "+i);
-print("mod    k = "+k);
-print("mod    z = "+z)
-AIController.Break("stop");
 	AICompany.SetAutoRenewStatus(false);
 	if (loadedgame) 
 		{
