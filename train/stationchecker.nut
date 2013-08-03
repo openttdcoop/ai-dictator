@@ -383,19 +383,11 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
 {
 	DInfo("--- Phase6: building alternate track",1);
 	local srcpos, srclink, dstpos, dstlink= null;
-/*
-	if (roadObj.Source_RailEntry)	srclink=roadObj.SourceStation.s_EntrySide[TrainSide.OUT_LINK];
-					else	srclink=roadObj.SourceStation.s_ExitSide[TrainSide.OUT_LINK];
-	if (roadObj.Target_RailEntry)	dstlink=roadObj.TargetStation.s_EntrySide[TrainSide.IN_LINK];
-					else	dstlink=roadObj.TargetStation.s_ExitSide[TrainSide.IN_LINK];
-	srcpos=srclink+cStationRail.GetRelativeTileBackward(roadObj.SourceStation.s_ID, roadObj.Source_RailEntry);
-	dstpos=dstlink+cStationRail.GetRelativeTileBackward(roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);*/
 	local pval = cRoute.RouteRailGetPathfindingLine(roadObj.UID, false);
 	if (pval == -1)	{ cError.RaiseError(); return false; }
 	srclink = pval[0]; srcpos = pval[1]; dstlink=pval[2], dstpos=pval[3];
 	DInfo("Calling rail pathfinder: srcpos="+srcpos+" srclink="+srclink+" dstpos="+dstpos+" dstlink="+dstlink,2);
 	local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
-//	local result=cPathfinder.GetStatus([pval[0],pval[1]],[pval[2],pval[3]], roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
 	if (result != 2)
 		{
 		if (result == -1)

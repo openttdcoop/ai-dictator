@@ -36,7 +36,7 @@ static	function GetPathfinderObject(UID)
 	useEntry		= null;	// the entry of the stationID will be use or not
 	// if we success at pathfinding, we will try build the route, and if we fail at building the route, we will recall the pathfinder or try to rebuild it
 	// we will then report failure in status
-	r_source		= null;	// the original pathfind source point
+	r_source		= null;	// the original pathfind source point, use when pathfinding a subtask.
 	r_target		= null;	// the original pathfind target point
 
 	constructor()
@@ -161,19 +161,16 @@ function cPathfinder::AdvanceTask(UID)
 		pftask.solve=check;
 		return;
 		}
-/*	if (pftask.timer % 10 == 0 && pftask.useEntry != null)
-		{
-		local clean = AITile.IsBuildable(pftask.target[0]);
-		clean = (!clean && cTileTools.DemolishTile(pftask.target[0]));
-		clean = (clean && AITile.IsBuildable(pftask.source[0]));
-		clean = (!clean && cTileTools.DemolishTile(pftask.source[0]));
-		if (!clean)	maxTimer = pftask.timer - 1;
-		}*/
 	if (check == null || pftask.timer > maxTimer)
 		{
 		DInfo("Pathfinder task "+pftask.UID+" failure",1);
 		pftask.InfoSign("Pathfinding "+pftask.UID+"... failure");
 		pftask.status=-1;
+		}
+	if (!AIStation.IsValidStation(pftask.stationID))
+		{
+		DInfo("Pathfinder is autoclosing task "+pftask.UID,1);
+		cPathfinder.CloseTask(pftask.source[0], pftask.target[1]);
 		}
 	}
 

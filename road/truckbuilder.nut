@@ -84,3 +84,4 @@ function cCarrier::CreateRoadVehicle(roadidx)
 	cEngine.CheckMaxSpeed(engineID);
 	return true;
 }
+

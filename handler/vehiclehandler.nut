@@ -556,16 +556,18 @@ function cCarrier::VehicleIsWaitingInDepot(onlydelete=false)
 // if onlydelete set to true, we only remove vehicle, no upgrade/replace...
 {
 local tlist=AIVehicleList();
-DInfo("Checking vehicles in depots:",2);
 tlist.Valuate(AIVehicle.IsStoppedInDepot);
 tlist.KeepValue(1);
+DInfo("Checking vehicles in depots: "+tlist.Count(),2);
 foreach (i, dummy in tlist)
 	{
-	INSTANCE.Sleep(1);
+	local kk = cLooper();
+	if (!AIVehicle.IsValidVehicle(i))	continue;
 	local reason=DepotAction.SELL;
 	local parameter=0;
 	local uid=0;
 	local name=INSTANCE.main.carrier.GetVehicleName(i);
+print(">> "+name);
 	INSTANCE.main.carrier.VehicleOrdersReset(i);
 	if (INSTANCE.main.carrier.ToDepotList.HasItem(i))
 		{
@@ -610,6 +612,7 @@ foreach (i, dummy in tlist)
 		}
 	if (onlydelete && (AIVehicle.GetVehicleType(i) == AIVehicle.VT_AIR || AIVehicle.GetVehicleType(i) == AIVehicle.VT_ROAD))
 		{ DInfo("We've been ask to delete all vehicles waiting in depot",1); reason=DepotAction.CRAZY; }
+print("Reason : "+reason);
 	switch (reason)
 		{
 		case	DepotAction.SELL:
@@ -639,16 +642,19 @@ foreach (i, dummy in tlist)
 			cCarrier.ToDepotList.AddItem(i, DepotAction.LINEUPGRADE);
 			local all_vehicle = AIList();
 			all_vehicle.AddList(cCarrier.ToDepotList);
+print("verify : "+all_vehicle.Count());
+			local good_vehicle = AIList();
 			foreach (veh, reason in all_vehicle)
 				{
 				local real_reason = cCarrier.VehicleSendToDepot_GetReason(reason);
-				if (real_reason != DepotAction.LINEUPGRADE)	all_vehicle.RemoveItem(veh);
-											else	all_vehicle.SetValue(veh, AIVehicle.GetState(veh));
+print("veh="+cCarrier.GetVehicleName(veh)+" real reason ="+real_reason+" lineupgrade="+DepotAction.LINEUPGRADE);
+				if (real_reason == DepotAction.LINEUPGRADE)	good_vehicle.AddItem(veh, AIVehicle.GetState(veh));
 				}
-			local runnercount = all_vehicle.Count();
-			all_vehicle.KeepValue(AIVehicle.VS_IN_DEPOT);
-			runnercount -= all_vehicle.Count();
-			if (runnercount == 0)	RailFollower.TryUpgradeLine(all_vehicle.Begin());
+print("after loop "+good_vehicle.Count());
+			local runnercount = good_vehicle.Count();
+			good_vehicle.KeepValue(AIVehicle.VS_IN_DEPOT);
+			runnercount -= good_vehicle.Count();
+			if (runnercount == 0)	RailFollower.TryUpgradeLine(i);
 						else	{ DInfo("Waiting "+runnercount+" more trains to upgrade line.",1); }
 AIController("Check waiting in depot");
 		break;

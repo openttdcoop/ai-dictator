@@ -592,12 +592,13 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 	return true;
 }
 
-function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link=null)
+function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link = AIStation.STATION_NEW)
 // Create a new station, we still don't know if station will be usable
 // that's a task handle by CreateStationConnection
 // link: true to link to a previous station
 {
-	if (link==null)	link=AIStation.STATION_NEW;
+	local c = AITile.GetTownAuthority(tilepos);
+	if (AITown.IsValidTown(c) && AITown.GetRating(c, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(c);
 	local money=INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate();
 	if (!cBanker.CanBuyThat(money))	DInfo("We lack money to buy the station",1);
 	INSTANCE.main.bank.RaiseFundsBy(money);
@@ -1007,7 +1008,7 @@ function cBuilder::RailConnectorSolver(tile_link, tile_target, everything=true)
 		foreach (pair in addtrack)
 			{
 			local track = trackMap.GetValue(pair);
-			if (!AIRail.BuildRailTrack(tile_target, track))
+			if (!cBuilder.DropRailHere(track, tile_target))
 				{
 				cError.IsCriticalError();
 				if (cError.IsError())	return false;
@@ -1132,10 +1133,13 @@ while (path != null)
 return allsuccess;
 }
 
-function cBuilder::ConvertRailTrack(tile, new_railtype)
-// Convert a tile to the same but with new_railtype
+function cBuilder::ConvertRailType(tile, newrt)
+// return true if rail endup the good rt
 {
-	cDebug.PutSign(tile, "<>");
-	print("convert "+tile+" -> "+AIRail.ConvertRailType(tile, tile, new_railtype));
+	if (!AIRail.ConvertRailType(tile, tile, newrt))
+		{
+		if (AIRail.GetRailType(tile) == newrt)	return true;
+		return false;
+		}
+	return true;
 }
-

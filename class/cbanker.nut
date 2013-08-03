@@ -71,6 +71,7 @@ function cBanker::CanBuyThat(money)
 {
 	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
 	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+print("DEBUG CanBuyThat: cash="+cash+" load="+loan+" money="+money);
 	if (cash >= money)	return true;
 	if (cash + loan < cash)	return true;
 	if (cash + loan >= money)	return true;

@@ -230,10 +230,8 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 		if (!vehlist.IsEmpty())	return;	
 		local stasrc = null;
 		local stadst = null;
-		local pval = cRoute.RouteRailGetPathfindingLine(uid, false)
 		if (cMisc.ValidInstance(route.SourceStation)) { stasrc = route.SourceStation.s_ID; route.RouteReleaseStation(route.SourceStation.s_ID); }
 		if (cMisc.ValidInstance(route.TargetStation)) { stadst = route.TargetStation.s_ID; route.RouteReleaseStation(route.TargetStation.s_ID); }
-		if (pval != -1)	cPathfinder.CloseTask([pval[0],pval[1]],[pval[2],pval[3]]); // try closing alternate track if any
 		cBuilder.DestroyStation(stasrc);
 		cBuilder.DestroyStation(stadst);
 		if (route.GroupID != null)	{ AIGroup.DeleteGroup(route.GroupID); cRoute.GroupIndexer.RemoveItem(route.GroupID); }

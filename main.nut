@@ -105,6 +105,19 @@ function DictatorAI::Start()
 	this.CheckCurrentSettings();
 	main.Init();
 	main.DInfo("DicatorAI started.",0);
+	local test = AITownList();
+	local test2 = [];
+	local i = 0;
+	local z = 0;
+	local k = 0;
+	foreach (t, _ in test)	{ i++; test2.push(_); }
+	foreach (t, _ in test)	{ z++; if (t > 20)	test.SetValue(t, -1); }
+	foreach (t, _ in test2)	{ k++; if (t > 20)	test2[t] = -1; }
+print("count    = "+test.Count());
+print("normal i = "+i);
+print("mod    k = "+k);
+print("mod    z = "+z)
+AIController.Break("stop");
 	AICompany.SetAutoRenewStatus(false);
 	if (loadedgame) 
 		{

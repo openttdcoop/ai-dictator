@@ -65,7 +65,6 @@ function cRoute::DutyOnRailsRoute(uid)
 			else	vehneed = (cargowait / capacity)+1;
 	if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
 	DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.VehicleCount+" firstveh="+firstveh,2);
-	if (vehneed > 0)
-	if (!INSTANCE.main.carrier.AddWagon(uid,vehneed))	INSTANCE.main.bank.busyRoute=true;
+	if (vehneed > 0) INSTANCE.main.carrier.AddWagon(uid,vehneed);
 }
 

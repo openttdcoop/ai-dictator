@@ -36,7 +36,7 @@ require("class/version.nut");
 	 medium_value = 0,
 	 hard_value = 0,
 	 custom_value = 0,
-	 flags = AICONFIG_BOOLEAN
+	 flags = CONFIG_BOOLEAN
 	});
 
     AddSetting({name = "fairlevel",
@@ -47,7 +47,7 @@ require("class/version.nut");
 	 medium_value = 1,
 	 hard_value = 2,
 	 custom_value = 2,
-	 flags = 0
+	 flags = CONFIG_NONE
 	});
 
     AddLabels("fairlevel", {_0 = "Lazy", _1 = "Opportunist", _2 = "Dictator"});
@@ -60,7 +60,7 @@ require("class/version.nut");
 	 medium_value = 0,
 	 hard_value = 0,
 	 custom_value = 0,
-	 flags = AICONFIG_INGAME
+	 flags = CONFIG_INGAME
 	});
 
     AddLabels("allowedjob", {_0 = "Industry & Town", _1 = "Only Industry", _2 = "Only Town"});
@@ -73,7 +73,7 @@ require("class/version.nut");
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
-		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 
 	AddSetting({
@@ -83,7 +83,7 @@ require("class/version.nut");
 		medium_value = 0,
 		hard_value = 1,
 		custom_value = 1,
-		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 
 	AddSetting({
@@ -93,7 +93,7 @@ require("class/version.nut");
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
-		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 	AddSetting({
 		name = "use_air",
@@ -102,7 +102,7 @@ require("class/version.nut");
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
-		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 /*
 	AddSetting({
@@ -122,7 +122,7 @@ require("class/version.nut");
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
-		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 
 	AddSetting({
@@ -132,7 +132,7 @@ require("class/version.nut");
 		medium_value = 1,
 		hard_value = 0,
 		custom_value = 0,
-		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 
 	AddSetting({
@@ -142,7 +142,7 @@ require("class/version.nut");
 		medium_value = 1,
 		hard_value = 1,
 		custom_value = 1,
-		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 
     	AddSetting({
@@ -154,9 +154,21 @@ require("class/version.nut");
 	 medium_value = 0,
 	 hard_value = 0,
 	 custom_value = 0,
-	 flags = AICONFIG_INGAME
+	 flags = CONFIG_INGAME | CONFIG_DEVELOPER
 	});
-    AddLabels("debug", {_0 = "Disable debug", _1 = "Basic debug", _2 = "Full debug", _3 = "Signs"});
+    AddLabels("debug", {_0 = "Disable debug", _1 = "Basic", _2 = "Medium", _3 = "Noisy"});
+
+	AddSetting({
+		name = "debug_sign",
+		description = "Enable debug signs",
+		easy_value = 0,
+		medium_value = 0,
+		hard_value = 0,
+		custom_value = 0,
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME | CONFIG_DEVELOPER
+	});
+
+
    }
  }
  

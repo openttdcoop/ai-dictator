@@ -243,18 +243,19 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local loco_engine = AIVehicle.GetEngineType(vehicle);
 	local new_railtype = cEngine.RailTypeIsTop(loco_engine, cargo, false);
 	if (new_railtype == -1)	return false;
-
+	local upgrade_cost = 0;
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
 	if (uid == null)	return false;
 	local road = cRoute.Load(uid);
 	if (!road)	return false;
-	if (!cBanker.CanBuyThat(road.SourceStation.s_MoneyUpgrade))	{ print("need money "+road.SourceStation.s_MoneyUpgrade); return false; }
+	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
+print("money_upgrade now ="+upgrade_cost);
+	if (!cBanker.CanBuyThat(upgrade_cost))	{ print("need money "+upgrade_cost); return false; }
 	local temp = AIList();
 	local all_owners = AIList();
 	local all_vehicle = AIList();
 	local all_rails = AIList();
-	local rtype_pointer = []; // hold part of object holding railtype, allowing us to change all station/route type in one run
-	local cost_pointer = [];
+	local savetable = {};
 	temp.AddList(road.SourceStation.s_Owner);
 	temp.AddList(road.TargetStation.s_Owner);
 	foreach (o_uid, _ in temp)
@@ -262,11 +263,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		local r = cRoute.Load(o_uid);
 		if (!r)	continue;
 		if (r.Status != RouteStatus.WORKING)	continue; // keep only good ones
-		rtype_pointer.push(r.RailType);
-		rtype_pointer.push(r.SourceStation.s_SubType);
-		rtype_pointer.push(r.TargetStation.s_SubType);
-		cost_pointer.push(r.SourceStation.s_MoneyUpgrade);
-		cost_pointer.push(r.TargetStation.s_MoneyUpgrade);
+		savetable[r.UID] <- r;
 		all_owners.AddList(r.SourceStation.s_Owner);
 		all_owners.AddList(r.TargetStation.s_Owner);
 		all_rails.AddList(r.SourceStation.s_Tiles);
@@ -276,21 +273,26 @@ function RailFollower::TryUpgradeLine(vehicle)
 		local veh = AIVehicleList_Group(r.GroupID);
 		all_vehicle.AddList(veh);
 		}
-foreach (rtype in rtype_pointer)	{ print("detect railtype = "+rtype); }
-print("number of affected rails : "+all_rails.Count());
-	cDebug.showLogic(all_rails);
-	local raw_basic_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_TRACK) * all_rails.Count();
-	local raw_sig_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_SIGNAL) * (all_rails.Count() / 2);
-	local raw_station_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_STATION) * (cost_pointer.len() * 10);
-print("raw_basic_cost : "+raw_basic_cost);
-print("raw_sig_cost : "+raw_sig_cost);
-print("raw_station_cost : "+raw_station_cost);
-	local upgrade_cost = raw_basic_cost + raw_sig_cost + raw_station_cost;
-print("estimate upgrade cost : "+upgrade_cost);
-cDebug.ClearSigns();
-		foreach (stacost in cost_pointer)	stacost = upgrade_cost;
-	if (!cBanker.CanBuyThat(upgrade_cost))	return false;
-	cBanker.RaiseFundsBigTime();
+foreach (uid in savetable)	{ print("detect railtype = "+uid.SourceStation.s_SubType); }
+	if (upgrade_cost == 0)
+		{
+		print("number of affected rails : "+all_rails.Count());
+		cDebug.showLogic(all_rails);
+		local raw_basic_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_TRACK) * all_rails.Count();
+		local raw_sig_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_SIGNAL) * (all_rails.Count() / 2);
+		local raw_station_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_STATION) * (savetable.len() * 10);
+	print("raw_basic_cost : "+raw_basic_cost);
+	print("raw_sig_cost : "+raw_sig_cost);
+	print("raw_station_cost : "+raw_station_cost);
+		upgrade_cost = raw_basic_cost + raw_sig_cost + raw_station_cost;
+		print("estimate upgrade cost : "+upgrade_cost);
+		cDebug.ClearSigns();
+		foreach (uid in savetable)	{ uid.SourceStation.s_MoneyUpgrade = upgrade_cost; uid.TargetStation.s_MoneyUpgrade = upgrade_cost; }
+		}
+
+	if (!cBanker.CanBuyThat(upgrade_cost))	{ print("cannot buy "+upgrade_cost+" func="+cBanker.CanBuyThat(upgrade_cost)+" bank: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)); AIController.Break("check buy"); return false; }
+
+	INSTANCE.main.bank.busyRoute = true;
 	// Ok, let's call trains...
 	all_vehicle.Valuate(AIVehicle.GetState);
 	temp = true;
@@ -311,16 +313,29 @@ print("veh "+AIVehicle.GetName(veh)+" sendit = "+sendit);
 			}
 		}
 	if (!temp)	return false; // if all stopped or no vehicle, temp will remain true
+	cBanker.RaiseFundsBigTime();
 print("Upgrade rail to "+new_railtype);
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local all_ok = true;
 	all_vehicle.RemoveItem(safekeeper);
-	foreach (veh, _ in all_vehicle)	{ cCarrier.VehicleSell(veh, false); cCarrier.ToDepotList.RemoveItem(veh); }
-	all_allrails.RemoveItem(safekeeper_depot);
-	foreach (tiles, _ in all_rails)	if (!AIRail.ConvertRailType(tiles, tiles, new_railtype))	all_ok = false;
+	foreach (veh, _ in all_vehicle)	{ cCarrier.VehicleSell(veh, false); }
+	all_rails.RemoveItem(safekeeper_depot);
+	foreach (tiles, _ in all_rails)	if (!cBuilder.ConvertRailType(tiles, new_railtype))	all_ok = false;
 	if (!all_ok)	{ DWarn("Error at converting rails !"); return false; }
-	foreach (stacost in cost_pointer)	stacost = 0;
-	foreach (rtype in rtype_pointer)	rtype = new_railtype;
+	cCarrier.VehicleSell(safekeeper, false);
+	cBuilder.ConvertRailType(safekeeper_depot, new_railtype);
+	foreach (uid in savetable)
+		{
+		uid.SourceStation.s_MoneyUpgrade = 0;
+		uid.TargetStation.s_MoneyUpgrade = 0;
+		uid.SourceStation.s_SubType = new_railtype;
+		uid.TargetStation.s_SubType = new_railtype;
+		uid.RailType = new_railtype;
+		}
+	INSTANCE.main.bank.busyRoute=false;
+	INSTANCE.buildDelay = 2;
+	DInfo("We upgrade route to use "+new_railtype+" railtype",0);
 	return true;
 }
+

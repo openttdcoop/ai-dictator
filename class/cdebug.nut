@@ -21,16 +21,14 @@ class cDebug extends cClass
 function cDebug::PutSign(place,msg)
 // put a sign at place
 {
-	if (!INSTANCE.debug) return;
-	if (DictatorAI.GetSetting("debug") < 3) return;
+	if (!DictatorAI.GetSetting("debug_sign")) return;
 	if (place != null) AISign.BuildSign(place,msg.tostring());
 }
 
 function cDebug::ClearSigns()
 // this just clear any signs we can
 {
-	if (!INSTANCE.debug)	return;
-	if (DictatorAI.GetSetting("debug") < 3) return;
+	if (!DictatorAI.GetSetting("debug_sign")) return;
 	local sweeper=AISignList();
 	sweeper.Valuate(AISign.GetLocation);
 	//sweeper.RemoveValue(INSTANCE.main.SCP.SCPTile);
@@ -41,7 +39,6 @@ function cDebug::ClearSigns()
 function cDebug::showLogic(item)
 // this will draw sign with item so we see item influence
 {
-	if (!INSTANCE.debug) return;
 	foreach (i, dummy in item)
 		{
 		cDebug.PutSign(i,dummy);
