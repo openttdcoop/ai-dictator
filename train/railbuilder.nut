@@ -188,7 +188,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 				return 0;
 			}
 	// 1 is non covered as it's end of pathfinding, and should call us to build
-	INSTANCE.main.bank.RaiseFundsBigTime();
+	cBanker.RaiseFundsBigTime();
 	local prev = null;
 	local prevprev = null;
 	local pp1, pp2, pp3 = null;
@@ -354,7 +354,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 							}
 					}
 			DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
-			local verifypath = RailFollower.GetRailPathing(mytask.source[0], mytask.source[1], mytask.target[0], mytask.target[1]);
+			local verifypath = RailFollower.GetRailPathing(mytask.source[0], mytask.source[1], mytask.target[1], mytask.target[0]);
 			//src_target, src_link, dst_target, dst_link);
 			if (verifypath.IsEmpty())
 					{
@@ -553,9 +553,9 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link = AIStati
 	{
 	local c = AITile.GetTownAuthority(tilepos);
 	if (AITown.IsValidTown(c) && AITown.GetRating(c, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	{ cTileTools.SeduceTown(c); }
-	local money=INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate();
+	local money = INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate();
 	if (!cBanker.CanBuyThat(money))	{ DInfo("We lack money to buy the station",1); }
-	INSTANCE.main.bank.RaiseFundsBy(money);
+	cBanker.RaiseFundsBy(money);
 	if (!AIRail.BuildRailStation(tilepos, direction, 1, INSTANCE.main.carrier.train_length, link))
 			{
 			DInfo("Rail station couldn't be built, link="+link+" cost="+money+" err: "+AIError.GetLastErrorString(),1);
@@ -994,12 +994,12 @@ function cBuilder::StationKillDepot(tile)
 		DInfo("Starting "+cCarrier.GetVehicleName(veh)+"...",0);
 		cTrain.SetDepotVisit(veh);
 		cCarrier.StartVehicle(veh);
-		INSTANCE.Sleep(40);
+		AIController.Sleep(40);
 		}
 	for (local i=0; i < 100; i++)
 			{
 			if (AITile.DemolishTile(tile))	{ return; }
-			INSTANCE.Sleep(40);
+			AIController.Sleep(40);
 			}
 	}
 

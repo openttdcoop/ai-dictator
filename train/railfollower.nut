@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */
+/* -*- Mode: C++; tab-width: 4 -*- */
 /*
  * This file is part of AdmiralAI.
  *
@@ -87,6 +87,10 @@ function RailFollower::GetRailPathing(source, source_link, target, target_link)
 // return an AIList with rails from the path, empty AIList on error
 {
 	cDebug.ClearSigns();
+	cDebug.PutSign(source, "S");
+	cDebug.PutSign(source_link, "SL");
+	cDebug.PutSign(target, "T");
+	cDebug.PutSign(target_link, "TL");
 	local pathwalker = RailFollower();
 	pathwalker.InitializePath([[source, source_link]], [[target, target_link]]);// start beforestart    end afterend
 	local path = pathwalker.FindPath(20000);
@@ -278,11 +282,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		local raw_basic_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_TRACK) * all_rails.Count();
 		local raw_sig_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_SIGNAL) * (all_rails.Count() / 2);
 		local raw_station_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_STATION) * (savetable.len() * 10);
-	print("raw_basic_cost : "+raw_basic_cost);
-	print("raw_sig_cost : "+raw_sig_cost);
-	print("raw_station_cost : "+raw_station_cost);
 		upgrade_cost = raw_basic_cost + raw_sig_cost + raw_station_cost;
-		print("estimate upgrade cost : "+upgrade_cost);
 		cDebug.ClearSigns();
 		foreach (uid in savetable)	{ uid.SourceStation.s_MoneyUpgrade = upgrade_cost; uid.TargetStation.s_MoneyUpgrade = upgrade_cost; }
 		}
