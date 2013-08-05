@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -66,7 +66,7 @@ local middleout = null;
 switch (direction)
 	{
 	case DIR_NE:
-		offdep = AIMap.GetTileIndex(0,-1);  
+		offdep = AIMap.GetTileIndex(0,-1);
 		offsta = AIMap.GetTileIndex(-1,0);
 		middle = AITile.CORNER_W;
 		middleout = AITile.CORNER_N;
@@ -107,7 +107,7 @@ if (!AIGameSettings.GetValue("construction.build_on_slopes"))
 		{
 		if (AITile.GetSlope(idx) != AITile.SLOPE_FLAT) return false;
 		}
-	} 
+	}
 else	{
 	if ((AITile.GetCornerHeight(stafront, middle) != height) && (AITile.GetCornerHeight(stafront, middleout) != height)) return false;
 	}
@@ -140,7 +140,7 @@ function cBuilder::BuildAndStickToRoad(tile, stationtype, stalink=-1)
 //
 // @param tile tile where to put the structure
 // @param stationtype if AIRoad.ROADVEHTYPE_BUS+100000 build a depot, else build a station of stationtype type
-// @return -1 on error, tile position on success, CriticalError is set 
+// @return -1 on error, tile position on success, CriticalError is set
 //
 {
 local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
@@ -242,7 +242,7 @@ function cBuilder::BuildRoadStation(start)
 			tilelist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
 			checklist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
 			isneartown=true; // fake it's a town, it produce, it might be within a town (like a bank)
-			istown=false;	 
+			istown=false;
 			}
 		otherplace=INSTANCE.main.route.TargetProcess.Location;
 		}
@@ -372,7 +372,7 @@ function cBuilder::BuildRoadStation(start)
 			else	continue;
 			}
 		}
-	if (!success) 
+	if (!success)
 		{
 		DInfo("Can't find a good place to build the road station !",1);
 		cError.RaiseError();
@@ -833,7 +833,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 		depotdead=true; // the depot entry is now block by the station
 		cBuilder.DestroyDepot(dep_pos);
 		}
-	if (depotdead)	
+	if (depotdead)
 		{
 		DWarn("Road depot was destroy while upgrading",1);
 		new_dep_pos=INSTANCE.main.builder.BuildRoadDepotAtTile(new_sta_pos);
@@ -877,7 +877,7 @@ function cBuilder::BuildRoadStationOrDepotAtTile(tile, direction, stationtype, s
 {
 // before spending money on a "will fail" structure, check the structure could be connected to a road
 if (AITile.IsStationTile(tile))	return -1; // don't destroy a station, might even not be our
-INSTANCE.main.bank.RaiseFundsBigTime(); 
+INSTANCE.main.bank.RaiseFundsBigTime();
 if (!AIRoad.IsRoadTile(direction))
 	{
 	if (!cTileTools.DemolishTile(direction))
@@ -975,7 +975,7 @@ foreach (voisin in directions)
 		endat=cBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
 		// i will jump at bridge/tunnel exit, check tiles around it to see if we are connect to someone (guessTile)
 		// if we are connect to someone, i reset "source" to be "someone" and continue
-		local guessTile=null;	
+		local guessTile=null;
 		foreach (where in directions)
 			{
 			if (road_type == AIVehicle.VT_ROAD)
@@ -993,7 +993,7 @@ foreach (voisin in directions)
 	if (road_type==AIVehicle.VT_RAIL)	valid=cBuilder.AreRailTilesConnected(source, direction);
 	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
-	if (walkedtiles.HasItem(direction))	{ valid=false; } 
+	if (walkedtiles.HasItem(direction))	{ valid=false; }
 	if (valid)	walkedtiles.AddItem(direction,0);
 	//if (valid && INSTANCE.debug)	cDebug.PutSign(direction,walkedtiles.Count());
 	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
@@ -1012,22 +1012,6 @@ function cBuilder::RoadRunner(source, target, road_type, distance = null)
 	cDebug.ClearSigns();
 	cDebug.showLogic(solve);
 	return result;
-}
-
-function cBuilder::IsRoadStationBusy(stationid)
-// Check if a road station is busy and return the vehicle list that busy it
-// Station must be AIStation.StationType==STATION_TRUCK_STOP
-// We will valuate it with cargo type each vehicle use before return it
-// Return false if not
-{
-if (!AIStation.HasStationType(stationid,AIStation.STATION_TRUCK_STOP))	return false;
-local veh_using_station=AIVehicleList_Station(stationid);
-if (veh_using_station.IsEmpty())	return false;
-local station_tiles=cTileTools.FindRoadStationTiles(AIStation.GetLocation(stationid));
-local station_index=INSTANCE.chemin.GListGetStationIndex(stationid);
-if (station_index == false)	return false;
-local station_obj=INSTANCE.chemin.GListGetItem(station_index);
-veh_using_station.Valuate(AITile.GetDistanceManhattanToTile, AIStation.GetLocation(stationid));
 }
 
 function cBuilder::BuildRoadROAD(head1, head2, stationID)

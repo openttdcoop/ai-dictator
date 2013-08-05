@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -27,6 +27,7 @@ static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to
 static	TRANSPORT_DISTANCE=[60,150,250, 40,100,150, 60,120,250, 90,250,500];
 static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
 static	badJobs=AIList();		// List of jobs we weren't able to do
+static	WagonType=AIList();		// engine wagon to use for cargo : item=cargo, value= wagon engine id
 static	rawJobs=AIList();		// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
 static	targetTown = AIList();	// List of towns we use as target to drop/take passenger/mail by bus & aircraft
 static	deadIndustry = AIList();// List all industries that are dead and so jobs using them need to be removed

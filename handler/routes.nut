@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -186,10 +186,10 @@ function cRoute::RouteRailGetPathfindingLine(uid, mainline)
 	local srclink, dstlink, srcpos, dstpos;
 	if (mainline)
 		{
-		if (road.Source_RailEntry)	srclink=road.SourceStation.s_EntrySide[TrainSide.IN_LINK];//11
-						else	srclink=road.SourceStation.s_ExitSide[TrainSide.IN_LINK];//13
-		if (road.Target_RailEntry)	dstlink=road.TargetStation.s_EntrySide[TrainSide.OUT_LINK];//12
-						else	dstlink=road.TargetStation.s_ExitSide[TrainSide.OUT_LINK];//14
+		if (road.Source_RailEntry)	srclink=road.SourceStation.s_EntrySide[TrainSide.IN_LINK];
+						else	srclink=road.SourceStation.s_ExitSide[TrainSide.IN_LINK];
+		if (road.Target_RailEntry)	dstlink=road.TargetStation.s_EntrySide[TrainSide.OUT_LINK];
+						else	dstlink=road.TargetStation.s_ExitSide[TrainSide.OUT_LINK];
 		}
 	else	{
 		if (road.Source_RailEntry)	srclink=road.SourceStation.s_EntrySide[TrainSide.OUT_LINK];
@@ -217,7 +217,7 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 			vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
 			foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSell(veh, false);
 			vehlist = AIVehicleList_Group(route.GroupID);
-			foreach (veh, _ in vehlist)	
+			foreach (veh, _ in vehlist)
 				{
 				if (!AIOrder.IsGotoDepotOrder(veh, AIOrder.ResolveOrderPosition(veh, AIOrder.ORDER_CURRENT)))
 					{
@@ -227,7 +227,7 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 					}
 				}
 			}
-		if (!vehlist.IsEmpty())	return;	
+		if (!vehlist.IsEmpty())	return;
 		local stasrc = null;
 		local stadst = null;
 		if (cMisc.ValidInstance(route.SourceStation)) { stasrc = route.SourceStation.s_ID; route.RouteReleaseStation(route.SourceStation.s_ID); }

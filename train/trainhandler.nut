@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -35,7 +35,7 @@ static	function GetTrainObject(vehicleID)
 	wagonPrice		= null;	// price to buy a new wagon for that train
 	lastdepotvisit	= null;	// record last time that train was in a depot
 	extraengine		= null;	// true if we have two engines
-	
+
 	constructor()
 		{
 		vehicleID		= null;

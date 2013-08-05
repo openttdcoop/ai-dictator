@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -31,9 +31,9 @@ function cCarrier::ChooseRailCouple(cargo, rtype = -1, depot = -1, forengine = -
 		{
 		DInfo("selected train couple : "+cEngine.GetName(veh[0])+" to pull "+cEngine.GetName(veh[1])+" for "+cCargo.GetCargoLabel(cargo)+" using railtype "+veh[2],1);
 		}
-	else	{
+	else
+		{
 		DInfo("ChooseRailCouple return error "+AIError.GetLastErrorString()+" * "+cEngineLib.GetAPIError(),2);
-		
 		}
 	return veh;
 }
@@ -221,7 +221,7 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					}
 				}
 			}
-	
+
 		if (AIVehicle.IsValidVehicle(tID) && !giveup)
 			{ // now we can add wagons to it
 			local beforesize = cEngineLib.GetNumberOfWagons(tID);
@@ -275,4 +275,3 @@ function cCarrier::AddWagon(uid, wagonNeed)
 	road.RouteUpdateVehicle();
 	return !giveup;
 }
-

@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -15,8 +15,6 @@
 
 class cEngine extends cEngineLib
 {
-//static	enginedatabase= {};
-//static	EngineBL=AIList();		// list of truck/bus engines we have blacklist to avoid bug with IsArticalted
 static	BestEngineList=AIList();	// list of best engine for a couple engine/cargos, item=EUID, value=best engineID
 
 	constructor()
@@ -102,7 +100,11 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 			return engine;
 		case	AIVehicle.VT_RAIL:
 			local engine = cCarrier.ChooseRailCouple(cargoID, rtype);
-			if (engine[0] != -1)	cEngine.SetBestEngine(EUID, engine[0]);
+			if (engine[0] != -1)	{
+									cEngine.SetBestEngine(EUID, engine[0]);
+									if (cJobs.WagonType.HasItem(cargoID))	cJobs.WagonType.RemoveItem(cargoID);
+									cJobs.WagonType.AddItem(cargoID, engine[1]);
+									}
 			return engine[0];
 		case	AIVehicle.VT_AIR:
 			local engine = cCarrier.GetAirVehicle(null, cargoID);

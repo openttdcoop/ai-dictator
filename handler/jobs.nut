@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -105,8 +105,9 @@ function cJobs::RankThisJob()
 	{
 	local srcTown = this.sourceObject.IsTown;
 	local dstTown = this.targetObject.IsTown;
-	local valuerank = this.sourceObject.ScoreProduction * this.cargoValue;
-	if (srcTown && dstTown)	valuerank= ((this.sourceObject.ScoreProduction + this.targetObject.ScoreProduction) / 2) * this.cargoValue;
+	this.cargoAmount = this.sourceObject.ScoreProduction;
+	if (srcTown && dstTown)	this.cargoAmount= ((this.sourceObject.ScoreProduction + this.targetObject.ScoreProduction) / 2);
+	local valuerank = this.cargoAmount * this.cargoValue;
 	if (this.subsidy)
 		{
 		if (AIGameSettings.IsValid("subsidy_multiplier"))	valuerank=valuerank * AIGameSettings.GetValue("subsidy_multiplier");
@@ -126,7 +127,7 @@ function cJobs::RankThisJob()
 		DInfo("Downranking because target town is already handle : Lost "+drank,2);
 		valuerank -= drank; // add 10% penalty for each time we have use that town as target, to avoid reuse a town too much
 		}
-	if (stationrank < 1)	
+	if (stationrank < 1)
 		{
 		if (INSTANCE.fairlevel > 0)	stationrank=1;
 						else	stationrank=0; // at this fairlevel, the job will simply be 0 and not done
@@ -385,7 +386,7 @@ function cJobs::IsTransportTypeEnable(transport_type)
 		return	(INSTANCE.use_boat);
 		}
 	}
-	
+
 function cJobs::JobIsNotDoable(uid)
 // set the undoable status for that job
 	{
@@ -511,8 +512,13 @@ function cJobs::UpdateDoableJobs()
 		if (!myjob)	continue;
 		local airValid=(cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && INSTANCE.use_air);
 		local trainValid=(cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && INSTANCE.use_train);
-		if (myjob.roadType == RouteType.ROAD && (airValid || trainValid))	cJobs.jobDoable.RemoveItem(jobID);
-			// disable because we have funds to build an aircraft or a rail job
+		if (myjob.roadType == RouteType.ROAD && myjob.cargoID == cCargo.GetPassengerCargo() && airValid)	cJobs.jobDoable.RemoveItem(jobID);
+			// disable because we have funds to build an aircraft job
+		local wagcapacity = cEngineLib.GetCapacity(cJobs.WagonType.GetValue(myjob.cargoID), myjob.cargoID);
+		if (myjob.roadType == RouteType.RAIL && myjob.cargoAmount < (4 * wagcapacity) && INSTANCE.use_road)	cJobs.jobDoable.RemoveItem(jobID);
+			// don't do rail jobs if the cargo amount is too poor and we can use road to do it
+		if (myjob.roadType == RouteType.ROAD && trainValid && myjob.cargoAmount >= (4 * wagcapacity))	cJobs.jobDoable.RemoveItem(jobID);
+			// don't do road jobs if we can do a train job instead and the cargo is enough
 
 		if (parentListID.HasItem(myjob.parentID))
 			{
@@ -654,7 +660,7 @@ function cJobs::RawJobHandling()
 function cJobs::RawJob_Delete(pUID)
 // Remove process from rawJob list
 	{
-	if (cJobs.rawJobs.HasItem(pUID))	
+	if (cJobs.rawJobs.HasItem(pUID))
 		{
 		DInfo("Removing industry #"+pUID+" from raw job",2); cJobs.rawJobs.RemoveItem(pUID);
 		}
@@ -730,7 +736,7 @@ function cJobs::GetUIDFromSubsidy(subID, onoff)
 		{
 		local j = cJobs.Load(UID);
 		if (j.cargoID == cargoID && j.sourceObject.IsTown == sourceIsTown && j.targetObject.IsTown == targetIsTown && j.sourceObject.ID == sourceID && j.targetObject.ID == targetID)
-			{ 
+			{
 			j.subsidy=onoff;
 			DInfo("Setting subsidy to "+onoff+" for jobs "+j.Name,1);
 			return;

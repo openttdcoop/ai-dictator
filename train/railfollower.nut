@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /*
  * This file is part of AdmiralAI.
  *
@@ -39,9 +39,6 @@ function RailFollower::_Neighbours(path, cur_node, self)
 	if (AITile.HasTransportType(cur_node, AITile.TRANSPORT_RAIL)) {
 		/* Only use track we own. */
 		if (!AICompany.IsMine(AITile.GetOwner(cur_node))) return [];
-
-		/* If the existing track type is incompatible this tile is unusable. */
-		//if (!AIRail.TrainHasPowerOnRail(AIRail.GetRailType(cur_node), self._new_type)) return [];
 
 		if (AIRail.GetSignalType(path.GetParent().GetTile(), path.GetTile()) == AIRail.SIGNALTYPE_PBS) return [];
 		if (AITile.IsStationTile(cur_node)) return [];
@@ -87,6 +84,7 @@ function RailFollower::FindRouteRails(source, target)
 }
 
 function RailFollower::GetRailPathing(source, source_link, target, target_link)
+// return an AIList with rails from the path, empty AIList on error
 {
 	cDebug.ClearSigns();
 	local pathwalker = RailFollower();
@@ -302,7 +300,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 			temp = false;
 			local sendit = false;
 			if (!cCarrier.ToDepotList.HasItem(veh))	sendit = true;
-			if (!sendit)	
+			if (!sendit)
 				{
 				local why = cCarrier.VehicleSendToDepot_GetReason(cCarrier.ToDepotList.GetValue(veh));
 				if (why != DepotAction.LINEUPGRADE)	sendit = true;

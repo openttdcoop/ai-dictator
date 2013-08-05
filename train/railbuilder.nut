@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -105,7 +105,7 @@ function cBuilder::BuildTrainStation(start)
 				{
 				tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
 				tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
-				tilelist.KeepAboveValue(0); 
+				tilelist.KeepAboveValue(0);
 				istown=true;
 				}
 			else	{
@@ -120,7 +120,7 @@ function cBuilder::BuildTrainStation(start)
 				{
 				tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
 				tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
-				tilelist.KeepAboveValue(8); 
+				tilelist.KeepAboveValue(8);
 				istown=true;
 				}
 			else	{
@@ -203,7 +203,7 @@ function cBuilder::BuildTrainStation(start)
 		buildmode++;
 		} while (buildmode != 4 && !success);
 
-	if (!success) 
+	if (!success)
 		{
 		DInfo("Can't find a good place to build the train station ! "+tilelist.Count(),1);
 		if (tilelist.IsEmpty())	cError.RaiseError();
@@ -314,6 +314,7 @@ while (path != null && smallerror==0)
 			}
 		 else {
 			local targetTile=path.GetTile();
+			cTileTools.DemolishTile(targetTile); // try cleanup the place before
 			if (!AIRail.BuildRail(prevprev, prev, targetTile))
 				{
 				smallerror=cBuilder.EasyError(AIError.GetLastError());
@@ -411,13 +412,31 @@ else	{ // we cannot get smallerror==-1 because on -1 it always return, so limit 
 			}
 		}
 	DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
-	mytask.status=2;
-	INSTANCE.buildDelay=0;
-	local bltiles=AIList();
-	bltiles.AddList(cTileTools.TilesBlackList);
-	bltiles.KeepValue(-stationID);
-	foreach (tile, dummy in bltiles)	cStationRail.RailStationClaimTile(tile, useEntry, stationID); // assign tiles to that station
-	return true;
+	local verifypath = RailFollower.GetRailPathing(mytask.source[0], mytask.source[1], mytask.target[0], mytask.target[1]);
+	//src_target, src_link, dst_target, dst_link);
+	if (verifypath.IsEmpty())
+		{
+			mytask.status = -1;
+			DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
+			local badtiles=AIList();
+			badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
+			badtiles.KeepValue(-mytask.stationID);
+			cBuilder.RailCleaner(badtiles); // remove all rail we've built
+			foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
+			cError.RaiseError();
+			return false;
+		}
+	else
+		{
+		DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
+		mytask.status=2;
+		INSTANCE.buildDelay=0;
+		local bltiles=AIList();
+		bltiles.AddList(cTileTools.TilesBlackList);
+		bltiles.KeepValue(-stationID);
+		foreach (tile, dummy in bltiles)	cStationRail.RailStationClaimTile(tile, useEntry, stationID); // assign tiles to that station
+		return true;
+		}
 	}
 }
 
@@ -425,7 +444,7 @@ function cBuilder::FindStationEntryToExitPoint(src, dst)
 // find the closest path from station src to station dst
 // We return result in array: 0=src tile, 1=1(entry)0(exit), 1=dst tile, value=1(entry)0(exit)
 // return array empty on error
-// 
+//
 {
 // check entry/exit avaiablility on stations
 	local srcEntry=cStationRail.IsRailStationEntryOpen(src);
@@ -482,7 +501,7 @@ function cBuilder::FindStationEntryToExitPoint(src, dst)
 		DInfo("distance="+check+" bestsrc="+bestsrc+" bestdst="+bestdst,2);
 		if (dstExit)
 			{
-			check = AIMap.DistanceManhattan(srcExitLoc,dstExitLoc); 
+			check = AIMap.DistanceManhattan(srcExitLoc,dstExitLoc);
 			if (check < best && !dstEntryBuild)	{ best=check; bestsrc=srcExitLoc; bestdst=dstExitLoc; }
 			}
 		DInfo("distance="+check+" bestsrc="+bestsrc+" bestdst="+bestdst,2);
@@ -548,10 +567,10 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 				{
 				// need to grab the real locations first, as they might have change while building entrances of station
 				local mainowner=srcStation.s_Train[TrainType.OWNER];
-				if (srcUseEntry)	srclink=srcStation.s_EntrySide[TrainSide.IN_LINK];//11
-						else	srclink=srcStation.s_ExitSide[TrainSide.IN_LINK];//13
-				if (dstUseEntry)	dstlink=dstStation.s_EntrySide[TrainSide.OUT_LINK];//12
-						else	dstlink=dstStation.s_ExitSide[TrainSide.OUT_LINK];//14
+				if (srcUseEntry)	srclink=srcStation.s_EntrySide[TrainSide.IN_LINK];
+						else	srclink=srcStation.s_ExitSide[TrainSide.IN_LINK];
+				if (dstUseEntry)	dstlink=dstStation.s_EntrySide[TrainSide.OUT_LINK];
+						else	dstlink=dstStation.s_ExitSide[TrainSide.OUT_LINK];
 				srcpos=srclink+cStationRail.GetRelativeTileBackward(srcStation.s_ID, srcUseEntry);
 				dstpos=dstlink+cStationRail.GetRelativeTileBackward(dstStation.s_ID, dstUseEntry);
 				DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos+" srclink="+srclink+" dstlink="+dstlink,2);
@@ -575,10 +594,6 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 			}
 		} while (retry);
 	// pfff here, all connections were made, and rails built
-	if (srcUseEntry)	srcStation.s_EntrySide[TrainSide.IN_LINK]= dstpos;
-			else	srcStation.s_ExitSide[TrainSide.IN_LINK]= dstpos;
-	if (dstUseEntry)	dstStation.s_EntrySide[TrainSide.OUT_LINK]= srcpos;
-			else	dstStation.s_ExitSide[TrainSide.OUT_LINK]= srcpos;
 	INSTANCE.main.route.Source_RailEntry=srcUseEntry;
 	INSTANCE.main.route.Target_RailEntry=dstUseEntry;
 	INSTANCE.main.route.Primary_RailLink=true;
@@ -718,7 +733,7 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 			}
 		i+=forwardTileOf;
 		}
-	if (!error)	
+	if (!error)
 		{
 		local sta_left = frontTile+backwardTileOf+leftTileOf;
 		local sta_right = frontTile+backwardTileOf+rightTileOf;
@@ -728,7 +743,7 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 		if (got_left)			cBuilder.DropRailHere(railLeft, goal);
 		if (got_right)			cBuilder.DropRailHere(railRight, goal);
 		if (got_left && got_right)	cBuilder.DropRailHere(railCross, goal);
-		cBuilder.RailConnectorSolver(goal+backwardTileOf, goal, true);
+		//cBuilder.RailConnectorSolver(goal+backwardTileOf, goal, true);
 		}
 	if (error)	{ cBuilder.RailCleaner(sweeper); }
 	return true;
@@ -794,7 +809,7 @@ foreach (tile, dummy in many)
 		cBuilder.DestroyDepot(tile);
 		continue;
 		}
-	if (AITile.HasTransportType(tile, AITile.TRANSPORT_RAIL) && (AIBridge.IsBridgeTile(tile) || AITunnel.IsTunnelTile(tile)) ) 
+	if (AITile.HasTransportType(tile, AITile.TRANSPORT_RAIL) && (AIBridge.IsBridgeTile(tile) || AITunnel.IsTunnelTile(tile)) )
 		{
 		AITile.DemolishTile(tile);
 		continue;
@@ -975,7 +990,7 @@ function cBuilder::RailConnectorSolver(tile_link, tile_target, everything=true)
 	directionmap.AddItem(0, SE); // for SE->NW
 	directionmap.AddItem(1, NW); // for NW->SE
 	directionmap.AddItem(2, SW); // for SW->NE
-	directionmap.AddItem(3, NE); // for NE->SW	 
+	directionmap.AddItem(3, NE); // for NE->SW
 	local addtrack = [];
 	local seek_search = null;
 	local mask_seek = null;

@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -133,7 +133,8 @@ function cStationRail::GetRailStationFrontTile(entry, platform, stationID=null)
 			start=AIMap.GetTileIndex(AIMap.GetTileX(start),AIMap.GetTileY(platform))+AIMap.GetTileIndex(-1,0);
 			end=AIMap.GetTileIndex(AIMap.GetTileX(end),AIMap.GetTileY(platform))+AIMap.GetTileIndex(1,0);
 			}
-		else	{
+		else
+			{
 			start=AIMap.GetTileIndex(AIMap.GetTileX(platform),AIMap.GetTileY(start))+AIMap.GetTileIndex(0,-1);
 			end=AIMap.GetTileIndex(AIMap.GetTileX(platform),AIMap.GetTileY(end))+AIMap.GetTileIndex(0,1);
 			}
@@ -149,7 +150,7 @@ function cStationRail::IsRailStationEntryOpen(stationID=null)
 {
 	local thatstation=false;
 	if (stationID == null)	thatstation=this;
-			else		thatstation=cStation.Load(stationID);
+				else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
 	local entry=thatstation.s_Train[TrainType.STATIONBIT];
 	if (cMisc.CheckBit(entry,0))	{ DInfo("Station "+thatstation.s_Name+" entry is open",2); return true; }
@@ -382,7 +383,7 @@ cDebug.PutSign(lookup+start,"*");
 		if (!cMisc.CheckBit(value,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,1);
 		thatstation.s_Platforms.SetValue(platidx, value);
 		if (cMisc.CheckBit(value,0) || cMisc.CheckBit(value, 1))	{ goodCounter++; thatstation.SetPlatformWorking(platidx, true); }
-		}	
+		}
 	DInfo("Station "+thatstation.s_Name+" have "+thatstation.s_Platforms.Count()+" platforms, "+goodCounter+" platforms are ok",2);
 	thatstation.s_Train[TrainType.GOODPLATFORM]=goodCounter;
 	thatstation.s_Size=thatstation.s_Platforms.Count();
@@ -392,6 +393,47 @@ cDebug.PutSign(lookup+start,"*");
 		{
 		DInfo("Closing station "+thatstation.s_Name+" as it cannot grow anymore",1);
 		thatstation.s_MaxSize = thatstation.s_Size;
+		}
+	cDebug.ClearSigns();
+	if (AIMap.IsValidTile(runTarget))
+		{
+			local is_source = (runTarget == thatstation.s_EntrySide[TrainSide.IN] || runTarget == thatstation.s_ExitSide[TrainSide.IN]);
+			local idx1, idx2, rdir, mv = null;
+			local entryUse = false;
+				foreach (item, value in thatstation.s_EntrySide)	print("entry "+item+" = "+value);
+				foreach (item, value in thatstation.s_ExitSide)	print("exit "+item+" = "+value);
+
+			if (is_source)	{
+							entryUse = (runTarget ==  thatstation.s_EntrySide[TrainSide.IN]);
+							if (entryUse)	idx1 = thatstation.s_EntrySide[TrainSide.IN_LINK];
+									else	idx1 = thatstation.s_ExitSide[TrainSide.IN_LINK];
+							rdir = cBuilder.GetDirection(runTarget, idx1);
+							print("source : "+entryUse);
+							}
+					else	{
+							entryUse = (runTarget ==  thatstation.s_EntrySide[TrainSide.OUT]);
+							if (entryUse)	idx1 = thatstation.s_EntrySide[TrainSide.OUT_LINK];
+									else	idx1 = thatstation.s_ExitSide[TrainSide.OUT_LINK];
+							rdir = cBuilder.GetDirection(runTarget, idx1);
+							print("NOT SOURCE "+entryUse);
+							}
+			cDebug.PutSign(idx1, "L");
+
+			//local direction = cBuilder.GetDirection(runTarget, idx);
+			local rback = cTileTools.GetBackwardRelativeFromDirection(rdir);
+			local rright= cTileTools.GetRightRelativeFromDirection(rdir);
+			idx1 = runTarget + rback;
+			idx2 = runTarget + rback + rright;
+			//foreach (item, value in thatstation.s_EntrySide)	cDebug.PutSign(value, item);
+			//foreach (item, value in thatstation.s_ExitSide)	cDebug.PutSign(value, item);
+			//local brel = cBuilder.GetBackwardRelativeFromDirection(cBuilder.GetDirection(runTarget,
+			cDebug.PutSign(runTarget, "r");
+			cDebug.PutSign(idx1,  "m");
+			cDebug.PutSign(idx2,  "a");
+			AIController.Break(" pause");
+			if (AIMap.IsValidTile(idx1))	cBuilder.RailConnectorSolver(runTarget, idx1, true);
+			if (AIMap.IsValidTile(idx2))	cBuilder.RailConnectorSolver(idx2, idx1, true);
+			AIController.Break("after");
 		}
 }
 
@@ -408,11 +450,11 @@ function cStationRail::RailStationGetRunnerTarget(runnerID)
 	if (primary)
 		{
 		if (mainOwner.Source_RailEntry)	return thatstation.s_EntrySide[TrainSide.IN];
-							else	return thatstation.s_ExitSide[TrainSide.IN];
+								else	return thatstation.s_ExitSide[TrainSide.IN];
 		}
 	else	{
 		if (mainOwner.Target_RailEntry)	return thatstation.s_EntrySide[TrainSide.OUT];
-							else	return thatstation.s_ExitSide[TrainSide.OUT];
+								else	return thatstation.s_ExitSide[TrainSide.OUT];
 		}
 	return -1;
 }

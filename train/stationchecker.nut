@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *
@@ -78,7 +78,7 @@ cDebug.PutSign(cStationRail.GetPlatformIndex(plat_main,true)+pside,"+");
 		success=INSTANCE.main.builder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, stationObj.s_ID);
 cDebug.PutSign(cStationRail.GetPlatformIndex(plat_alt,true)+pside,"+");
 		if (success)	foreach (tile, dummy in areaclean)	stationObj.StationClaimTile(tile, stationObj.s_ID);
-		if (!success)	
+		if (!success)
 			{
 			cError.IsCriticalError();
 			if (cError.IsError() && allfail)
@@ -116,7 +116,7 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 		testcheck.AddList(towncheck);
 		testcheck.Valuate(AITile.IsStationTile); // protect station here
 		testcheck.KeepValue(1);
-		if (testcheck.IsEmpty()) 
+		if (testcheck.IsEmpty())
 			{ // now look if we're not going too much in a town
 			local neartown=AITile.GetClosestTown(workTile);
 			local s_dst=AITown.GetDistanceManhattanToTile(neartown,workTile);
@@ -375,7 +375,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 					}
 		j++;
 		} while (j < 4 && !success);
-	
+
 	return success;
 }
 
@@ -538,7 +538,7 @@ function cBuilder::RailStationPhaseBuildDepot(stationObj, useEntry)
 					removedepot=AIRail.BuildRailDepot(depotlocations[h], depotfront[h]);
 					}
 				local depot_Front=AIRail.GetRailDepotFrontTile(depotlocations[h]);
-				
+
 				if (AIMap.IsValidTile(depot_Front))	success=cBuilder.RailConnectorSolver(depotlocations[h],depot_Front,true);
 				if (success)	success=cStation.IsDepot(depotlocations[h]);
 				if (success)
@@ -570,8 +570,6 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 {
 	local thatstation=cStation.Load(staID);
 	if (!thatstation)	return false;
-//	if (!cStationRail.IsRailStationEntryOpen(staID) && useEntry)	{ DWarn(thatstation.name+" entry is CLOSE",1); return false }
-//	if (!cStationRail.IsRailStationExitOpen(staID) && !useEntry)	{ DWarn(thatstation.name+" exit is CLOSE",1); return false }
 	local trainEntryTaker=thatstation.s_Train[TrainType.TET];
 	local trainExitTaker=thatstation.s_Train[TrainType.TXT];
 	local trainEntryDropper=thatstation.s_Train[TrainType.TED];
@@ -625,7 +623,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	if (newStationSize > cmpsize)
 		{
 		local success = false;
-		if (cangrow)	
+		if (cangrow)
 			{
 			success = cBuilder.RailStationPhaseGrowing(thatstation, newStationSize, useEntry);
 			if (!success)	{ cError.RaiseError(); return false; }
@@ -671,10 +669,8 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local result=true;
 	if (cMisc.ValidInstance(road) && road.Secondary_RailLink == false && road.SourceStation.s_ID != thatstation.s_ID && (trainEntryTotal >1 || trainExitTotal > 1))
 			{
-print("in pathfinding");
 			if (road.Target_RailEntry)	result = thatstation.IsRailStationEntryOpen();
 							else	result = thatstation.IsRailStationExitOpen();
-print("result = "+result);
 			if (result) // don't test if we knows it's dead already
 				{
 				result = cBuilder.RailStationPathfindAltTrack(road);
@@ -682,7 +678,6 @@ print("result = "+result);
 				}
 			else	PlatformNeedUpdate=true; // give the destination station an update chance
 			}
-print("after pathfinding");
 	if (PlatformNeedUpdate && cangrow) thatstation.RailStationPhaseUpdate();
 
 	if (cMisc.ValidInstance(road) && road.GroupID != null && road.Secondary_RailLink && (trainEntryTotal > 2 || trainExitTotal > 2) && (!road.SourceStation.IsRailStationPrimarySignalBuilt() || !road.TargetStation.IsRailStationSecondarySignalBuilt()))
