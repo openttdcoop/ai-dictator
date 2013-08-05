@@ -378,6 +378,7 @@ cDebug.PutSign(lookup+start,"*");
 	plat_temp.AddList(thatstation.s_Platforms);
 	foreach (platidx, value in plat_temp)
 		{
+		if (thatstation.IsPlatformWorking(platidx))   { goodCounter++; continue; }
 		if (runTarget == -1)	break;
 		if (!cMisc.CheckBit(value,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,0);
 		if (!cMisc.CheckBit(value,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,1);
@@ -395,46 +396,6 @@ cDebug.PutSign(lookup+start,"*");
 		thatstation.s_MaxSize = thatstation.s_Size;
 		}
 	cDebug.ClearSigns();
-	if (AIMap.IsValidTile(runTarget))
-		{
-			local is_source = (runTarget == thatstation.s_EntrySide[TrainSide.IN] || runTarget == thatstation.s_ExitSide[TrainSide.IN]);
-			local idx1, idx2, rdir, mv = null;
-			local entryUse = false;
-				foreach (item, value in thatstation.s_EntrySide)	print("entry "+item+" = "+value);
-				foreach (item, value in thatstation.s_ExitSide)	print("exit "+item+" = "+value);
-
-			if (is_source)	{
-							entryUse = (runTarget ==  thatstation.s_EntrySide[TrainSide.IN]);
-							if (entryUse)	idx1 = thatstation.s_EntrySide[TrainSide.IN_LINK];
-									else	idx1 = thatstation.s_ExitSide[TrainSide.IN_LINK];
-							rdir = cBuilder.GetDirection(runTarget, idx1);
-							print("source : "+entryUse);
-							}
-					else	{
-							entryUse = (runTarget ==  thatstation.s_EntrySide[TrainSide.OUT]);
-							if (entryUse)	idx1 = thatstation.s_EntrySide[TrainSide.OUT_LINK];
-									else	idx1 = thatstation.s_ExitSide[TrainSide.OUT_LINK];
-							rdir = cBuilder.GetDirection(runTarget, idx1);
-							print("NOT SOURCE "+entryUse);
-							}
-			cDebug.PutSign(idx1, "L");
-
-			//local direction = cBuilder.GetDirection(runTarget, idx);
-			local rback = cTileTools.GetBackwardRelativeFromDirection(rdir);
-			local rright= cTileTools.GetRightRelativeFromDirection(rdir);
-			idx1 = runTarget + rback;
-			idx2 = runTarget + rback + rright;
-			//foreach (item, value in thatstation.s_EntrySide)	cDebug.PutSign(value, item);
-			//foreach (item, value in thatstation.s_ExitSide)	cDebug.PutSign(value, item);
-			//local brel = cBuilder.GetBackwardRelativeFromDirection(cBuilder.GetDirection(runTarget,
-			cDebug.PutSign(runTarget, "r");
-			cDebug.PutSign(idx1,  "m");
-			cDebug.PutSign(idx2,  "a");
-			AIController.Break(" pause");
-			if (AIMap.IsValidTile(idx1))	cBuilder.RailConnectorSolver(runTarget, idx1, true);
-			if (AIMap.IsValidTile(idx2))	cBuilder.RailConnectorSolver(idx2, idx1, true);
-			AIController.Break("after");
-		}
 }
 
 function cStationRail::RailStationGetRunnerTarget(runnerID)
@@ -490,13 +451,15 @@ function cStationRail::GetPlatformIndex(platform, useEntry=true)
 		staX=AIMap.GetTileX(thatstation.s_Train[TrainType.START_POINT]); // X=SW->NE
 		staY=AIMap.GetTileY(thatstation.s_Train[TrainType.START_POINT]); // Y=SE->NW
 		}
-	else	{
+	else
+        {
 		staX=AIMap.GetTileX(thatstation.s_Train[TrainType.END_POINT]);
 		staY=AIMap.GetTileY(thatstation.s_Train[TrainType.END_POINT]);
 		}
 	if (thatstation.GetRailStationDirection()==AIRail.RAILTRACK_NE_SW)
 		{ staY=platY; }
-	else	{ staX=platX; }// NW_SE
+	else
+        { staX=platX; }// NW_SE
 	return AIMap.GetTileIndex(staX, staY);
 }
 
