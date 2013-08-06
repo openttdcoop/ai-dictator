@@ -354,7 +354,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 							}
 					}
 			DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
-			local verifypath = RailFollower.GetRailPathing(mytask.source[0], mytask.source[1], mytask.target[1], mytask.target[0]);
+			local verifypath = RailFollower.GetRailPathing(mytask.source, mytask.target);
 			//src_target, src_link, dst_target, dst_link);
 			if (verifypath.IsEmpty())
 					{

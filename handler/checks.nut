@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -48,7 +48,7 @@ function cBuilder::HalfYearChecks()
 	INSTANCE.SixMonth=0;
 	INSTANCE.TwelveMonth++;
 	DInfo("Half year checks run...",1);
-	if (cCarrier.VirtualAirRoute.len() > 1) 
+	if (cCarrier.VirtualAirRoute.len() > 1)
 		{
 		local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
 		local passlist=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
@@ -146,7 +146,7 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 				{
 				if (!stobj.IsCargoProduce(cargoID))
 					{ // we need that cargo produce but it's not
-					DWarn("Station "+stobj.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargoID),0);
+					DInfo("Station "+stobj.s_Name+" no longer produce "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
 					road.RouteIsNotDoable();
 					healthy = false;
@@ -157,10 +157,11 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 				{
 				if (!stobj.IsCargoAccept(cargoID))
 					{ // we need that cargo accept but it's not
-					DWarn("Station "+stobj.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargoID),0);
+					DInfo("Station "+stobj.s_Name+" no longer accept "+cCargo.GetCargoLabel(cargoID),0);
 					DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
 					road.RouteIsNotDoable();
 					healthy = false;
+					continue;
 					}
 				}
 			}

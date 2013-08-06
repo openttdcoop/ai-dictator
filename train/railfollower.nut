@@ -40,7 +40,6 @@ function RailFollower::_Neighbours(path, cur_node, self)
 		/* Only use track we own. */
 		if (!AICompany.IsMine(AITile.GetOwner(cur_node))) return [];
 
-		if (AIRail.GetSignalType(path.GetParent().GetTile(), path.GetTile()) == AIRail.SIGNALTYPE_PBS) return [];
 		if (AITile.IsStationTile(cur_node)) return [];
 
 		/* Check if the current tile is part of a bridge or tunnel. */
@@ -83,16 +82,11 @@ function RailFollower::FindRouteRails(source, target)
 	return solve;
 }
 
-function RailFollower::GetRailPathing(source, source_link, target, target_link)
+function RailFollower::GetRailPathing(source, target)
 // return an AIList with rails from the path, empty AIList on error
 {
-	cDebug.ClearSigns();
-	cDebug.PutSign(source, "S");
-	cDebug.PutSign(source_link, "SL");
-	cDebug.PutSign(target, "T");
-	cDebug.PutSign(target_link, "TL");
 	local pathwalker = RailFollower();
-	pathwalker.InitializePath([[source, source_link]], [[target, target_link]]);// start beforestart    end afterend
+	pathwalker.InitializePath([source], [target]);
 	local path = pathwalker.FindPath(20000);
 	if (path == null)	{ DError("Pathwalking failure.",2); return AIList(); }
 	local toAIList=AIList();
@@ -133,13 +127,14 @@ function RailFollower::FindRailOwner()
 			road.TargetStation.StationAddTrain(false, road.Target_RailEntry);
 			}
 		DInfo("Finding rails for route "+road.Name);
-		if (!road.Primary_RailLink)	{ DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
+		print("Primary_RailLink = "+road.Primary_RailLink);
+		if (!road.Primary_RailLink)	{ DInfo("FindRailOwner mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
 		local stationID = road.SourceStation.s_ID;
 		local src_target, dst_target, src_link, dst_link = null;
 		if (road.Source_RailEntry)	src_target = road.SourceStation.s_EntrySide[TrainSide.IN];
-						else	src_target = road.SourceStation.s_ExitSide[TrainSide.IN];
+                            else	src_target = road.SourceStation.s_ExitSide[TrainSide.IN];
 		if (road.Target_RailEntry)	dst_target = road.TargetStation.s_EntrySide[TrainSide.OUT];
-						else	dst_target = road.TargetStation.s_ExitSide[TrainSide.OUT];
+                            else	dst_target = road.TargetStation.s_ExitSide[TrainSide.OUT];
 		local bad = false;
 		local src_tiles = AIList();
 		local dst_tiles = AIList();
@@ -147,7 +142,7 @@ function RailFollower::FindRailOwner()
 		// Find main line tracks (source station -> destination station)
 		src_link = src_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry);
 		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry)
-		src_tiles = RailFollower.GetRailPathing(src_target, src_link, dst_target, dst_link);
+		src_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
 		bad = (src_tiles.IsEmpty());
 		local notbad = false; // to find if at least 1 platform is working, else the station is bad/unusable
 		// Find each source station platform tracks
@@ -171,22 +166,22 @@ function RailFollower::FindRailOwner()
 		// Find the tracks from source depot -> source station
 		local depot = null;
 		if (road.Source_RailEntry)	depot = road.SourceStation.s_EntrySide[TrainSide.DEPOT];
-						else	depot = road.SourceStation.s_ExitSide[TrainSide.DEPOT];
+                            else	depot = road.SourceStation.s_ExitSide[TrainSide.DEPOT];
 		test_tiles = RailFollower.FindRouteRails(src_target, depot);
 		src_tiles.AddList(test_tiles);
 		// Find the tracks from target depot -> target station
 		if (road.Target_RailEntry)	depot = road.TargetStation.s_EntrySide[TrainSide.DEPOT];
-						else	depot = road.TargetStation.s_ExitSide[TrainSide.DEPOT];
+                            else	depot = road.TargetStation.s_ExitSide[TrainSide.DEPOT];
 		test_tiles = RailFollower.FindRouteRails(dst_target, depot);
 		dst_tiles.AddList(test_tiles);
 		// Find alternate line tracks (target station -> source station)
 		if (road.Source_RailEntry)	dst_target = road.SourceStation.s_EntrySide[TrainSide.OUT];
-						else	dst_target = road.SourceStation.s_ExitSide[TrainSide.OUT];
+                            else	dst_target = road.SourceStation.s_ExitSide[TrainSide.OUT];
 		if (road.Target_RailEntry)	src_target = road.TargetStation.s_EntrySide[TrainSide.IN];
-						else	src_target = road.TargetStation.s_ExitSide[TrainSide.IN];
+                            else	src_target = road.TargetStation.s_ExitSide[TrainSide.IN];
 		src_link = src_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry);
 		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry)
-		test_tiles = RailFollower.GetRailPathing(src_target, src_link, dst_target, dst_link);
+		test_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
 		if (!bad_alt)	bad_alt = (test_tiles.IsEmpty());
 		dst_tiles.AddList(test_tiles);
 		// Remove station tiles out of founded tiles : we don't want any station tile assign as a non station tiles
@@ -224,7 +219,7 @@ function RailFollower::FindRailOwner()
 				if (!road.Secondary_RailLink && !bad_alt)	{ road.Secondary_RailLink = true; road.Route_GroupNameSave(); }
 				}
 		if (killit)	{
-				DInfo("CheckRouteStationStatus mark "+road.UID+" undoable",1);
+				DInfo("FindRailOwner mark "+road.UID+" undoable",1);
 				road.RouteIsNotDoable();
 				}
 		}
