@@ -606,9 +606,10 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 	local stationID=AIStation.GetStationID(platform);
 	local thatstation=cStation.Load(stationID);
 	if (!thatstation)	{ return false; }
+	cBuilder.SetRailType(thatstation.s_SubType); // not to forget
 	local crossing = 0;
 	if (useEntry)	{ crossing=thatstation.s_EntrySide[TrainSide.CROSSING]; }
-	else	{ crossing=thatstation.s_ExitSide[TrainSide.CROSSING]; }
+            else	{ crossing=thatstation.s_ExitSide[TrainSide.CROSSING]; }
 	if (crossing < 0)	{ DError("Crossing isn't define yet",2); return false; }
 	local forwardTileOf=cStationRail.GetRelativeTileForward(stationID, useEntry);
 	local backwardTileOf=cStationRail.GetRelativeTileBackward(stationID, useEntry);
@@ -911,17 +912,19 @@ function cBuilder::RailConnectorSolver(tile_link, tile_target, everything=true)
 	local	SW = 2;
 	local	NW = 4;
 	local	SE = 8;
-	local WorkTiles = [];
+	local WorkTiles = AIList();
 	local type_orig = AIRail.GetRailType(tile_link);
 	local track_dest = cBuilder.GetRailTracks(tile_target);
 	if (track_dest != 255 && AIRail.GetRailType(tile_target) != type_orig)
             { DWarn("Cannot connect rail tiles because railtype aren't the same",1); return false; }
+    local z = 3;
 	for (local i=0; i < 4; i++)
 			{
 			if (tile_target+voisin[i] == tile_link)	{ continue; } // we will add it later, see allTiles()
 			if (AIRail.GetRailType(tile_target+voisin[i]) != type_orig)	{ continue;}
 			if (!AICompany.IsMine(AITile.GetOwner(tile_target+voisin[i])))	{ continue; }
-			WorkTiles.push(tile_target+voisin[i]);
+			WorkTiles.AddItem(tile_target+voisin[i],z);
+			z++;
 			}
 	local trackMap = AIList(); // item=two points added, value=the track need to link 1st point with 2nd point
 	local edges = [];
@@ -942,34 +945,38 @@ function cBuilder::RailConnectorSolver(tile_link, tile_target, everything=true)
 	local seek_search = null;
 	local mask_seek = null;
 	local mask_voisin = null;
-	local allTiles = [];
-	allTiles.push(tile_link); // add the link tile
-	if (everything)	{ foreach (tiles in WorkTiles)	allTiles.push(tiles); }
-	WorkTiles.push(tile_link);
-	foreach (tile_seek in allTiles)
+	local allTiles = AIList();
+	local filter = AIList();
+	allTiles.AddItem(tile_link,2); // add the link tile
+	for (local i = 2; i < 6; i++)   filter.AddItem(i*i, 0); // filter duplicates
+	if (everything)	{
+                    foreach (tile, index in WorkTiles)
+                            {
+                            allTiles.AddItem(tile, index); // would have been easier to tile*tile but squirrel overflow fast
+                            }
+                    }
+	foreach (tile_seek, seek_index in allTiles)
 		{
 		mask_seek = cBuilder.GetRailBitMask(cBuilder.GetRailTracks(tile_seek));
-		foreach (dest in WorkTiles)
+		foreach (dest, dest_index in WorkTiles)
 			{
-            if (tile_seek == dest)	{ continue; } // skip same tile
+            if (filter.HasItem(seek_index*dest_index))  { continue; }
+                                                else    { filter.AddItem(seek_index*dest_index,0); }
             mask_voisin = cBuilder.GetRailBitMask(cBuilder.GetRailTracks(dest));
             seek_search = directionmap.GetValue(cBuilder.GetDirection(tile_target, tile_seek));
 			// we ask direction target->seek to find what point tile_seek need set, so SW-SE = SW
-        local dest_search = directionmap.GetValue(cBuilder.GetDirection(tile_target, dest));
+            local dest_search = directionmap.GetValue(cBuilder.GetDirection(tile_target, dest));
 			if ( (dest_search & mask_voisin) == dest_search && (seek_search & mask_seek) == seek_search )
 					{
                   	addtrack.push(dest_search + seek_search);
 					}
 			} //foreach WorkTiles
 		} // foreach allTiles
-    local done = [];
-	if (addtrack.len()>0)
+   	if (addtrack.len()>0)
 		foreach (pair in addtrack)
 			{
-            if (pair in done)   continue;
-			local track = trackMap.GetValue(pair);
-            done.push(pair);
-			if (!cBuilder.DropRailHere(track, tile_target))
+   			local track = trackMap.GetValue(pair);
+   			if (!cBuilder.DropRailHere(track, tile_target))
 					{
 					cError.IsCriticalError();
 					if (cError.IsError())	{ return false; }

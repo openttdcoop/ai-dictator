@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -14,52 +14,52 @@
 **/
 
 class cTrain extends cClass
-// that class handle train, not the train engine, but the vehicle made with train engine + wagon engines
-{
-static	vehicledatabase = {};
-static	function GetTrainObject(vehicleID)
-		{
-		return vehicleID in cTrain.vehicledatabase ? cTrain.vehicledatabase[vehicleID] : null;
-		}
+	// that class handle train, not the train engine, but the vehicle made with train engine + wagon engines
+	{
+		static	vehicledatabase = {};
+		function GetTrainObject(vehicleID)
+			{
+			return vehicleID in cTrain.vehicledatabase ? cTrain.vehicledatabase[vehicleID] : null;
+			}
 
-	vehicleID		= null;	// id of the train (it's vehicleID)
-	numberLocos		= null;	// number of locos
-	numberWagons	= null;	// number of wagons, and wagon!=loco
-	length		= null;	// length of the train
-	srcStationID	= null;	// the source stationID that train is using
-	dstStationID	= null;	// the destination stationID that train is using
-	src_useEntry	= null;	// source station is use by its entry=true, exit=false;
-	dst_useEntry	= null;	// destination station is use by its entry=true, exit=false;
-	stationbit		= null;	// bit0 source station, bit1=destination station :: set to 1 train load or 0 train unload at station
-	full			= null; 	// set to true if train cannot have more wagons attach to it
-	wagonPrice		= null;	// price to buy a new wagon for that train
-	lastdepotvisit	= null;	// record last time that train was in a depot
-	extraengine		= null;	// true if we have two engines
+		vehicleID		= null;	// id of the train (it's vehicleID)
+		numberLocos		= null;	// number of locos
+		numberWagons	= null;	// number of wagons, and wagon!=loco
+		length		    = null;	// length of the train
+		srcStationID	= null;	// the source stationID that train is using
+		dstStationID	= null;	// the destination stationID that train is using
+		src_useEntry	= null;	// source station is use by its entry=true, exit=false;
+		dst_useEntry	= null;	// destination station is use by its entry=true, exit=false;
+		stationbit		= null;	// bit0 source station, bit1=destination station :: set to 1 train load or 0 train unload at station
+		full			= null; 	// set to true if train cannot have more wagons attach to it
+		wagonPrice		= null;	// price to buy a new wagon for that train
+		lastdepotvisit	= null;	// record last time that train was in a depot
+		extraengine		= null;	// true if we have two engines
 
-	constructor()
-		{
-		vehicleID		= null;
-		numberLocos		= 0;
-		numberWagons	= 0;
-		length		= 0;
-		srcStationID	= null;
-		dstStationID	= null;
-		src_useEntry	= null;
-		dst_useEntry	= null;
-		stationbit		= 0;
-		full			= false;
-		wagonPrice		= 0;
-		lastdepotvisit	= 0;
-		extraengine		= false;
-		this.ClassName="cTrain";
-		}
-}
+		constructor()
+			{
+			vehicleID		= null;
+			numberLocos		= 0;
+			numberWagons	= 0;
+			length		    = 0;
+			srcStationID	= null;
+			dstStationID	= null;
+			src_useEntry	= null;
+			dst_useEntry	= null;
+			stationbit		= 0;
+			full			= false;
+			wagonPrice		= 0;
+			lastdepotvisit	= 0;
+			extraengine		= false;
+			this.ClassName  = "cTrain";
+			}
+	}
 
 function cTrain::Save()
 // Save the train in the database
 	{
 	if (AIVehicle.GetVehicleType(this.vehicleID)!=AIVehicle.VT_RAIL)	{ DError("Only supporting train",2); return; }
-	if (this.vehicleID in cTrain.vehicledatabase)	return;
+	if (this.vehicleID in cTrain.vehicledatabase)	{ return; }
 	cTrain.vehicledatabase[this.vehicleID] <- this;
 	DInfo("Adding "+cCarrier.GetVehicleName(this.vehicleID)+" to cTrain database",2);
 	}
@@ -70,11 +70,11 @@ function cTrain::Load(tID)
 	local inbase=(tID in cTrain.vehicledatabase);
 	tobj.vehicleID=tID;
 	if (AIVehicle.IsValidVehicle(tID))
-		{
-		if (inbase)	tobj=cTrain.GetTrainObject(tID);
-			else	tobj.Save();
-		}
-	else	cTrain.DeleteVehicle(tID);
+			{
+			if (inbase)	{ tobj=cTrain.GetTrainObject(tID); }
+                else	{ tobj.Save(); }
+			}
+	else	{ cTrain.DeleteVehicle(tID); }
 	return tobj;
 	}
 
@@ -93,16 +93,17 @@ function cTrain::TrainSetStation(vehID, stationID, isSource, useEntry, taker)
 	{
 	local train=cTrain.Load(vehID);
 	if (isSource)
-		{
-		train.src_useEntry=useEntry;
-		train.srcStationID=stationID;
-		if (taker)	train.stationbit=cMisc.SetBit(train.stationbit, 0);
-		}
-	else	{
-		train.dst_useEntry=useEntry;
-		train.dstStationID=stationID;
-		if (taker)	train.stationbit=cMisc.SetBit(train.stationbit, 1);
-		}
+			{
+			train.src_useEntry=useEntry;
+			train.srcStationID=stationID;
+			if (taker)	{ train.stationbit=cMisc.SetBit(train.stationbit, 0); }
+			}
+	else
+			{
+			train.dst_useEntry=useEntry;
+			train.dstStationID=stationID;
+			if (taker)	{ train.stationbit=cMisc.SetBit(train.stationbit, 1); }
+			}
 	DInfo("Train "+cCarrier.GetVehicleName(vehID)+" assign to station "+cStation.GetStationName(stationID),2);
 	}
 
@@ -110,17 +111,17 @@ function cTrain::DeleteVehicle(vehID)
 // delete a vehicle from the database
 	{
 	if (vehID in cTrain.vehicledatabase)
-		{
-		local atrain=null;
-		if (AIVehicle.IsValidVehicle(vehID))	atrain=cTrain.Load(vehID); // if invalid cTrain.Load would call DeleteVehicle and infinite loop
-								else	{ atrain=cTrain(); atrain.vehicleID=vehID; }
-		DInfo("Removing train "+cCarrier.GetVehicleName(vehID)+" from database",2);
-		local taker = cMisc.CheckBit(atrain.stationbit, 0);
-		if (atrain.srcStationID != null)	cStationRail.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID);
-		taker = cMisc.CheckBit(atrain.stationbit, 1);
-		if (atrain.dstStationID != null)	cStationRail.StationRemoveTrain(taker, atrain.dst_useEntry, atrain.dstStationID);
-		delete cTrain.vehicledatabase[vehID];
-		}
+			{
+			local atrain=null;
+			if (AIVehicle.IsValidVehicle(vehID))	{ atrain=cTrain.Load(vehID); } // if invalid cTrain.Load call DeleteVehicle ->infinite loop
+                                            else	{ atrain=cTrain(); atrain.vehicleID=vehID; }
+			DInfo("Removing train "+cCarrier.GetVehicleName(vehID)+" from database",2);
+			local taker = cMisc.CheckBit(atrain.stationbit, 0);
+			if (atrain.srcStationID != null)	{ cStationRail.StationRemoveTrain(taker, atrain.src_useEntry, atrain.srcStationID); }
+			taker = cMisc.CheckBit(atrain.stationbit, 1);
+			if (atrain.dstStationID != null)	{ cStationRail.StationRemoveTrain(taker, atrain.dst_useEntry, atrain.dstStationID); }
+			delete cTrain.vehicledatabase[vehID];
+			}
 	}
 
 function cTrain::IsFull(vehID)
@@ -155,8 +156,8 @@ function cTrain::IsEmpty(vehID)
 // return true if that vehicle have 0 wagons or 0 locos
 	{
 	local train=cTrain.Load(vehID);
-	if (train.numberLocos==0)	return true;
-	if (train.numberWagons==0)	return true;
+	if (train.numberLocos==0)	{ return true; }
+	if (train.numberWagons==0)	{ return true; }
 	return false;
 	}
 

@@ -127,7 +127,6 @@ function RailFollower::FindRailOwner()
 			road.TargetStation.StationAddTrain(false, road.Target_RailEntry);
 			}
 		DInfo("Finding rails for route "+road.Name);
-		print("Primary_RailLink = "+road.Primary_RailLink);
 		if (!road.Primary_RailLink)	{ DInfo("FindRailOwner mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
 		local stationID = road.SourceStation.s_ID;
 		local src_target, dst_target, src_link, dst_link = null;

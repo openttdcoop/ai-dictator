@@ -211,7 +211,6 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 	pftask.source=src;
 	pftask.target=tgt;
 	pftask.InfoSign("Pathfinder: task #"+cPathfinder.database.len());
-	print("BREAK : s0= "+src[0]+" s1= "+src[1]+" t0= "+tgt[0]+" t1= "+tgt[1]);
 	pftask.useEntry=entrance;
 	pftask.stationID=station;
 	if (entrance == null)
