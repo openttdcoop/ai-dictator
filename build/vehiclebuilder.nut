@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -31,7 +31,7 @@ function cCarrier::VehicleGetProfit(veh)
 local profit=AIVehicle.GetProfitThisYear(veh);
 local oldprofit=0;
 if (INSTANCE.main.carrier.do_profit.HasItem(veh))	oldprofit=INSTANCE.main.carrier.do_profit.GetValue(veh);
-							else	INSTANCE.main.carrier.do_profit.AddItem(veh,0);
+                                            else	INSTANCE.main.carrier.do_profit.AddItem(veh,0);
 if (profit > oldprofit)	oldprofit=profit - oldprofit;
 			else	oldprofit=oldprofit+profit;
 INSTANCE.main.carrier.do_profit.SetValue(veh, oldprofit);
@@ -89,7 +89,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 		case AIVehicle.VT_RAIL:
 			if (thatstation.CanUpgradeStation())
 				{
-				if (!INSTANCE.use_train)	max_allow=0;
+				if (!INSTANCE.use_train)	max_allow = 0;
 				if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
 				// don't try upgrade if we cannot add a new train
 				if (!INSTANCE.main.builder.TrainStationNeedUpgrade(roadidx, start))	max_allow=0; // if we fail to upgrade...
@@ -141,7 +141,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 			if (virtualized)	limitmax=4; // only 4 aircrafts when the airport is also in network
 			local dualnetwork=false;
 			local routemod="(classic)";
-			if (virtualized && othervirtual)	
+			if (virtualized && othervirtual)
 				{
 				limitmax=2;	// no aircrafts at all on that route if both airport are in the network
 				dualnetwork=true;

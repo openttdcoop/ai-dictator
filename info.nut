@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 
 /**
  *    This file is part of DictatorAI
@@ -15,7 +15,7 @@
 
 require("class/version.nut");
 
- class DictatorAI extends AIInfo 
+ class DictatorAI extends AIInfo
  {
    function GetAuthor()        { return "Krinn"; }
    function GetName()          { return "DictatorAI"; }
@@ -27,7 +27,7 @@ require("class/version.nut");
    function GetShortName()     { return "DCTR"; }
    function GetAPIVersion()    { return "1.3"; }
    function GetURL()		 { return "http://www.tt-forums.net/viewtopic.php?f=65&t=52982"; }
-   
+
    function GetSettings() {
 
 	AddSetting({name = "PresidentName",
@@ -149,14 +149,14 @@ require("class/version.nut");
 	 name = "debug",
 	 description = "Enable debug messages",
 	 min_value = 0,
-	 max_value = 3,
+	 max_value = 4,
 	 easy_value = 0,
 	 medium_value = 0,
 	 hard_value = 0,
 	 custom_value = 0,
 	 flags = CONFIG_INGAME | CONFIG_DEVELOPER
 	});
-    AddLabels("debug", {_0 = "Disable debug", _1 = "Basic", _2 = "Medium", _3 = "Noisy"});
+    //AddLabels("debug", {_0 = "Disable debug", _1 = "Basic", _2 = "Medium", _3 = "Noisy"});
 
 	AddSetting({
 		name = "debug_sign",
@@ -171,5 +171,5 @@ require("class/version.nut");
 
    }
  }
- 
+
  RegisterAI(DictatorAI());

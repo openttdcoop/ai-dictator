@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -66,7 +66,7 @@ while (AIEventController.IsEventWaiting())
 		break;
 		case AIEvent.ET_ENGINE_PREVIEW:
 			event = AIEventEnginePreview.Convert(event);
-			if (event.AcceptPreview()) 
+			if (event.AcceptPreview())
 				{
 				DInfo("New engine available for preview: " + event.GetName(),0);
 				}
@@ -83,10 +83,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
 			DInfo("Vehicle "+INSTANCE.main.carrier.GetVehicleName(vehicle)+" has crashed!!!",0);
-			if (!AIVehicle.IsValidVehicle(vehicle)) break;
-			local engineID=AIVehicle.GetEngineType(vehicle);
 			INSTANCE.main.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
-			if (engineID != null)	cEngine.RabbitUnset(engineID);
 		break;
 		case AIEvent.ET_VEHICLE_WAITING_IN_DEPOT:
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
@@ -160,7 +157,7 @@ while (AIEventController.IsEventWaiting())
 			cJobs.SubsidyOn(action.GetSubsidyID());
 		break;
 		}
-	
+
 	} // while
 } // function
 

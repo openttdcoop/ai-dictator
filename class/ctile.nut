@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *
@@ -149,7 +149,7 @@ function cTileTools::GetTilesAroundPlace(place,maxsize)
 	if (ox - maxsize < 1)	ox = 1;
 				else	ox = ox - maxsize;
 	if (tx + maxsize >= mapSizeX-2)	tx = mapSizeX-2;
-						else	tx = tx + maxsize; 
+						else	tx = tx + maxsize;
 	if (oy - maxsize < 1)	oy = 1;
 				else	oy = oy - maxsize;
 	if (ty + maxsize >= mapSizeY-2)	ty = mapSizeY-2;
@@ -165,7 +165,7 @@ function cTileTools::IsBuildable(tile)
 {
 	if (AIMarine.IsDockTile(tile))	return false;
 	if (AIMarine.IsWaterDepotTile(tile))	return false;
-	if (AIMarine.IsBuoyTile(tile))	return false; 
+	if (AIMarine.IsBuoyTile(tile))	return false;
 	if (AIMarine.IsCanalTile(tile))	return false;
 	if (AIMarine.IsLockTile(tile))	return false;
 	if (!AITile.IsWaterTile(tile))	{ return AITile.IsBuildable(tile); }
@@ -179,7 +179,7 @@ function cTileTools::IsAreaFlat(startTile, width, height)
 {
 	local mapSizeX = AIMap.GetMapSizeX();
 	local goalHeight = AITile.GetMinHeight(startTile);
-	
+
 	// Check if the terrain isn't already flat.
 	for (local i = 0; i < width; i++)
 		for (local j = 0; j < height; j++)
@@ -229,7 +229,7 @@ function cTileTools::IsBuildableRectangle(tile, width, height, ignoreList=AIList
 		}
 	tilelist.KeepValue(1);
 	after=tilelist.Count();
-	if (after==before)	
+	if (after==before)
 		{
 		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"1");
 		//cDebug.PutSign(returntile,"X");
@@ -249,7 +249,7 @@ function cTileTools::IsBuildableRectangle(tile, width, height, ignoreList=AIList
 		}
 	tilelist.KeepValue(1);
 	after=tilelist.Count();
-	if (after==before)	
+	if (after==before)
 		{
 		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"2");
 		//cDebug.PutSign(returntile,"X");
@@ -269,7 +269,7 @@ function cTileTools::IsBuildableRectangle(tile, width, height, ignoreList=AIList
 		}
 	tilelist.KeepValue(1);
 	after=tilelist.Count();
-	if (after==before)	
+	if (after==before)
 		{
 		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"3");
 		//cDebug.PutSign(returntile,"X");
@@ -289,7 +289,7 @@ function cTileTools::IsBuildableRectangle(tile, width, height, ignoreList=AIList
 		}
 	tilelist.KeepValue(1);
 	after=tilelist.Count();
-	if (after==before)	
+	if (after==before)
 		{
 		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"4");
 		//cDebug.PutSign(returntile,"X");
@@ -423,13 +423,13 @@ function cTileTools::ShapeTile(tile, wantedHeight, evaluateOnly)
 			}
 		//DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2,"ShapeTile");
 		cDebug.PutSign(tile,"!");
-		INSTANCE.Sleep(1);
+		AIController.Sleep(1);
 		if ((srcH < wantedHeight || srcL < wantedHeight) && !generror)
 			{
 			if (AITile.GetSlope(tile) == AITile.SLOPE_ELEVATED)
-						AITile.RaiseTile(tile, AITile.SLOPE_FLAT);			
+						AITile.RaiseTile(tile, AITile.SLOPE_FLAT);
 					else	AITile.RaiseTile(tile, compSlope);
-			error=AIError.GetLastError();	
+			error=AIError.GetLastError();
 			//DInfo("Raising tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
 			if (error != AIError.ERR_NONE)	generror=true;
 			}
@@ -438,7 +438,7 @@ function cTileTools::ShapeTile(tile, wantedHeight, evaluateOnly)
 			if (AITile.GetSlope(tile) == AITile.SLOPE_FLAT)
 						{ AITile.LowerTile(tile, AITile.SLOPE_ELEVATED);}
 					else	{ AITile.LowerTile(tile, slope); }
-			error=AIError.GetLastError();	
+			error=AIError.GetLastError();
 			//DInfo("Lowering tile "+AIError.GetLastErrorString()+" minHeight: "+AITile.GetMinHeight(tile)+" maxheight: "+AITile.GetMaxHeight(tile)+" new slope:"+AITile.GetSlope(tile),2,"ShapeTile");
 			if (error != AIError.ERR_NONE)	generror=true;
 			}
@@ -503,7 +503,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 				}
 			cBanker.RaiseFundsBigTime();
 			if (direction < 0)	money=cTileTools.TerraformDoAction(tlist, solution, true, false);
-						else	money=cTileTools.TerraformDoAction(tlist, solution, false, false);	
+						else	money=cTileTools.TerraformDoAction(tlist, solution, false, false);
 			if (money != -1)
 				{
 				DInfo("Success, we spent "+money+" credits for the operation",4);
@@ -539,7 +539,7 @@ function cTileTools::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 		if (error)	break;
 		}
 	testrun=null;
-	moneyNeed=costs.GetCosts();	
+	moneyNeed=costs.GetCosts();
 	DInfo("predict failure : "+error+" Money need="+moneyNeed,4);
 	if (error)	moneyNeed=-1;
 	if (evaluate)	return moneyNeed;
@@ -572,7 +572,7 @@ function cTileTools::TerraformHeightSolver(tlist)
 //		value < 0 should success if lowering tiles, it's also the negative value of money need to do it
 // so best solve is lowest value (by abs value) && value != 0
 {
-	if (tlist.IsEmpty())	
+	if (tlist.IsEmpty())
 		{
 		DInfo("doesn't find any tiles to work on!",4);
 		return AIList();

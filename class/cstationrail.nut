@@ -380,8 +380,12 @@ cDebug.PutSign(lookup+start,"*");
 		{
 		if (thatstation.IsPlatformWorking(platidx))   { goodCounter++; continue; }
 		if (runTarget == -1)	break;
-		if (!cMisc.CheckBit(value,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,0);
-		if (!cMisc.CheckBit(value,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,1);
+		if (!cMisc.CheckBit(value,0) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))
+                {
+                value = cMisc.SetBit(value, 0); // for now, assume both entry/exit are working
+                value = cMisc.SetBit(value, 1);
+                }
+		//if (!cMisc.CheckBit(value,1) && cBuilder.RoadRunner(platidx, runTarget, AIVehicle.VT_RAIL))	value=cMisc.SetBit(value,1);
 		thatstation.s_Platforms.SetValue(platidx, value);
 		if (cMisc.CheckBit(value,0) || cMisc.CheckBit(value, 1))	{ goodCounter++; thatstation.SetPlatformWorking(platidx, true); }
 		}

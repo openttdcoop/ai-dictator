@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -42,7 +42,7 @@ function cLoader::OldSaveWarn()
 	AILog.Info("I have add a compatibility loader to help restoring old savegames but it doesn't support all versions");
 	AILog.Info("If you re-save your game, it will be saved with the new save format.");
 	AILog.Error("WARNING");
-	INSTANCE.Sleep(20);
+	AIController.Sleep(20);
 }
 
 function cLoader::Load169()
@@ -178,7 +178,6 @@ function cLoader::Load169()
 		obj.full=false;
 		i+=5;
 		cTrain.vehicledatabase[obj.vehicleID] <- obj;
-		//cTrain.Update(obj.vehicleID);
 		iter++;
 		}
 	DInfo("Found "+iter+" trains.",0);
@@ -328,8 +327,13 @@ function cLoader::LoadingGame()
 	INSTANCE.main.bank.busyRoute=false;
 	INSTANCE.main.bank.mincash=10000;
 	cCargo.SetCargoFavorite();
-	trlist = AIVehicleList_DefaultGroup(AIVehicle.VT_ROAD);
-	foreach (veh, _ in trlist)	AIVehicle.SendVehicleToDepot(veh); // reset ungroup vehicle so we will catch them fast
+	local dead = AIList();
+    dead = AIVehicleList_DefaultGroup(AIVehicle.VT_ROAD);
+    trlist.AddList(AIVehicleList_DefaultGroup(AIVehicle.VT_AIR));
+    dead.AddList(trlist);
+	trlist.AddList(AIVehicleList_DefaultGroup(AIVehicle.VT_RAIL));
+	dead.AddList(trlist);
+	foreach (veh, _ in dead)	AIVehicle.SendVehicleToDepot(veh); // reset ungroup vehicle so we will catch them fast
 	local alltowns=AITownList();
 	INSTANCE.main.builder.CheckRouteStationStatus();
 }

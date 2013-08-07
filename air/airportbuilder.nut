@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -86,12 +86,12 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		result=AIAirport.RemoveAirport(station.s_Location);
 		test=null;
 		counter++;
-		if (!result) 
+		if (!result)
 			{
 			AIController.Sleep(40);
 			INSTANCE.main.carrier.FreeDepotOfVehicle(station.s_Depot); // try remove aircraft from airport
 			}
-		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);	
+		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);
 	result=INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
 	if (result == -1)	cBuilder.OpenAirport(station.s_ID);
 			else	cBuilder.OpenAirport(result);
@@ -110,7 +110,7 @@ function cBuilder::CloseAirport(stationID)
 function cBuilder::OpenAirport(stationID)
 {
 	if (AIStation.IsAirportClosed(stationID))	return AIStation.OpenCloseAirport(stationID);
-	
+
 }
 
 function cBuilder::GetAirportType()
@@ -146,7 +146,7 @@ function cBuilder::AirportMaker(tile, airporttype)
 	essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
 	if (essai)	DInfo("-> Built an airport at "+tile,1);
 		else	DError("Cannot build an airport at "+tile,1);
-	return essai;	
+	return essai;
 }
 
 function cBuilder::BuildAirStation(start, routeID=null)
@@ -254,7 +254,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		tilelist.KeepValue(townID);
 		tilelist.Valuate(cTileTools.IsTilesBlackList);
 		tilelist.KeepValue(0);
-		if (tilelist.IsEmpty())	
+		if (tilelist.IsEmpty())
 				{
 				DInfo("There's no buildable space at "+townname+" where i could put an airport of "+air_x+"x"+air_y,0);
 				cError.RaiseError();
@@ -321,7 +321,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 									if (oldAirport_Remove)	break;
 									}
 								else	break;
-								INSTANCE.Sleep(10);
+								AIController.Sleep(10);
 								}
 							if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; }
 							if (!needTime)

@@ -17,19 +17,22 @@ class cEngine extends cEngineLib
 {
 static	BestEngineList=AIList();	// list of best engine for a couple engine/cargos, item=EUID, value=best engineID
 
+    rabbit = null;
 	constructor()
 		{
 		::cEngineLib.constructor();
+		this.rabbit = -1; // the rabbit is a vehicle with engine that is going to depot for upgrade, blocking others upgrade
 		}
 }
 
 function cEngine::IsRabbitSet(vehicleID)
-// return true if we have a test vehicle already
+// return true if we have a test vehicle already set
 	{
-	local engineID=AIVehicle.GetEngineType(vehicleID);
-	local eng=cEngine.Load(engineID);
-	if (eng.is_known >= 0 && !AIVehicle.IsValidVehicle(eng.is_known))	eng.is_known=-1;
-	return (eng.is_known >= 0);
+	local engineID = AIVehicle.GetEngineType(vehicleID);
+	local eng = cEngine.Load(engineID);
+    if (eng == null)    return;
+	if (!AIVehicle.IsValidVehicle(eng.is_known))	{ eng.is_known = -2; }
+	return (eng.is_known > -1);
 	}
 
 function cEngine::RabbitSet(vehicleID)
@@ -38,19 +41,11 @@ function cEngine::RabbitSet(vehicleID)
 	if (vehicleID == null)	return ;
 	local engineID=AIVehicle.GetEngineType(vehicleID);
 	if (engineID == null)	return ;
-	local eng=cEngine.Load(engineID);
-	if (eng.is_known == -1)	{ eng.is_known=vehicleID; INSTANCE.DInfo("Using that vehicle as test vehicle for engine checks",2); }
-	}
-
-function cEngine::RabbitUnset(vehicleID)
-// Unset the status of the rabbit vehicle, only useful if the rabbit vehicle never reach a depot (crash)
-	{
-	if (vehicleID == null || !AIVehicle.IsValidVehicle(vehicleID)) return ;
-	local engineID=AIVehicle.GetEngineType(vehicleID);
-	if (!AIEngine.IsValidEngine(engineID))	return ;
-	local eng=cEngine.Load(engineID);
-	if (eng == null)	return;
-	if (eng.is_known >= 0)	eng.is_known = -1;
+	local eng = cEngine.Load(engineID);
+	if (eng.is_known == -2)	{
+                            eng.is_known = vehicleID;
+                            INSTANCE.DInfo("Using "+AIVehicle.GetName(vehicleID)+" as test vehicle for "+cEngine.GetName(engineID),1);
+                            }
 	}
 
 function cEngine::CanPullCargo(engineID, cargoID)

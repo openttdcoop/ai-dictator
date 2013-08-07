@@ -29,47 +29,22 @@ function cClass::GetName()
 	return this.ClassName;
 	}
 
-function cClass::DInfo(putMsg,debugValue=0)
+function cClass::DInfo(putMsg, debugValue=0)
 // just output AILog message depending on debug level
 	{
-	local debugState = INSTANCE.GetSetting("debug");
-	local func=this.GetName();
-	if (debugState > 0)	{ func+="-> "; }
-	else	{ func=""; }
-	if (debugValue <= debugState )
-			{
-			debugValue+=10;
-			INSTANCE.DInfo(func+putMsg, debugValue);
-			}
+	INSTANCE.DInfo(putMsg, debugValue, this.GetName());
 	}
 
 function cClass::DError(putMsg,debugValue=1)
 // just output AILog message depending on debug level
 	{
-	local debugState = DictatorAI.GetSetting("debug");
-	debugValue=1; // force error message to always appears when debug is on
-	local func=this.GetName();
-	if (debugState > 0)	{ func+="-> "; }
-	else	{ func=""; }
-	if (debugValue <= debugState )
-			{
-			debugValue+=10;
-			INSTANCE.DError(func+putMsg+" Error:"+AIError.GetLastErrorString(), debugValue);
-			}
+	INSTANCE.DError(putMsg, debugValue, this.GetName());
 	}
 
 function cClass::DWarn(putMsg, debugValue=1)
 // just output AILog message depending on debug level
 	{
-	local debugState = DictatorAI.GetSetting("debug");
-	local func=this.GetName();
-	if (debugState > 0)	{ func+="-> "; }
-	else	{ func=""; }
-	if (debugValue <= debugState )
-			{
-			debugValue+=10;
-			INSTANCE.DWarn(func+putMsg, debugValue);
-			}
+	INSTANCE.DWarn(putMsg, debugValue, this.GetName());
 	}
 
 class cMain extends cClass

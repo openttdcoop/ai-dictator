@@ -78,16 +78,6 @@ function cTrain::Load(tID)
 	return tobj;
 	}
 
-function cTrain::Update(vehID)
-// Update a train infos for length, locos, wagons
-	{
-	local train=cTrain.Load(vehID);
-	DInfo("Updating vehicle properties for "+cCarrier.GetVehicleName(vehID),2);
-	train.numberWagons=cEngineLib.GetNumberOfWagons(vehID);
-	train.numberLocos=cEngineLib.GetNumberOfLocomotive(vehID);
-	train.length=AIVehicle.GetLength(vehID);
-	}
-
 function cTrain::TrainSetStation(vehID, stationID, isSource, useEntry, taker)
 // set the station properties of a train
 	{
@@ -131,11 +121,11 @@ function cTrain::IsFull(vehID)
 	return train.full;
 	}
 
-function cTrain::SetFull(vehID, fullv)
+function cTrain::SetFull(vehID, fullstate)
 // set the isFull value of a train
 	{
 	local train=cTrain.Load(vehID);
-	train.full=fullv;
+	train.full=fullstate;
 	}
 
 function cTrain::SetWagonPrice(vehID, wprice)
@@ -176,16 +166,3 @@ function cTrain::SetDepotVisit(vehID)
 	train.lastdepotvisit=AIDate.GetCurrentDate();
 	}
 
-function cTrain::SetExtraEngine(vehID)
-// set the extra engine flag of a train
-	{
-	local train=cTrain.Load(vehID);
-	train.extraengine=true;
-	}
-
-function cTrain::IsFreight(vehID)
-// return the extraengine state
-	{
-	local train=cTrain.Load(vehID);
-	return train.extraengine;
-	}

@@ -188,30 +188,6 @@ function cJobs::IsInfosUpdate(jobID)
 	return ( (now-jdate) < 240) ? true : false;
 	}
 
-function cJobs::RefreshAllValue()
-// refesh datas of all jobs objects
-	{
-	DInfo("Collecting jobs infos, will take time...",0);
-	local curr=0;
-	local needRefresh=AIList();
-	needRefresh.AddList(cJobs.jobIndexer);
-	needRefresh.RemoveList(cRoute.RouteIndexer); // remove jobs already in use
-	needRefresh.Valuate(cJobs.IsInfosUpdate);
-	needRefresh.KeepValue(0); // only keep ones that need refresh
-	DInfo("Need refresh: "+needRefresh.Count()+"/"+cJobs.jobIndexer.Count(),1);
-	foreach (item, jdate in needRefresh)
-		{
-		cJobs.RefreshValue(item);
-		curr++;
-		if (curr % 15 == 0)
-				{
-				DInfo(curr+" / "+cJobs.needRefresh.Count(),0);
-				INSTANCE.Sleep(1);
-				}
-		}
-	return true;
-	}
-
 function cJobs::QuickRefresh()
 // refresh datas on first 5 doable top jobs
 	{
@@ -226,7 +202,7 @@ function cJobs::QuickRefresh()
 	foreach (smallID, dvalue in smallList)	{ INSTANCE.main.jobs.RefreshValue(smallID, true); }
 	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
-	smallList.Sort(AIList.SORT_BY_VALUE,false);
+	smallList.Sort(AIList.SORT_BY_VALUE, false);
 	smallList.KeepTop(5); // Keep 5 top rank job doable
 	if (INSTANCE.safeStart > 0 && smallList.IsEmpty())	{ INSTANCE.safeStart=0; } // disable it if we cannot find any jobs
 	return smallList;
@@ -379,13 +355,13 @@ function cJobs::IsTransportTypeEnable(transport_type)
 	switch (transport_type)
 			{
 			case	RouteType.ROAD:
-				return	(INSTANCE.use_road);
+				return	(INSTANCE.use_road && INSTANCE.job_road);
 			case	RouteType.AIR:
-				return	(INSTANCE.use_air);
+				return	(INSTANCE.use_air && INSTANCE.job_air);
 			case	RouteType.RAIL:
-				return	(INSTANCE.use_train);
+				return	(INSTANCE.use_train && INSTANCE.job_train);
 			case	RouteType.WATER:
-				return	(INSTANCE.use_boat);
+				return	(INSTANCE.use_boat && INSTANCE.job_boat);
 			}
 	}
 
@@ -420,24 +396,10 @@ function cJobs::UpdateDoableJobs()
 		local doable=1;
 		local myjob=cJobs.Load(id);
 		if (!myjob)	{ continue; }
-		doable=myjob.isdoable;
+		doable = myjob.isdoable;
 		// not doable if not doable
 		local vehtest=null;
-		switch (myjob.roadType)
-				{
-				case	RouteType.AIR:
-					if (!INSTANCE.use_air)	{ doable=false; }
-					break;
-				case	RouteType.ROAD:
-					if (!INSTANCE.use_road)	{ doable=false; }
-					break;
-				case	RouteType.WATER:
-					if (!INSTANCE.use_boat) { doable=false; }
-					break;
-				case	RouteType.RAIL:
-					if (!INSTANCE.use_train)    { doable=false; }
-					break;
-				}
+        if (doable) { doable = cJobs.IsTransportTypeEnable(myjob.roadType); }
 		// not doable if disabled
 		if (myjob.isUse)	{ doable=false; parentListID.AddItem(myjob.parentID,1); }
 		// not doable if already done, also record the parentID to block similar jobs
@@ -455,7 +417,7 @@ function cJobs::UpdateDoableJobs()
 		if (doable)
 			if (parentListID.HasItem(myjob.parentID))
 					{
-					//DInfo("Job already done by parent job ! First pass filter",2);
+					DInfo("Job already done by parent job ! First pass filter",4);
 					doable=false;
 					}
 		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	{ doable=false; }
@@ -502,6 +464,19 @@ function cJobs::UpdateDoableJobs()
 							break;
 						}
 				}
+        local airValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && cJobs.IsTransportTypeEnable(RouteType.AIR));
+		if (airValid && myjob.roadType == RouteType.ROAD && myjob.cargoID == cCargo.GetPassengerCargo())	{ doable = false; }
+		// disable because we have funds to build an aircraft job
+        local trainValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && cJobs.IsTransportTypeEnable(RouteType.RAIL));
+        if (trainValid && myjob.roadType == RouteType.ROAD) { doable = false; }
+        // disable if we can make a train instead of a road
+
+		local wagcapacity = cEngineLib.GetCapacity(cJobs.WagonType.GetValue(myjob.cargoID), myjob.cargoID);
+		if (myjob.roadType == RouteType.RAIL && myjob.cargoAmount < (4 * wagcapacity) && cJobs.IsTransportTypeEnable(RouteType.ROAD))	{ doable = false; }
+		// don't do train job if the cargo amount is poor and we can use road to do it
+		if (myjob.roadType == RouteType.RAIL && myjob.cargoAmount >=(4 * wagcapacity) && cJobs.IsTransportTypeEnable(RouteType.RAIL))   { doable = false; }
+		// don't do road job if we can do a train job instead
+
 		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	{ doable=false; }
 		// disable as we lack money
 		if (doable)	{ myjob.jobDoable.AddItem(id, myjob.ranking); }
@@ -514,18 +489,9 @@ function cJobs::UpdateDoableJobs()
 		// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
 		local myjob =  cJobs.Load(jobID);
 		if (!myjob)	{ continue; }
-		local airValid=(cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && INSTANCE.use_air);
-		local trainValid=(cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && INSTANCE.use_train);
-		if (myjob.roadType == RouteType.ROAD && myjob.cargoID == cCargo.GetPassengerCargo() && airValid)	{ cJobs.jobDoable.RemoveItem(jobID); }
-		// disable because we have funds to build an aircraft job
-		local wagcapacity = cEngineLib.GetCapacity(cJobs.WagonType.GetValue(myjob.cargoID), myjob.cargoID);
-		if (myjob.roadType == RouteType.RAIL && myjob.cargoAmount < (4 * wagcapacity) && INSTANCE.use_road)	{ cJobs.jobDoable.RemoveItem(jobID); }
-		// don't do rail jobs if the cargo amount is too poor and we can use road to do it
-		if (myjob.roadType == RouteType.ROAD && trainValid && myjob.cargoAmount >= (4 * wagcapacity))	{ cJobs.jobDoable.RemoveItem(jobID); }
-		// don't do road jobs if we can do a train job instead and the cargo is enough
 		if (parentListID.HasItem(myjob.parentID))
 				{
-				//DInfo("Job already done by parent job ! Second pass filter",2);
+				DInfo("Job already done by parent job ! Second pass filter",4);
 				cJobs.jobDoable.RemoveItem(jobID);
 				}
 		}

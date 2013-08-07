@@ -420,6 +420,7 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
                                             else	{ cStationRail.RailStationCloseExit(roadObj.TargetStation.s_ID); }
 					cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 					cError.RaiseError();
+                    roadObj.MoreTrain = 3;
 					return false;
 					}
 			else	{ cError.ClearError(); return false; } // lack money, still pathfinding... just wait to retry later nothing to do
@@ -427,6 +428,7 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
 	else
 			{
 			roadObj.Secondary_RailLink=true;
+            roadObj.MoreTrain = 2;
 			roadObj.Route_GroupNameSave();
 			cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 			cBuilder.RailConnectorSolver(dstpos, dstpos+cTileTools.GetForwardRelativeFromDirection(cBuilder.GetDirection(dstlink, dstpos)), true);
@@ -613,10 +615,11 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local allDropper = trainExitDropper + trainEntryDropper;
 	local needTaker = allTaker;
 	local needDropper = allDropper;
-	if (allDropper > 2)	{ needDropper = (allDropper >> 1) + (allDropper % 2); }
+	if (allTaker > 2)   { needTaker = (allTaker >> 1) + (allTaker % 2); }
+	if (allDropper > 2)	{ needDropper = (allDropper >> 2) + (allDropper % 4); }
 	local newStationSize = needTaker + needDropper;
 	if (allDropper+allTaker == 1)	{ newStationSize = 0; } // don't grow the station until we have a real train using it
-	DInfo("STATION : "+thatstation.s_Name,1);
+	DWarn("STATION : "+thatstation.s_Name,1);
 	DInfo("allTaker="+allTaker+" allDropper="+allDropper+" needTaker="+needTaker+" needDropper="+needDropper+" newsize="+newStationSize,1);
 	// find route that use the station
 	local road=null;
@@ -628,8 +631,8 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 			{
 			local uidowner=thatstation.s_Train[TrainType.OWNER];
 			road=cRoute.Load(uidowner);
-			if (!road)	{ DWarn("The route owner ID "+uidowner+" is invalid",1); }
-			else	{ DWarn("Station main owner "+uidowner,1); }
+			if (!road)	{ DInfo("The route owner ID "+uidowner+" is invalid",1); }
+			else	{ DInfo("Station main owner "+uidowner,1); }
 			}
 	if (useEntry)	{ DInfo("Working on station entry", 1); }
             else	{ DInfo("Working on station exit", 1); }
@@ -707,6 +710,6 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	if (useEntry)	{ r_depot = AIRail.IsRailDepotTile(thatstation.s_EntrySide[TrainSide.DEPOT]); }
             else	{ r_depot = AIRail.IsRailDepotTile(thatstation.s_ExitSide[TrainSide.DEPOT]); }
 	if (!r_depot)	{ cBuilder.RailStationPhaseBuildDepot(thatstation, useEntry); }
-	if (newStationSize > thatstation.s_Train[TrainType.GOODPLATFORM])	{ DInfo("station refuse more trains",2); return false; }
+	if (newStationSize > thatstation.s_Train[TrainType.GOODPLATFORM] || ((trainEntryTotal > 1 || trainExitTotal > 1) && !road.Secondary_RailLink))	{ DInfo("station refuse more trains",2); return false; }
 	return canAddTrain;
 	}

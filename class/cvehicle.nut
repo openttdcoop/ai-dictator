@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -81,9 +81,7 @@ function cCarrier::GetVehicleCount(vehtype)
 // return number of vehicle we own
 // return 0 on error
 {
-	if (vehtype < running_vehicle.len())	return running_vehicle[vehtype];
-	DWarn("Invalid vehicle type : "+vehtype);
-	return 0;
+	return INSTANCE.main.carrier.running_vehicle[vehtype];
 }
 
 function cCarrier::VehicleCountUpdate()

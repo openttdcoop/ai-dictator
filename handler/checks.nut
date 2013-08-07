@@ -306,7 +306,7 @@ if (airportList.Count() < 2 && vehlist.Count()>45)
 		DInfo("Trying to get an aircraft job done",1);
 		INSTANCE.main.carrier.CrazySolder(goalairport);
 		do	{
-			INSTANCE.Sleep(74);
+			AIController.Sleep(74);
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
 			waitingtimer++;
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
@@ -331,7 +331,7 @@ if (vehlist.Count()>45 && goaltrain > 0 && trainList.Count() < 2)
 		DInfo("Trying to raise money to buy a new train job",1);
 		INSTANCE.main.carrier.CrazySolder(goaltrain);
 		do	{
-			INSTANCE.Sleep(74);
+			AIController.Sleep(74);
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 			DInfo("Still "+(money_goal - money)+" to raise",1);
@@ -357,7 +357,7 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 		DInfo("Trying to buy a new aircraft",1);
 		INSTANCE.main.carrier.CrazySolder(goal);
 		do	{
-			INSTANCE.Sleep(74);
+			AIController.Sleep(74);
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 			DInfo("Still "+(money_goal - money)+" to raise",1);
@@ -379,7 +379,7 @@ if (vehlist.Count()>45 && goaltrain > 0)
 		DInfo("Trying to raise money to buy a new train job",1);
 		INSTANCE.main.carrier.CrazySolder(goaltrain);
 		do	{
-			INSTANCE.Sleep(74);
+			AIController.Sleep(74);
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
 			money=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 			DInfo("Still "+(money_goal - money)+" to raise",1);
@@ -412,9 +412,9 @@ function cBuilder::BridgeUpgrader()
 	local twice=false;
 	local neededSpeed=0;
 	local btype=0;
-	local justOne=false;
-	if (!AIController.GetSetting("upgrade_townbridge"))	justOne=true;
+	local everyone = AIController.GetSetting("upgrade_townbridge");
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
+	local updateCount = 0;
 	DInfo("We knows "+numRail+" rail bridges and "+numRoad+" road bridges",0);
 	do	{
 		workBridge.Clear();
@@ -425,7 +425,7 @@ function cBuilder::BridgeUpgrader()
 			local thatbridge=cBridge.Load(bridgeUID);
 			if (thatbridge.owner != -1 && thatbridge.owner != weare)	continue;
 			// only upgrade our or town bridge
-			if (thatbridge.owner == -1 && justOne)	continue;
+			if (thatbridge.owner == -1 && !everyone)	continue;
 			// don't upgrade all bridges in one time, we're kind but we're not l'abbé Pierre!
 			local speederBridge=cBridge.GetCheapBridgeID(btype, thatbridge.length, false);
 			local oldbridge=AIBridge.GetName(thatbridge.bridgeID);
@@ -437,9 +437,11 @@ function cBuilder::BridgeUpgrader()
 				if (AIBridge.BuildBridge(btype, speederBridge, thatbridge.firstside, thatbridge.otherside))
 					{
 					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0);
-					if (thatbridge.owner==-1)	justOne=true;
+					if (thatbridge.owner != weare)	everyone = false;
+					updateCount++;
 					}
 				}
+            if (updateCount == 4)  { break; }
 			}
 		twice=!twice;
 		} while (twice);

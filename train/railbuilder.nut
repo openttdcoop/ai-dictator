@@ -662,7 +662,7 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 	local sweeper=AIList();
 	local error=false;
 	cDebug.PutSign(goal,"g");
-	cTileTools.TerraformLevelTiles(goal,frontTile);
+	cTileTools.TerraformLevelTiles(frontTile+backwardTileOf, goal);
 	local i=frontTile;
 	local signaldone=false;
 	while (i != goal)
@@ -685,8 +685,15 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 			}
 	if (!error)
 			{
-			cTileTools.DemolishTile(goal);
-			cBuilder.RailConnectorSolver(goal+backwardTileOf, goal, true);
+			local sta_left = frontTile+backwardTileOf+leftTileOf;
+            local sta_right = frontTile+backwardTileOf+rightTileOf;
+            local got_left = (AIStation.GetStationID(sta_left) == stationID);
+            local got_right = (AIStation.GetStationID(sta_right) == stationID);
+            cTileTools.DemolishTile(goal);
+            if (got_left)			cBuilder.DropRailHere(railLeft, goal);
+            if (got_right)			cBuilder.DropRailHere(railRight, goal);
+            if (got_left && got_right)	cBuilder.DropRailHere(railCross, goal);
+            cBuilder.RailConnectorSolver(goal+backwardTileOf, goal, true);
 			}
 	if (error)	{ cBuilder.RailCleaner(sweeper); }
 	return true;
@@ -1105,10 +1112,13 @@ function cBuilder::SignalBuilder(source, target)
 function cBuilder::ConvertRailType(tile, newrt)
 // return true if rail endup the good rt
 	{
-	if (!AIRail.ConvertRailType(tile, tile, newrt))
+    if (!AIMap.IsValidTile) { return 1; }
+    if (AIRail.GetRailType(tile) == newrt)	{ return 1; }
+    if (!AIRail.ConvertRailType(tile, tile, newrt))
 			{
-			if (AIRail.GetRailType(tile) == newrt)	{ return true; }
-			return false;
+			cDebug.PutSign(tile,"x"); print("tile failure : "+tile+" "+AIError.GetLastErrorString());
+            if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)  { return 0; }
+			return -1;
 			}
-	return true;
+	return 1;
 	}

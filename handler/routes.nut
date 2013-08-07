@@ -372,11 +372,11 @@ function cRoute::DiscoverWorldTiles()
 	DInfo("Looking for our properties, game may get frozen for some times on huge maps, be patient",0);
 	local allmap=AITileList();
 	local maxTile=AIMap.GetTileIndex(AIMap.GetMapSizeX()-2, AIMap.GetMapSizeY()-2);
-	INSTANCE.Sleep(1);
+	AIController.Sleep(1);
 	allmap.AddRectangle(AIMap.GetTileIndex(1,1), maxTile);
-	INSTANCE.Sleep(1);
+	AIController.Sleep(1);
 	allmap.Valuate(AITile.GetOwner);
-	INSTANCE.Sleep(1);
+	AIController.Sleep(1);
 	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
 	allmap.KeepValue(weare);
 	cRoute.RouteDamage.AddList(allmap);

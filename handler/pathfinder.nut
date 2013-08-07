@@ -124,7 +124,7 @@ function cPathfinder::AdvanceTask(UID)
 // Advance the pathfinding search
 	{
 	local maxTimer=300;	// maximum time put on pathfinding a path
-	local maxStep=10;		// maximum time put on a try
+	local maxStep=5;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);
 	switch (pftask.status)

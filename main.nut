@@ -61,7 +61,7 @@ const	DIR_SW = 3;
 
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
-import("Library.cEngineLib", "cEngineLib", 3);
+import("Library.cEngineLib", "cEngineLib", 5);
 
 require("require.nut");
 
@@ -72,6 +72,10 @@ class DictatorAI extends AIController
 		use_train = null;
 		use_boat = null;
 		use_air = null;
+		job_train = null;
+		job_air = null;
+		job_road = null;
+		job_boat = null;
 		terraform = null;
 		fairlevel = null;
 		debug = null;
@@ -100,6 +104,10 @@ class DictatorAI extends AIController
 			TwelveMonth=0;
 			loadedgame = false;
 			safeStart=0;
+			job_air = true;
+			job_train = true;
+			job_road = true;
+			job_boat = false;
 			main = cMain();
 			}
 
@@ -270,17 +278,13 @@ function DictatorAI::CheckCurrentSettings()
 	if (AIController.GetSetting("use_air") && !AIGameSettings.IsDisabledVehicleType(AIVehicle.VT_AIR))	{ use_air = true; }
 	if (AIController.GetSetting("use_terraform"))	{ terraform = true; }
 	main.carrier.VehicleCountUpdate();
-	if (main.carrier.GetVehicleCount(AIVehicle.VT_ROAD) + 5 > AIGameSettings.GetValue("vehicle.max_roadveh")) { use_road = false; }
-	if (main.carrier.GetVehicleCount(AIVehicle.VT_RAIL) + 1 > AIGameSettings.GetValue("vehicle.max_trains")) { use_train = false; }
-	if (main.carrier.GetVehicleCount(AIVehicle.VT_AIR) + 1 > AIGameSettings.GetValue("vehicle.max_aircraft")) { use_air = false; }
-	if (main.carrier.GetVehicleCount(AIVehicle.VT_WATER) + 1 > AIGameSettings.GetValue("vehicle.ships")) { use_boat = false; }
-	if (AIGameSettings.GetValue("ai.ai_disable_veh_train") == 1)	{ use_train = false; }
-	if (AIGameSettings.GetValue("ai.ai_disable_veh_roadveh") == 1)	{ use_road = false; }
-	if (AIGameSettings.GetValue("ai.ai_disable_veh_aircraft") == 1)	{ use_air = false; }
-	if (AIGameSettings.GetValue("ai.ai_disable_veh_ship") == 1)	{ use_boat = false; }
+	if (cCarrier.GetVehicleCount(AIVehicle.VT_ROAD) + 5 > AIGameSettings.GetValue("vehicle.max_roadveh")) { use_road = false; job_road = false; }
+	if (cCarrier.GetVehicleCount(AIVehicle.VT_RAIL) + 2 > AIGameSettings.GetValue("vehicle.max_trains")) { use_train = false; job_train = false; }
+	if (main.carrier.GetVehicleCount(AIVehicle.VT_AIR) + 1 > AIGameSettings.GetValue("vehicle.max_aircraft")) { use_air = false; job_air = false; }
+	if (main.carrier.GetVehicleCount(AIVehicle.VT_WATER) + 1 > AIGameSettings.GetValue("vehicle.ships")) { use_boat = false; job_boat = false; }
 	main.carrier.train_length = AIGameSettings.GetValue("max_train_length");
-	if (main.carrier.train_length > 5)	{ main.carrier.train_length=5; }
-	if (main.carrier.train_length < 3)	{ use_train = false; }
+	if (main.carrier.train_length > 5)	{ main.carrier.train_length = 5; }
+	if (main.carrier.train_length < 3)	{ use_train = false; job_train = false; }
 	switch (fairlevel)
 			{
 			case 0: // easiest
@@ -319,65 +323,45 @@ function DictatorAI::CheckCurrentSettings()
 			if (spdcheck < main.carrier.rail_max)	{ main.carrier.rail_max=spdcheck; }
 			}
 	use_boat=false; // we will handle boats later
-	if (INSTANCE.safeStart >0)
+	if (INSTANCE.safeStart > 0)
 			{
 			// Keep only road
-			use_boat=false;
-			use_train=false;
-			use_air=false;
+			use_boat = false;
+			use_train = false;
+			use_air = false;
 			}
-	//use_train=false;
 	}
 
-function DictatorAI::DInfo(putMsg,debugValue=0)
+function DictatorAI::DInfo(putMsg, debugValue=0, func = "Unknown")
 // just output AILog message depending on debug level
 	{
-	if (debugValue >= 10)
-			{
-			AILog.Info(putMsg);
-			return;
-			}
-	local debugState = INSTANCE.GetSetting("debug");
-	local func="Unknown";
-	if (debugState > 0)	{ func+="-> "; }
-	else	{ func=""; }
+	local debugState = DictatorAI.GetSetting("debug");
+	if (debugState > 0)	{ func += "-> "; }
+                else	{ func=""; }
 	if (debugValue <= debugState )
 			{
 			AILog.Info(func+putMsg);
 			}
 	}
 
-function DictatorAI::DError(putMsg,debugValue=1)
+function DictatorAI::DError(putMsg, debugValue=1, func = "Unknown")
 // just output AILog message depending on debug level
 	{
-	if (debugValue >= 10)
-			{
-			AILog.Error(putMsg);
-			return;
-			}
 	local debugState = DictatorAI.GetSetting("debug");
-	debugValue=1; // force error message to always appears when debug is on
-	local func="Unknown";
-	if (debugState > 0)	{ func+="-> "; }
-	else	{ func=""; }
+	debugValue = 1; // force error message to always appears when debug is on
+	func+="-> ";
 	if (debugValue <= debugState )
 			{
 			AILog.Error(func+putMsg+" Error:"+AIError.GetLastErrorString());
 			}
 	}
 
-function DictatorAI::DWarn(putMsg, debugValue=1)
+function DictatorAI::DWarn(putMsg, debugValue=1, func = "Unknown")
 // just output AILog message depending on debug level
 	{
-	if (debugValue >= 10)
-			{
-			AILog.Warning(putMsg);
-			return;
-			}
 	local debugState = DictatorAI.GetSetting("debug");
-	local func="Unknown";
-	if (debugState > 0)	{ func+="-> "; }
-	else	{ func=""; }
+	if (debugState > 0)	{ func += "-> "; }
+                else	{ func=""; }
 	if (debugValue <= debugState )
 			{
 			AILog.Warning(func+putMsg);

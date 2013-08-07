@@ -143,6 +143,7 @@ function RailFollower::FindRailOwner()
 		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry)
 		src_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
 		bad = (src_tiles.IsEmpty());
+		DInfo("Main line rails : "+src_tiles.Count(), 2)
 		local notbad = false; // to find if at least 1 platform is working, else the station is bad/unusable
 		// Find each source station platform tracks
 		foreach (platnum, _ in road.SourceStation.s_Platforms)
@@ -181,6 +182,7 @@ function RailFollower::FindRailOwner()
 		src_link = src_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry);
 		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry)
 		test_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
+		DInfo("Alternate line rails : "+test_tiles.Count(), 2)
 		if (!bad_alt)	bad_alt = (test_tiles.IsEmpty());
 		dst_tiles.AddList(test_tiles);
 		// Remove station tiles out of founded tiles : we don't want any station tile assign as a non station tiles
@@ -206,14 +208,14 @@ function RailFollower::FindRailOwner()
 							if (road.Secondary_RailLink)	{ road.Secondary_RailLink = false; road.Route_GroupNameSave(); }
 							local r1, r2 = null;
 							if (road.Source_RailEntry)	r1 = road.SourceStation.s_EntrySide[TrainSide.OUT];
-											else	r1 = road.SourceStation.s_ExitSide[TrainSide.OUT];
+                                                else	r1 = road.SourceStation.s_ExitSide[TrainSide.OUT];
 							if (road.Target_RailEntry)	r2 = road.TargetStation.s_EntrySide[TrainSide.IN];
-											else	r2 = road.TargetStation.s_ExitSide[TrainSide.IN];
+                                                else	r2 = road.TargetStation.s_ExitSide[TrainSide.IN];
 							road.SourceStation.s_TilesOther.AddItem(r1, 0);
 							road.TargetStation.s_TilesOther.AddItem(r2, 0);
 							cRoute.RouteDamage.RemoveItem(r1);
 							cRoute.RouteDamage.RemoveItem(r2);
-							cBuilder.RailStationPathfindAltTrack(road); // pre-run pathfinding
+							if (road.SourceStation.GetRailStationOUT(road.Source_RailEntry) != -1 && road.TargetStation.GetRailStationIN(road.Target_RailEntry) != -1) cBuilder.RailStationPathfindAltTrack(road); // pre-run pathfinding
 							}
 				if (!road.Secondary_RailLink && !bad_alt)	{ road.Secondary_RailLink = true; road.Route_GroupNameSave(); }
 				}
@@ -233,20 +235,20 @@ function RailFollower::FindRailOwner()
 function RailFollower::TryUpgradeLine(vehicle)
 {
 	local wagonproto = cEngineLib.GetWagonFromVehicle(vehicle);
-	if (wagonproto == -1)	return false;
+	if (wagonproto == -1)	{ print("bad proto"); return -1; }
 	local wagon_type = AIVehicle.GetWagonEngineType(vehicle, wagonproto);
 	local cargo = cEngineLib.GetCargoType(wagon_type);
 	local loco_engine = AIVehicle.GetEngineType(vehicle);
 	local new_railtype = cEngine.RailTypeIsTop(loco_engine, cargo, false);
-	if (new_railtype == -1)	return false;
+	if (new_railtype == -1)	{ print("no new railtype"); return -1; }
 	local upgrade_cost = 0;
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
-	if (uid == null)	return false;
+	if (uid == null)	{ print("cannot find routeid"); return -1; }
 	local road = cRoute.Load(uid);
-	if (!road)	return false;
+	if (!road)	{ print("bad road"); return -1; }
 	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
 	DInfo("Cost to upgrade rails : "+upgrade_cost);
-	if (!cBanker.CanBuyThat(upgrade_cost))	{ return false; }
+	if (!cBanker.CanBuyThat(upgrade_cost))	{ return 0; }
 	local temp = AIList();
 	local all_owners = AIList();
 	local all_vehicle = AIList();
@@ -267,7 +269,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		all_rails.AddList(r.SourceStation.s_TilesOther);
 		all_rails.AddList(r.TargetStation.s_TilesOther);
 		local veh = AIVehicleList_Group(r.GroupID);
-		all_vehicle.AddList(veh);
+		foreach (v, _ in veh)   { all_vehicle.AddItem(v, r.UID); }
 		}
 	if (upgrade_cost == 0)
 		{
@@ -281,14 +283,14 @@ function RailFollower::TryUpgradeLine(vehicle)
 		foreach (uid in savetable)	{ uid.SourceStation.s_MoneyUpgrade = upgrade_cost; uid.TargetStation.s_MoneyUpgrade = upgrade_cost; }
 		}
 
-	if (!cBanker.CanBuyThat(upgrade_cost))	{ print("cannot buy "+upgrade_cost+" func="+cBanker.CanBuyThat(upgrade_cost)+" bank: "+AICompany.GetBankBalance(AICompany.COMPANY_SELF)); AIController.Break("check buy"); return false; }
+	if (!cBanker.CanBuyThat(upgrade_cost))	{ INSTANCE.main.carrier.vehnextprice += upgrade_cost; return 0; }
 
 	INSTANCE.main.bank.busyRoute = true;
 	// Ok, let's call trains...
-	all_vehicle.Valuate(AIVehicle.GetState);
 	temp = true;
-	foreach (veh, state in all_vehicle)
+	foreach (veh, _ in all_vehicle)
 		{
+		local state = AIVehicle.GetState(veh);
 		if (state != AIVehicle.VS_IN_DEPOT)
 			{
 			temp = false;
@@ -302,19 +304,38 @@ function RailFollower::TryUpgradeLine(vehicle)
 			if (sendit)	cCarrier.VehicleSendToDepot(veh, DepotAction.LINEUPGRADE);
 			}
 		}
-	if (!temp)	return false; // if all stopped or no vehicle, temp will remain true
+	if (!temp)	return 0; // if all stopped or no vehicle, temp will remain true
 	cBanker.RaiseFundsBigTime();
-	DInfo("Upgrade rail to "+new_railtype,1);
+	DInfo("Changing "+road.Name+" railtype to #"+new_railtype,1);
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
-	local all_ok = true;
-	all_vehicle.RemoveItem(safekeeper);
-	foreach (veh, _ in all_vehicle)	{ cCarrier.VehicleSell(veh, false); }
+	local wagon_lost = [];
+	foreach (veh, uid in all_vehicle)
+            {
+            local z = cEngineLib.GetNumberOfWagons(veh);
+            wagon_lost.push(z);
+            wagon_lost.push(uid);
+            if (veh != safekeeper)  cCarrier.VehicleSell(veh, false);
+            }
 	all_rails.RemoveItem(safekeeper_depot);
-	foreach (tiles, _ in all_rails)	if (!cBuilder.ConvertRailType(tiles, new_railtype))	all_ok = false;
-	if (!all_ok)	{ DWarn("Error at converting rails !",1); return false; }
+    foreach (tiles, _ in all_rails)
+        {
+        local err = cBuilder.ConvertRailType(tiles, new_railtype);
+        if (err == -1)	{
+                        foreach (o_uid in savetable)
+                            {
+                            DWarn("TryUpgradeLine mark "+o_uid.UID+" undoable",1);
+                            o_uid.RouteIsNotDoable();
+                            }
+                        return -1;
+                        }
+        if (err == 0)   {
+                        DWarn("Cannot convert all rails, redoing later",1);
+                        return 0;
+                        }
+        }
 	cCarrier.VehicleSell(safekeeper, false);
-	cBuilder.ConvertRailType(safekeeper_depot, new_railtype);
+	if (!cBuilder.ConvertRailType(safekeeper_depot, new_railtype))  AITile.DemolishTile(safekeeper_depot);
 	foreach (uid in savetable)
 		{
 		uid.SourceStation.s_MoneyUpgrade = 0;
@@ -325,7 +346,15 @@ function RailFollower::TryUpgradeLine(vehicle)
 		}
 	INSTANCE.main.bank.busyRoute=false;
 	INSTANCE.buildDelay = 2;
-	DInfo("We upgrade route to use "+new_railtype+" railtype",0);
-	return true;
+	DInfo("We upgrade route to use railtype #"+new_railtype,0);
+    do
+        {
+        local uid = wagon_lost.pop();
+        local num = wagon_lost.pop();
+        print("uid = "+uid+" num="+num);
+        cCarrier.ForceAddTrain(uid, num);
+        AIController.Break("Created train");
+        }  while (wagon_lost.len() > 0);
+	return 1;
 }
 
