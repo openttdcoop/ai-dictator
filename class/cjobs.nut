@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -41,9 +41,9 @@ static	function GetJobObject(UID)
 	Name			= null;	// name of jobs
 	sourceObject	= null;	// source process object
 	targetObject	= null;	// target process object
-	cargoID		= null;	// cargo id
+	cargoID		    = null;	// cargo id
 	roadType		= null;	// AIVehicle.RoadType
-	UID			= null;	// a UID for the job
+	UID			    = null;	// a UID for the job
 	parentID		= null;	// a UID that a similar job will share with another (like other tansport or other destination)
 	isUse			= null;	// is build & in use
 	cargoValue		= null;	// value for that cargo
@@ -52,8 +52,8 @@ static	function GetJobObject(UID)
 	moneyToBuild	= null;	// money need to build the job
 	moneyGains		= null;	// money we should grab from doing the job
 	isdoable		= null;	// true if we can actually do that job (if isUse -> false)
-	ranking		= null;	// our ranking system
-	subsidy		= null;	// the subsity id aiming that job
+	ranking		    = null;	// our ranking system
+	subsidy	    	= null;	// the subsity id aiming that job
 
 	constructor()
 		{
@@ -61,19 +61,19 @@ static	function GetJobObject(UID)
 		Name			= "unknown job";
 		sourceObject	= null;
 		targetObject	= null;
-		cargoID		= null;
+		cargoID	    	= null;
 		roadType		= null;
-		UID			= null;
+		UID			    = null;
 		parentID		= 0;
 		isUse			= false;
-		subsidy		= null;
+		subsidy		    = null;
 		cargoValue		= 0;
 		cargoAmount		= 0;
 		distance		= 0;
 		moneyToBuild	= 0;
 		moneyGains		= 0;
 		isdoable		= true;
-		ranking		= 0;
+		ranking		    = 0;
 		}
 }
 

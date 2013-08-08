@@ -390,6 +390,7 @@ function cJobs::UpdateDoableJobs()
 	cJobs.CostTopJobs[RouteType.WATER]=0;
 	cJobs.CostTopJobs[RouteType.ROAD]=0;
 	// reset all top jobs
+    local top50 = 0;
 	foreach (id, value in INSTANCE.main.jobs.jobIndexer)
 		{
 		if (id == 0 || id == 1)	{ continue; } // ignore virtual
@@ -471,15 +472,13 @@ function cJobs::UpdateDoableJobs()
         if (trainValid && myjob.roadType == RouteType.ROAD) { doable = false; }
         // disable if we can make a train instead of a road
 
-		local wagcapacity = cEngineLib.GetCapacity(cJobs.WagonType.GetValue(myjob.cargoID), myjob.cargoID);
-		if (myjob.roadType == RouteType.RAIL && myjob.cargoAmount < (4 * wagcapacity) && cJobs.IsTransportTypeEnable(RouteType.ROAD))	{ doable = false; }
-		// don't do train job if the cargo amount is poor and we can use road to do it
-		if (myjob.roadType == RouteType.RAIL && myjob.cargoAmount >=(4 * wagcapacity) && cJobs.IsTransportTypeEnable(RouteType.RAIL))   { doable = false; }
-		// don't do road job if we can do a train job instead
+		if (doable && myjob.cargoID == cCargo.GetPassengerCargo() && myjob.roadType == RouteType.RAIL && ((myjob.sourceObject.IsTown && cJobs.targetTown.HasItem(myjob.sourceObject.ID)) || myjob.targetObject.IsTown && cJobs.targetTown.HasItem(myjob.targetObject.ID))) { doable = false; }
+		// disable if someone use source or target town
 
 		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	{ doable=false; }
 		// disable as we lack money
-		if (doable)	{ myjob.jobDoable.AddItem(id, myjob.ranking); }
+		if (doable)	{ myjob.jobDoable.AddItem(id, myjob.ranking); top50++; }
+		if (top50 > 50) break; // we don't need millions doable jobs
 		}
 	local temp_doable = AIList();
 	temp_doable.AddList(cJobs.jobDoable);

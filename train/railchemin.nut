@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -65,6 +65,6 @@ function cRoute::DutyOnRailsRoute(uid)
 			else	vehneed = (cargowait / capacity)+1;
 	if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
 	DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.VehicleCount+" firstveh="+firstveh,2);
-	if (vehneed > 0) INSTANCE.main.carrier.AddWagon(uid,vehneed);
+	if (vehneed > 0 && cCarrier.IsTrainRouteBusy(uid)) INSTANCE.main.carrier.AddWagon(uid,vehneed);
 }
 

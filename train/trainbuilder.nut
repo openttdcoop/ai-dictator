@@ -78,7 +78,8 @@ function cCarrier::ForceAddTrain(uid, wagons)
         AIGroup.MoveVehicle(road.GroupID, tID);
         cRoute.AddTrain(uid, tID);
         t_wagon = cEngineLib.RestrictLength_Vehicle(tID, maxlength);
-        if (t_wagon != -1)  { cTrain.SetFull(tID, true); }
+        if (t_wagon > 0)  { cTrain.SetFull(tID, true); }
+        print("BREAK: length t_wagon = "+t_wagon);
         t_wagon = cEngineLib.GetNumberOfWagons(tID);
         if (t_wagon == 0)
             {
@@ -118,6 +119,7 @@ function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
 	if (pullerID == -1)	{ DError("Cannot create the train engine "+AIEngine.GetName(locotype),1); return -1; }
 	local freightlimit = cCargo.IsFreight(road.CargoID);
 	local beforesize = cEngineLib.GetNumberOfWagons(pullerID);
+	print("multiengine = "+AIVehicle.GetName(pullerID)+" "+cEngineLib.IsMultiEngine(pullerID));
     if (freightlimit > -1 && beforesize+wagonNeed > freightlimit && !cEngineLib.IsMultiEngine(pullerID) && !cTrain.IsFull(pullerID))
                 {
                 local xengine = cCarrier.ChooseRailCouple(road.CargoID, road.SourceStation.s_SubType, depot, wagontype);
@@ -265,17 +267,23 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					}
 			if (AIVehicle.IsValidVehicle(tID) && !giveup)
 					{
+					print(AIVehicle.GetName(tID)+" here for "+wagonNeed+" wagons");
 					// now we can add wagons to it
 					local beforesize = cEngineLib.GetNumberOfWagons(tID);
 					depotID=AIVehicle.GetLocation(tID);
 					local freightlimit=cCargo.IsFreight(road.CargoID);
-					local targetsize = beforesize+wagonNeed;
 					if (numTrains > 1 || beforesize+wagonNeed < 5 || road.MoreTrain == 3)
-                            { tID=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); }
+                            { tID=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); print("add wagons"); }
 					else
 							{
+							print("new train");
 							if (road.MoreTrain == 0)    { road.MoreTrain = 1; }
-							local newwagon=4-beforesize;
+                            local couple = [];
+                            couple.push(AIVehicle.GetEngineType(tID));
+                            couple.push(AIVehicle.GetWagonEngineType(tID, cEngineLib.GetWagonFromVehicle(tID)));
+							local newwagon = cEngineLib.RestrictLength_Wagons(couple, stationLen);
+							if (newwagon == -1) newwagon = 0;
+							if (wagonNeed - newwagon <= 0)  newwagon = 0;
 							tID=cCarrier.AddNewTrain(uid, tID, newwagon, depotID, stationLen);
 							processTrains.push(-1);
 							DInfo("Adding "+newwagon+" wagons to this train and create another one with "+(wagonNeed-newwagon),1);
@@ -283,9 +291,11 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					if (AIVehicle.IsValidVehicle(tID))
 							{
 							local newwagon=cEngineLib.GetNumberOfWagons(tID)-beforesize;
-							wagonNeed-=newwagon;
+							wagonNeed -= newwagon;
+							print("newwagon="+newwagon+" wagonNeed="+wagonNeed);
 							if (wagonNeed <= 0)	{ wagonNeed=0; }
 							local res = cEngineLib.RestrictLength_Vehicle(tID, stationLen);
+							print("BREAK: length res="+res+" cur="+AIVehicle.GetLength(tID)+" want="+stationLen);
                             if (res != -1)  { wagonNeed += res; cTrain.SetFull(tID, true); }
 							if (cEngineLib.GetNumberOfWagons(tID) == 0)
 									{

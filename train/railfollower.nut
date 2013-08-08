@@ -353,7 +353,6 @@ function RailFollower::TryUpgradeLine(vehicle)
         local num = wagon_lost.pop();
         print("uid = "+uid+" num="+num);
         cCarrier.ForceAddTrain(uid, num);
-        AIController.Break("Created train");
         }  while (wagon_lost.len() > 0);
 	return 1;
 }

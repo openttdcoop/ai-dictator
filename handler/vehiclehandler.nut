@@ -211,7 +211,11 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 			rr="to be sold.";
 		break;
 		case	DepotAction.LINEUPGRADE:
+            rr="to change railtype";
+        break;
 		case	DepotAction.SIGNALUPGRADE:
+            rr="to upgrade signals";
+        break;
 		case	DepotAction.WAITING:
 			rr="to wait";
 		break;
@@ -356,14 +360,19 @@ function cCarrier::VehicleMaintenance_Orders(vehID)
 		}
 }
 
-function cCarrier::TrainRouteCanBeUpgrade()
+function cCarrier::IsTrainRouteBusy(uid = -1)
 {
+    local grp = null;
 	foreach (veh, reason in cCarrier.ToDepotList)
 		{
+		if (uid != -1)  {
+                        grp = cCarrier.VehicleFindRouteIndex(veh);
+                        if (grp != uid) continue;
+                        }
 		local real = cCarrier.VehicleSendToDepot_GetReason(reason);
-		if (real == DepotAction.LINEUPGRADE)	return false;
+		if (real == DepotAction.LINEUPGRADE || real == DepotAction.SIGNALUPGRADE)	return true;
 		}
-	return true;
+	return false;
 }
 
 function cCarrier::VehicleMaintenance()
@@ -394,7 +403,7 @@ local checkallvehicle=(allroadveh.Count()==tlist.Count());
 		allroadveh.Valuate(AIVehicle.GetVehicleType);
 		allroadveh.KeepValue(AIVehicle.VT_ROAD);
 		}
-local line_upgrade = cCarrier.TrainRouteCanBeUpgrade();
+local line_upgrade = !cCarrier.IsTrainRouteBusy();
 foreach (vehicle, dummy in tlist)
 	{
 	cCarrier.VehicleMaintenance_Orders(vehicle);
@@ -407,7 +416,6 @@ foreach (vehicle, dummy in tlist)
 	if (vehtype == AIVehicle.VT_RAIL && line_upgrade)
 		{ // check train can use better rails
         local ret = RailFollower.TryUpgradeLine(vehicle);
-        AIController.Break("exit maintenance");
         if (ret == 0)   { line_upgrade = false; continue; }
         if (ret == 1)   { continue; }
 		}
@@ -622,7 +630,6 @@ foreach (i, dummy in tlist)
 			runnercount -= good_vehicle.Count();
 			if (runnercount == 0)	{ RailFollower.TryUpgradeLine(i); }
                             else	{ DInfo("Waiting "+runnercount+" more trains to upgrade line.",1); }
-            AIController.Break("End of depot");
 		break;
 		case	DepotAction.WAITING:
 			DInfo("Vehicle "+name+" is waiting at depot for "+parameter+" times",1);
