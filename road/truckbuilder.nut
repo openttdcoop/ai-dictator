@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -21,14 +21,13 @@ function cCarrier::GetRoadVehicle(routeidx, cargoID = -1)
 	object.engine_type = AIVehicle.VT_ROAD;
 	object.engine_roadtype = AIRoad.ROADTYPE_ROAD;
 	if (cargoID == -1)
-		{	
+		{
 		local road=cRoute.Load(routeidx);
 		if (!road)	return -1;
 		object.cargo_id = road.CargoID;
 		object.depot = cRoute.GetDepot(routeidx);
 		}
 	local veh = cEngineLib.GetBestEngine(object, cCarrier.VehicleFilterRoad);
-	print("Selected road engine = "+veh[0]+" * "+AIEngine.GetName(veh[0]));
 	return veh[0];
 }
 
@@ -41,36 +40,39 @@ function cCarrier::CreateRoadVehicle(roadidx)
 	if (!road)	return false;
 	local engineID = cCarrier.GetRoadVehicle(roadidx);
 	if (engineID == -1)	{ DWarn("Cannot find any road vehicle to transport that cargo "+cCargo.GetCargoLabel(road.CargoID),1); return false; }
-	local homedepot = cRoute.GetDepot(roadidx);
+	local homedepot = road.SourceStation.s_Depot;//cRoute.GetDepot(roadidx);
 	local srcplace = road.SourceStation.s_Location;
 	local dstplace = road.TargetStation.s_Location;
-	local altplace=(road.VehicleCount > 0 && road.VehicleCount % 2 != 0 && road.CargoID == cCargo.GetPassengerCargo());
-	if (altplace && road.TargetStation.s_Depot != null)	homedepot = road.TargetStation.s_Depot;
-	if (!cStation.IsDepot(homedepot))	return false;
+	local altplace=(road.Twoway && road.VehicleCount > 0 && road.VehicleCount % 2 != 0);
+	if (altplace)   { homedepot = road.TargetStation.s_Depot; }
+	if (!cStation.IsDepot(homedepot))
+            {
+            homedepot = cStation.GetDepot(roadidx);
+            if (!cStation.IsDepot(homedepot))   { return false; }
+            }
 	local price=cEngine.GetPrice(engineID, road.CargoID);
 	cBanker.RaiseFundsBy(price);
 	local vehID = cEngineLib.CreateVehicle(homedepot, engineID, road.CargoID);
 	if (vehID != -1)
 			{
 			DInfo("Just brought a new road vehicle: "+cCarrier.GetVehicleName(vehID),0);
-			INSTANCE.main.carrier.vehnextprice -= price;
-			if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
-
+			INSTANCE.main.carrier.vehicle_cash -= price;
 			}
 		else	{
 			DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2);
 			return false;
 			}
-	local firstorderflag = AIOrder.OF_NON_STOP_INTERMEDIATE;
-	local secondorderflag = firstorderflag;
-	if (!road.Twoway)	{ firstorderflag+=AIOrder.OF_FULL_LOAD_ANY; secondorderflag=AIOrder.OF_NO_LOAD; }
+	local firstorderflag = AIOrder.OF_NON_STOP_INTERMEDIATE + AIOrder.OF_FULL_LOAD_ANY;
+	local secondorderflag = AIOrder.OF_NON_STOP_INTERMEDIATE;
+	if (road.Twoway)	{ firstorderflag = secondorderflag; }
+                else    { secondorderflag += AIOrder.OF_NO_LOAD; }
 	AIGroup.MoveVehicle(road.GroupID, vehID);
 	if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
-		{ // detect IsArticulated bug
+		{ // detect weirdness, like IsArticulated bug, maybe remove it as openttd fix it, but keeping it for newGRF trouble
 		DInfo("Vehicle "+cCarrier.GetVehicleName(vehID)+" refuse order !",1);
-		local checkstation=AIStation.GetStationID(srcplace);
-		local checkengine=AIVehicle.GetEngineType(vehID);
-		local checktype=AIEngine.GetVehicleType(checkengine);
+		local checkstation = AIStation.GetStationID(srcplace);
+		local checkengine = AIVehicle.GetEngineType(vehID);
+		local checktype = AIEngine.GetVehicleType(checkengine);
 		if (AIStation.IsValidStation(checkstation) && (AIStation.HasStationType(checkstation, AIStation.STATION_BUS_STOP) || AIStation.HasStationType(checkstation, AIStation.STATION_TRUCK_STOP)))
 			{
 			cEngine.BlacklistEngine(checkengine);
@@ -79,7 +81,8 @@ function cCarrier::CreateRoadVehicle(roadidx)
 		return false;
 		}
 	AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
-	if (altplace)	INSTANCE.main.carrier.VehicleOrderSkipCurrent(vehID);
+	if (altplace)	{ INSTANCE.main.carrier.VehicleOrderSkipCurrent(vehID); }
+	road.VehicleCount++;
 	if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle:",2); cCarrier.VehicleSell(vehID, false); return false; }
 	cEngine.CheckMaxSpeed(engineID);
 	return true;

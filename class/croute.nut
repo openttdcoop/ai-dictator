@@ -189,12 +189,14 @@ function cRoute::RouteDone()
 // called when a route is finish
 	{
 	if (!cMisc.ValidInstance(this.SourceProcess) || !cMisc.ValidInstance(this.TargetProcess))	{ return; }
+	if (!cMisc.ValidInstance(this.SourceStation) || !cMisc.ValidInstance(this.TargetStation))	{ return; }
 	this.VehicleCount=0;
 	this.Status=RouteStatus.WORKING;
 	switch (this.VehicleType)
 			{
 			case	RouteType.RAIL:
 				this.StationType=AIStation.STATION_TRAIN;
+				this.RailType = this.SourceStation.s_SubType;
 				break;
 			case	RouteType.ROAD:
 				this.StationType=AIStation.STATION_TRUCK_STOP;
@@ -214,12 +216,15 @@ function cRoute::RouteDone()
 				break;
 			}
 	this.RouteSave();
-	if (!cMisc.ValidInstance(this.SourceStation) || !cMisc.ValidInstance(this.TargetStation))	{ return; }
 	this.RouteSetDistance();
 	if (this.SourceProcess.IsTown)	{ cProcess.statueTown.AddItem(this.SourceProcess.ID,0); }
 	if (this.TargetProcess.IsTown)	{ cProcess.statueTown.AddItem(this.TargetProcess.ID,0); }
 	this.RouteAirportCheck();
-	if (this.UID>1 && this.TargetProcess.IsTown && this.VehicleType != RouteType.WATER && this.VehicleType != RouteType.RAIL && (this.CargoID == cCargo.GetPassengerCargo() || this.CargoID==cCargo.GetMailCargo()) )	{ cJobs.TargetTownSet(this.TargetProcess.ID); }
+	if (this.UID > 1 && (this.CargoID == cCargo.GetPassengerCargo() || this.CargoID == cCargo.GetMailCargo))
+        {
+        if (this.SourceProcess.IsTown)  { cJobs.ReuseTownSet(this.SourceProcess.ID); }
+        if (this.TargetProcess.IsTown)  { cJobs.ReuseTownSet(this.TargetProcess.ID); }
+        }
 	local srcprod=this.SourceStation.IsCargoProduce(this.CargoID);
 	local srcacc=this.SourceStation.IsCargoAccept(this.CargoID);
 	local dstprod=this.TargetStation.IsCargoProduce(this.CargoID);

@@ -70,12 +70,10 @@ function MyRailPF::_Estimate(cur_tile, cur_direction, goal_tiles, self)
 	 *  with the minimum number of tiles we need to traverse. */
 	foreach (tile in goal_tiles)
 		{
-		local dx = abs(AIMap.GetTileX(cur_tile) - AIMap.GetTileX(tile[0]));
+		min_cost = cTileTools.GetDistanceChebyshevToTile(cur_tile, tile[0]);
+/*		local dx = abs(AIMap.GetTileX(cur_tile) - AIMap.GetTileX(tile[0]));
 		local dy = abs(AIMap.GetTileY(cur_tile) - AIMap.GetTileY(tile[0]));
-		local thatmul=0;
-		if (AITile.GetSlope(tile[0]) == AITile.SLOPE_FLAT)	{ thatmul=60; }
-		else	{ thatmul=30; }
-		min_cost= max(dx, dy)*3*thatmul; // the Chebyshev_distance
+		min_cost= max(dx, dy)* 3; // the Chebyshev_distance*/
 		}
 	return min_cost;
 	}

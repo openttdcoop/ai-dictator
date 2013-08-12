@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -26,7 +26,7 @@ function cBuilder::DestroyStation(stationid)
 		return false;
 		}
 	local wasnamed = AIStation.GetName(stationid);
-	if (!temp)	exist=false; // A case where a station exist but not in our station base
+	if (!temp)	exist = false; // A case where a station exist but not in our station base
 	if (exist)
 		{ // check no route still use it
 		wasnamed = temp.s_Name;
@@ -45,16 +45,20 @@ function cBuilder::DestroyStation(stationid)
 	DInfo("Destroying station "+wasnamed,0);
 	if (exist)
 		{
-		foreach (tile, dummy in temp.s_Tiles)	{ cTileTools.UnBlackListTile(tile); }
-		foreach (tile, dummy in temp.s_TilesOther)	{ cTileTools.UnBlackListTile(tile); }
-		if (!temp.s_TilesOther.IsEmpty())
-			{
-			if (temp.s_Type == AIStation.STATION_TRAIN)	cBuilder.RailCleaner(temp.s_TilesOther);
-			}
-		if (!cBuilder.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
-								else	{ DInfo("Removing depot link to station "+wasnamed,0); }
+		if (temp.s_SubType != -2) //don't try destroy virtual station tiles, some player play with magic buldozer cheat
+            {
+            foreach (tile, dummy in temp.s_Tiles)	{ cTileTools.UnBlackListTile(tile); }
+            foreach (tile, dummy in temp.s_TilesOther)	{ cTileTools.UnBlackListTile(tile); }
+            if (!temp.s_TilesOther.IsEmpty())
+                {
+                if (temp.s_Type == AIStation.STATION_TRAIN)	cBuilder.RailCleaner(temp.s_TilesOther);
+                }
+            }
+        if (!cBuilder.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
+                                               else	{ DInfo("Removing depot link to station "+wasnamed,0); }
 		AIController.Sleep(1);
-		if (!cStation.DeleteStation(stationid))	return false;
+		if (!cStation.DeleteStation(stationid))	{ return false; }
+		if (temp.s_SubType == -2)   { return true; }
 		}
 	local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
 	tilelist.Valuate(AITile.GetOwner);

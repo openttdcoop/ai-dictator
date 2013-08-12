@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -15,20 +15,18 @@
 
 class cBanker extends cClass
 	{
-	canBuild= null;		// true if we can build new route
-	unleash_road = null;	// true to build big road, false for small size
-	mincash=null;
-	busyRoute=null;		// true if we are still busy handling a main.route. we need false to build new route
-	basePrice=null;		// it's just a base price cost to remove a rock tile
-	
+	canBuild        = null;		// true if we can build new route
+	unleash_road    = null;	// true to build big road, false for small size
+	mincash         = null;
+	basePrice       = null;		// it's just a base price cost to remove a rock tile
+
 	constructor()
 		{
-		unleash_road=false;
-		canBuild=true;
-		mincash=10000;
-		busyRoute=false;
-		basePrice=0;
-		this.ClassName="cBanker";
+		unleash_road    = false;
+		canBuild        = true;
+		mincash         = 10000;
+		basePrice       = 0;
+		this.ClassName  = "cBanker";
 		}
 	}
 
@@ -40,7 +38,7 @@ function cBanker::GetLoanValue(money)
 	local loanStep=AICompany.GetLoanInterval();
 	while (money > 0) { i++; money-=loanStep; }
 	i--;
-	return (i*loanStep);	
+	return (i*loanStep);
 }
 
 function cBanker::RaiseFundsTo(money)
@@ -61,8 +59,9 @@ function cBanker::RaiseFundsTo(money)
 function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
-	local max=(AICompany.GetMaxLoanAmount()*95/100)-AICompany.GetLoanAmount();
-	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 2000000)	INSTANCE.main.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
+	//local max=(AICompany.GetMaxLoanAmount()*95/100)-AICompany.GetLoanAmount();
+	return cBanker.RaiseFundsBy(9 * AICompany.GetLoanInterval());
+	//if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 2000000)	INSTANCE.main.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
 	// Don't use the loan if we have plenty cash
 }
 
@@ -122,7 +121,6 @@ function cBanker::PayLoan()
 function cBanker::CashFlow()
 {
 	this.PayLoan();
-	this.RaiseFundsTo(this.mincash*cBanker.GetInflationRate());
 }
 
 function cBanker::GetInflationRate()

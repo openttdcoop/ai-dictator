@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -18,7 +18,8 @@ class cStationWater extends cStation
 	constructor()
 		{
 		::cStation.constructor();
-		this.ClassName="cStationWater";
+		this.ClassName  = "cStationWater";
+		this.s_Type = AIStation.STATION_DOCK;
 		}
 }
 

@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -164,16 +164,16 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 	switch (road.VehicleType)
 		{
 		case AIVehicle.VT_ROAD:
-			oneorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
-			twoorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
+			oneorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
+			twoorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
 			if (!road.Twoway) { oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
 			srcplace= road.SourceStation.s_Location;
 			dstplace= road.TargetStation.s_Location;
 		break;
 		case AIVehicle.VT_RAIL:
-			oneorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
-			twoorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
-			if (!road.Twoway)	{ oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
+			oneorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
+			twoorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
+			if (!road.Twoway) { oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
 			srcplace= road.SourceStation.s_Location;
 			dstplace= road.TargetStation.s_Location;
 			noshare = true;
@@ -188,8 +188,9 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 			dstplace= road.TargetStation.s_Location;
 		break;
 		case AIVehicle.VT_WATER:
-			oneorder=AIOrder.OF_FULL_LOAD_ANY;
-			twoorder=AIOrder.OF_FULL_LOAD_ANY;
+			oneorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
+			twoorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
+			if (!road.Twoway) { oneorder+=AIOrder.OF_FULL_LOAD_ANY; twoorder+=AIOrder.OF_NO_LOAD; }
 			srcplace= road.SourceStation.s_Location;
 			dstplace= road.TargetStation.s_Location;
 		break;
@@ -201,7 +202,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 		case RouteType.CHOPPER:
 			oneorder=AIOrder.OF_NONE;
 			twoorder=AIOrder.OF_NONE;
-			srcplace= AIIndustry.GetHeliportLocation(road.SourceProcess.ID);
+			srcplace= road.SourceStation.s_Location;
 			dstplace= road.TargetStation.s_Location;
 		break;
 		}
@@ -443,7 +444,7 @@ function cCarrier::TrainSetOrders(trainID)
 	if (uid==null)	{ DError("Cannot find route uid for that train",1); return false; }
 	local road=cRoute.GetRouteObject(uid);
 	if (!road)	return false;
-	//if (road.status == 
+	//if (road.status ==
 	cCarrier.VehicleOrdersReset(trainID);
 	DInfo("Append orders to "+cCarrier.GetVehicleName(trainID),2);
 	local firstorder=AIOrder.OF_NON_STOP_INTERMEDIATE;

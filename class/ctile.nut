@@ -105,8 +105,6 @@ function cTileTools::FindStationTiles(tile)
 	local stationid=AIStation.GetStationID(tile);
 	if (!AIStation.IsValidStation(stationid))	return AIList();
 	local tilelist=cTileTools.GetTilesAroundPlace(tile,12);
-//	tilelist.Valuate(AITile.GetDistanceManhattanToTile,tile);
-//	tilelist.KeepBelowValue(12);
 	tilelist.Valuate(AIStation.GetStationID);
 	tilelist.KeepValue(stationid);
 	return tilelist;
@@ -865,3 +863,11 @@ function cTileTools::GetBackwardRelativeFromDirection(direction)
 	return cTileTools.GetPosRelativeFromDirection(3,direction);
 	}
 
+function cTileTools::GetDistanceChebyshevToTile(tilefrom, tileto)
+    {
+    local x1 = AIMap.GetTileX(tilefrom);
+    local x2 = AIMap.GetTileX(tileto);
+    local y1 = AIMap.GetTileY(tilefrom);
+    local y2 = AIMap.GetTileY(tileto);
+    return max(abs(x2 - x1), abs(y2 - y1));
+    }

@@ -239,13 +239,15 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local wagon_type = AIVehicle.GetWagonEngineType(vehicle, wagonproto);
 	local cargo = cEngineLib.GetCargoType(wagon_type);
 	local loco_engine = AIVehicle.GetEngineType(vehicle);
-	local new_railtype = cEngine.RailTypeIsTop(loco_engine, cargo, false);
-	if (new_railtype == -1)	{ print("no new railtype"); return -1; }
 	local upgrade_cost = 0;
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
 	if (uid == null)	{ print("cannot find routeid"); return -1; }
 	local road = cRoute.Load(uid);
 	if (!road)	{ print("bad road"); return -1; }
+	local new_railtype = cEngine.RailTypeIsTop(loco_engine, cargo, false);
+	if (new_railtype == -1 || new_railtype == road.RailType)
+            { print("no new railtype"); return -1; }
+    else    { print("BREAKRAIL "+AIRail.GetName(road.RailType)+" will be replace with "+AIRail.GetName(new_railtype)); }
 	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
 	DInfo("Cost to upgrade rails : "+upgrade_cost);
 	if (!cBanker.CanBuyThat(upgrade_cost))	{ return 0; }
@@ -283,9 +285,8 @@ function RailFollower::TryUpgradeLine(vehicle)
 		foreach (uid in savetable)	{ uid.SourceStation.s_MoneyUpgrade = upgrade_cost; uid.TargetStation.s_MoneyUpgrade = upgrade_cost; }
 		}
 
-	if (!cBanker.CanBuyThat(upgrade_cost))	{ INSTANCE.main.carrier.vehnextprice += upgrade_cost; return 0; }
+	if (!cBanker.CanBuyThat(upgrade_cost))	{ return 0; }
 
-	INSTANCE.main.bank.busyRoute = true;
 	// Ok, let's call trains...
 	temp = true;
 	foreach (veh, _ in all_vehicle)
@@ -306,7 +307,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		}
 	if (!temp)	return 0; // if all stopped or no vehicle, temp will remain true
 	cBanker.RaiseFundsBigTime();
-	DInfo("Changing "+road.Name+" railtype to #"+new_railtype,1);
+	DInfo("Changing "+road.Name+" railtype #"+road.RailType+" to #"+new_railtype,1);
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];
@@ -315,7 +316,10 @@ function RailFollower::TryUpgradeLine(vehicle)
             local z = cEngineLib.GetNumberOfWagons(veh);
             wagon_lost.push(z);
             wagon_lost.push(uid);
-            if (veh != safekeeper)  cCarrier.VehicleSell(veh, false);
+            if (veh != safekeeper)  {
+                                    cCarrier.VehicleSell(veh, false);
+                                    if (cCarrier.ToDepotList.HasItem(veh))  cCarrier.ToDepotList.RemoveItem(veh);
+                                    }
             }
 	all_rails.RemoveItem(safekeeper_depot);
     foreach (tiles, _ in all_rails)
@@ -334,7 +338,8 @@ function RailFollower::TryUpgradeLine(vehicle)
                         return 0;
                         }
         }
-	cCarrier.VehicleSell(safekeeper, false);
+    cCarrier.VehicleSell(safekeeper, false);
+	if (cCarrier.ToDepotList.HasItem(safekeeper))   cCarrier.ToDepotList.RemoveItem(safekeeper);
 	if (!cBuilder.ConvertRailType(safekeeper_depot, new_railtype))  AITile.DemolishTile(safekeeper_depot);
 	foreach (uid in savetable)
 		{
@@ -344,8 +349,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		uid.TargetStation.s_SubType = new_railtype;
 		uid.RailType = new_railtype;
 		}
-	INSTANCE.main.bank.busyRoute=false;
-	INSTANCE.buildDelay = 2;
+	INSTANCE.buildDelay = 1;
 	DInfo("We upgrade route to use railtype #"+new_railtype,0);
     do
         {

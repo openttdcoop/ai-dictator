@@ -24,6 +24,7 @@ function cBuilder::WeeklyChecks()
 	INSTANCE.OneWeek=AIDate.GetCurrentDate();
 	DInfo("Weekly checks run...",1);
 	INSTANCE.main.builder.RoadStationsBalancing();
+	cCarrier.Process_VehicleWish();
 }
 
 function cBuilder::MonthlyChecks()
@@ -56,7 +57,6 @@ function cBuilder::HalfYearChecks()
 		DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 		}
 	if (INSTANCE.TwelveMonth == 2)	INSTANCE.main.builder.YearlyChecks();
-	if (cCarrier.ToDepotList.IsEmpty())	INSTANCE.main.carrier.vehnextprice=0; // avoid strange result from vehicle crash...
 }
 
 function cBuilder::RouteIsDamage(idx)
@@ -96,14 +96,15 @@ function cBuilder::RouteNeedRepair()
 					cBuilder.DestroyDepot(cRoute.GetDepot(routes, 1));
 					cBuilder.DestroyDepot(cRoute.GetDepot(routes, 2));
 					}
-		if (trys >= 12)	{ deletethatone=routes }
+		if (trys >= 6)	{ deletethatone=routes }
 		if (runLimit <= 0)	break;
 		}
 	INSTANCE.main.route.RouteDamage.RemoveValue(-1);
 	if (deletethatone != -1)
 		{
 		local trys=cRoute.GetRouteObject(deletethatone);
-		if (trys instanceof cRoute)	{
+		if (trys != null && trys instanceof cRoute)
+                            {
 							DInfo("RouteNeedRepair mark "+trys.UID+" undoable",1);
 							trys.RouteIsNotDoable();
 							}
@@ -116,8 +117,7 @@ function cBuilder::YearlyChecks()
 	DInfo("Yearly checks run...",1);
 	INSTANCE.main.builder.CheckRouteStationStatus();
 	INSTANCE.main.jobs.CheckTownStatue();
-	INSTANCE.main.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
-	INSTANCE.main.carrier.vehnextprice=0; // Reset vehicle upgrade 1 time / year in case of something strange happen
+//	INSTANCE.main.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 	INSTANCE.main.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
 }
 
@@ -315,7 +315,9 @@ if (airportList.Count() < 2 && vehlist.Count()>45)
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goalairport));
 		if (waitingtimer < 200)	DInfo("Operation should success...",1);
 		INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
-		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.buildDelay=0; // remove any build blockers
+		INSTANCE.buildDelay=0; // remove any build blockers
+		INSTANCE.main.carrier.vehicle_cash = 0;
+		INSTANCE.main.carrier.vehicle_wishlist.Clear();
 		}
 	return;
 	}
@@ -339,7 +341,9 @@ if (vehlist.Count()>45 && goaltrain > 0 && trainList.Count() < 2)
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goaltrain));
 		INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
-		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.buildDelay=0; // remove any build blockers
+		INSTANCE.buildDelay=0; // remove any build blockers
+		INSTANCE.main.carrier.vehicle_cash = 0;
+		INSTANCE.main.carrier.vehicle_wishlist.Clear();
 		}
 	return;
 	}
@@ -365,6 +369,7 @@ if (aircraftnumber.Count() < 6 && airportList.Count() > 1 && vehlist.Count()>45)
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goal));
 		INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
+		INSTANCE.main.carrier.vehicle_cash = INSTANCE.main.carrier.highcostAircraft;
 		}
 	return;
 	}
@@ -387,7 +392,8 @@ if (vehlist.Count()>45 && goaltrain > 0)
 			}
 		while (waitingtimer < 200 && !cBanker.CanBuyThat(goaltrain));
 		INSTANCE.main.carrier.VehicleIsWaitingInDepot(true);
-		INSTANCE.main.bank.canBuild=true; INSTANCE.main.bank.busyRoute=false; INSTANCE.buildDelay=0; // remove any build blockers
+		INSTANCE.buildDelay=0; // remove any build blockers
+		INSTANCE.main.carrier.vehicle_cash = INSTANCE.main.carrier.highcostTrain;
 		}
 	}
 }

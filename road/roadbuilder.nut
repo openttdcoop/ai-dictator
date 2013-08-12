@@ -957,8 +957,10 @@ function cBuilder::RoadRunnerHelper(source, target, road_type, walkedtiles=null,
 // check if the path is valid by using road_type (railtype, road)
 // return solve in an AIList() if we reach target by running the path
 {
+local Distance = cTileTools.GetDistanceChebyshevToTile;
+if (road_type == AIVehicle.VT_ROAD) { Distance = AITile.GetDistanceManhattanToTile; }
 local max_wrong_direction=15;
-if (origin == null)	origin=AITile.GetDistanceManhattanToTile(source, target);
+if (origin == null)	origin = Distance(source, target); //AITile.GetDistanceManhattanToTile(source, target);
 if (walkedtiles == null)	{ walkedtiles=AIList(); }
 local valid=false;
 local direction=null;
@@ -966,9 +968,18 @@ local found=false;
 local solve= AIList();
 if (source == target)	{ found = true; }
 local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
-foreach (voisin in directions)
+local dirswap = AIList();
+dirswap.AddItem(source+AIMap.GetTileIndex(0, 1), 0);
+dirswap.AddItem(source+AIMap.GetTileIndex(1, 0), 0);
+dirswap.AddItem(source+AIMap.GetTileIndex(-1, 0), 0);
+dirswap.AddItem(source+AIMap.GetTileIndex(0, -1), 0);
+dirswap.Valuate(Distance, target);
+//dirswap.Valuate(AITile.GetDistanceManhattanToTile, target);
+dirswap.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+//foreach (voisin in directions)
+foreach (direction, _ in dirswap)
 	{
-	direction=source+voisin;
+	//direction=source+voisin;
 	if (cBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
 		{
 		local endat=null;
@@ -989,13 +1000,16 @@ foreach (voisin in directions)
 			direction=source+voisin;
 			}
 		}
-	if (road_type==AIVehicle.VT_ROAD)	valid=AIRoad.AreRoadTilesConnected(source, direction);
-	if (road_type==AIVehicle.VT_RAIL)	valid=cBuilder.AreRailTilesConnected(source, direction);
-	local currdistance=AITile.GetDistanceManhattanToTile(direction, target);
+	if (road_type==AIVehicle.VT_ROAD)	valid = AIRoad.AreRoadTilesConnected(source, direction);
+	if (road_type==AIVehicle.VT_RAIL)	valid = cBuilder.AreRailTilesConnected(source, direction);
+	if (road_type==AIVehicle.VT_WATER)  valid = (AITile.IsWaterTile(direction) || AIMarine.IsDockTile(direction));//AIMarine.AreWaterTilesConnected(source, direction);
+	//print("valid by aimarine= "+valid);
+	local currdistance = Distance(direction, target); //AITile.GetDistanceManhattanToTile(direction, target);
 	if (currdistance > origin+max_wrong_direction)	{ valid=false; }
+	if (walkedtiles.Count() > 3*origin) { valid = false; }
 	if (walkedtiles.HasItem(direction))	{ valid=false; }
 	if (valid)	walkedtiles.AddItem(direction,0);
-	//if (valid && INSTANCE.debug)	cDebug.PutSign(direction,walkedtiles.Count());
+	if (valid && INSTANCE.debug)	cDebug.PutSign(direction, currdistance);
 	//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
 	if (!found && valid)	solve = INSTANCE.main.builder.RoadRunnerHelper(direction, target, road_type, walkedtiles, origin);
 	if (!found)	found = !solve.IsEmpty();
@@ -1006,11 +1020,15 @@ return solve;
 
 function cBuilder::RoadRunner(source, target, road_type, distance = null)
 {
+    cDebug.ClearSigns();
 	local solve = cBuilder.RoadRunnerHelper(source, target, road_type);
+    print("chebyshev solve : "+solve.Count());
+	cDebug.ClearSigns();
+
 	local result = !solve.IsEmpty();
 	if (result && distance != null && solve.Count() > distance*2)	result=false;
 	cDebug.ClearSigns();
-	cDebug.showLogic(solve);
+	//cDebug.showLogic(solve);
 	return result;
 }
 

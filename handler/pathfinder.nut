@@ -133,7 +133,8 @@ function cPathfinder::AdvanceTask(UID)
 				DInfo("Pathfinder task "+pftask.UID+" has end : nothing more could be done, failure.",1);
 				return;
 			case	1:
-				if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 10000)	{ return; }
+				if (!cBanker.CanBuyThat(30000))	{ return; }
+				cBanker.RaiseFundsBy(30000);
 				DInfo("Pathfinder task "+pftask.UID+" has end search: trying to build the route found.",1);
 				if (pftask.useEntry == null)	{ cBuilder.AsyncConstructRoadROAD(pftask.source[0], pftask.target[1], pftask.stationID); }
                                         else	{ cBuilder.BuildRoadRAIL(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
@@ -229,7 +230,8 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 			}
 	else	  // rail
 			{
-			pftask.pathHandler= MyRailPF();
+            pftask.pathHandler= MyRailPF();
+        /*
 			pftask.pathHandler.cost.bridge_per_tile = 110;//70
 			pftask.pathHandler.cost.tunnel_per_tile = 110;//70
 			pftask.pathHandler.cost.turn = 240;//200
@@ -238,6 +240,16 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 			pftask.pathHandler.cost.tile=100;//70
 			pftask.pathHandler.cost.slope=240;//80
 			pftask.pathHandler.cost.diagonal_tile=110;
+*/
+			pftask.pathHandler.cost.bridge_per_tile = 190;//70
+			pftask.pathHandler.cost.tunnel_per_tile = 180;//70
+			pftask.pathHandler.cost.turn = 250;//200
+			pftask.pathHandler.cost.max_bridge_length=30;
+			pftask.pathHandler.cost.max_tunnel_length=30;
+			pftask.pathHandler.cost.tile=100;//70
+			pftask.pathHandler.cost.slope=250;//80
+			pftask.pathHandler.cost.diagonal_tile=100;
+
 			pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 			}
 	DInfo("New pathfinder task : "+pftask.UID,1);

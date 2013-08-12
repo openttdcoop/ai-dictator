@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -65,7 +65,7 @@ function cBuilder::DumpJobs(uid)
 	local tjob=cJobs.GetJobObject(uid);
 	local src=tjob.sourceObject.Name;
 	local dst=tjob.targetObject.Name;
-	DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+cCargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" cargo="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,2);
+	DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+cCargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" cargo="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,1);
 }
 
 function cBuilder::DumpTopJobs()
@@ -136,3 +136,13 @@ foreach (platform, status in station.platform_exit)
 	if (status==1)	PutSign(platform,"O");
 			else	PutSign(platform,"X");
 }
+
+function cDebug::ShowRailTrack()
+{
+    local atrack = AIRailTypeList();
+    foreach (r, _ in atrack)
+        {
+        print("track #"+r+" name: "+AIRail.GetName(r)+" speed: "+AIRail.GetMaxSpeed(r));
+        }
+}
+

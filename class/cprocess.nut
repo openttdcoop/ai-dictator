@@ -34,6 +34,9 @@ class cProcess extends cClass
 		ScoreProduction	= null;	// Score by production
 		Score			= null;	// Total score
 		FailureDate		= null;	// Last date we have building a station and it has fail
+		IndustryType    = null; // 1 - produce, 2- accept, 3- both
+		WaterAccess     = null; // true if we can use a dock to access it
+		StationLocation = null; // this is the location of the station if one exist (dock/heliport)
 
 
 		constructor()
@@ -79,17 +82,27 @@ function cProcess::AddNewProcess(_id, _istown)
 	p.ID = _id;
 	p.IsTown = _istown;
 	p.UID = p.GetUID(_id, _istown);
+    local radius = AIStation.GetCoverageRadius(AIStation.STATION_DOCK);
 	if (_istown)
 			{
 			if (!AITown.IsValidTown(_id)) { return; }
 			p.Name = AITown.GetName(_id);
 			p.Location=AITown.GetLocation(_id);
+			if (AIMap.DistanceFromEdge(p.Location) < 50)
+                {
+                local tiles = cTileTools.GetTilesAroundPlace(p.Location, radius * 3);
+                tiles.Valuate(AITile.IsCoastTile);
+                tiles.KeepValue(1);
+                p.WaterAccess = (!tiles.IsEmpty());
+                }
 			}
 	else
 			{
 			if (!AIIndustry.IsValidIndustry(_id)) { return; }
 			p.Name=AIIndustry.GetName(_id);
 			p.Location=AIIndustry.GetLocation(_id);
+		    if (AIIndustry.HasDock(_id))        { p.StationLocation = AIIndustry.GetDockLocation(_id); p.WaterAccess = true; }
+            if (AIIndustry.HasHeliport(_id))    { p.StationLocation = AIIndustry.GetHeliportLocation(_id); }
 			}
 	p.Name+="("+p.ID+")";
 	p.CargoProduce=AIList();
@@ -97,6 +110,29 @@ function cProcess::AddNewProcess(_id, _istown)
 	p.ScoreRating=1;
 	p.ScoreProduction=0;
 	p.CargoCheckSupply();
+	// must be done after cargo is set
+	if (!_istown && !p.WaterAccess && AIMap.DistanceFromEdge(p.Location) < 50)
+        {
+        local tiles = cTileTools.GetTilesAroundPlace(p.Location, (2* radius));
+        tiles.Valuate(AITile.IsCoastTile);
+        tiles.KeepValue(1);
+        local cargo = -1;
+        if (!p.CargoAccept.IsEmpty())
+                {  // we need 1 valid cargo, better check acceptance first then
+                cargo = p.CargoAccept.Begin();
+                tiles.Valuate(AITile.GetCargoAcceptance, cargo, 1, 1, radius);
+                tiles.KeepAboveValue(7);
+                }
+        else    {
+                cargo = p.CargoProduce.Begin();
+                tiles.Valuate(AITile.GetCargoProduction, cargo, 1, 1, radius);
+                tiles.KeepAboveValue(0);
+                }
+        p.WaterAccess = !tiles.IsEmpty();
+        }
+	p.IndustryType = 0;
+	if (!p.CargoAccept.IsEmpty())    p.IndustryType += 2;
+	if (!p.CargoProduce.IsEmpty())  p.IndustryType += 1;
 	p.UpdateDate=null;
 	p.FailureDate = null;
 	p.UpdateScore();
@@ -135,6 +171,31 @@ function cProcess::DeleteProcess(uid=null)
 
 // private
 
+function cProcess::GetAmountOfCompetitorStationAround(IndustryID)
+// Like AIIndustry::GetAmountOfStationAround but doesn't count our stations, so we only grab competitors stations
+// return 0 or numbers of stations not own by us near the place
+{
+	local counter=0;
+	local place = AIIndustry.GetLocation(IndustryID);
+	local radius = AIStation.GetCoverageRadius(AIStation.STATION_TRAIN);
+	local tiles = AITileList();
+	local produce = AITileList_IndustryAccepting(IndustryID, radius);
+	local accept = AITileList_IndustryProducing(IndustryID, radius);
+	tiles.AddList(produce);
+	tiles.AddList(accept);
+	tiles.Valuate(AITile.IsStationTile); // force keeping only station tile
+	tiles.KeepValue(1);
+	tiles.Valuate(AIStation.GetStationID);
+	local uniq = AIList();
+	foreach (i, dummy in tiles)
+		{ // remove duplicate id
+		if (!uniq.HasItem(dummy))	uniq.AddItem(dummy, i);
+		}
+	uniq.Valuate(AIStation.IsValidStation);
+	uniq.KeepValue(0); // remove our station tiles
+	return uniq.Count();
+}
+
 function cProcess::UpdateScoreRating()
 // Update the Rating score
 	{
@@ -143,21 +204,40 @@ function cProcess::UpdateScoreRating()
 			local rate = AITown.GetRating(this.ID, AICompany.ResolveCompanyID(AICompany.COMPANY_SELF));
 			if (rate == AITown.TOWN_RATING_NONE)	{ rate=AITown.TOWN_RATING_GOOD; }
 			if (rate < AITown.TOWN_RATING_POOR)	{ rate = 0; }
-			this.ScoreRating = 0 + (80 * rate);
+			this.ScoreRating = 10 * rate;
 			}
-	else	switch (INSTANCE.fairlevel)
-				{
-				case	0:
-					this.ScoreRating= 500 - (500 * AIIndustry.GetAmountOfStationsAround(this.ID));	// give up when 1 station is present
-					break;
-				case	1:
-					this.ScoreRating= 500 - (250 * AIIndustry.GetAmountOfStationsAround(this.ID));	// give up when 2 stations are there
-					break;
-				case	2:
-					this.ScoreRating= 500 - (100 * AIIndustry.GetAmountOfStationsAround(this.ID));	// give up after 5 stations
-					break;
-				}
-	if (this.ScoreRating < 0)	{ this.ScoreRating=0; }
+	else	{
+            local competitor = cProcess.GetAmountOfCompetitorStationAround(this.ID);
+            local us = AIIndustry.GetAmountOfStationsAround(this.ID) - competitor;
+            switch (this.IndustryType)
+                {
+                case    1: // only produce
+                    switch (INSTANCE.fairlevel)
+                        {
+                        case	0:
+                            this.ScoreRating= 80 - (80 * competitor);	// give up when 1 station is present
+                        break;
+                        case	1:
+                            this.ScoreRating= 80 - (40 * competitor);	// give up when 2
+                        break;
+                        case	2:
+                            this.ScoreRating= 80 - (20 * competitor);	// give up after 4
+                        break;
+                        }
+                break;
+                case    2: // only accept
+                        this.ScoreRating = 80 - (competitor * 15); // at 6 it's crowd and free tiles get rare
+                        this.ScoreRating = max(1, this.ScoreRating); // but even crowd, keep a little chance to consider it to drop cargo
+                break;
+                case    3: // both
+                        this.ScoreRating = 80 - (competitor * 10);
+                        this.ScoreRating += 50 * us; // give a great bonus if we are doing job there already
+                        if (INSTANCE.fairlevel == 0)    { this.ScoreRating = 0; } // Reserve the job for the poor user only
+                                                else    { this.ScoreRating = max(1, this.ScoreRating); }
+                break;
+                }
+
+            }
 	}
 
 function cProcess::UpdateScoreProduction()
@@ -169,21 +249,25 @@ function cProcess::UpdateScoreProduction()
 	temp.AddList(this.CargoProduce);
 	foreach (cargoID, value in temp)
 		{
-		local api=null;
-		if (this.IsTown)	{ api=AITown; }
-		else	{ api=AIIndustry; }
-		local current= api.GetLastMonthProduction(this.ID, cargoID);
+		local current = 0;
+		if (this.IsTown)	{ current = AITown.GetLastMonthProduction(this.ID, cargoID); }
+                    else	{
+                            current= AIIndustry.GetLastMonthProduction(this.ID, cargoID);
+                            if (INSTANCE.fairlevel == 0)    current -= AIIndustry.GetLastMonthTransported(this.ID, cargoID);
+                            // reduce it for fair game setting
+                            if (this.IndustryType == 1) { current = 1; } // force non-zero to allow only receiving industry get a rank > 0
+                            }
 		if (best < current)	{ best=current; bestcargo=cargoID; }
 		this.CargoProduce.SetValue(cargoID, current);
 		}
 	if (bestcargo == cCargo.GetCargoFavorite())	{ this.ScoreProduction = best * cCargo.GetCargoFavoriteBonus(); }
-	else	{ this.ScoreProduction = best; }
+                                        else	{ this.ScoreProduction = best; }
 	}
 
 function cProcess::UpdateScore()
 // Update score
 	{
-	if (this.UpdateDate != null && AIDate.GetCurrentDate() - this.UpdateDate < 7)	{ DInfo("Fresh score for "+this.Name,2); return false; }
+	if (this.UpdateDate != null && AIDate.GetCurrentDate() - this.UpdateDate < 7)	{ DInfo("Fresh score for "+this.Name,4); return false; }
 	this.UpdateScoreRating();
 	this.UpdateScoreProduction();
 	this.Score = this.ScoreRating * this.ScoreProduction;
@@ -195,7 +279,7 @@ function cProcess::UpdateScore()
 			this.Score = 0;
 			if (now - this.FailureDate > 365)	{ this.FailureDate=null; }
 			}
-	DInfo("Update score for "+this.Name+" to "+this.Score,2);
+	DInfo("Update score for "+this.Name+" to "+this.Score,3);
 	}
 
 function cProcess::ZeroProcess()
@@ -210,6 +294,7 @@ function cProcess::ZeroProcess()
 function cProcess::CargoCheckSupply()
 // Check and add cargo the process could handle
 	{
+	local type = 0;
 	if (this.IsTown)
 			{
 			local pass=cCargo.GetPassengerCargo();
@@ -224,6 +309,7 @@ function cProcess::CargoCheckSupply()
 					this.CargoAccept.AddItem(mail,0);
 					this.CargoProduce.AddItem(mail, 0);
 					}
+            type = 3;
 			}
 	else
 			{

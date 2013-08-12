@@ -85,7 +85,7 @@ function cBridge::Load(bUID)
 			{
 			cobj.bridgeUID=cBridge.GetBridgeUID(bUID);
 			if (cobj.bridgeUID!=null)	{ cobj.firstside=bUID; }
-			else	{ return null; }
+                                else	{ return null; }
 			bUID=cobj.bridgeUID;
 			}
 	else	{ cobj.bridgeUID=bUID; }
@@ -98,6 +98,7 @@ function cBridge::GetLength(bUID)
 // return the length of a bridge
 	{
 	local bobj=cBridge.Load(bUID);
+	if (bobj == null) return 0;
 	return bobj.length;
 	}
 
@@ -108,7 +109,7 @@ function cBridge::CheckBridge()
 	local validend=cBridge.IsValidTile(this.otherside);
 	if (!validstart || !validend)
 			{
-			INSTANCE.DInfo("Bridge infos aren't valid anymore, bridge has moved ?",2);
+			INSTANCE.DInfo("Bridge infos aren't valid anymore",2);
 			cBridge.DeleteBridge(this.bridgeUID);
 			}
 	}
@@ -127,6 +128,7 @@ function cBridge::GetDirection(bUID)
 // return the direction the bridge is
 	{
 	local cobj=cBridge.Load(bUID);
+    if (cobj == null)   return null;
 	return cobj.direction;
 	}
 
@@ -134,6 +136,7 @@ function cBridge::GetLocation(bUID)
 // return the firstside (location) of the bridge
 	{
 	local cobj=cBridge.Load(bUID);
+	if (cobj == null) return null;
 	return cobj.firstside;
 	}
 
@@ -141,6 +144,7 @@ function cBridge::GetOwner(bUID)
 // return the owner of the bridge
 	{
 	local cobj=cBridge.Load(bUID);
+	if (cobj == null)   return AICompany.COMPANY_INVALID;
 	return cobj.owner;
 	}
 
@@ -157,6 +161,7 @@ function cBridge::GetBridgeID(bUID)
 // return the bridgeID
 	{
 	local cobj=cBridge.Load(bUID);
+    if (cobj == null) return null;
 	return cobj.bridgeID;
 	}
 
@@ -219,5 +224,5 @@ function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 	blist.Sort(AIList.SORT_BY_VALUE, true); // slowest first as this are all bridges faster than our train speed anyway
 	if (blist.IsEmpty() && needresult)	{ blist=AIBridgeList_Length(length); blist.Sort(AIList.SORT_BY_VALUE, false); } // faster first
 	if (blist.IsEmpty())	{ return -1; }
-	else	{ return blist.Begin(); }
+                    else	{ return blist.Begin(); }
 	}

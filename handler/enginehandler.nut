@@ -38,14 +38,25 @@ function cEngine::IsRabbitSet(vehicleID)
 function cEngine::RabbitSet(vehicleID)
 // Set the status of the engine as a rabbit vehicle is on its way for testing
 	{
-	if (vehicleID == null)	return ;
+	if (vehicleID == null)	{ return ; }
 	local engineID=AIVehicle.GetEngineType(vehicleID);
-	if (engineID == null)	return ;
+	if (engineID == null)	{ return ; }
 	local eng = cEngine.Load(engineID);
 	if (eng.is_known == -2)	{
                             eng.is_known = vehicleID;
                             INSTANCE.DInfo("Using "+AIVehicle.GetName(vehicleID)+" as test vehicle for "+cEngine.GetName(engineID),1);
                             }
+	}
+
+function cEngine::RabbitUnset(vehicleID)
+// Unset the status of the rabbit vehicle, only useful if the rabbit vehicle never reach a depot (crash)
+	{
+	if (vehicleID == null || !AIVehicle.IsValidVehicle(vehicleID)) return ;
+	local engineID = AIVehicle.GetEngineType(vehicleID);
+	if (!AIEngine.IsValidEngine(engineID))	return ;
+    local eng=cEngine.Load(engineID);
+    if (eng == null)	return;
+	if (eng.is_known >= 0)	eng.is_known = -2;
 	}
 
 function cEngine::CanPullCargo(engineID, cargoID)
@@ -129,15 +140,19 @@ function cEngine::RailTypeIsTop(engineID, cargoID, setTopRail)
 // return -1 if we are at top already
 // return the engineID if we could upgrade
 	{
-	//if (cargoID == -1)	return -1;
 	if (AIEngine.GetVehicleType(engineID) != AIVehicle.VT_RAIL)	return -1;
 	local EUID = cEngine.GetEUID(RouteType.RAIL, cargoID);
 	local topengine = engineID;
 	if (!cEngine.BestEngineList.HasItem(EUID))	setTopRail = true;
 	if (setTopRail)	cEngine.SetBestEngine(EUID, engineID);
 	topengine = cEngine.BestEngineList.GetValue(EUID);
-	if (engineID == topengine)	return -1;
-					else	return AIEngine.GetRailType(topengine); // we return the railtype need to upgrade
+	local toprail = cEngineLib.GetBestRailType(topengine);
+	local engrail = cEngineLib.GetBestRailType(engineID);
+	if (toprail == engrail) 	{ return -1; }
+                        else	{
+                                print("BREAKRAIL : New best railtype for "+cCargo.GetCargoLabel(cargoID)+" set to use "+cEngine.GetName(topengine)+" using railtype "+AIRail.GetName(cEngineLib.GetBestRailType(topengine)));
+                                return toprail; // we return the railtype need to upgrade
+                                }
 	}
 
 function cEngine::EngineIsTop(engineID, cargoID, setTopEngine)

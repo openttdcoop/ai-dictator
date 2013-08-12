@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -32,7 +32,6 @@ function cCarrier::GetAirVehicle(routeidx, cargo = -1, modele = AircraftType.EFF
 		}
 	object.bypass = modele; //passing wanted modele thru bypass
 	local veh = cEngineLib.GetBestEngine(object, cCarrier.VehicleFilterAir);
-	print("Selected aircraft engine = "+veh[0]+" * "+AIEngine.GetName(veh[0]));
 	return veh[0];
 }
 
@@ -47,18 +46,22 @@ function cCarrier::CreateAirVehicle(routeidx)
 	local srcplace = road.SourceStation.s_Location;
 	local dstplace = road.TargetStation.s_Location;
 	local homedepot = road.SourceStation.s_Depot;
-	local altplace=(road.VehicleCount > 0 && road.VehicleCount % 2 != 0);
+	local altplace=(road.Twoway && road.VehicleCount > 0 && road.VehicleCount % 2 != 0);
 	if (road.VehicleType == RouteType.CHOPPER)	altplace=true; // chopper don't have a source airport, but a platform
 	if (altplace)	homedepot = road.TargetStation.s_Depot;
-	if (!cStation.IsDepot(homedepot))	return false;
+	if (!cStation.IsDepot(homedepot))
+            {
+            homedepot = cRoute.GetDepot(routeidx);
+            if (!cStation.IsDepot(homedepot))    return false;
+            }
 	local price = cEngine.GetPrice(engineID);
 	cBanker.RaiseFundsBy(price);
 	local vehID = cEngineLib.CreateVehicle(homedepot, engineID, -1); // force no refit
 	if (vehID != -1)
 			{
 			DInfo("Just brought a new aircraft vehicle: "+cCarrier.GetVehicleName(vehID),0);
-			INSTANCE.main.carrier.vehnextprice -= price;
-			if (INSTANCE.main.carrier.vehnextprice < 0)	INSTANCE.main.carrier.vehnextprice=0;
+            INSTANCE.main.carrier.vehicle_cash -= price;
+            INSTANCE.main.carrier.highcostAircraft = 0;
 			}
 		else	{
 			DError("Cannot create the aircraft vehicle "+cEngine.GetName(engineID),2);
@@ -74,6 +77,7 @@ function cCarrier::CreateAirVehicle(routeidx)
 	AIGroup.MoveVehicle(road.GroupID, vehID);
 	if (altplace)	INSTANCE.main.carrier.VehicleOrderSkipCurrent(vehID);
 	if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle: "+cCarrier.GetVehicleName(vehID),2); cCarrier.VehicleSell(vehID, false); return false;}
+	road.VehicleCount++;
 	return true;
 }
 

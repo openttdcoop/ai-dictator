@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -23,7 +23,7 @@ function cRoute::RouteUpdateAirPath()
 	network.SourceStation = cStation.Load(oneAirportID);
 	network.TargetStation = cStation.Load(twoAirportID);
 	if (cMisc.ValidInstance(network.SourceStation) && cMisc.ValidInstance(network.TargetStation))	network.Status=100;
-																else	network.Status=99;
+                                                                                            else	network.Status=99;
 	network.SourceProcess = cProcess.Load(cProcess.GetUID(cStation.VirtualAirports.GetValue(oneAirportID), true));
 	network.TargetProcess = cProcess.Load(cProcess.GetUID(cStation.VirtualAirports.GetValue(twoAirportID), true));
 	local mailnet = cRoute.Load(1);
@@ -44,7 +44,7 @@ function cRoute::VirtualAirNetworkUpdate()
 	towns.Valuate(AITown.GetPopulation);
 	towns.RemoveBelowValue(INSTANCE.main.carrier.AIR_NET_CONNECTOR);
 	DInfo("NETWORK: Found "+towns.Count()+" towns for network",1);
-	if (towns.Count()<2)	return; // give up
+	if (towns.Count() < 3)	return; // give up
 	local airports = AIStationList(AIStation.STATION_AIRPORT);
 	local ztemp = AIStationList(AIStation.STATION_AIRPORT);
 	ztemp.Valuate(AIStation.GetLocation);
@@ -72,7 +72,7 @@ function cRoute::VirtualAirNetworkUpdate()
 			virtualpath.AddItem(check, towns.GetValue(check));
 			}
 		}
-	if (virtualpath.IsEmpty() || virtualpath.Count() < 2)	return; // we cannot work with less than 2 airports
+	if (virtualpath.Count() < 3)	return; // we cannot work with less than 2 airports
 	virtualpath.Sort(AIList.SORT_BY_VALUE, false);
 	// now validairports = only airports where towns population is > AIR_NET_CONNECTOR, value is airportid
 	// and virtualpath the town where those airports are, value = population of those towns
@@ -146,31 +146,6 @@ function cRoute::VirtualAirNetworkUpdate()
 	INSTANCE.main.carrier.AirNetworkOrdersHandler();
 }
 
-function cRoute::GetAmountOfCompetitorStationAround(IndustryID)
-// Like AIIndustry::GetAmountOfStationAround but doesn't count our stations, so we only grab competitors stations
-// return 0 or numbers of stations not own by us near the place
-{
-	local counter=0;
-	local place = AIIndustry.GetLocation(IndustryID);
-	local radius = AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
-	local tiles = AITileList();
-	local produce = AITileList_IndustryAccepting(IndustryID, radius);
-	local accept = AITileList_IndustryProducing(IndustryID, radius);
-	tiles.AddList(produce);
-	tiles.AddList(accept);
-	tiles.Valuate(AITile.IsStationTile); // force keeping only station tile
-	tiles.KeepValue(1);
-	tiles.Valuate(AIStation.GetStationID); // hmmm unsure we get opponent stationId...
-	local uniq = AIList();
-	foreach (i, dummy in tiles)
-		{ // remove duplicate id
-		if (!uniq.HasItem(dummy))	uniq.AddItem(dummy, i);
-		}
-	uniq.Valuate(AIStation.IsValidStation);
-	uniq.KeepValue(0); // remove our station tiles
-	return uniq.Count();
-}
-
 function cRoute::DutyOnAirNetwork()
 // handle the traffic for the aircraft network
 {
@@ -233,23 +208,23 @@ function cRoute::DutyOnAirNetwork()
 	DInfo("NETWORK: need="+vehneed,1);
 	cDebug.PutSign(bigairportlocation,"Network Airport Reference: "+cargowaiting);
 	if (vehneed > 6)	vehneed=6; // limit to 6 aircrafts add per trys
+	local tomail = 0;
+	local topass = 0;
 	if (vehneed > 0)
 		{
-		local thatnetwork=0;
-		for (local k=0; k < vehneed; k++)
-			{
-			if (vehnumber % 6 == 0)	thatnetwork=1;
-						else	thatnetwork=0;
-			if (vehnumber == 0)	thatnetwork=0;
-			if (INSTANCE.main.bank.CanBuyThat(AIEngine.GetPrice(futurveh)) && INSTANCE.main.carrier.CanAddNewVehicle(0,true,1))
-			if (INSTANCE.main.carrier.BuildAndStartVehicle(thatnetwork))
-				{
-				DInfo("Adding an aircraft to the network, "+(vehnumber+1)+" aircrafts runs it now",0);
-				vehnumber++;
-				}
-			}
-		INSTANCE.main.carrier.AirNetworkOrdersHandler();
-		}
+		for (local k = 0; k < vehneed; k++)
+            {
+            if (INSTANCE.main.carrier.CanAddNewVehicle(0, true, k))
+                    {
+                    if ((vehnumber + k) % 6 == 0)   { tomail++; }
+                                            else    { topass++; }
+                    }
+            else    { break; }
+            }
+        cCarrier.RouteNeedVehicle(cRoute.GetVirtualAirMailGroup(), tomail);
+        cCarrier.RouteNeedVehicle(cRoute.GetVirtualAirPassengerGroup(), topass);
+        }
+    INSTANCE.main.carrier.AirNetworkOrdersHandler();
 }
 
 function cRoute::VehicleGroupProfitRatio(groupID)
@@ -270,12 +245,17 @@ function cRoute::VehicleGroupProfitRatio(groupID)
 function cRoute::DutyOnRoute()
 // this is where we add vehicle and tiny other things to max our money
 {
+    DInfo("Managing stations",0);
+    if (!INSTANCE.main.carrier.vehicle_wishlist.IsEmpty())
+        {
+        cCarrier.Process_VehicleWish();
+        return;
+        }
 	local firstveh=false;
 	local priority=AIList();
 	local road=null;
 	local chopper=false;
 	local dual=false;
-	INSTANCE.main.bank.busyRoute=false;
 	INSTANCE.main.route.DutyOnAirNetwork(); // we handle the network load here
 	foreach (uid, dummy in cRoute.RouteIndexer)
 		{
@@ -283,18 +263,18 @@ function cRoute::DutyOnRoute()
 		firstveh=false;
 		road = cRoute.Load(uid);
 		if (!road)	continue;
-		if (road.Status != 100)	continue;
+		if (road.Status != RouteStatus.WORKING)	continue;
 		if (road.VehicleType == RouteType.AIRNET || road.VehicleType == RouteType.AIRNETMAIL)	continue;
 		if (road.VehicleType == RouteType.RAIL)	{ INSTANCE.main.route.DutyOnRailsRoute(uid); continue; }
 		local maxveh=0;
 		local cargoid=road.CargoID;
 		local futur_engine=INSTANCE.main.carrier.GetVehicle(uid);
 		local futur_engine_capacity=1;
-		if (futur_engine != null)	futur_engine_capacity=AIEngine.GetCapacity(futur_engine);
-						else	continue;
+		if (futur_engine != null)	futur_engine_capacity=cEngine.GetCapacity(futur_engine, road.CargoID);
+                            else	continue;
 		switch (road.VehicleType)
 			{
-			case AIVehicle.VT_ROAD:
+			case RouteType.ROAD:
 				if (!INSTANCE.use_road)	continue;
 				maxveh=INSTANCE.main.carrier.road_max_onroute;
 			break;
@@ -322,7 +302,7 @@ function cRoute::DutyOnRoute()
 		road.SourceStation.UpdateStationInfos();
 		DInfo("Route "+road.Name+" distance "+road.Distance,2);
 		local vehneed=0;
-		local vehonroute=road.VehicleCount;		
+		local vehonroute=road.VehicleCount;
 		if (vehonroute == 0)	{ firstveh=true; } // everyone need at least 2 vehicle on a route
 		local cargowait=0;
 		local capacity=0;
@@ -356,10 +336,10 @@ function cRoute::DutyOnRoute()
 		if (AIStation.GetCargoRating(road.SourceStation.s_ID, cargoid) < 25 && vehonroute < 8)	vehneed++;
 		if (firstveh)
 			{
-			if (road.VehicleType == RouteType.ROAD || road.VehicleType==RouteType.AIR || road.VehicleType == RouteType.AIRMAIL || road.VehicleType == RouteType.SMALLAIR || road.VehicleType == RouteType.SMALLMAIL)
-				{ // force 2 vehicle if none exists yet for truck/bus & aircraft
-				if (vehneed < 2)	vehneed=2;
-				}
+			if (road.VehicleType == RouteType.ROAD || road.VehicleType==RouteType.AIR || road.VehicleType == RouteType.AIRMAIL || road.VehicleType == RouteType.SMALLAIR || road.VehicleType == RouteType.SMALLMAIL || road.VehicleType == RouteType.WATER)
+                    { // force 2 vehicle if none exists yet for truck/bus & aircraft / boat
+                    if (vehneed < 2)	vehneed=2;
+                    }
 			else	vehneed=1; // everyones else is block to 1 vehicle
 			if (vehneed > 8)	vehneed=8; // max 8 at creation time
 			}
@@ -376,52 +356,10 @@ function cRoute::DutyOnRoute()
 		// adding vehicle
 		if (vehneed > 0)
 			{
-			priority.AddItem(road.GroupID,vehneed); // we record all groups needs for vehicle
+			cCarrier.RouteNeedVehicle(road.GroupID, vehneed); // we record all groups needs for vehicle
 			road.SourceStation.s_VehicleCapacity.SetValue(cargoid, road.SourceStation.s_VehicleCapacity.GetValue(cargoid)+(vehneed*futur_engine_capacity));
 			road.TargetStation.s_VehicleCapacity.SetValue(cargoid, road.TargetStation.s_VehicleCapacity.GetValue(cargoid)+(vehneed*futur_engine_capacity));
 			}
 		}
-	// now we can try add others needed vehicles here but base on priority
-	// and priority = aircraft before anyone, then others, in both case, we range from top group profit to lowest
-	local allneed=0;
-	local allbuy=0;
-	if (priority.IsEmpty())	return;
-	local priocount=AIList();
-	priocount.AddList(priority);
-	priority.Valuate(AIGroup.GetVehicleType);
-	priority.Sort(AIList.SORT_BY_VALUE,false);
-	local vehneed=0;
-	local vehvalue=0;
-	local topvalue=0;
-	INSTANCE.main.carrier.highcostAircraft=0;
-	DInfo("Priority list="+priority.Count()+" Saved list="+priocount.Count(),1);
-	foreach (groupid, ratio in priority)
-		{
-		vehneed=priocount.GetValue(groupid); DInfo("BUYS -> Group #"+groupid+" "+AIGroup.GetName(groupid)+" need "+vehneed+" vehicles",1);
-		allneed+=vehneed;
-		if (vehneed == 0) continue;
-		local uid=cRoute.GroupIndexer.GetValue(groupid);
-		local rtype=AIGroup.GetVehicleType(groupid);
-		local vehmodele=INSTANCE.main.carrier.GetVehicle(uid);
-		local vehvalue=0;
-		local goodbuy=false;
-		if (vehmodele != null)	vehvalue=AIEngine.GetPrice(vehmodele);
-		for (local z=0; z < vehneed; z++)
-			{
-			DInfo("process vehicle "+z+" for group #"+groupid,2);
-			if (INSTANCE.main.bank.CanBuyThat(vehvalue))
-				{
-				if (INSTANCE.main.bank.CanBuyThat(vehvalue+INSTANCE.main.carrier.vehnextprice))	goodbuy=INSTANCE.main.carrier.BuildAndStartVehicle(uid);
-				if (goodbuy)
-					{
-					allbuy++;
-					}
-				}
-			else	{
-				DInfo("Not enough money to buy "+cEngine.GetName(vehmodele)+" cost: "+vehvalue,2);
-				if (INSTANCE.main.carrier.highcostAircraft < vehvalue)	INSTANCE.main.carrier.highcostAircraft=vehvalue;
-				}
-			}
-		}
-	if (allbuy < allneed)	INSTANCE.main.bank.busyRoute=true;
+    cCarrier.Process_VehicleWish();
 }

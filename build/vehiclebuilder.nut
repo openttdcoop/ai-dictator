@@ -62,7 +62,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 	local airname=thatstation.s_Name+"-> ";
 	switch (chem.VehicleType)
 		{
-		case AIVehicle.VT_ROAD:
+		case RouteType.ROAD:
 			DInfo("Road station "+thatstation.s_Name+" limit "+thatstation.s_VehicleCount+"/"+thatstation.s_VehicleMax,1);
 			if (thatstation.CanUpgradeStation())
 				{ // can still upgrade
@@ -86,7 +86,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 				// limit by number of vehicle per route
 				}
 		break;
-		case AIVehicle.VT_RAIL:
+		case RouteType.RAIL:
 			if (thatstation.CanUpgradeStation())
 				{
 				if (!INSTANCE.use_train)	max_allow = 0;
@@ -99,7 +99,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 				if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
 				}
 		break;
-		case AIVehicle.VT_WATER:
+		case RouteType.WATER:
 			if (!INSTANCE.use_boat)	max_allow=0;
 			if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)	max_allow=thatstation.s_VehicleMax-thatstation.s_VehicleCount;
 		break;
@@ -160,36 +160,6 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 	return max_allow;
 }
 
-function cCarrier::BuildAndStartVehicle(routeid)
-// Create a new vehicle on route
-{
-	local road=cRoute.Load(routeid);
-	if (!road)	return false;
-	local res=false;
-	switch (road.VehicleType)
-		{
-		case AIVehicle.VT_ROAD:
-			res=INSTANCE.main.carrier.CreateRoadVehicle(routeid);
-		break;
-		case AIVehicle.VT_RAIL:
-			res=INSTANCE.main.carrier.CreateRailVehicle(routeid);
-		break;
-		case AIVehicle.VT_WATER:
-		break;
-		case RouteType.AIRNET:
-		case RouteType.AIRNETMAIL:
-		case RouteType.CHOPPER:
-		case RouteType.AIR:
-		case RouteType.AIRMAIL:
-		case RouteType.SMALLAIR:
-		case RouteType.SMALLMAIL:
-			res=INSTANCE.main.carrier.CreateAirVehicle(routeid);
-		break;
-		}
-	if (res)	road.RouteUpdateVehicle();
-	return res;
-}
-
 function cCarrier::GetVehicle(routeidx)
 // return the vehicle we will pickup if we build a vehicle for that route
 {
@@ -201,7 +171,7 @@ function cCarrier::GetVehicle(routeidx)
 			return INSTANCE.main.carrier.ChooseRailCouple(road.CargoID, road.RailType, road.GetDepot(routeidx));
 		break;
 		case	RouteType.WATER:
-			return null;
+			return INSTANCE.main.carrier.GetWaterVehicle(routeidx);
 		break;
 		case	RouteType.ROAD:
 			return INSTANCE.main.carrier.GetRoadVehicle(routeidx);
@@ -327,6 +297,19 @@ function cCarrier::VehicleFilterRoad(vehlist, object)
 	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trucks
 }
 
+function cCarrier::VehicleFilterWater(vehlist, object)
+{
+	cEngineLib.EngineFilter(vehlist, object.cargo_id, -1, -1, false);
+	vehlist.Valuate(AIEngine.GetPrice);
+	vehlist.RemoveValue(0); // remove towncars toys
+	vehlist.Valuate(cEngineLib.GetCapacity, object.cargo_id);
+	vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
+	if (INSTANCE.main.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, object.cargo_id, true);
+                                    else	vehlist.Valuate(cCarrier.GetEngineEfficiency, object.cargo_id);
+	vehlist.Sort(AIList.SORT_BY_VALUE,true);
+	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trucks
+}
+
 function cCarrier::VehicleFilterAir(vehlist, object)
 {
 	local passCargo = cCargo.GetPassengerCargo();
@@ -404,7 +387,6 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 		{
 		vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
 		vehlist.Sort(AIList.SORT_BY_VALUE, false);
-print("filter wagon : "+cEngine.GetName(vehlist.Begin()));
 		}
 	else	{
 		vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
@@ -418,9 +400,129 @@ print("filter wagon : "+cEngine.GetName(vehlist.Begin()));
 			vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 			vehlist.Sort(AIList.SORT_BY_VALUE, true);
 			}
-		//else	object.engine_roadtype = cCarrier.GetRailTypeNeedForEngine(vehlist.Begin()); // get what rails the train want
 		if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trains
-print("filter train : "+cEngine.GetName(vehlist.Begin()));
 		}
 }
 
+function cCarrier::RouteNeedVehicle(gid, amount)
+// store the vehicle need by all routes
+{
+    if (amount == 0)    return;
+    local a = 0;
+    if (INSTANCE.main.carrier.vehicle_wishlist.HasItem(gid))    { a = INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid); }
+                                                        else    { INSTANCE.main.carrier.vehicle_wishlist.AddItem(gid, 0); }
+    a += amount;
+    INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, a);
+}
+
+function cCarrier::PriorityGroup(gid)
+{
+    local type = AIGroup.GetVehicleType(gid);
+    if (type == AIVehicle.VT_RAIL)  return 100;
+    if (type == AIVehicle.VT_ROAD)  return 30;
+    if (type == AIVehicle.VT_AIR)   return 60;
+    return 0;
+}
+
+function cCarrier::Lower_VehicleWish(gid, amount)
+// dec the wish list for that gid
+{
+print("lowering #"+gid+" by "+amount);
+    if (!INSTANCE.main.carrier.vehicle_wishlist.HasItem(gid))   return;
+    local value = INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid);
+    print("value= "+value);
+    local x = 0;
+    if (value > 1000)   { x = 1000; }
+    value -= amount;
+    print("new value = "+value);
+    if (value <= x) { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); return; }
+    INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, value);
+}
+
+function cCarrier::Process_VehicleWish()
+// buy vehicle need by routes
+{
+	INSTANCE.main.carrier.highcostAircraft = 0;
+    INSTANCE.main.carrier.highcostTrain = 0;
+    local uid, engine, gtype;
+    local cleanList = AIList();
+    cleanList.AddList(INSTANCE.main.carrier.vehicle_wishlist);
+    cleanList.Valuate(AIGroup.IsValidGroup);
+    foreach (gid, exist in cleanList)
+        {
+        if (exist == 1) { continue; }
+        INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid);
+        }
+    if (INSTANCE.main.carrier.vehicle_wishlist.IsEmpty())   { INSTANCE.main.carrier.vehicle_cash = 0; return; }
+    cleanList.KeepValue(1);
+    cleanList.Valuate(cCarrier.PriorityGroup);
+    cleanList.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
+    DInfo(cleanList.Count()+" queries to buy vehicle waiting",1);
+    if (INSTANCE.debug)
+        {
+        foreach (gid, amount in cleanList)
+            {
+            local uid = cRoute.GroupIndexer.GetValue(gid);
+            local r = cRoute.Load(uid);
+            DInfo(r.Name+" Need: "+INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid),2);
+            }
+        }
+    local amount = 0;
+    foreach (gid, _ in cleanList)
+        {
+        uid = cRoute.GroupIndexer.GetValue(gid);
+        gtype = AIGroup.GetVehicleType(gid);
+        engine = cCarrier.GetVehicle(uid);
+        amount = INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid);
+        if (engine == null || engine == -1) { continue; }
+        if (typeof(engine) == "array")
+            {
+            if (engine[0] == -1)    { continue; }
+            engine = engine[1];
+            }
+        local price = cEngineLib.GetPrice(engine);
+        local aircraft = false;
+        if (amount >= 1000)
+                {
+                amount -= 1000;
+                }
+        else    {
+                INSTANCE.main.carrier.vehicle_cash += (price * amount);
+                INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, 1000 + amount);
+                }
+        if (amount == 0)    { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); continue; }
+        local creation = null;
+        switch  (gtype)
+                {
+                case    AIVehicle.VT_AIR:
+                    creation = cCarrier.CreateAirVehicle;
+                    aircraft = true;
+                break;
+                case    AIVehicle.VT_RAIL:
+                    if (cCarrier.IsTrainRouteBusy(uid)) { continue; }
+                    cCarrier.AddWagon(uid, amount);
+                continue;
+                case    AIVehicle.VT_ROAD:
+                    creation = cCarrier.CreateRoadVehicle;
+                break;
+                case    AIVehicle.VT_WATER:
+                    creation = cCarrier.CreateWaterVehicle;
+                break;
+                }
+        if (creation == null)   continue;
+        for (local z = 0; z < amount; z++)
+            {
+            if (cBanker.CanBuyThat(price))
+                    {
+                    if (creation(uid))
+                        {
+                        cCarrier.Lower_VehicleWish(gid, 1);
+                        }
+                    }
+            else    if (aircraft && INSTANCE.main.carrier.highcostAircraft < price)
+                        {
+                        INSTANCE.main.carrier.highcostAircraft = price;
+                        }
+            }
+        }
+}

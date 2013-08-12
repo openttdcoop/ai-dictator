@@ -104,16 +104,16 @@ require("class/version.nut");
 		custom_value = 1,
 		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
-/*
+
 	AddSetting({
 		name = "use_boat",
 		description = "Use boat vehicles - NOT FUNCTIONAL",
-		easy_value = 0,
-		medium_value = 0,
-		hard_value = 0,
-		custom_value = 0,
+		easy_value = 1,
+		medium_value = 1,
+		hard_value = 1,
+		custom_value = 1,
 		flags = AICONFIG_BOOLEAN | AICONFIG_INGAME
-	});*/
+	});
 
 	AddSetting({
 		name = "use_terraform",

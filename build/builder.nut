@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -73,7 +73,7 @@ function cBuilder::GetDirection(tilefrom, tileto)
 		disty = distx;
 	}
 	if (disty > 0) {ret = ret + 1}
-	return ret;	
+	return ret;
 }
 
 function cBuilder::BuildStation(start)
@@ -89,6 +89,7 @@ function cBuilder::BuildStation(start)
 		success=INSTANCE.main.builder.BuildTrainStation(start);
 		break;
 		case AIVehicle.VT_WATER:
+		success=INSTANCE.main.builder.BuildWaterStation(start);
 		break;
 		case RouteType.AIR:
 		case RouteType.AIRMAIL:
@@ -124,7 +125,6 @@ function cBuilder::BuildRoadByType()
 			local todst=INSTANCE.main.route.TargetStation.GetRoadStationEntry();
 			if (!INSTANCE.main.route.Twoway && INSTANCE.main.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD, INSTANCE.main.route.Distance))	return true;
 			INSTANCE.main.route.Twoway = true; // mark it so roadrunner won't be run on next try
-			//local result = INSTANCE.main.builder.AsyncConstructRoadROAD(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
 			local result = cPathfinder.GetStatus(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
 			cError.ClearError();
 			if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(fromsrc, todst); return false;}
@@ -133,6 +133,12 @@ function cBuilder::BuildRoadByType()
 		case AIVehicle.VT_RAIL:
 			success=INSTANCE.main.builder.CreateStationsConnection(INSTANCE.main.route.SourceStation.s_ID, INSTANCE.main.route.TargetStation.s_ID);
 			return success;
+        case AIVehicle.VT_WATER:
+            local src_front= cBuilder.GetDockFrontTile(INSTANCE.main.route.SourceStation.s_Location);
+            local dst_front= cBuilder.GetDockFrontTile(INSTANCE.main.route.TargetStation.s_Location);
+            success = cBuilder.RoadRunner(src_front, dst_front, AIVehicle.VT_WATER);
+            if (!success)    { cError.RaiseError(); }
+            return success;
 		default:
 			return true;
 		break;
@@ -189,7 +195,7 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 	if (istown)
 		{ // check if the station is also influencing our town
 		tilecheck=cTileTools.StationIsWithinTownInfluence(compare.s_ID, goal);
-		if (!tilecheck)	
+		if (!tilecheck)
 			{
 			DInfo("Station "+compare.s_Name+" is outside "+cProcess.GetProcessName(goal, true)+" influence",2);
 			return false;
@@ -221,7 +227,7 @@ function cBuilder::FindCompatibleStationExists()
 	// find source station compatible
 	if (INSTANCE.main.route.StationType == null) return false;
 	local sList=AIStationList(INSTANCE.main.route.StationType);
-	
+
 	DInfo("Looking for a compatible station sList="+sList.Count(),2);
 	INSTANCE.main.builder.DumpRoute();
 	local source_success=false;
@@ -273,30 +279,35 @@ function cBuilder::TryBuildThatRoute()
 // advance the route construction
 {
 	local success=false;
-	local buildWithRailType = -1;
 	DInfo("Route "+INSTANCE.main.route.Name,1);
 	DInfo("Status:"+INSTANCE.main.route.Status,1);
 	// not using switch/case so we can advance steps in one pass
 	switch (INSTANCE.main.route.VehicleType)
 		{
 		case	RouteType.RAIL:
-			if (INSTANCE.main.route.SourceStation != null && INSTANCE.main.route.RailType == -1 && AIStation.IsValidStation(INSTANCE.main.route.SourceStation.s_ID))
-			{ // make sure we set rails as the first station to get a train that will run on them
-			INSTANCE.main.route.RailType = AIRail.GetRailType(INSTANCE.main.route.SourceStation.s_Location);
-			buildWithRailType = INSTANCE.main.route.RailType;
-			}
-			local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, buildWithRailType);
-			if (trainspec[0] == -1)	success=null;
-						else	success=true;
-			if (success && buildWithRailType == -1)	buildWithRailType = trainspec[2];
-			DInfo("Building using "+buildWithRailType+" rail type",2);
-			cBuilder.SetRailType(buildWithRailType);
+            if (INSTANCE.main.route.RailType == -1)
+                    {
+                    local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, -1);
+                    if (trainspec[0] == -1)	{ success = false; }
+                                    else	{ success = true; }
+                    if (success)    { INSTANCE.main.route.RailType = cEngineLib.GetBestRailType(trainspec[0]); }
+                    }
+            else    {
+                    local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, INSTANCE.main.route.RailType);
+                    // must be sure one exist, as reusing a station could have change the railtype to use
+                    if (trainspec[0] == -1) { success = false; }
+                                    else    { success = true; }
+                    }
+			DInfo("Building using railtype "+AIRail.GetName(INSTANCE.main.route.RailType),2);
+			cBuilder.SetRailType(INSTANCE.main.route.RailType);
 		break;
 		case	RouteType.ROAD:
-			success=cCarrier.GetRoadVehicle(null, INSTANCE.main.route.CargoID);
+			success = cCarrier.GetRoadVehicle(null, INSTANCE.main.route.CargoID);
+			success = (success != -1);
 		break;
 		case	RouteType.WATER:
-			success=null;
+			success = cCarrier.GetWaterVehicle(null, INSTANCE.main.route.CargoID);
+            success = (success != -1);
 		break;
 		case	RouteType.AIR:
 		case	RouteType.AIRMAIL:
@@ -308,13 +319,14 @@ function cBuilder::TryBuildThatRoute()
 			local modele=AircraftType.EFFICIENT;
 			if (!INSTANCE.main.route.SourceProcess.IsTown)	modele=AircraftType.CHOPPER;
 			success= cCarrier.GetAirVehicle(null, INSTANCE.main.route.CargoID, modele);
+            success = (success != -1);
 		break;
 		}
 	if (!success)
-		{
-		DWarn("There's no vehicle we could use to carry that cargo: "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
-		INSTANCE.main.route.Status = RouteStatus.DEAD;
-		}
+            {
+            DWarn("There's no vehicle we could use to carry that cargo: "+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID),2);
+            INSTANCE.main.route.Status = RouteStatus.DEAD;
+            }
 	else	{ if (INSTANCE.main.route.Status==0)	INSTANCE.main.route.Status=1; } // advance to next phase
 	if (INSTANCE.main.route.Status==1)
 		{
@@ -336,41 +348,38 @@ function cBuilder::TryBuildThatRoute()
 		{
 		if (INSTANCE.main.route.SourceStation == null)
 				{
-				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	INSTANCE.main.builder.SetRailType(buildWithRailType);
-				if (INSTANCE.main.route.SourceProcess.IsTown && AITown.GetRating(INSTANCE.main.route.SourceProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID);
-				success=INSTANCE.main.builder.BuildStation(true);
+				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	{ INSTANCE.main.builder.SetRailType(INSTANCE.main.route.RailType); }
+				if (INSTANCE.main.route.SourceProcess.IsTown && AITown.GetRating(INSTANCE.main.route.SourceProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	{ cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID); }
+				success = INSTANCE.main.builder.BuildStation(true);
 				if (!success && cError.IsError())	INSTANCE.main.route.SourceProcess.ZeroProcess();
 				}
-			else	{
+        else	{
 				success=true;
 				DInfo("Source station is already built, we're reusing an existing one",0);
+				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)  { INSTANCE.main.route.RailType = AIRail.GetRailType(INSTANCE.main.route.SourceStation.s_Location); }
 				}
 		if (success)
 			{ // attach the new station object to the route, stationID of the new station is hold in SourceStation
 			INSTANCE.main.route.SourceStation=cStation.Load(INSTANCE.main.route.SourceStation);
 			if (!INSTANCE.main.route.SourceStation)	{ cError.RaiseError(); success= false; }
-									else	INSTANCE.main.route.SourceStation.OwnerClaimStation(INSTANCE.main.route.UID);
+                                            else	{ INSTANCE.main.route.SourceStation.OwnerClaimStation(INSTANCE.main.route.UID); }
 
 			}
 		if (!success)
-			{ // it's bad we cannot build our source station, that's really bad !
-			if (cError.IsError())
-				{
-				INSTANCE.main.route.Status = RouteStatus.DEAD;
-				}
-			else	{ INSTANCE.buildDelay=2; return false; }
-			}
-		else { INSTANCE.main.route.Status=3; }
+                { // it's bad we cannot build our source station, that's really bad !
+                if (cError.IsError())   { INSTANCE.main.route.Status = RouteStatus.DEAD; }
+                                else	{ INSTANCE.buildDelay=2; return false; }
+                }
+		else    { INSTANCE.main.route.Status=3; }
 		}
-	if (INSTANCE.main.route.Status==3)	
+	if (INSTANCE.main.route.Status==3)
 		{
 		if (INSTANCE.main.route.TargetStation == null)
 				{
 				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)
 					{
-					buildWithRailType=AIRail.GetRailType(AIStation.GetLocation(INSTANCE.main.route.SourceStation.s_ID));
-				if (INSTANCE.main.route.TargetProcess.IsTown && AITown.GetRating(INSTANCE.main.route.TargetProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID);
-					INSTANCE.main.builder.SetRailType(buildWithRailType);
+                    if (INSTANCE.main.route.TargetProcess.IsTown && AITown.GetRating(INSTANCE.main.route.TargetProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID);
+					INSTANCE.main.builder.SetRailType(INSTANCE.main.route.RailType);
 					}
 				success=INSTANCE.main.builder.BuildStation(false);
 				if (!success && cError.IsError())	INSTANCE.main.route.TargetProcess.ZeroProcess();
@@ -396,19 +405,20 @@ function cBuilder::TryBuildThatRoute()
 	if (INSTANCE.main.route.Status==4) // pathfinding
 		{
 		success=INSTANCE.main.builder.BuildRoadByType();
-		if (success)	{ INSTANCE.main.route.Status=5; }
-			else	{
-				if (cError.IsError())	INSTANCE.main.route.Status = RouteStatus.DEAD;
-							else	{ INSTANCE.buildDelay = 1; return false; }
+		if (success)
+                { INSTANCE.main.route.Status=5; }
+        else	{
+				if (cError.IsError())	{ INSTANCE.main.route.Status = RouteStatus.DEAD; }
+                                else	{ INSTANCE.buildDelay = 1; return false; }
 
 				} // and nothing more, stay at that phase & rebuild road when possible
 		}
 	if (INSTANCE.main.route.Status==5)
 		{ // check the route is really valid
-		if (INSTANCE.main.route.VehicleType == AIVehicle.VT_ROAD)
-			{
-			success=INSTANCE.main.builder.CheckRoadHealth(INSTANCE.main.route.UID);
-			}
+            if (INSTANCE.main.route.VehicleType == AIVehicle.VT_ROAD)
+                {
+                success=INSTANCE.main.builder.CheckRoadHealth(INSTANCE.main.route.UID);
+                }
 		else	{ success=true; } // other route type for now are ok
 		if (success)	{ INSTANCE.main.route.Status=6; }
 				else	{ INSTANCE.main.route.Status=RouteStatus.DEAD; }
@@ -424,13 +434,14 @@ function cBuilder::TryBuildThatRoute()
 		if (!bad && !AIStation.IsValidStation(INSTANCE.main.route.TargetStation.s_ID))	bad=true;
 		if (bad)	INSTANCE.main.route.Status=RouteStatus.DEAD;
 			else	INSTANCE.main.route.Status=7;
-		}	
+		}
 	if (INSTANCE.main.route.Status==7)
 		{
 		INSTANCE.main.route.RouteDone();
 		INSTANCE.main.route.RouteBuildGroup();
 		INSTANCE.main.route.Route_GroupNameSave();
 		DInfo("Route contruction complete ! "+INSTANCE.main.route.Name,0);
+		print("cargoID ="+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID));
 		local srcprod=INSTANCE.main.route.SourceStation.IsCargoProduce(INSTANCE.main.route.CargoID);
 		local srcacc=INSTANCE.main.route.SourceStation.IsCargoAccept(INSTANCE.main.route.CargoID);
 		local dstprod=INSTANCE.main.route.TargetStation.IsCargoProduce(INSTANCE.main.route.CargoID);
@@ -439,6 +450,8 @@ function cBuilder::TryBuildThatRoute()
 		if (srcacc)	INSTANCE.main.route.SourceStation.s_CargoAccept.AddItem(INSTANCE.main.route.CargoID,0);
 		if (dstprod)	INSTANCE.main.route.TargetStation.s_CargoProduce.AddItem(INSTANCE.main.route.CargoID,0);
 		if (dstacc)	INSTANCE.main.route.TargetStation.s_CargoAccept.AddItem(INSTANCE.main.route.CargoID,0);
+		print("srcprod="+srcprod+" srcacc="+srcacc);
+		print("dstprod="+dstprod+" dstacc="+dstacc);
 		if (srcprod && srcacc && dstprod && dstacc)
 			{
 			DInfo("Route set as twoway",1);
@@ -448,11 +461,11 @@ function cBuilder::TryBuildThatRoute()
 			DInfo("Route set as oneway",1);
 			INSTANCE.main.route.Twoway=false;
 			}
-		if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	INSTANCE.buildDelay = 2; // we delay building after a rail route has been setup
+		//if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	INSTANCE.buildDelay = 2; // we delay building after a rail route has been setup
 		INSTANCE.main.builder.building_route=-1; // Allow us to work on a new route now
 		if (INSTANCE.safeStart >0 && INSTANCE.main.route.VehicleType == RouteType.ROAD)	INSTANCE.safeStart--;
-		if (INSTANCE.main.route.VehicleType==RouteType.RAIL)	INSTANCE.main.route.DutyOnRailsRoute(INSTANCE.main.route.UID);
-										else	INSTANCE.main.route.DutyOnRoute();
+		INSTANCE.main.route.DutyOnRoute();
+		//INSTANCE.buildDelay = 1;
 		}
 	if (INSTANCE.main.route.Status == RouteStatus.DEAD)
 		{

@@ -63,7 +63,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	cost+=1000; // i'm not sure how much i need to destroy old airport
 	INSTANCE.main.bank.RaiseFundsBy(cost);
 	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
-		{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",1); INSTANCE.main.carrier.vehnextprice=cost; return false; }
+		{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",1); return false; }
 	DInfo("Trying to upgrade airport #"+stationid+" "+station.s_Name,0);
 	// find traffic that use that airport & reroute it
 	// prior to reroute aircraft, make sure they have a route to go
@@ -98,7 +98,6 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,false);
 	if (result == -1)	return false;
 	DInfo("Airport was upgrade successfuly !",1);
-	INSTANCE.main.carrier.vehnextprice=0; // We might have put a little havock while upgrading, reset this one
 }
 
 function cBuilder::CloseAirport(stationID)
@@ -341,7 +340,6 @@ function cBuilder::BuildAirStation(start, routeID=null)
 	if (needMoney > 0 && oldAirport != null)
 		{
 		oldAirport.s_MoneyUpgrade = needMoney;
-		INSTANCE.main.carrier.vehnextprice += needMoney; // try to reserve the money for next upgrade try
 		}
 	if (!success)
 		{
@@ -388,11 +386,12 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				}
 			return newStation.s_ID;
 			}
-		else	{
+		else	{ // platform
 			road.SourceStation = AIStation.GetStationID(heliloc);
 			road.VehicleType = RouteType.CHOPPER;
 			road.SourceStation = road.CreateNewStation(start);
 			if (!cMisc.ValidInstance(road.SourceStation))	return -1;
+			road.SourceStation.s_SubType = -2;
 			road.SourceStation.s_Depot = -1;
 			road.SourceStation.s_Location = heliloc;
 			return road.SourceStation.s_ID;

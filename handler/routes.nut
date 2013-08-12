@@ -296,39 +296,40 @@ function cRoute::GetDepot(uid, source=0)
 	if (typeof(road.SourceStation) == "instance")	sdepot=road.SourceStation.s_Depot;
 	if (typeof(road.TargetStation) == "instance")	tdepot=road.TargetStation.s_Depot;
 	if (road.VehicleType == RouteType.RAIL)
-		{
-		local se, sx, de, dx=-1;
-		if (road.SourceStation instanceof cStationRail)
-			{
-			se=road.SourceStation.s_EntrySide[TrainSide.DEPOT];
-			sx=road.SourceStation.s_ExitSide[TrainSide.DEPOT];
-			}
-		if (road.TargetStation instanceof cStation)
-			{
-			de=road.TargetStation.s_EntrySide[TrainSide.DEPOT];
-			dx=road.TargetStation.s_ExitSide[TrainSide.DEPOT];
-			}
-		local one, two, three, four=null;
-		if (road.Source_RailEntry)	{ one=se; three=sx; }
-						else	{ one=sx; three=se; }
-		if (road.Target_RailEntry)	{ two=de; four=dx; }
-						else	{ two=dx; four=de; }
-		if (source==0 || source==1)
-			{
-			if (cStation.IsDepot(one))	return one;
-			if (cStation.IsDepot(three))	return three;
-			}
-		if (source==0 || source==2)
-			{
-			if (cStation.IsDepot(two))	return two;
-			if (cStation.IsDepot(four))	return four;
-			}
-		}
+            {
+            local se, sx, de, dx=-1;
+            if (road.SourceStation instanceof cStationRail)
+                {
+                se=road.SourceStation.s_EntrySide[TrainSide.DEPOT];
+                sx=road.SourceStation.s_ExitSide[TrainSide.DEPOT];
+                }
+            if (road.TargetStation instanceof cStation)
+                {
+                de=road.TargetStation.s_EntrySide[TrainSide.DEPOT];
+                dx=road.TargetStation.s_ExitSide[TrainSide.DEPOT];
+                }
+            local one, two, three, four=null;
+            if (road.Source_RailEntry)	{ one=se; three=sx; }
+                                else	{ one=sx; three=se; }
+            if (road.Target_RailEntry)	{ two=de; four=dx; }
+                                else	{ two=dx; four=de; }
+            if (source==0 || source==1)
+                {
+                if (cStation.IsDepot(one))	return one;
+                if (cStation.IsDepot(three))	return three;
+                }
+            if (source==0 || source==2)
+                {
+                if (cStation.IsDepot(two))	return two;
+                if (cStation.IsDepot(four))	return four;
+                }
+            }
 	else	{
-		if ((source==0 || source==1)	&& cStation.IsDepot(sdepot))	return sdepot;
-		if ((source==0 || source==2)	&& cStation.IsDepot(tdepot))	return tdepot;
-		if (road.VehicleType == RouteType.ROAD && road.Status == RouteStatus.WORKING)	cBuilder.RouteIsDamage(uid);
-		}
+            if ((source==0 || source==1) && cStation.IsDepot(sdepot))	return sdepot;
+            if ((source==0 || source==2) && cStation.IsDepot(tdepot))	return tdepot;
+            if (road.VehicleType == RouteType.ROAD && road.Status == RouteStatus.WORKING)	cBuilder.RouteIsDamage(uid);
+            if (road.VehicleType == RouteType.WATER && road.Status == RouteStatus.WORKING)  cBuilder.RepairWaterRoute(uid);
+            }
 	if (source==0)	DError("Route "+cRoute.GetRouteName(road.UID)+" doesn't have any valid depot !",2);
 			else	DError("Route "+cRoute.GetRouteName(road.UID)+" doesn't have the request depot ! source="+source,2);
 	return -1;

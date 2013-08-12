@@ -16,19 +16,18 @@
 function cRoute::DutyOnRailsRoute(uid)
 // this is where we handle rails route, that are too specials for common handling
 {
-	local firstveh=false;
-	local road=cRoute.Load(uid);
-	if (road == false || road.Status != RouteStatus.WORKING)	return;
+	local firstveh = false;
+	local road = cRoute.Load(uid);
+	if (!road || road.Status != RouteStatus.WORKING)	return;
 	local maxveh=0;
 	INSTANCE.main.carrier.highcostTrain=0;
 	local cargoid=road.CargoID;
 	local railtype=road.SourceStation.s_SubType;
 	local futur_engine= cCarrier.ChooseRailCouple(cargoid, railtype);
-	if (futur_engine[0] == -1)	futur_engine = -1;
-					else	futur_engine = futur_engine[1]; // the wagon
-	local futur_engine_capacity=1;
-	if (futur_engine != -1)	futur_engine_capacity=cEngine.GetCapacity(futur_engine);
-					else	return;
+	if (futur_engine[0] == -1)	return;
+                        else	futur_engine = futur_engine[1]; // the wagon
+	local futur_engine_capacity = cEngine.GetCapacity(futur_engine, road.CargoID);
+    if (futur_engine_capacity <= 0) return;
 	road.SourceStation.UpdateStationInfos();
 	DInfo("After station update",2);
 	local vehneed=0;
@@ -42,7 +41,7 @@ function cRoute::DutyOnRailsRoute(uid)
 	if (capacity==0)
 			{
 			if (road.SourceProcess.IsTown)	cargowait=AITown.GetLastMonthProduction(road.SourceProcess.ID, cargoid);
-								else	cargowait=AIIndustry.GetLastMonthProduction(road.SourceProcess.ID, cargoid);
+                                    else	cargowait=AIIndustry.GetLastMonthProduction(road.SourceProcess.ID, cargoid);
 			capacity=futur_engine_capacity;
 			}
 		if (dual)
@@ -65,6 +64,6 @@ function cRoute::DutyOnRailsRoute(uid)
 			else	vehneed = (cargowait / capacity)+1;
 	if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
 	DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.VehicleCount+" firstveh="+firstveh,2);
-	if (vehneed > 0 && cCarrier.IsTrainRouteBusy(uid)) INSTANCE.main.carrier.AddWagon(uid,vehneed);
+	if (vehneed > 0 && !cCarrier.IsTrainRouteBusy(uid)) INSTANCE.main.carrier.AddWagon(uid,vehneed);
 }
 

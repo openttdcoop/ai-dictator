@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */
+/* -*- Mode: C++; tab-width: 4 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -31,20 +31,21 @@ static	function GetVehicleObject(vehicleID)
 	rail_max		=null;	// maximum trains vehicle a station can handle
 	road_max		=null;	// maximum a road station can upgarde (max: 6)
 	road_upgrade	=null;	// maximum vehicle a road station can support before upgarde itself
-	air_max		=null;	// maximum aircraft a station can handle
+	air_max	    	=null;	// maximum aircraft a station can handle
 	airnet_max		=null;	// maximum aircraft on a network
 	airnet_count	=null;	// current number of aircrafts running the network
 	water_max		=null;	// maximum ships a station can handle
-	road_max_onroute	=null;	// maximum road vehicle on a route
+	road_max_onroute=null;	// maximum road vehicle on a route
 	train_length	=null;	// maximum length for train/rail station
-	vehnextprice	=null;	// we just use that to upgrade vehicle
+	vehicle_cash    =null;	// amount of money we need to buy vehicle
 	do_profit		=null;	// Record each vehicle profits
 	warTreasure		=null;	// total current value of nearly all our road vehicle
-	highcostAircraft	=null;	// the highest cost for an aircraft we need
+	highcostAircraft=null;	// the highest cost for an aircraft we need
 	highcostTrain	=null;	// the highest cost for a train
 	speed_MaxTrain	=null;	// maximum speed a train could do
 	speed_MaxRoad	=null;	// maximum speed a road vehicle could do
 	running_vehicle	=null;	// number of vehicle per type we own
+	vehicle_wishlist=null;  // our list of engines to buy
 
 	constructor()
 		{
@@ -52,20 +53,21 @@ static	function GetVehicleObject(vehicleID)
 		rail_max		= 0;
 		road_max		= 0;
 		road_upgrade	= 0;
-		air_max		= 0;
+		air_max		    = 0;
 		airnet_max		= 0;
 		airnet_count	= 0;
 		water_max		= 0;
-		road_max_onroute	= 0;
+		road_max_onroute= 0;
 		train_length	= 0;
-		vehnextprice	= 0;
+		vehicle_cash	= 0;
 		do_profit		= AIList();
 		warTreasure		= 0;
-		highcostAircraft	= 0;
+		highcostAircraft= 0;
 		highcostTrain	= 0;
 		speed_MaxTrain	= 0;
 		speed_MaxRoad	= 0;
 		running_vehicle	= [0,0,0,0];
+        vehicle_wishlist= AIList();
 		}
 }
 

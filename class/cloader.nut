@@ -38,23 +38,110 @@ function cLoader::OldSaveWarn()
 // Just output a warning for old savegame format
 {
 	AILog.Error("WARNING");
-	AILog.Info("That savegame was made with DictatorAI version "+INSTANCE.main.bank.busyRoute);
+	AILog.Info("That savegame was made with DictatorAI version "+INSTANCE.main.carrier.vehicle_cash);
 	AILog.Info("I have add a compatibility loader to help restoring old savegames but it doesn't support all versions");
 	AILog.Info("If you re-save your game, it will be saved with the new save format.");
 	AILog.Error("WARNING");
 	AIController.Sleep(20);
 }
 
+function cLoader::VehicleFindStationInOrders(vehicle)
+// browse vehicle orders and return index of order that target that stationID
+{
+	local numorders=AIOrder.GetOrderCount(vehicle);
+	if (numorders==0) { return -1; }
+    local stainfo = -1;
+	for (local j=0; j < numorders; j++)
+		{
+		local tiletarget=AIOrder.GetOrderDestination(vehicle,AIOrder.ResolveOrderPosition(vehicle, j));
+		if (!AITile.IsStationTile(tiletarget)) continue;
+		stainfo = AIStation.GetStationID(tiletarget);
+        for (k = 0; k < j; k++) AIOrder.RemoveOrder(vehicle, 0);
+		return stainfo;
+		}
+	return -1;
+}
+
+function cLoader::IndustryGuesser(staID, cargo, taker)
+{
+    local statype = cStation.FindStationType(staID);
+    if (statype == -1)  { return -1; }
+    local radius = AIStation.GetCoverageRadius(staID);
+    local tiles = cTileTools.GetTilesAroundPlace(AIStation.GetLocation(staID), AIStation.GetCoverageRadius(statype));
+    tiles.Valuate(AIIndustry.GetIndustryID);
+    indlist = AIList();
+    foreach (tile, id in tiles)
+        {
+        if (indlist.HasItem(id))  { continue; }
+        if (AIIndustry.IsValidIndustry(id)) { indlist.AddItem(id, AITile.GetCargoProduction(tile, cargo, 1, 1, radius)); }
+        }
+    if (taker)  {
+                tiles.KeepAboveValue(1); // production
+                }
+        else    {
+                tiles.Valuate(AIIndustry.IsCargoAccepted, cargo);
+                tiles.KeepValue(1);
+                }
+    if (tiles.IsEmpty())    { return -1; }
+                    else    { return tiles.Begin(); }
+}
+
+
+function cLoader::GroupGuesser()
+{
+    local vehlist = AIVehicleList()
+    foreach (veh, _ in vehlist)
+        {
+        local cargoGuess = cCarrier.GetCurrentCargoType(veh);
+        if (cargoGuess == -1)   continue;
+        local sourcestation = VehicleFindStationInOrders(veh);
+        if (sourcestation == -1)    continue;
+        local targetstation = VehicleFindStationInOrders(veh);
+        if (targetstation == -1)    continue;
+
+        local srctown = false;
+        local dsttown = false;
+        if (cargoGuess == cCargo.GetPassengerCargo())   { srctown = true; dsttown = true; }
+        local statype = cStation.FindStationType(statype);
+        if (statype == -1)  continue;
+        local src_ind = -1; dst_ind = -1;
+        local tiles = cTileTools.GetTilesAroundPlace(AIStation.GetLocation(sourcestation), AIStation.GetCoverageRadius(statype));
+        if (srctown)    { src_ind = AITile.GetNearestTown(AIStation.GetLocation(sourcestation)); }
+                else    { src_ind = IndustryGuesser(sourcestation, cargoGuess, true); }
+        if (dsttown)    { dst_ind = AITile.GetNearestTown(AIStation.GetLocation(targetstation)); }
+                else    { dst_ind = IndustryGuesser(targetstation, cargoGuess, false); }
+        if (src_ind == -1 || dst_ind == -1)   { continue; }
+        local grptype = AIVehicle.GetVehicleType(veh);
+        local grp = AIGroup.CreateGroup(veh);
+        local ok = cRoute.SetRouteGroupName(grp, src_ind, dst_ind, srctown, dsttown, cargoGuess, false, sourcestation, targetstation);
+        if (ok)
+            {
+            local vehgrp = AIVehicle.GetGroupID(veh);
+            local otherveh = AIList();
+            otherveh.AddItem(veh);
+            if (vehgrp != AIGroup.GROUP_DEFAULT)
+                {
+                otherveh = AIVehicleList_Group(vehgrp);
+                }
+            foreach (v, _ in otherveh)
+                {
+                AIGroup.MoveVehicle(grp);
+                vehlist.RemoveItem(v);
+                }
+            }
+        }
+}
+
 function cLoader::Load169()
 // Load savegame from version 169 & 168
 {
 	cLoader.OldSaveWarn();
-	DInfo("Loading savegame version "+INSTANCE.main.bank.busyRoute);
+	DInfo("Loading savegame version "+INSTANCE.main.carrier.vehicle_cash);
 	local all_stations=INSTANCE.main.bank.unleash_road;
 	DInfo("...Restoring stations",0);
 	local iter=0;
 	local allcargos=AICargoList();
-	local all_routes=INSTANCE.main.bank.canBuild;
+	local all_routes=INSTANCE.main.carrier.vehicle_cash;
 	local saveit=true;
 	for (local i=0; i < all_stations.len(); i++)
 		{
@@ -186,9 +273,9 @@ function cLoader::Load169()
 }
 
 function cLoader::LoadSaveGame()
-// Load current savegame version 58route 93stations
+// Load current savegame version
 {
-	DInfo("Loading savegame version "+INSTANCE.main.bank.busyRoute);
+	DInfo("Loading savegame version "+INSTANCE.main.carrier.vehicle_cash);
 	local num_route_ok = 0;
 	local groupList = AIGroupList();
 	DInfo("Found "+groupList.Count()+" possible routes");
@@ -208,6 +295,13 @@ function cLoader::LoadSaveGame()
 		temp = info[3].slice(1).tointeger(); // target id
 		temp_route.TargetProcess = cProcess.Load(cProcess.GetUID(temp, dst_IsTown));
 		temp = info[4].tointeger(); // source station id
+		if (temp_route.VehicleType == AIVehicle.VT_AIR && !src_IsTown) // chopper need the platform as station
+            {
+            local staID = AIStation.GetStationID(temp_route.SourceProcess.Location);
+  			local t = cStation.InitNewStation(staID);
+  			t.s_SubType = -2;
+  			AIController.Break("Another things to check"); // TODO: fix platform
+            }
 		temp_route.SourceStation = cStation.Load(temp);
 		temp = info[5].tointeger(); // target station id
 		temp_route.TargetStation = cStation.Load(temp);
@@ -234,7 +328,8 @@ function cLoader::LoadSaveGame()
 		temp.targetObject = temp_route.TargetProcess;
 		temp.GetUID();
 		temp_route.UID = temp.UID;
-		cJobs.CreateNewJob(temp_route.SourceProcess.UID, temp_route.TargetProcess.ID, temp.cargoID, temp.roadType, 0);	// recreate the job
+		temp_route.Distance = AIMap.DistanceManhattan(temp_route.SourceProcess.Location, temp_route.TargetProcess.Location);
+		cJobs.CreateNewJob(temp_route.SourceProcess.UID, temp_route.TargetProcess.ID, temp.cargoID, temp.roadType, temp_route.Distance);	// recreate the job
 		temp = cJobs.Load(temp_route.UID); // now try load it
 		if (!temp)	continue;
 		temp.isUse = true;
@@ -274,7 +369,12 @@ function cLoader::LoadSaveGame()
 		}
 	cRoute.RouteRebuildIndex();
 	RailFollower.FindRailOwner();
-	cRoute.RouteDamage.Clear(); // static, only clear it
+}
+
+function cLoader::LoadOther()
+{
+    cLoader.GroupGuesser();
+    cLoader.LoadSaveGame();
 }
 
 function cLoader::LoadingGame()
@@ -289,8 +389,8 @@ function cLoader::LoadingGame()
 	local trlist=AIVehicleList();
 	try
 	{
-	if (INSTANCE.main.bank.busyRoute < 170)	cLoader.Load169();
-							else	cLoader.LoadSaveGame();
+	if (INSTANCE.main.carrier.vehicle_cash < 170)	cLoader.Load169();
+                                            else	cLoader.LoadSaveGame();
 	local grouplist = AIGroupList();
 	grouplist.RemoveList(cRoute.GroupIndexer);
 	foreach (grp, _ in grouplist)	AIGroup.DeleteGroup(grp);
@@ -306,25 +406,32 @@ function cLoader::LoadingGame()
 			cCarrier.TrainExitDepot(veh);
 			}
 		}
-	} catch (e)
-		{
-		AILog.Error("Cannot load that savegame !");
-		AILog.Info("As a last chance, the AI will try to continue ignoring the error, with a total random result...");
-		local grouplist=AIGroupList();
-		foreach (grp, dummy in grouplist)	AIGroup.DeleteGroup(grp);
-		local vehlist=AIVehicleList();
-		foreach (veh, dummy in vehlist)	AIVehicle.SendVehicleToDepot(veh);
-		foreach (item in cRoute.database)	if (item.UID > 1)	delete cRoute.database[item.UID];
-		cRoute.RouteIndexer.Clear();
-		cRoute.GroupIndexer.Clear();
-		}
+	} catch (z)
+        {
+        try { cLoader.LoadOther(); }
+            catch (e)
+            {
+            AILog.Error("Cannot load that savegame !");
+            AILog.Info("As a last chance, the AI will try to continue ignoring the error, with a total random result...");
+            local grouplist=AIGroupList();
+            grouplist.RemoveItem(cRoute.VirtualAirGroup[0]);
+            grouplist.RemoveItem(cRoute.VirtualAirGroup[1]);
+            foreach (grp, dummy in grouplist)	AIGroup.DeleteGroup(grp);
+            local vehlist=AIVehicleList();
+            foreach (veh, dummy in vehlist)	AIVehicle.SendVehicleToDepot(veh);
+            foreach (item in cRoute.database)	if (item.UID > 1)	delete cRoute.database[item.UID];
+            cRoute.RouteIndexer.Clear();
+            cRoute.GroupIndexer.Clear();
+            }
+        }
 	OneWeek=0;
 	OneMonth=0;
 	SixMonth=0;
 	TwelveMonth=0;
+	cRoute.RouteDamage.Clear(); // static, only clear it
 	INSTANCE.main.bank.canBuild=false;
 	INSTANCE.main.bank.unleash_road=false;
-	INSTANCE.main.bank.busyRoute=false;
+	INSTANCE.main.carrier.vehicle_cash = 0;
 	INSTANCE.main.bank.mincash=10000;
 	cCargo.SetCargoFavorite();
 	local dead = AIList();

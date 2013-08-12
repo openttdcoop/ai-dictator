@@ -107,7 +107,7 @@ class DictatorAI extends AIController
 			job_air = true;
 			job_train = true;
 			job_road = true;
-			job_boat = false;
+			job_boat = true;
 			main = cMain();
 			}
 
@@ -146,7 +146,6 @@ function DictatorAI::Start()
 	while (true)
 			{
 			this.CheckCurrentSettings();
-			//if (use_train) main.builder.BaseStationRailBuilder(80835);
 			DWarn("Running the AI in debug mode slowdown the AI and can do random issues !!!",1);
 			main.bank.CashFlow();
 			main.CheckAccount();
@@ -180,7 +179,6 @@ function DictatorAI::Start()
 									cMisc.checkHQ();
 									}
 							}
-					else { main.builder.DumpTopJobs(); }
 					}
 			main.bank.CashFlow();
 			main.event.HandleEvents();
@@ -253,7 +251,7 @@ function DictatorAI::Load(version, data)
 	if ("stations" in data) { main.bank.unleash_road=data.stations; }
 	if ("virtualmail" in data)	{ TwelveMonth=data.virtualmail; }
 	if ("virtualpass" in data)	{ main.bank.mincash=data.virtualpass; }
-	main.bank.busyRoute=version;
+	main.carrier.vehicle_cash = version;
 	loadedgame = true;
 	}
 
@@ -278,10 +276,10 @@ function DictatorAI::CheckCurrentSettings()
 	if (AIController.GetSetting("use_air") && !AIGameSettings.IsDisabledVehicleType(AIVehicle.VT_AIR))	{ use_air = true; }
 	if (AIController.GetSetting("use_terraform"))	{ terraform = true; }
 	main.carrier.VehicleCountUpdate();
-	if (cCarrier.GetVehicleCount(AIVehicle.VT_ROAD) + 5 > AIGameSettings.GetValue("vehicle.max_roadveh")) { use_road = false; job_road = false; }
-	if (cCarrier.GetVehicleCount(AIVehicle.VT_RAIL) + 2 > AIGameSettings.GetValue("vehicle.max_trains")) { use_train = false; job_train = false; }
-	if (main.carrier.GetVehicleCount(AIVehicle.VT_AIR) + 1 > AIGameSettings.GetValue("vehicle.max_aircraft")) { use_air = false; job_air = false; }
-	if (main.carrier.GetVehicleCount(AIVehicle.VT_WATER) + 1 > AIGameSettings.GetValue("vehicle.ships")) { use_boat = false; job_boat = false; }
+	if (cCarrier.GetVehicleCount(AIVehicle.VT_ROAD)+1 > AIGameSettings.GetValue("vehicle.max_roadveh")) { use_road = false; job_road = false; }
+	if (cCarrier.GetVehicleCount(AIVehicle.VT_RAIL)+1 > AIGameSettings.GetValue("vehicle.max_trains")) { use_train = false; job_train = false; }
+	if (main.carrier.GetVehicleCount(AIVehicle.VT_AIR)+1 > AIGameSettings.GetValue("vehicle.max_aircraft")) { use_air = false; job_air = false; }
+	if (main.carrier.GetVehicleCount(AIVehicle.VT_WATER) + 1 > AIGameSettings.GetValue("vehicle.max_ships")) { use_boat = false; job_boat = false; }
 	main.carrier.train_length = AIGameSettings.GetValue("max_train_length");
 	if (main.carrier.train_length > 5)	{ main.carrier.train_length = 5; }
 	if (main.carrier.train_length < 3)	{ use_train = false; job_train = false; }
@@ -322,7 +320,7 @@ function DictatorAI::CheckCurrentSettings()
 			spdcheck=AIGameSettings.GetValue("station_spread");
 			if (spdcheck < main.carrier.rail_max)	{ main.carrier.rail_max=spdcheck; }
 			}
-	use_boat=false; // we will handle boats later
+	//use_boat=false; // we will handle boats later
 	if (INSTANCE.safeStart > 0)
 			{
 			// Keep only road

@@ -24,12 +24,12 @@ static	database = {};
 static	jobIndexer = AIList();	// this list have all UID in the database, value = date of last refresh for that UID infos
 static	jobDoable = AIList();	// same as upper, but only doable ones, value = ranking
 static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
-static	TRANSPORT_DISTANCE=[60,150,250, 40,100,150, 60,120,250, 90,250,500];
+static	TRANSPORT_DISTANCE=[60,150,250, 40,100,150, 40,100,130, 90,250,500]; // 130 max before water report dest_too_far
 static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
 static	badJobs=AIList();		// List of jobs we weren't able to do
 static	WagonType=AIList();		// engine wagon to use for cargo : item=cargo, value= wagon engine id
 static	rawJobs=AIList();		// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
-static	targetTown = AIList();	// List of towns we use as target to drop/take passenger/mail by bus & aircraft
+static	TownAbuse = AIList();	// List of towns we use already to drop/take passenger/mail
 static	deadIndustry = AIList();// List all industries that are dead and so jobs using them need to be removed
 
 
@@ -42,7 +42,7 @@ static	function GetJobObject(UID)
 	sourceObject	= null;	// source process object
 	targetObject	= null;	// target process object
 	cargoID		    = null;	// cargo id
-	roadType		= null;	// AIVehicle.RoadType
+	roadType		= null;	// RouteType type
 	UID			    = null;	// a UID for the job
 	parentID		= null;	// a UID that a similar job will share with another (like other tansport or other destination)
 	isUse			= null;	// is build & in use

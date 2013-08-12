@@ -83,7 +83,6 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
 			DInfo("Vehicle "+INSTANCE.main.carrier.GetVehicleName(vehicle)+" has crashed!!!",0);
-			INSTANCE.main.carrier.vehnextprice=0; // Reset on crash in case it was the vehicle we wish upgrade
 		break;
 		case AIEvent.ET_VEHICLE_WAITING_IN_DEPOT:
 			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
