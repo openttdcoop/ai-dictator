@@ -356,13 +356,15 @@ function cBuilder::TryBuildThatRoute()
         else	{
 				success=true;
 				DInfo("Source station is already built, we're reusing an existing one",0);
-				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)  { INSTANCE.main.route.RailType = AIRail.GetRailType(INSTANCE.main.route.SourceStation.s_Location); }
 				}
 		if (success)
 			{ // attach the new station object to the route, stationID of the new station is hold in SourceStation
-			INSTANCE.main.route.SourceStation=cStation.Load(INSTANCE.main.route.SourceStation);
+			INSTANCE.main.route.SourceStation = cStation.Load(INSTANCE.main.route.SourceStation);
 			if (!INSTANCE.main.route.SourceStation)	{ cError.RaiseError(); success= false; }
-                                            else	{ INSTANCE.main.route.SourceStation.OwnerClaimStation(INSTANCE.main.route.UID); }
+                                            else	{
+                                                    INSTANCE.main.route.SourceStation.OwnerClaimStation(INSTANCE.main.route.UID);
+                                                    if (INSTANCE.main.route.VehicleType == RouteType.RAIL)  { INSTANCE.main.route.RailType = AIRail.GetRailType(INSTANCE.main.route.SourceStation.s_Location); }
+                                                    }
 
 			}
 		if (!success)

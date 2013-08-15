@@ -336,7 +336,7 @@ function cRoute::DutyOnRoute()
 		if (AIStation.GetCargoRating(road.SourceStation.s_ID, cargoid) < 25 && vehonroute < 8)	vehneed++;
 		if (firstveh)
 			{
-			if (road.VehicleType == RouteType.ROAD || road.VehicleType==RouteType.AIR || road.VehicleType == RouteType.AIRMAIL || road.VehicleType == RouteType.SMALLAIR || road.VehicleType == RouteType.SMALLMAIL || road.VehicleType == RouteType.WATER)
+			if (road.CargoID == cCargo.GetPassengerCargo() && road.VehicleType != RouteType.RAIL)
                     { // force 2 vehicle if none exists yet for truck/bus & aircraft / boat
                     if (vehneed < 2)	vehneed=2;
                     }

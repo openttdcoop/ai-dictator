@@ -143,8 +143,8 @@ function cJobs::RankThisJob()
 function cJobs::RefreshValue(jobID, updateCost=false)
 // refresh the datas from object
 	{
-	//if (cJobs.IsInfosUpdate(jobID))	{ DInfo("JobID: "+jobID+" infos are fresh",3); return null; }
-      //                      else	{ DInfo("JobID: "+jobID+" refreshing infos",3); }
+	if (cJobs.IsInfosUpdate(jobID))	{ DInfo("JobID: "+jobID+" infos are fresh",3); return null; }
+                            else	{ DInfo("JobID: "+jobID+" refreshing infos",3); }
 	cJobs.jobIndexer.SetValue(jobID,AIDate.GetCurrentDate());
 	if (jobID == 0 || jobID == 1)	{ return null; } // don't refresh virtual routes
 	local myjob = cJobs.Load(jobID);
@@ -183,12 +183,11 @@ function cJobs::IsInfosUpdate(jobID)
 // return true if jobID info is recent, false if we need to refresh it
 // we also use this one as valuator
 	{
-	return false;
 	local now=AIDate.GetCurrentDate();
 	local jdate=null;
 	if (cJobs.jobIndexer.HasItem(jobID))	{ jdate=cJobs.jobIndexer.GetValue(jobID); }
-	else	{ return true; } // if job is not index return infos are fresh
-	return ( (now-jdate) < 240) ? true : false;
+                                    else	{ return true; } // if job is not index return infos are fresh
+	return ( (now-jdate) < 7) ? true : false;
 	}
 
 function cJobs::QuickRefresh()
@@ -197,17 +196,16 @@ function cJobs::QuickRefresh()
 	local smallList=AIList();
 	INSTANCE.main.jobs.UpdateDoableJobs();
 	smallList.AddList(cJobs.jobIndexer);
+	local now = AIDate.GetCurrentDate();
+	now = now - 30;
 	smallList.RemoveList(cRoute.RouteIndexer); // remove jobs already in use
-	smallList.KeepTop(20);
-	//smallList.Valuate(cJobs.IsInfosUpdate);
-	//smallList.KeepValue(0); // keep only ones that need refresh
-	//smallList.Valuate(AIBase.RandItem);
-	//smallList.KeepTop(5); // refresh 5 random jobs that need a refresh
+	smallList.KeepBelowValue(now);
+	smallList.KeepTop(10); // refresh 10 random jobs that need a refresh
 	foreach (smallID, dvalue in smallList)	{ INSTANCE.main.jobs.RefreshValue(smallID, true); }
 	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
 	smallList.Sort(AIList.SORT_BY_VALUE, false);
-	smallList.KeepTop(5); // Keep 5 top rank job doable
+	smallList.KeepTop(10); // Keep 10 top rank job doable
 	if (INSTANCE.safeStart > 0 && smallList.IsEmpty())	{ INSTANCE.safeStart=0; } // disable it if we cannot find any jobs
 	return smallList;
 	}
@@ -623,9 +621,9 @@ function cJobs::RawJobHandling()
 			cJobs.AddNewIndustryOrTown(p.ID, p.IsTown);
 			cJobs.RawJob_Delete(p.UID);
 			if (cJobs.rawJobs.IsEmpty())	{ break; }
-				}
+            }
 	if (cJobs.rawJobs.IsEmpty())	{ DInfo("All raw jobs have been process",2); }
-	else	{ DInfo("rawJobs still to do: "+cJobs.rawJobs.Count(),1); }
+                            else	{ DInfo("rawJobs still to do: "+cJobs.rawJobs.Count(),1); }
 	}
 
 function cJobs::RawJob_Delete(pUID)

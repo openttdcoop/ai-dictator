@@ -243,11 +243,12 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 */
 			pftask.pathHandler.cost.bridge_per_tile = 190;//70
 			pftask.pathHandler.cost.tunnel_per_tile = 180;//70
-			pftask.pathHandler.cost.turn = 250;//200
+			pftask.pathHandler.cost.turn = 200;//200
 			pftask.pathHandler.cost.max_bridge_length=30;
 			pftask.pathHandler.cost.max_tunnel_length=30;
 			pftask.pathHandler.cost.tile=100;//70
 			pftask.pathHandler.cost.slope=250;//80
+			pftask.pathHandler.cost.coast = 100;
 			pftask.pathHandler.cost.diagonal_tile=100;
 
 			pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);

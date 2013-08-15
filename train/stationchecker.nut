@@ -686,6 +686,8 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 			sx_IN=thatstation.GetRailStationIN(false);
 			sx_OUT=thatstation.GetRailStationOUT(false);
 			PlatformNeedUpdate=true;
+			// Try calling the second station to build its entry/exit part too, so we will both reject a new train, but structure will be create for next query
+			if (cMisc.ValidInstance(road) && thatstation.s_ID == road.SourceStation.s_ID)    { cBuilder.RailStationGrow(road.TargetStation.s_ID, road.Target_RailEntry, false); }
 			}
 	DInfo("se_IN="+se_IN+" se_OUT="+se_OUT+" sx_IN="+sx_IN+" sx_OUT="+sx_OUT+" canAddTrain="+canAddTrain,2);
 	local result=true;
@@ -710,6 +712,6 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	if (useEntry)	{ r_depot = AIRail.IsRailDepotTile(thatstation.s_EntrySide[TrainSide.DEPOT]); }
             else	{ r_depot = AIRail.IsRailDepotTile(thatstation.s_ExitSide[TrainSide.DEPOT]); }
 	if (!r_depot)	{ cBuilder.RailStationPhaseBuildDepot(thatstation, useEntry); }
-	if (newStationSize > thatstation.s_Train[TrainType.GOODPLATFORM] || ((trainEntryTotal > 1 || trainExitTotal > 1) && !road.Secondary_RailLink))	{ DInfo("station refuse more trains",2); return false; }
+	if (newStationSize > thatstation.s_Train[TrainType.GOODPLATFORM] || ((trainEntryTotal > 1 || trainExitTotal > 1) && !road.Secondary_RailLink))	{ DInfo("station "+thatstation.s_Name+" refuse more trains",2); return false; }
 	return canAddTrain;
 	}

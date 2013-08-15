@@ -56,7 +56,7 @@ function cLoader::VehicleFindStationInOrders(vehicle)
 		local tiletarget=AIOrder.GetOrderDestination(vehicle,AIOrder.ResolveOrderPosition(vehicle, j));
 		if (!AITile.IsStationTile(tiletarget)) continue;
 		stainfo = AIStation.GetStationID(tiletarget);
-        for (k = 0; k < j; k++) AIOrder.RemoveOrder(vehicle, 0);
+        for (local k = 0; k < j; k++) AIOrder.RemoveOrder(vehicle, 0);
 		return stainfo;
 		}
 	return -1;
@@ -94,9 +94,9 @@ function cLoader::GroupGuesser()
         {
         local cargoGuess = cCarrier.GetCurrentCargoType(veh);
         if (cargoGuess == -1)   continue;
-        local sourcestation = VehicleFindStationInOrders(veh);
+        local sourcestation = cLoader.VehicleFindStationInOrders(veh);
         if (sourcestation == -1)    continue;
-        local targetstation = VehicleFindStationInOrders(veh);
+        local targetstation = cLoader.VehicleFindStationInOrders(veh);
         if (targetstation == -1)    continue;
 
         local srctown = false;
@@ -300,7 +300,7 @@ function cLoader::LoadSaveGame()
             local staID = AIStation.GetStationID(temp_route.SourceProcess.Location);
   			local t = cStation.InitNewStation(staID);
   			t.s_SubType = -2;
-  			AIController.Break("Another things to check"); // TODO: fix platform
+  			// TODO: fix platform
             }
 		temp_route.SourceStation = cStation.Load(temp);
 		temp = info[5].tointeger(); // target station id
@@ -387,8 +387,8 @@ function cLoader::LoadingGame()
 	AIGroup.DeleteGroup(INSTANCE.main.bank.mincash);
 	AIGroup.DeleteGroup(TwelveMonth);
 	local trlist=AIVehicleList();
-	try
-	{
+	//try
+	//{
 	if (INSTANCE.main.carrier.vehicle_cash < 170)	cLoader.Load169();
                                             else	cLoader.LoadSaveGame();
 	local grouplist = AIGroupList();
@@ -406,8 +406,8 @@ function cLoader::LoadingGame()
 			cCarrier.TrainExitDepot(veh);
 			}
 		}
-	} catch (z)
-        {
+	//} catch (z)
+      /*  {
         try { cLoader.LoadOther(); }
             catch (e)
             {
@@ -423,7 +423,7 @@ function cLoader::LoadingGame()
             cRoute.RouteIndexer.Clear();
             cRoute.GroupIndexer.Clear();
             }
-        }
+        }*/
 	OneWeek=0;
 	OneMonth=0;
 	SixMonth=0;

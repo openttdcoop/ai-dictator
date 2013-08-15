@@ -97,7 +97,7 @@ class DictatorAI extends AIController
 			minRank = 5000;
 			fairlevel = 0;
 			debug = false;
-			buildDelay=0;
+			buildDelay = 0;
 			OneMonth=0;
 			OneWeek=0;
 			SixMonth=0;
@@ -116,10 +116,10 @@ class DictatorAI extends AIController
 function DictatorAI::Start()
 	{
 	cEngineLib.SetAPIErrorHandling(true);
+	AICompany.SetAutoRenewStatus(false);
 	this.CheckCurrentSettings();
 	main.Init();
 	main.DInfo("DicatorAI started.",0);
-	AICompany.SetAutoRenewStatus(false);
 	if (loadedgame)
 			{
 			main.bank.SaveMoney();

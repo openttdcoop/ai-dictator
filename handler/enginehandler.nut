@@ -193,7 +193,7 @@ function cEngine::IsVehicleAtTop(vehID)
 	{
 	if (!AIVehicle.IsValidVehicle(vehID))	{ INSTANCE.DError("Not a valid vehicle",2); return -1; }
 	local idx=cCarrier.VehicleFindRouteIndex(vehID);
-	if (idx == null)	{ INSTANCE.DError("Fail to find the route used by this vehicle",2); return -1; }
+	if (idx == null)	{ INSTANCE.DError("Fail to find the route used by this vehicle: "+cCarrier.GetVehicleName(vehID),2); return -1; }
 	local road=cRoute.Load(idx);
 	if (!road)	return -1;
 	local cargoID=road.CargoID;

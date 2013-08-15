@@ -47,7 +47,7 @@ function cCarrier::CreateRoadVehicle(roadidx)
 	if (altplace)   { homedepot = road.TargetStation.s_Depot; }
 	if (!cStation.IsDepot(homedepot))
             {
-            homedepot = cStation.GetDepot(roadidx);
+            homedepot = cRoute.GetDepot(roadidx);
             if (!cStation.IsDepot(homedepot))   { return false; }
             }
 	local price=cEngine.GetPrice(engineID, road.CargoID);

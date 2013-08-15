@@ -37,8 +37,8 @@ function cBuilder::BuildWaterDepotAtTile(tile, destination)
     reusedepot.KeepValue(0);
     reusedepot.Valuate(AIMarine.IsDockTile);
     reusedepot.KeepValue(0);
-    reusedepot.Valuate(AITile.GetDistanceManhattanToTile, destination);
-    reusedepot.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+   // reusedepot.Valuate(AITile.GetDistanceManhattanToTile, destination);
+    //reusedepot.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
     local newpos=-1;
     foreach (tile, dummy in reusedepot)
         {
@@ -65,7 +65,6 @@ function cBuilder::BuildWaterStation(start)
             {
             dir = INSTANCE.main.builder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
             tilelist = cTileTools.GetTilesAroundPlace(INSTANCE.main.route.SourceProcess.Location, 3 * radius); // 3x for town, 2x industry in cProcess
-            if (tilelist.IsEmpty()) { AIController.Break("something odd tile empty"); }
             print("working on "+INSTANCE.main.route.SourceProcess.Name);
             if (INSTANCE.main.route.SourceProcess.IsTown)
                     {
@@ -81,12 +80,12 @@ function cBuilder::BuildWaterStation(start)
                                 {
                                 INSTANCE.main.route.SourceStation = AIStation.GetStationID(INSTANCE.main.route.SourceProcess.StationLocation);
                                 local newStation = INSTANCE.main.route.CreateNewStation(true);
+                                if (newStation == null) { return false; }
                                 newStation.s_SubType = -2;
                                 newStation.s_Depot = cBuilder.BuildWaterDepotAtTile(INSTANCE.main.route.SourceProcess.StationLocation, INSTANCE.main.route.TargetProcess.Location);
                                 return true;
                                 }
                         else    {
-                                tilelist = cTileTools.GetTilesAroundPlace(INSTANCE.main.route.SourceProcess.ID, 3 * radius);
                                 tilelist.Valuate(AITile.IsCoastTile);
                                 tilelist.KeepValue(1);
                                 tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, radius);
@@ -114,6 +113,7 @@ function cBuilder::BuildWaterStation(start)
                                 {
                                 INSTANCE.main.route.TargetStation = AIStation.GetStationID(INSTANCE.main.route.TargetProcess.StationLocation);
                                 local newStation = INSTANCE.main.route.CreateNewStation(false);
+                                if (newStation == null) { return false; }
                                 newStation.s_SubType = -2;
                                 newStation.s_Depot = cBuilder.BuildWaterDepotAtTile(INSTANCE.main.route.TargetProcess.StationLocation, INSTANCE.main.route.SourceProcess.Location);
                                 return true;
@@ -195,7 +195,6 @@ function cBuilder::CanBuildDockAtTile(tile, allow_terraforming)
         if (!fronttile.HasItem(t_slope))    { continue; }
         if (!AITile.IsWaterTile(tile +fronttile.GetValue(t_slope)))    { continue; }
         cDebug.PutSign(tile, "!");
-        AIController.Break("about terratest");
         local test = AITestMode();
         local result = AITile.RaiseTile(tile, n_slope); // better not waste money
         print("simulate result "+result);

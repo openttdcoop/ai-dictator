@@ -567,6 +567,11 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link = AIStati
 	local money = INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate();
 	if (!cBanker.CanBuyThat(money))	{ DInfo("We lack money to buy the station",1); }
 	cBanker.RaiseFundsBy(money);
+	if (link != AIStation.STATION_NEW && AIStation.IsValidStation(link))
+        {
+        local rt = AIRail.GetRailType(AIStation.GetLocation(link));
+        AIRail.SetCurrentRailType(rt);
+        }
 	if (!AIRail.BuildRailStation(tilepos, direction, 1, INSTANCE.main.carrier.train_length, link))
 			{
 			DInfo("Rail station couldn't be built, link="+link+" cost="+money+" err: "+AIError.GetLastErrorString(),1);
