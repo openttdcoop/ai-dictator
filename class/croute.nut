@@ -99,7 +99,10 @@ function cRoute::Load(uid)
 			if (damage)
 					{
 					DWarn("Route "+thatroute.Name+" is damage...",1);
-					if (thatroute.VehicleType == RouteType.ROAD)    { cBuilder.RouteIsDamage(uid); }
+					if (thatroute.VehicleType == RouteType.ROAD)    {
+                                                                    INSTANCE.main.route.RouteDamage.AddItem(uid,0);
+                                                                    thatroute.Status = RouteStatus.DAMAGE;
+                                                                    }
                                                             else    { thatroute.Status = RouteStatus.DEAD; }
 					}
 			}

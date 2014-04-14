@@ -46,6 +46,7 @@ enum DepotAction
 
 }
 
+enum SuperLib { log, tile }
 enum RouteStatus
 {
 	// from 0 to 7 are use for build steps
@@ -61,7 +62,7 @@ const	DIR_SW = 3;
 
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
-import("Library.cEngineLib", "cEngineLib", 5);
+import("Library.cEngineLib", "cEngineLib", 6);
 
 require("require.nut");
 
@@ -110,12 +111,11 @@ class DictatorAI extends AIController
 			job_boat = true;
 			main = cMain();
 			}
-
 	}
 
 function DictatorAI::Start()
 	{
-	cEngineLib.SetAPIErrorHandling(true);
+	cEngineLib.SetAPIErrorHandling(false);
 	AICompany.SetAutoRenewStatus(false);
 	this.CheckCurrentSettings();
 	main.Init();
@@ -141,7 +141,7 @@ function DictatorAI::Start()
 			cMisc.SetPresident();
 			main.jobs.PopulateJobs();
 			main.jobs.RawJobHandling();
-			safeStart=3;
+			safeStart=5;
 			}
 	while (true)
 			{
@@ -291,7 +291,7 @@ function DictatorAI::CheckCurrentSettings()
 				main.carrier.road_upgrade=10;
 				main.carrier.rail_max=1;
 				main.carrier.water_max=2;
-				main.carrier.air_max=4;
+				main.carrier.air_max=10;
 				main.carrier.airnet_max=2;
 				terraform = false; // no terraforming in easy difficulty
 				break;
@@ -301,17 +301,17 @@ function DictatorAI::CheckCurrentSettings()
 				main.carrier.road_upgrade=10;
 				main.carrier.rail_max=4;
 				main.carrier.water_max=20;
-				main.carrier.air_max=6;
+				main.carrier.air_max=20;
 				main.carrier.airnet_max=3;
 				break;
 			case 2:
 				main.carrier.road_max_onroute=40;	// upto 40 bus/truck per route
-				main.carrier.road_max=9;		// upto a 9 size road station
+				main.carrier.road_max=9;			// upto a 9 size road station
 				main.carrier.road_upgrade=10;		// upgrade road station every X vehicles. station can handle so a max that*road_max vehicle
-				main.carrier.rail_max=12; 		// it's our highest train limit, can't build more than 12 platforms per station
-				main.carrier.water_max=60; 		// there's no real limit for boats
-				main.carrier.air_max=8; 		// 8 aircrafts / route
-				main.carrier.airnet_max=4;		// 4 aircrafts / airport in the air network, ie: 10 airports = 40 aircrafts
+				main.carrier.rail_max=12; 			// it's our highest train limit, can't build more than 12 platforms per station
+				main.carrier.water_max=100;			// there's no real limit for boats
+				main.carrier.air_max=200; 			// 8 aircrafts / route
+				main.carrier.airnet_max=4;			// 4 aircrafts / airport in the air network, ie: 10 airports = 40 aircrafts
 				break;
 			}
 	local spdcheck=null;

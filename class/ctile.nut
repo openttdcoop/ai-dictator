@@ -23,12 +23,11 @@ function cTileTools::IsTilesBlackList(tile)
 	return cTileTools.TilesBlackList.HasItem(tile);
 }
 
-function cTileTools::GetTileOwner(tile)
+function cTileTools::GetTileStationOwner(tile)
 // return station that own the tile
+// or -1
 {
-	local isour=AICompany.IsMine(AITile.GetOwner(tile));
-	if (cTileTools.TilesBlackList.HasItem(tile))	return cTileTools.TilesBlackList.GetValue(tile);
-	if (!cTileTools.IsBuildable(tile) && !isour)	{ cTileTools.TilesBlackList.AddItem(tile, -255); return -255; }
+	if (cTileTools.TilesBlackList.HasItem(tile))	{ return cTileTools.TilesBlackList.GetValue(tile); }
 	return -1;
 }
 
@@ -36,55 +35,42 @@ function cTileTools::CanUseTile(tile, owner)
 // Answer if we can use that tile
 {
 	local coulduse=true;
-	local ot=cTileTools.GetTileOwner(tile);
+	local ot=cTileTools.GetTileStationOwner(tile);
 	if (ot == owner)	return true;
 	if (ot == -1)	return true;
-	if (ot == -100)	return true;
 	return false;
 }
 
-function cTileTools::CanUseTileForStationCreation(tile)
-{
-	local owner=cTileTools.GetTileOwner(tile);
-	return (owner == -1);
-}
-
-function cTileTools::BlackListTile(tile, stationID=-255)
+function cTileTools::BlackListTile(tile, stationID = -255)
 {
 // we store the stationID for a blacklisted tile or a negative value that tell us why it was blacklist
 // -255 not usable at all, we can't use it
 // -100 don't use that tile when building a station, it's a valid tile, but a bad spot
 	if (AIMap.IsValidTile(tile))
 		{
-		local owner=cTileTools.GetTileOwner(tile);
-		cTileTools.TilesBlackList.AddItem(tile, -1);
-		if (stationID!=-100 && owner == -1)	cTileTools.TilesBlackList.SetValue(tile, stationID);
-		if (stationID == -255)	cTileTools.TilesBlackList.SetValue(tile, -255);
-		if (stationID == -100)	cTileTools.TilesBlackList.SetValue(tile, -100);
+		if (stationID == -255)	{ cTileTools.TilesBlackList.AddItem(tile, -255); return; }
+		if (stationID == -100)	{ cTileTools.TilesBlackList.AddItem(tile, -100); return; }
+		local owner = cTileTools.GetTileStationOwner(tile);
+		if (owner == -1)	{ cTileTools.TilesBlackList.AddItem(tile, stationID); return; }
+		// allow tile to be claim if not own by a station
+		if (owner < 0)	{ cTileTools.TilesBlackList.SetValue(tile, stationID); }
+		// allow temporary claims tiles (0 - 1000+stationID) to be reclaim by a real stationID
 		}
-}
-
-function cTileTools::BlackListTileSpot(tile)
-// blacklist that tile for possible station spot creation
-{
-	cTileTools.BlackListTile(tile, -100);
 }
 
 function cTileTools::UnBlackListTile(tile)
 {
-	if (cTileTools.IsTilesBlackList(tile))	cTileTools.TilesBlackList.RemoveItem(tile);
+	if (cTileTools.IsTilesBlackList(tile))	{ cTileTools.TilesBlackList.RemoveItem(tile); }
 }
 
 function cTileTools::PurgeBlackListTiles(alist, creation=false)
 // remove all tiles that are blacklist from an AIList and return it
 // if creation is false, don't remove tiles that cannot be use for station creation
 {
-	local purgelist=AIList();
-	purgelist.AddList(alist);
-	purgelist.Valuate(cTileTools.GetTileOwner);
-	purgelist.RemoveValue(-1); // keep only ones that are not own by anyone
-	if (!creation)	purgelist.RemoveValue(-100); // but not own because of bad spot
-	foreach (tile, dummy in purgelist)	{ alist.RemoveItem(tile); local c = cLooper(); }
+	alist.Valuate(cTileTools.GetTileStationOwner);
+	alist.RemoveAboveValue(0); // remove own tiles
+	alist.RemoveValue(-255); // remove bad tiles
+	if (creation)	{ alist.RemoveValue(-100); } // remove bad spot for station
 	return alist;
 }
 
@@ -104,7 +90,7 @@ function cTileTools::FindStationTiles(tile)
 {
 	local stationid=AIStation.GetStationID(tile);
 	if (!AIStation.IsValidStation(stationid))	return AIList();
-	local tilelist=cTileTools.GetTilesAroundPlace(tile,12);
+	local tilelist=cTileTools.GetTilesAroundPlace(tile,16);
 	tilelist.Valuate(AIStation.GetStationID);
 	tilelist.KeepValue(stationid);
 	return tilelist;
@@ -121,16 +107,18 @@ function cTileTools::StationIsWithinTownInfluence(stationid, townid)
 function cTileTools::DemolishTile(tile)
 // same as AITile.DemolishTile but retry after a little wait, protect rails, tunnel and bridge
 {
+	if (AITile.IsStationTile(tile))
+	{
+	AISign.BuildSign(tile,"S");
+	AIController.Break("attacking station");
+	}
 	if (cTileTools.IsBuildable(tile)) return true;
+	if (AIRail.IsRailDepotTile(tile))	{ return cTrack.StationKillRailDepot(tile); }
+	if (AIRoad.IsRoadDepotTile(tile) || AIMarine.IsWaterDepotTile(tile))	{ return cTrack.DestroyDepot(tile); }
 	if (AIRail.IsRailTile(tile))	return false;
 	if (AIBridge.IsBridgeTile(tile) && cBridge.IsRailBridge(tile))	return false;
 	if (AITunnel.IsTunnelTile(tile))	return false;
-	local res=AITile.DemolishTile(tile);
-	if (!res)
-		{
-		AIController.Sleep(30);
-		res=AITile.DemolishTile(tile);
-		}
+	local res = cError.ForceAction(AITile.DemolishTile, tile);
 	return res;
 }
 
@@ -528,6 +516,7 @@ function cTileTools::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 	local tTile=AITileList();
 	tTile.AddList(tlist);
 	tTile.Sort(AIList.SORT_BY_VALUE,UpOrDown);
+	if (!evaluate)	cDebug.showLogic(tTile);
 	local costs=AIAccounting();
 	local testrun=AITestMode();
 	local error=false;
@@ -598,7 +587,7 @@ function cTileTools::TerraformHeightSolver(tlist)
 	local l_firstitem=1000;
 	local Solve=AIList();
 	local terratrys=0;
-	DInfo("Start near "+AITown.GetName(AITile.GetClosestTown(tlist.Begin())),3);
+	DInfo("Terraform: "+cMisc.Locate(tlist.Begin()),3);
 	do	{
 		h_firstitem=cellHCount.Begin();
 		l_firstitem=cellLCount.Begin();

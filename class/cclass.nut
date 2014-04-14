@@ -79,7 +79,7 @@ function cMain::Init()
 	cEngineLib.EngineCacheInit();
 	SCP.Init();
 	AIRoad.SetCurrentRoadType(AIRoad.ROADTYPE_ROAD);
-	builder.SetRailType();
+	cTrack.SetRailType();
 	route.RouteInitNetwork();
 	cargo.SetCargoFavorite();
 	local pList=AITownList();
@@ -112,5 +112,5 @@ function cMain::CheckAccount()
 			bank.canBuild=true;
 			if (cJobs.rawJobs.IsEmpty())	{ DInfo("Hard times going on, unleashing routes"); bank.unleash_road=true; }
 			} // we have 0 vehicles force a build
-	DWarn("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehicle_cash="+carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+carrier.vehicle_wishlist.Count()+" trainbusy="+cCarrier.IsTrainRouteBusy(),1);
+	DWarn("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehicle_cash="+carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+carrier.vehicle_wishlist.Count(),1);
 	}

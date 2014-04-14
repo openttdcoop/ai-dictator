@@ -152,7 +152,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 	filterveh.Valuate(AIOrder.GetOrderCount);
 	filterveh.KeepValue(2); // only a 2 orders vehicle is valid for us
 	if (filterveh.IsEmpty())	{ orderReset=true; } // no vehicle with valid orders is usable as sharing target
-	else	{ veh=filterveh.Begin(); }
+						else	{ veh=filterveh.Begin(); }
 	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
 	local road = cRoute.Load(idx);
 	if (!road)	{ return false; }
@@ -330,7 +330,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 					else
 							{
 							DInfo("Trying to build a depot to sent "+cCarrier.GetVehicleName(veh)+" there",1);
-							homedepot=cBuilder.BuildRoadDepotAtTile(vehloc);
+							homedepot=cBuilder.BuildRoadDepotAtTile(vehloc, -1);
 							if (homedepot==-1)	{ homedepot==null; }
 							}
 					if (homedepot == null)	{ return; }

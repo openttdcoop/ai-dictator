@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -34,15 +34,12 @@ function cStationAir::CheckAirportLimits()
 	if (!AIStation.IsValidStation(this.s_ID) || !AIStation.HasStationType(this.s_ID, AIStation.STATION_AIRPORT))
 		{
 		DWarn("Invalid airport station ID",1);
+		this.s_VehicleMax = 0;
 		return; // it happen if the airport is moved and now invalid
 		}
-	local virtualized = cStation.IsStationVirtual(this.s_ID);
-	// get out of airnetwork if the network is too poor
 	local rawlimit = INSTANCE.main.carrier.AirportTypeLimit[this.s_SubType];
 	DInfo("airport rawlimit="+rawlimit+" type="+this.s_SubType,1);
-	this.s_VehicleMax=rawlimit;
-	if (virtualized)	this.s_VehicleMax = INSTANCE.main.carrier.airnet_max * rawlimit;
-			else	if (this.s_VehicleMax > rawlimit)	this.s_VehicleMax = rawlimit;
+	this.s_VehicleMax = rawlimit;
 	}
 
 

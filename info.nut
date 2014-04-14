@@ -65,6 +65,35 @@ require("class/version.nut");
 
     AddLabels("allowedjob", {_0 = "Industry & Town", _1 = "Only Industry", _2 = "Only Town"});
 
+	AddSetting({
+		name = "use_road",
+		description = "Use buses & trucks",
+		easy_value = 1,
+		medium_value = 1,
+		hard_value = 1,
+		custom_value = 1,
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
+	});
+
+	AddSetting({
+		name = "station_balance",
+		description = "Detect traffic jam: on - better fairplay and aesthetic / off - better for economy",
+		easy_value = 1,
+		medium_value = 1,
+		hard_value = 0,
+		custom_value = 1,
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
+	});
+
+	AddSetting({
+		name = "keep_road",
+		description = "Remove roads: on - better economy and aesthetic / off - better for opponents (some AIs may bug)",
+		easy_value = 0,
+		medium_value = 0,
+		hard_value = 1,
+		custom_value = 1,
+		flags = CONFIG_BOOLEAN | CONFIG_INGAME
+	});
 
 	AddSetting({
 		name = "use_train",
@@ -78,23 +107,14 @@ require("class/version.nut");
 
 	AddSetting({
 		name = "use_nicetrain",
-		description = "Use trains for anything (better for economy) / Respect newGRF authors choices (better for aesthetics)",
-		easy_value = 0,
-		medium_value = 0,
-		hard_value = 1,
+		description = "Respect newGRF flag: on - better for aesthetic / off - better for economy",
+		easy_value = 1,
+		medium_value = 1,
+		hard_value = 0,
 		custom_value = 1,
 		flags = CONFIG_BOOLEAN | CONFIG_INGAME
 	});
 
-	AddSetting({
-		name = "use_road",
-		description = "Use buses & trucks",
-		easy_value = 1,
-		medium_value = 1,
-		hard_value = 1,
-		custom_value = 1,
-		flags = CONFIG_BOOLEAN | CONFIG_INGAME
-	});
 	AddSetting({
 		name = "use_air",
 		description = "Use aircrafts & choppers",
@@ -107,7 +127,7 @@ require("class/version.nut");
 
 	AddSetting({
 		name = "use_boat",
-		description = "Use boat vehicles - NOT FUNCTIONAL",
+		description = "Use boats",
 		easy_value = 1,
 		medium_value = 1,
 		hard_value = 1,
@@ -117,7 +137,7 @@ require("class/version.nut");
 
 	AddSetting({
 		name = "use_terraform",
-		description = "Allow terraforming, always disable in Lazy mode",
+		description = "Allow terraforming: always disable in Lazy mode",
 		easy_value = 0,
 		medium_value = 1,
 		hard_value = 1,
@@ -127,7 +147,7 @@ require("class/version.nut");
 
 	AddSetting({
 		name = "upgrade_townbridge",
-		description = "Upgrade AI & towns bridges (better for aesthetics & opponents) / Upgrade only AI bridges, (better for economy)",
+		description = "Upgrade towns bridges: on - better for aesthetics & opponents / off - better for economy",
 		easy_value = 1,
 		medium_value = 1,
 		hard_value = 0,

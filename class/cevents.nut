@@ -119,24 +119,12 @@ while (AIEventController.IsEventWaiting())
 				{
 				local vehlist=AIVehicleList();
 				vehlist.Valuate(AIVehicle.GetProfitThisYear);
-				local vehsell=AIList();
-				vehsell.AddList(vehlist);
-				vehsell.RemoveAboveValue(0);
-				vehlist.KeepAboveValue(0);
-				vehlist.Valuate(AIVehicle.GetCurrentValue);
-				vehlist.Sort(AIList.SORT_BY_VALUE,false);
-				foreach (vehicle, profit in vehsell)
+                vehlist.KeepAboveValue(0);
+				foreach (vehicle, profit in vehlist)
 					{ // sell all non profitable vehicles
 					INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 					}
-				foreach (vehicle, value in vehlist)
-					{
-					do	{
-						cCarrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
-						AIController.Sleep(150);
-						INSTANCE.main.carrier.VehicleIsWaitingInDepot();
-						} while (AICompany.GetBankBalance(company) < 0 && vehlist.Count() > 2);
-					}
+				if (!vehlist.IsEmpty()) { INSTANCE.buildDelay = 6; }
 				}
 		break;
 		case	AIEvent.ET_SUBSIDY_OFFER_EXPIRED:

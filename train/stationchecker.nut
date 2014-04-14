@@ -195,20 +195,20 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				{
 				cTileTools.DemolishTile(temptile);
-				success=INSTANCE.main.builder.DropRailHere(rail, temptile);
+				success = cTrack.DropRailHere(rail, temptile, stationObj.s_ID, useEntry);
 				}
 		else	{ return false; }
 		if (success)
 				{
 				if (useEntry)	{ se_crossing=temptile; crossing=se_crossing; }
-				else	{ sx_crossing=temptile; crossing=sx_crossing; }
-				INSTANCE.main.builder.DropRailHere(rail, temptile,true); // remove the test track
+						else	{ sx_crossing=temptile; crossing=sx_crossing; }
+				cTrack.DropRailHere((0-(rail+1)), temptile, stationObj.s_ID, useEntry); // remove the test track
 				}
 		j++;
 		}	while (j < 5 && !success);
 	if (success)
 			{
-			stationObj.RailStationClaimTile(crossing, useEntry);
+			cStation.StationClaimTile(crossing, stationObj.s_ID, useEntry);
 			if (useEntry)
 					{
 					stationObj.s_EntrySide[TrainSide.CROSSING]= se_crossing;
@@ -300,8 +300,8 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
                     else	{ in_str="exit OUT"; fromtile+=rightTileOf; }
 			}
 	DInfo("Building "+in_str+" point",1);
-	cBuilder.StationKillDepot(stationObj.s_EntrySide[TrainSide.DEPOT]);
-	cBuilder.StationKillDepot(stationObj.s_ExitSide[TrainSide.DEPOT]);
+	cTrack.StationKillRailDepot(stationObj.s_EntrySide[TrainSide.DEPOT], stationObj.s_ID);
+	cTrack.StationKillRailDepot(stationObj.s_ExitSide[TrainSide.DEPOT], stationObj.s_ID);
 	local endconnector=fromtile;
 	local success=false;
 	local building_maintrack=true;
@@ -313,11 +313,10 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 		cTileTools.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				{
-				success=INSTANCE.main.builder.DropRailHere(rail, temptile);
+				success = cTrack.DropRailHere(rail, temptile, stationObj.s_ID, useEntry);
 				}
 		else	{ cError.RaiseError(); return false; }
-		if (success)	{ stationObj.RailStationClaimTile(temptile,useEntry); }
-                else	{ return false; }
+		if (!success)	{ return false; }
 		if (building_maintrack) // we're building IN/OUT point for the primary track
 				{
 				cDebug.PutSign(temptile+(1*forwardTileOf),"R1");
@@ -325,24 +324,22 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 				cTileTools.TerraformLevelTiles(position,temptile+(3*forwardTileOf));
 				if (cTileTools.CanUseTile(temptile+(1*forwardTileOf), stationObj.s_ID))
 						{
-						success=INSTANCE.main.builder.DropRailHere(rail, temptile+(1*forwardTileOf));
+						success = cTrack.DropRailHere(rail, temptile+(1*forwardTileOf), stationObj.s_ID, useEntry);
 						}
 				else	{ cError.RaiseError(); return false; }
-				if (success) { stationObj.RailStationClaimTile(temptile+(1*forwardTileOf),useEntry); }
 				if (cTileTools.CanUseTile(temptile+(2*forwardTileOf), stationObj.s_ID))
 						{
-						success=INSTANCE.main.builder.DropRailHere(rail, temptile+(2*forwardTileOf));
+						success = cTrack.DropRailHere(rail, temptile+(2*forwardTileOf), stationObj.s_ID, useEntry);
 						}
 				else	{ cError.RaiseError(); return false; }
-				if (success) { stationObj.RailStationClaimTile(temptile+(2*forwardTileOf),useEntry); }
 				}
         if (tmptaker)	{ sigdir=fromtile+((j-1)*forwardTileOf); }
                 else	{ sigdir=fromtile+((j+1)*forwardTileOf); }
         DInfo("Building "+in_str+" point signal",1);
-        success=AIRail.BuildSignal(temptile, sigdir, sigtype);
+        success=cError.ForceAction(AIRail.BuildSignal, temptile, sigdir, sigtype);
         if (success)
 				{
-				if (AIRail.IsRailDepotTile(fromtile))	{ cBuilder.StationKillDepot(fromtile); }
+				if (AIRail.IsRailDepotTile(fromtile))	{ cTrack.StationKillRailDepot(fromtile, stationObj.s_ID); }
 				if (tmptaker)
 						{
 						if (useEntry)
@@ -366,10 +363,8 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
                         }
                 else
 						{
-						if (cTileTools.CanUseTile(fromtile,stationObj.s_ID) && cBuilder.DropRailHere(railUpLeft, fromtile))
-										{    // it's crossing+rightTileOf
-										stationObj.RailStationClaimTile(fromtile, useEntry);
-										}
+						if (cTileTools.CanUseTile(fromtile,stationObj.s_ID))
+								{ cTrack.DropRailHere(railUpLeft, fromtile, stationObj.s_ID, useEntry); }
                         if (useEntry)
 								{
 								se_OUT = temptile;
@@ -380,7 +375,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
                                             { cError.RaiseError(); return false;}
 								cBuilder.RailConnectorSolver(fromtile+forwardTileOf, fromtile, true);
 								// this build rails at crossing point connecting to 1st rail of se_OUT
-								stationObj.RailStationClaimTile(fromtile+forwardTileOf, useEntry);
+								cStation.StationClaimTile(fromtile+forwardTileOf, stationObj.s_ID, useEntry);
 								}
 						else
 								{
@@ -391,7 +386,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
                                 if (!cTileTools.DemolishTile(stationObj.s_ExitSide[TrainSide.OUT_LINK]))
 											{ cError.RaiseError(); return false;}
                                 cBuilder.RailConnectorSolver(fromtile, fromtile+forwardTileOf ,true);
-								stationObj.RailStationClaimTile(fromtile+forwardTileOf, useEntry);
+								cStation.StationClaimTile(fromtile+forwardTileOf, stationObj.s_ID, useEntry);
 								}
                         }
                 }
@@ -430,6 +425,8 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
 			roadObj.Secondary_RailLink=true;
             roadObj.MoreTrain = 2;
 			roadObj.Route_GroupNameSave();
+			roadObj.SourceStation.SetAlternateLineBuilt();
+			roadObj.TargetStation.SetAlternateLineBuilt();
 			cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 			cBuilder.RailConnectorSolver(dstpos, dstpos+cTileTools.GetForwardRelativeFromDirection(cBuilder.GetDirection(dstlink, dstpos)), true);
 			}
@@ -568,9 +565,9 @@ function cBuilder::RailStationPhaseBuildDepot(stationObj, useEntry)
 							if (success)
 									{
 									DInfo("We built depot at "+depotlocations[h],1);
-									stationObj.RailStationClaimTile(depotlocations[h],stationside);
+									cStation.StationClaimTile(depotlocations[h], stationObj.s_ID, stationside);
 									if (stationside)	{ stationObj.s_EntrySide[TrainSide.DEPOT]= depotlocations[h]; }
-									else	{ stationObj.s_ExitSide[TrainSide.DEPOT]= depotlocations[h]; }
+												else	{ stationObj.s_ExitSide[TrainSide.DEPOT]= depotlocations[h]; }
 									success=true;
 									break;
 									}
@@ -594,7 +591,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local trainEntryDropper=thatstation.s_Train[TrainType.TED];
 	local trainExitDropper=thatstation.s_Train[TrainType.TXD];
 	local station_depth=thatstation.s_Train[TrainType.DEPTH];
-	cBuilder.SetRailType(thatstation.s_SubType); // not to forget
+	cTrack.SetRailType(thatstation.s_SubType); // not to forget
 	local success=false;
 	local canAddTrain = true;
 	local closeIt=false;
@@ -632,7 +629,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 			local uidowner=thatstation.s_Train[TrainType.OWNER];
 			road=cRoute.Load(uidowner);
 			if (!road)	{ DInfo("The route owner ID "+uidowner+" is invalid",1); }
-			else	{ DInfo("Station main owner "+uidowner,1); }
+				else	{ DInfo("Station main owner "+uidowner,1); }
 			}
 	if (useEntry)	{ DInfo("Working on station entry", 1); }
             else	{ DInfo("Working on station exit", 1); }

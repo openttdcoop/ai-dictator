@@ -23,7 +23,6 @@ function cBuilder::WeeklyChecks()
 	if (week - INSTANCE.OneWeek < 7)	return false;
 	INSTANCE.OneWeek=AIDate.GetCurrentDate();
 	DInfo("Weekly checks run...",1);
-	INSTANCE.main.builder.RoadStationsBalancing();
 	cCarrier.Process_VehicleWish();
 }
 
@@ -38,6 +37,7 @@ function cBuilder::MonthlyChecks()
 	if (INSTANCE.buildDelay > 0)	INSTANCE.buildDelay--; // lower delaying timer
 	INSTANCE.main.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
 	INSTANCE.main.carrier.VehicleMaintenance();
+	INSTANCE.main.builder.RoadStationsBalancing();
 	INSTANCE.main.route.DutyOnRoute();
 	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BoostedBuys();
 	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BridgeUpgrader();
@@ -56,6 +56,7 @@ function cBuilder::HalfYearChecks()
 		local totair=maillist.Count()+passlist.Count();
 		DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 		}
+	INSTANCE.main.builder.CheckRouteStationStatus();
 	if (INSTANCE.TwelveMonth == 2)	INSTANCE.main.builder.YearlyChecks();
 }
 
@@ -93,8 +94,8 @@ function cBuilder::RouteNeedRepair()
 					}
 		if (trys == 4)	{
 					DInfo("Removing all depots to rebuild them",1);
-					cBuilder.DestroyDepot(cRoute.GetDepot(routes, 1));
-					cBuilder.DestroyDepot(cRoute.GetDepot(routes, 2));
+					cTrack.DestroyDepot(cRoute.GetDepot(routes, 1));
+					cTrack.DestroyDepot(cRoute.GetDepot(routes, 2));
 					}
 		if (trys >= 6)	{ deletethatone=routes }
 		if (runLimit <= 0)	break;
@@ -115,7 +116,6 @@ function cBuilder::YearlyChecks()
 {
 	INSTANCE.TwelveMonth=0;
 	DInfo("Yearly checks run...",1);
-	INSTANCE.main.builder.CheckRouteStationStatus();
 	INSTANCE.main.jobs.CheckTownStatue();
 //	INSTANCE.main.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 	INSTANCE.main.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
@@ -173,9 +173,7 @@ function cBuilder::RoadStationsBalancing()
 // Look at road stations for busy loading and balance it by sending vehicle to servicing
 // Because vehicle could block the station waiting to load something, while others carrying products can't enter it
 {
-	local busstation = AIStationList(AIStation.STATION_BUS_STOP);
 	local allstations = AIStationList(AIStation.STATION_TRUCK_STOP);
-	//allstations.AddList(busstation);
 	if (allstations.IsEmpty())	return;
 	foreach (stations, _ in allstations)
 		{
@@ -241,7 +239,7 @@ function cBuilder::RoadStationsBalancing()
 				}
 			}
 		// we have our 4 lists now, let's play with them
-		// case 1, station got loader, more loaders are waiting, not harmul -> also vehicle handling will sell them
+		// case 1, station got loader, more loaders are waiting, not harmful -> also vehicle handling will sell them
 		// case 2, station got loader, and dropper are waiting, bad
 		// case 3, station got dropper, and loader are waiting, not harmful
 		// case 4, station got dropper, more dropper are waiting, not harmful
@@ -277,12 +275,15 @@ function cBuilder::RoadStationsBalancing()
 				DInfo("Station "+s.s_Name+" produce "+cCargo.GetCargoLabel(stacargo)+" with "+amount_wait+" units waiting",1);
 				foreach (vehicle, vehcargo in truck_getter_waiting)
 					{
+					if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
 					local aapause = cLooper();
 					if (AIVehicle.GetCapacity(vehicle, stacargo)==0)	continue; // not a vehicle using that cargo
-					if (amount_wait > 0) continue; // no action if we have cargo waiting at the station
 					if (AIVehicle.GetAge(vehicle) < 30) continue; // ignore young vehicle
-					DInfo("Selling vehicle "+cCarrier.GetVehicleName(vehicle)+" to balance station",1);
-					cCarrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+					if (DictatorAI.GetSetting("station_balance"))
+							{
+							DInfo("Selling vehicle "+cCarrier.GetVehicleName(vehicle)+" to balance station",1);
+							cCarrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+							}
 					}
 				}
 		}

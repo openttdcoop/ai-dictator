@@ -23,10 +23,11 @@ function cRoute::DutyOnRailsRoute(uid)
 	INSTANCE.main.carrier.highcostTrain=0;
 	local cargoid=road.CargoID;
 	local railtype=road.SourceStation.s_SubType;
-	local futur_engine= cCarrier.ChooseRailCouple(cargoid, railtype);
+	local depot = cRoute.GetDepot(uid);
+	local futur_engine= cCarrier.ChooseRailCouple(cargoid, railtype, -1);
 	if (futur_engine[0] == -1)	return;
                         else	futur_engine = futur_engine[1]; // the wagon
-	local futur_engine_capacity = cEngine.GetCapacity(futur_engine, road.CargoID);
+	local futur_engine_capacity = cEngineLib.GetCapacity(futur_engine, road.CargoID);
     if (futur_engine_capacity <= 0) return;
 	road.SourceStation.UpdateStationInfos();
 	DInfo("After station update",2);
@@ -53,9 +54,9 @@ function cRoute::DutyOnRailsRoute(uid)
 			local dst_wait = road.TargetStation.s_CargoProduce.GetValue(cargoid);
 			if (dst_capacity == 0)	{ dst_wait=AITown.GetLastMonthProduction(road.TargetProcess.ID,cargoid); dst_capacity=futur_engine_capacity; }
 			if (src_wait < dst_wait)	cargowait=src_wait; // keep the lowest cargo amount
-							else	cargowait=dst_wait;
+                                else	cargowait=dst_wait;
 			if (src_capacity < dst_capacity)	capacity=dst_capacity; // but keep the highest capacity we have
-								else	capacity=src_capacity;
+                                    else	capacity=src_capacity;
 			DInfo("Source capacity="+src_capacity+" wait="+src_wait+" --- Target capacity="+dst_capacity+" wait="+dst_wait,2);
 			}
 	if (capacity==0)	capacity++; // avoid /0

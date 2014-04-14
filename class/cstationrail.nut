@@ -52,6 +52,8 @@ class cStationRail extends cStation
 	bit3 as target station entry is use 1, exit is use 0
 	bit4 main train line fire done yes 1/0 no
 	bit5 alt train line fire done yes 1/0 no
+	bit6 main line exist
+	bit7 alt line exist
 */
 	s_Platforms		= null;	// AIList of platforms: item=platform location
 						// value= bit0 on/off entry status
@@ -81,10 +83,27 @@ function cStationRail::GetRailStationMiscInfo(stationID=null)
 {
 	local thatstation = false;
 	if (stationID == null)	thatstation=this;
-				else	thatstation=cStation.Load(stationID);
+					else	thatstation=cStation.Load(stationID);
 	if (!thatstation)	return -1;
 	local stalength=0;
 	local entrypos=AIStation.GetLocation(thatstation.s_ID);
+	local stationtype = AIRail.GetRailType(entrypos);
+	thatstation.s_SubType = stationtype;
+	/*local statiles = cTileTools.FindStationTiles(entrypos);
+	thatstation.s_Tiles.AddList(statiles);*/
+	local statiles = AIList();
+	statiles.AddList(thatstation.s_Tiles);
+	statiles.Valuate(AIRail.GetRailType);
+	statiles.RemoveValue(stationtype);
+	if (!statiles.IsEmpty())
+		{
+		cBanker.RaiseFundsBigTime();
+		DInfo("Mismatch in station railtype... "+statiles.Count()+" are wrong");
+		foreach (tiles, _ in statiles)
+			{
+			cTrack.ConvertRailType(tiles, stationtype);
+			}
+		}
 	local direction, frontTile, backTile=null;
 	direction=AIRail.GetRailStationDirection(entrypos);
 	if (direction == AIRail.RAILTRACK_NW_SE)
@@ -101,14 +120,20 @@ function cStationRail::GetRailStationMiscInfo(stationID=null)
 	DInfo("Detecting station depth",1);
 	cDebug.PutSign(entrypos,"Start");
 	local scanner=entrypos;
-	while (AIRail.IsRailStationTile(scanner))	{ stalength++; scanner+=backTile; cDebug.PutSign(scanner,"."); }
+	while (AIRail.IsRailStationTile(scanner) && AIStation.GetStationID(scanner) == thatstation.s_ID)
+		{
+		stalength++;
+		scanner+=backTile;
+		cDebug.PutSign(scanner,".");
+		}
 	exitpos=scanner+frontTile;
 	cDebug.PutSign(exitpos,"End");
-	DInfo("Station "+thatstation.s_Name+" depth is "+stalength+" direction="+direction+" start="+entrypos+" end="+exitpos,1);
+	DInfo("Station "+thatstation.s_Name+" depth is "+stalength+" direction="+direction+" start="+entrypos+" end="+exitpos+ " type="+AIRail.GetName(stationtype),1);
 	thatstation.s_Train[TrainType.START_POINT]= entrypos;
 	thatstation.s_Train[TrainType.END_POINT]= exitpos;
 	thatstation.s_Train[TrainType.DIRECTION]= direction;
 	thatstation.s_Train[TrainType.DEPTH]= stalength;
+	thatstation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 	thatstation.DefinePlatform();
 	cDebug.ClearSigns();
 }
@@ -237,6 +262,67 @@ function cStationRail::IsRailStationPrimarySignalBuilt(stationID=null)
 	return false;
 }
 
+function cStationRail::IsRailStationSecondarySignalBuilt(stationID=null)
+// return true if the secondary rail signals are all built on it
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local exit=thatstation.s_Train[TrainType.STATIONBIT];
+	if (cMisc.CheckBit(exit, 5))
+		{
+		DInfo("Station "+thatstation.s_Name+" signals are built on secondary track",2);
+		return true;
+		}
+	return false;
+}
+
+function cStationRail::IsPrimaryLineBuilt(stationID=null)
+// return true if the primary rail line is built
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local exit=thatstation.s_Train[TrainType.STATIONBIT];
+	return cMisc.CheckBit(exit, 6);
+}
+
+function cStationRail::IsAlternateLineBuilt(stationID=null)
+// return true if the alternate rail line is built
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local exit=thatstation.s_Train[TrainType.STATIONBIT];
+	return cMisc.CheckBit(exit, 7);
+}
+
+function cStationRail::SetPrimaryLineBuilt(stationID=null)
+// Set the primary rail line state as built
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local flag = thatstation.s_Train[TrainType.STATIONBIT];
+	thatstation.s_Train[TrainType.STATIONBIT] = cMisc.SetBit(flag, 6);
+}
+
+function cStationRail::SetAlternateLineBuilt(stationID=null)
+// Set the alternate rail line state as built
+{
+	local thatstation=null;
+	if (stationID == null)	thatstation=this;
+			else		thatstation=cStation.Load(stationID);
+	if (!thatstation)	return -1;
+	local flag = thatstation.s_Train[TrainType.STATIONBIT];
+	thatstation.s_Train[TrainType.STATIONBIT] = cMisc.SetBit(flag, 7);
+}
+
+
 function cStationRail::SetPlatformWorking(platformID, status, stationID = null)
 // Set or unset the working state of a platform
 {
@@ -261,22 +347,6 @@ function cStationRail::IsPlatformWorking(platformID, stationID = null)
 	if (!thatstation.s_Platforms.HasItem(platformID))	return false;
 	local platvalue = thatstation.s_Platforms.GetValue(platformID);
 	if (cMisc.CheckBit(platvalue, 2))	return true;
-	return false;
-}
-
-function cStationRail::IsRailStationSecondarySignalBuilt(stationID=null)
-// return true if the secondary rail signals are all built on it
-{
-	local thatstation=null;
-	if (stationID == null)	thatstation=this;
-			else		thatstation=cStation.Load(stationID);
-	if (!thatstation)	return -1;
-	local exit=thatstation.s_Train[TrainType.STATIONBIT];
-	if (cMisc.CheckBit(exit, 5))
-		{
-		DInfo("Station "+thatstation.s_Name+" signals are built on secondary track",2);
-		return true;
-		}
 	return false;
 }
 
@@ -569,37 +639,21 @@ function cStationRail::GetRelativeCrossingPoint(platform, useEntry)
 	return goalTile;
 }
 
-function cStationRail::RailStationClaimTile(tile, useEntry, stationID=null)
-// Add a tile as own by the stationID
-// useEntry: true to make it own by station entry, false to define as an exit tile
-{
-	local thatstation= false;
-	if (stationID==null)	thatstation=this;
-			else		thatstation=cStation.Load(stationID);
-	if (!thatstation)	{ DError("Invalid stationID:"+stationID,2); return -1; }
-	local value=0;
-	if (useEntry)	value=1;
-	if (AITile.IsStationTile(tile))	thatstation.s_Tiles.AddItem(tile, value);
-						else	thatstation.s_TilesOther.AddItem(tile, value);
-	thatstation.StationClaimTile(tile, thatstation.s_ID);
-}
 
 function cStationRail::RailStationDeleteEntrance(useEntry, stationID=null)
 // Remove all tiles own by the station at its entry/exit
 // useEntry: true to remove tiles for its entry, false for its exit
 {
 	local thatstation=false;
-	if (stationID==null)	thatstation=this;
-			else		thatstation=cStation.Load(stationID);
-	if (!thatstation)	return -1;
+	if (stationID == null)	{ thatstation = this; }
+				else		{ thatstation = cStation.Load(stationID); }
+	if (!thatstation)	{ return -1; }
 	local removelist=AIList();
-	removelist.AddList(thatstation.s_Tiles);
+	removelist.AddList(thatstation.s_TilesOther);
 	local value=0;
-	if (useEntry)	value=1;
+	if (useEntry)	{ value=1; }
 	removelist.KeepValue(value);
-	DInfo("Removing "+removelist.Count()+" tiles own by "+thatstation.s_Name,2);
-	foreach (tile, dummy in removelist)
-		{ AITile.DemolishTile(tile); thatstation.s_Tiles.RemoveItem(tile); cTileTools.UnBlackListTile(tile) }
+	cTrack.RailCleaner(removelist, thatstation.s_ID);
 }
 
 function cStationRail::StationAddTrain(taker, useEntry, stationID=null)

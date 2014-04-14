@@ -19,7 +19,7 @@ function cCarrier::ChooseRailCouple(cargo, rtype = -1, depot = -1, forengine = -
 // empty array
 	{
 	local object = cEngineLib.Infos();
-	object.bypass = DictatorAI.GetSetting("use_nicetrain");
+	object.bypass = !DictatorAI.GetSetting("use_nicetrain");
 	object.cargo_id = cargo;
 	object.depot = depot;
 	object.engine_type = AIVehicle.VT_RAIL;
@@ -210,7 +210,11 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					}
 			else
 					{
-                    if (road.MoreTrain == 1)    { DInfo("Not calling that train until MoreTrain query is done",1); return false; }
+                    if (road.MoreTrain == 1)
+							{
+							DInfo("Not calling that train until MoreTrain query is done",1);
+							return false;
+							}
 					canorder.Valuate(AIVehicle.GetNumWagons);
 					canorder.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 					local veh = canorder.Begin();
@@ -269,8 +273,8 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					local beforesize = cEngineLib.GetNumberOfWagons(tID);
 					depotID=AIVehicle.GetLocation(tID);
 					local freightlimit=cCargo.IsFreight(road.CargoID);
-					if (numTrains > 1 || beforesize+wagonNeed < 5 || road.MoreTrain == 3)
-                            { tID=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); print("add wagons"); }
+					if (road.MoreTrain == 3 || numTrains > 1 || beforesize+wagonNeed < 5)
+                            { tID=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); print("add wagons"); road.MoreTrain = 3; }
 					else
 							{
 							print("new train");

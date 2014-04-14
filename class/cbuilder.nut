@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -15,23 +15,9 @@
 
 class cBuilder extends cClass
 	{
-	currentRoadType=null;
-	
-	statile=null;
-	stafront = null;
-	deptile=null;
-	depfront=null;
-	statop=null;
-	stabottom=null;
-	stationdir=null;
-	frontfront=null;
 	CriticalError=null;
-	holestart=null;
-	holeend=null;
-	holes=null;
-	savedepot = null; 		// the tile of the last depot we have build
 	building_route= null;		// Keep here what main.route.we are working on
-	
+
 	constructor()
 		{
 		building_route= -1;

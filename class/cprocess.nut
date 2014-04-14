@@ -255,7 +255,7 @@ function cProcess::UpdateScoreProduction()
                             current= AIIndustry.GetLastMonthProduction(this.ID, cargoID);
                             if (INSTANCE.fairlevel == 0)    current -= AIIndustry.GetLastMonthTransported(this.ID, cargoID);
                             // reduce it for fair game setting
-                            if (this.IndustryType == 1) { current = 1; } // force non-zero to allow only receiving industry get a rank > 0
+                            if (this.IndustryType == 2) { current = 1; } // force non-zero to allow only receiving industry get a rank > 0
                             }
 		if (best < current)	{ best=current; bestcargo=cargoID; }
 		this.CargoProduce.SetValue(cargoID, current);
@@ -279,7 +279,7 @@ function cProcess::UpdateScore()
 			this.Score = 0;
 			if (now - this.FailureDate > 365)	{ this.FailureDate=null; }
 			}
-	DInfo("Update score for "+this.Name+" to "+this.Score,3);
+	DInfo("Update score for "+this.Name+" to "+this.Score+" Rating="+this.ScoreRating+" Prod="+this.ScoreProduction,3);
 	}
 
 function cProcess::ZeroProcess()

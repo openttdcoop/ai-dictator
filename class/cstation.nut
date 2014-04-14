@@ -61,7 +61,7 @@ s_CargoProduce	    = null;	// cargos ID produce at station, value = amount waiti
 s_CargoAccept	    = null;	// cargos ID accept at station, value = cargo rating
 s_Radius	    	= null;	// radius of the station
 s_VehicleCount  	= null;	// vehicle using that station
-s_VehicleMax	    = null;	// max vehicle that station could handle
+s_VehicleMax	    = null;	// max vehicle that station could handle. For rail : -1 open, -2 close, >0 pathfinder task # is running
 s_VehicleCapacity   = null;	// total capacity of all vehicle using the station, item=cargoID, value=capacity
 s_Owner		        = null;	// list routes that own that station
 s_DateLastUpdate	= null;	// record last date we update infos for the station
@@ -221,8 +221,6 @@ function cStation::InitNewStation(stationID)
 			{
 			case	AIStation.STATION_TRAIN:
 				_station = cStationRail();
-				_station.s_SubType = AIRail.GetRailType(_Location); // set rail type the station use
-				_station.s_MaxSize = INSTANCE.main.carrier.rail_max;
 				_station.s_Tiles = cTileTools.FindStationTiles(_Location);
 				_station.s_Radius = AIStation.GetCoverageRadius(_StationType);
 				break;
@@ -260,11 +258,10 @@ function cStation::InitNewStation(stationID)
 	_station.s_Type = _StationType;
 	_station.s_ID = stationID;
 	_station.s_DateBuilt = AIDate.GetCurrentDate();
-	foreach (tile, _ in _station.s_Tiles)	cStation.StationClaimTile(tile, stationID);
+	_station.s_VehicleMax = 500;
 	_station.Save();
+	cStation.StationClaimTile(_station.s_Tiles, _station.s_ID);
 	if (_station instanceof cStationRail)	{ _station.GetRailStationMiscInfo(); }
-	_station.s_VehicleMax = 40;
-	//_station.CanUpgradeStation(); // just to set max_vehicle
 	return _station;
 	}
 
@@ -357,10 +354,54 @@ function cStation::SetStationName()
 	return true;
 	}
 
-function cStation::StationClaimTile(tile, stationID)
-// Add a tile as own by stationID
+function cStation::StationClaimTile(tile, stationID, useEntry = -1)
+/**
+/* Add a tile or a list of tiles as own by StationID
+/* @param tile : a tile or an AIList of tiles
+/* @param stationID : the stationID to work with
+/* @param useEntry : -1 to not care, true for entry, false for exit
+**/
 	{
-	cTileTools.BlackListTile(tile, stationID);
+	local station = cStation.Load(stationID);
+	if (!station)	{ return; }
+	local wlist = AIList();
+	if (cMisc.IsAIList(tile))	{ wlist.AddList(tile); }
+						else	{ wlist.AddItem(tile, 0); }
+	if (wlist.IsEmpty())	{ return; }
+	local value = -1;
+	if (useEntry != -1)
+		{
+		if (useEntry)	{ value = 1; }
+				else	{ value = 0; }
+		}
+	foreach (t, _ in wlist)
+		{
+		cTileTools.BlackListTile(t, stationID);
+		if (AITile.IsStationTile(t))	{ station.s_Tiles.AddItem(t, value); }
+								else	{ station.s_TilesOther.AddItem(t, value); }
+		}
+	}
+
+function cStation::StationReleaseTile(tile, stationID)
+/**
+/* Remove a tile as own by StationID
+/* @param tile : a tile or an AIList of tiles
+/* @param stationID : the stationID to work with
+/* @param useEntry : -1 to not care, true for entry, false for exit
+**/
+	{
+	local station = cStation.Load(stationID);
+	if (!station)	{ return; }
+	local wlist = AIList();
+	if (cMisc.IsAIList(tile))	{ wlist.AddList(tile); }
+						else	{ wlist.AddItem(tile, 0); }
+	if (wlist.IsEmpty())	{ return; }
+	foreach (t, _ in wlist)
+		{
+		cTileTools.UnBlackListTile(t);
+		if (AITile.IsStationTile(t))	{ station.s_Tiles.RemoveItem(t); }
+								else	{ station.s_TilesOther.RemoveItem(t); }
+		}
 	}
 
 function cStation::UpdateCargos(stationID=null)
@@ -496,7 +537,7 @@ function cStation::GetLocation(stationID=null)
 	{
 	local thatstation=null;
 	if (stationID == null)	{ thatstation=this; }
-	else { thatstation=cStation.Load(stationID); }
+					else	{ thatstation=cStation.Load(stationID); }
 	if (!thatstation)	{ return -1; }
 	if (thatstation.s_Type == AIStation.STATION_TRAIN)	{ return thatstation.s_Train[TrainType.START_POINT]; }
 	return AIStation.GetLocation(thatstation.s_ID);

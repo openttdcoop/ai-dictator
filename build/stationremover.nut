@@ -51,11 +51,12 @@ function cBuilder::DestroyStation(stationid)
             foreach (tile, dummy in temp.s_TilesOther)	{ cTileTools.UnBlackListTile(tile); }
             if (!temp.s_TilesOther.IsEmpty())
                 {
-                if (temp.s_Type == AIStation.STATION_TRAIN)	cBuilder.RailCleaner(temp.s_TilesOther);
+                if (temp.s_Type == AIStation.STATION_TRAIN)	{ cTrack.RailCleaner(temp.s_TilesOther); }
+													else	{ cTrack.RoadCleaner(temp.s_TilesOther); }
                 }
             }
-        if (!cBuilder.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
-                                               else	{ DInfo("Removing depot link to station "+wasnamed,0); }
+        if (!cTrack.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
+										else	{ DInfo("Removing depot link to station "+wasnamed,0); }
 		AIController.Sleep(1);
 		if (!cStation.DeleteStation(stationid))	{ return false; }
 		if (temp.s_SubType == -2)   { return true; }
@@ -66,12 +67,3 @@ function cBuilder::DestroyStation(stationid)
 	foreach (tile, dummy in tilelist)	AITile.DemolishTile(tile); // still rough to do that, could do it nicer
 	return true;
 }
-
-function cBuilder::DestroyDepot(tile)
-// Remove a depot, sold any vehicle in it that might prevent us doing it
-{
-	if (!cStation.IsDepot(tile))	return false;
-	if (!cCarrier.FreeDepotOfVehicle(tile))	return false;
-	return cTileTools.DemolishTile(tile);
-}
-

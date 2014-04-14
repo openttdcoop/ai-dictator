@@ -205,7 +205,6 @@ function cJobs::QuickRefresh()
 	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
 	smallList.Sort(AIList.SORT_BY_VALUE, false);
-	smallList.KeepTop(10); // Keep 10 top rank job doable
 	if (INSTANCE.safeStart > 0 && smallList.IsEmpty())	{ INSTANCE.safeStart=0; } // disable it if we cannot find any jobs
 	return smallList;
 	}
@@ -393,6 +392,12 @@ function cJobs::UpdateDoableJobs()
 	cJobs.CostTopJobs[RouteType.ROAD]=0;
 	// reset all top jobs
     local top50 = 0;
+    foreach (id, value in cRoute.RouteIndexer)
+		{
+		local j = cJobs.Load(id);
+		if (!j)	{ continue; }
+		parentListID.AddItem(j.parentID,0);
+		}
 	foreach (id, value in INSTANCE.main.jobs.jobIndexer)
 		{
 		if (id == 0 || id == 1)	{ continue; } // ignore virtual
@@ -404,11 +409,9 @@ function cJobs::UpdateDoableJobs()
 		local vehtest=null;
         if (doable) { doable = cJobs.IsTransportTypeEnable(myjob.roadType); }
 		// not doable if disabled
-		if (myjob.isUse)	{ doable=false; parentListID.AddItem(myjob.parentID,1); }
-		// not doable if already done, also record the parentID to block similar jobs
 		if (doable && myjob.ranking==0)	{ doable=false; }
 		// not doable if ranking is at 0
-		if (doable && (myjob.sourceObject.ScoreRating == 0 || myjob.targetObject.ScoreRating ==0))	{ doable = false; }
+		//if (doable && (myjob.sourceObject.ScoreRating == 0 || myjob.targetObject.ScoreRating ==0))	{ doable = false; }
 		// not doable if score rating is at 0
 		if (doable)
 			// not doable if max distance is limited and lower the job distance
@@ -417,15 +420,14 @@ function cJobs::UpdateDoableJobs()
 				if (curmax < myjob.distance)	{ doable=false; }
 				}
 		// not doable if any parent is already in use
-		if (doable)
-			if (parentListID.HasItem(myjob.parentID))
+		if (doable && parentListID.HasItem(myjob.parentID))
 					{
 					DInfo("Job already done by parent job ! First pass filter",4);
 					doable=false;
 					}
 		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	{ doable=false; }
 		// not doable if the industry no longer exist
-		if (doable && myjob.roadType == RouteType.AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 40 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 40))	{ doable=false; }
+		if (doable && myjob.roadType == RouteType.AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 100 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 100))	{ doable=false; }
 		// not doable because aircraft with poor towns don't make good jobs
 		if (doable && !INSTANCE.main.bank.unleash_road && myjob.roadType == RouteType.RAIL && myjob.cargoID == cCargo.GetPassengerCargo())	{ doable=false; }
 		// not doable until roads are unleash, trains aren't nice in town, so wait at least a nice big town to build them
@@ -433,6 +435,8 @@ function cJobs::UpdateDoableJobs()
 		// not doable if town jobs is not allow
 		if (doable && !myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 2)	{ doable=false; }
 		// not doable if industry jobs is not allow
+		if (doable && INSTANCE.safeStart > 0 && myjob.roadType != RouteType.ROAD && cJobs.IsTransportTypeEnable(RouteType.ROAD))	{ doable = false; }
+		// disable until safeStart is over
 		if (doable)
 				{
 				switch (myjob.roadType)
@@ -467,31 +471,15 @@ function cJobs::UpdateDoableJobs()
 							break;
 						}
 				}
-        local airValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && cJobs.IsTransportTypeEnable(RouteType.AIR));
+        local airValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && cJobs.IsTransportTypeEnable(RouteType.AIR) && INSTANCE.safeStart == 0);
 		if (airValid && myjob.roadType == RouteType.ROAD && myjob.cargoID == cCargo.GetPassengerCargo())	{ doable = false; }
 		// disable because we have funds to build an aircraft job
-        local trainValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && cJobs.IsTransportTypeEnable(RouteType.RAIL));
+        local trainValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && cJobs.IsTransportTypeEnable(RouteType.RAIL) && INSTANCE.safeStart == 0);
         if (trainValid && myjob.roadType == RouteType.ROAD) { doable = false; }
         // disable if we can make a train instead of a road
-
 		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	{ doable=false; }
 		// disable as we lack money
 		if (doable)	{ myjob.jobDoable.AddItem(id, myjob.ranking); top50++; }
-		if (top50 > 50) break; // we don't need millions doable jobs
-		}
-	local temp_doable = AIList();
-	temp_doable.AddList(cJobs.jobDoable);
-	foreach (jobID, rank in temp_doable)
-		{
-		// even some have already been filtered out in the previous loop, some still have pass the check succesfuly
-		// but it should cost us less cycle to filter the remaining ones here instead of filter all of them before the loop
-		local myjob =  cJobs.Load(jobID);
-		if (!myjob)	{ continue; }
-		if (parentListID.HasItem(myjob.parentID))
-				{
-				DInfo("Job already done by parent job ! Second pass filter",4);
-				cJobs.jobDoable.RemoveItem(jobID);
-				}
 		}
 	INSTANCE.main.jobs.jobDoable.Sort(AIList.SORT_BY_VALUE, false);
 	DInfo(INSTANCE.main.jobs.jobIndexer.Count()+" jobs found",2);
@@ -613,7 +601,7 @@ function cJobs::RawJobHandling()
 // Find a raw Job and add possible jobs from it to jobs database
 	{
 	if (cJobs.rawJobs.IsEmpty())	{ return; }
-	local looper = (2 - cRoute.RouteIndexer.Count());
+	local looper = (4 - cRoute.RouteIndexer.Count());
 	if (looper < 1)	{ looper=1; }
 	for (local j=0; j < looper; j++)
 			{

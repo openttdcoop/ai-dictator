@@ -43,6 +43,10 @@ function cDebug::showLogic(item)
 		{
 		cDebug.PutSign(i,dummy);
 		}
+	//AIController.Break("logic first "+cMisc.Locate(item.Begin()));
+	print("logic at "+cMisc.Locate(item.Begin()));
+	AIController.Sleep(40);
+	cDebug.ClearSigns();
 }
 
 function cBuilder::DumpRoute(idx=null)

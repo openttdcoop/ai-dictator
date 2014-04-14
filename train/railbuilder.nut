@@ -204,7 +204,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 	local prevprev = null;
 	local pp1, pp2, pp3 = null;
 	local walked=[];
-	cBuilder.SetRailType(AIRail.GetRailType(AIStation.GetLocation(stationID)));
+	cTrack.SetRailType(AIRail.GetRailType(AIStation.GetLocation(stationID)));
 	while (path != null && smallerror==0)
 			{
 			if (prevprev != null)
@@ -226,8 +226,9 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 											}
 									else
 											{
-											cTileTools.BlackListTile(prev, -stationID); // i mark them as blacklist and assign to -stationID, so i could recover them later
-											cTileTools.BlackListTile(path.GetTile(), -stationID);
+											cTileTools.BlackListTile(prev, 0 -(1000+stationID));
+											// i mark them as blacklist and assign to -stationID, so i could recover them later
+											cTileTools.BlackListTile(path.GetTile(), 0 - (1000+stationID));
 											}
 									}
 							else
@@ -246,8 +247,8 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 											}
 									else
 											{
-											cTileTools.BlackListTile(prev, -stationID);
-											cTileTools.BlackListTile(path.GetTile(), -stationID);
+											cTileTools.BlackListTile(prev, 0 - (1000+stationID));
+											cTileTools.BlackListTile(path.GetTile(), 0 -(1000+stationID));
 											}
 									cBridge.IsBridgeTile(prev); // force bridge check
 									}
@@ -275,8 +276,8 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 									}
 							else
 									{
-									cTileTools.BlackListTile(prev, -stationID);
-									cTileTools.BlackListTile(path.GetTile(), -stationID);
+									cTileTools.BlackListTile(prev, 0 - (1000+stationID));
+									cTileTools.BlackListTile(path.GetTile(), 0 -(1000+stationID));
 									}
 							}
 					}
@@ -313,12 +314,12 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 									}
 							}
 					DInfo("Pathfinder task "+mytask.UID+" failure !",1);
-					mytask.status=-1;
-					local badtiles=AIList();
+					mytask.status = -1;
+					local badtiles = AIList();
 					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-					badtiles.KeepValue(-mytask.stationID);
-					cBuilder.RailCleaner(badtiles); // remove all rail we've built
-					foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
+					badtiles.KeepValue(0 - (1000+ mytask.stationID));
+					cTrack.RailCleaner(badtiles); // remove all rail we've built
+					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
 					cError.RaiseError();
 					return false;
 					}
@@ -334,7 +335,8 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 							alist.AddItem(prev, 0);
 							}
 					prevprev=walked.pop();
-					cBuilder.RailCleaner(alist);
+					cTrack.RailCleaner(alist);
+					cTileTools.TilesBlackList.RemoveList(alist);
 					local newtarget=[prev, prevprev];
 					DInfo("Pathfinder is calling an helper task",1);
 					// Create the helper task
@@ -373,9 +375,9 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
 					local badtiles=AIList();
 					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-					badtiles.KeepValue(-mytask.stationID);
-					cBuilder.RailCleaner(badtiles); // remove all rail we've built
-					foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
+					badtiles.KeepValue(0 - (1000 + mytask.stationID));
+					cTrack.RailCleaner(badtiles); // remove all rail we've built
+					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
 					cError.RaiseError();
 					return false;
 					}
@@ -386,8 +388,16 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					INSTANCE.buildDelay=0;
 					local bltiles=AIList();
 					bltiles.AddList(cTileTools.TilesBlackList);
-					bltiles.KeepValue(-stationID);
-					foreach (tile, dummy in bltiles)	cStationRail.RailStationClaimTile(tile, useEntry, stationID); // assign tiles to that station
+					bltiles.KeepValue(0-(1000+stationID));
+					cStation.StationClaimTile(bltiles, stationID, useEntry); // assign tiles to that station
+					local staobj = cStation.Load(stationID);
+					if (!staobj)	{ cError.RaiseError(); return false; }
+					if (cStationRail.IsPrimaryLineBuilt(stationID) && !cStationRail.IsAlternateLineBuilt(stationID))
+						{
+						local uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
+						if (!uid_obj)	{ return false; }
+						cBuilder.RailStationPathfindAltTrack(uid_obj);
+						}
 					return true;
 					}
 			}
@@ -483,6 +493,11 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 	local dstStation=cStation.Load(toObj);
 	if (!srcStation || !dstStation)	{ return -1; }
 	DInfo("Connecting rail station "+srcStation.s_Name+" to "+dstStation.s_Name,1);
+	if (cStationRail.IsPrimaryLineBuilt(fromObj) && cStationRail.IsPrimaryLineBuilt(toObj))
+		{
+		if (!cStationRail.IsAlternateLineBuilt(fromOjb) || !cStationRail.IsAlternateLineBuilt(toObj))	return false;
+		return true;
+		}
 	local retry=true;
 	local bestWay=AIList();
 	local srcresult=false;
@@ -551,6 +566,8 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 	// pfff here, all connections were made, and rails built
 	INSTANCE.main.route.Source_RailEntry=srcUseEntry;
 	INSTANCE.main.route.Target_RailEntry=dstUseEntry;
+	INSTANCE.main.route.SourceStation.SetPrimaryLineBuilt();
+	INSTANCE.main.route.TargetStation.SetPrimaryLineBuilt();
 	INSTANCE.main.route.Primary_RailLink=true;
 	INSTANCE.main.route.Route_GroupNameSave();
 	cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
@@ -570,7 +587,7 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link = AIStati
 	if (link != AIStation.STATION_NEW && AIStation.IsValidStation(link))
         {
         local rt = AIRail.GetRailType(AIStation.GetLocation(link));
-        AIRail.SetCurrentRailType(rt);
+        cTrack.SetRailType(rt);
         }
 	if (!AIRail.BuildRailStation(tilepos, direction, 1, INSTANCE.main.carrier.train_length, link))
 			{
@@ -579,19 +596,6 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link = AIStati
 			return false;
 			}
     return true;
-	}
-
-function cBuilder::SetRailType(rtype=null)
-// set current railtype
-	{
-	if (rtype == null)
-			{
-			local railtypes = AIRailTypeList();
-			if (railtypes.IsEmpty())	{ DError("There's no railtype avaiable !",1); return false; }
-			rtype=railtypes.Begin();
-			}
-	if (!AIRail.IsRailTypeAvailable(rtype))	{ DError("Railtype "+rtype+" is not available !",1); return false; }
-	AIRail.SetCurrentRailType(rtype);
 	}
 
 function cBuilder::RailStationRemovePlatform(staloc)
@@ -622,7 +626,7 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 	local stationID=AIStation.GetStationID(platform);
 	local thatstation=cStation.Load(stationID);
 	if (!thatstation)	{ return false; }
-	cBuilder.SetRailType(thatstation.s_SubType); // not to forget
+	cTrack.SetRailType(thatstation.s_SubType); // not to forget
 	local crossing = 0;
 	if (useEntry)	{ crossing=thatstation.s_EntrySide[TrainSide.CROSSING]; }
             else	{ crossing=thatstation.s_ExitSide[TrainSide.CROSSING]; }
@@ -685,16 +689,15 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 			{
 			cTileTools.DemolishTile(i); // rails are protect there
 			cDebug.PutSign(i,"o");
-			if (cTileTools.CanUseTile(i, thatstation.s_ID) && cBuilder.DropRailHere(rail, i))
+			if (cTileTools.CanUseTile(i, thatstation.s_ID) && cTrack.DropRailHere(rail, i, stationID, useEntry))
 					{
-					thatstation.RailStationClaimTile(i, useEntry);
 					sweeper.AddItem(i, 0);
 					signaldone = (AIRail.GetSignalType(i, i+backwardTileOf) != AIRail.SIGNALTYPE_NONE);
-					if (!signaldone)	{ signaldone=AIRail.BuildSignal(i, i+backwardTileOf, AIRail.SIGNALTYPE_PBS); }
+					if (!signaldone)	{ signaldone= cError.ForceAction(AIRail.BuildSignal, i, i+backwardTileOf, AIRail.SIGNALTYPE_PBS); }
 					}
 			else
 					{
-					error=cTileTools.CanUseTile(i, thatstation.s_ID);
+					error = cTileTools.CanUseTile(i, thatstation.s_ID);
 					if (error)	{ break; }
 					}
 			i+=forwardTileOf;
@@ -706,92 +709,13 @@ function cBuilder::PlatformConnectors(platform, useEntry)
             local got_left = (AIStation.GetStationID(sta_left) == stationID);
             local got_right = (AIStation.GetStationID(sta_right) == stationID);
             cTileTools.DemolishTile(goal);
-            if (got_left)			cBuilder.DropRailHere(railLeft, goal);
-            if (got_right)			cBuilder.DropRailHere(railRight, goal);
-            if (got_left && got_right)	cBuilder.DropRailHere(railCross, goal);
+            if (got_left)	{ cTrack.DropRailHere(railLeft, goal, stationID, useEntry); }
+            if (got_right)	{ cTrack.DropRailHere(railRight, goal, stationID, useEntry); }
+            if (got_left && got_right)	{ cTrack.DropRailHere(railCross, goal, stationID, useEntry); }
             cBuilder.RailConnectorSolver(goal+backwardTileOf, goal, true);
 			}
-	if (error)	{ cBuilder.RailCleaner(sweeper); }
+	if (error)	{ cTrack.RailCleaner(sweeper, stationID); }
 	return true;
-	}
-
-function cBuilder::DropRailHere(railneed, pos, remove=false)
-// Put a rail at position pos, on failure clear the area and retry
-// railneed : the railtrack we want build/remove
-// pos : where to do the action
-// remove: true to remove the track, false to add it
-// return true on success
-	{
-	local lasterr=-1;
-	if (remove)
-			{
-			if (!AIRail.IsRailTile(pos))	{ return true; }
-			else	{ return AIRail.RemoveRailTrack(pos, railneed); }
-			}
-	while (!AIRail.BuildRailTrack(pos,railneed))
-			{
-			lasterr=AIError.GetLastError();
-			switch (lasterr)
-					{
-					case	AIError.ERR_AREA_NOT_CLEAR:
-						if (!cTileTools.DemolishTile(pos))	{ return false; }
-						break;
-					case	AIError.ERR_VEHICLE_IN_THE_WAY:
-						AIController.Sleep(20);
-						break;
-					case AIError.ERR_ALREADY_BUILT:
-						return true;
-					default:
-						DInfo("Cannot build rail track at "+pos,1);
-						return false;
-					}
-			}
-	return true;
-	}
-
-function cBuilder::RailCleaner(targetTile)
-// clean the tile by removing rails/depot/station... we found there
-// targetTile : an AIList of tiles to remove
-	{
-	local many=AIList();
-	many.AddList(targetTile);
-	if (many.IsEmpty())	{ return true; }
-	local voisin=[AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0)]; // SE, NW, SW, NE
-	local trackMap=AIList();
-	local seek=null;
-	trackMap.AddItem(AIRail.RAILTRACK_NE_SW,	0);
-	trackMap.AddItem(AIRail.RAILTRACK_NW_SE,	0);
-	trackMap.AddItem(AIRail.RAILTRACK_NW_NE,	0);
-	trackMap.AddItem(AIRail.RAILTRACK_SW_SE,	0);
-	trackMap.AddItem(AIRail.RAILTRACK_NW_SW,	0);
-	trackMap.AddItem(AIRail.RAILTRACK_NE_SE,	0);
-	foreach (tile, dummy in many)
-		{
-		cDebug.PutSign(tile,"Z");
-		if (AITile.GetOwner(tile) != AICompany.ResolveCompanyID(AICompany.COMPANY_SELF))	{ continue; }
-		if (AIRail.IsRailStationTile(tile))	{ continue; } // protect station
-		if (AIRail.IsRailDepotTile(tile))
-				{
-				cBuilder.DestroyDepot(tile);
-				continue;
-				}
-		if (AITile.HasTransportType(tile, AITile.TRANSPORT_RAIL) && (AIBridge.IsBridgeTile(tile) || AITunnel.IsTunnelTile(tile)) )
-				{
-				AITile.DemolishTile(tile);
-				continue;
-				}
-		foreach (near in voisin)
-			{
-			while (AIRail.GetSignalType(tile,tile+near)!=AIRail.SIGNALTYPE_NONE)	{ AIRail.RemoveSignal(tile, tile+near); }
-			}
-		seek=AIRail.GetRailTracks(tile);
-		if (seek != 255)
-				{
-				foreach (railtype, dummy in trackMap)	if ((seek & railtype) == railtype)	{
-						AIRail.RemoveRailTrack(tile,railtype);
-						} }
-		AIController.Sleep(1);
-		}
 	}
 
 function cBuilder::GetRailBitMask(rails)
@@ -999,38 +923,13 @@ function cBuilder::RailConnectorSolver(tile_link, tile_target, everything=true)
 		foreach (pair in addtrack)
 			{
    			local track = trackMap.GetValue(pair);
-   			if (!cBuilder.DropRailHere(track, tile_target))
+   			if (!cTrack.DropRailHere(track, tile_target))
 					{
 					cError.IsCriticalError();
 					if (cError.IsError())	{ return false; }
 					}
 			}
 	return true;
-	}
-
-
-function cBuilder::StationKillDepot(tile)
-// Just because we need to remove the depot at tile, and retry to make sure we can
-	{
-	if (!AIRail.IsRailDepotTile(tile))	{ return; }
-	local vehlist=AIVehicleList();
-	vehlist.Valuate(AIVehicle.GetState);
-	vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
-	vehlist.Valuate(AIVehicle.GetLocation);
-	vehlist.KeepValue(tile);
-	if (!vehlist.IsEmpty())	{ DInfo("Restarting trains at depot "+tile+" so we can remove it",1); }
-	foreach (veh, dummy in vehlist)
-		{
-		DInfo("Starting "+cCarrier.GetVehicleName(veh)+"...",0);
-		cTrain.SetDepotVisit(veh);
-		cCarrier.StartVehicle(veh);
-		AIController.Sleep(40);
-		}
-	for (local i=0; i < 100; i++)
-			{
-			if (AITile.DemolishTile(tile))	{ return; }
-			AIController.Sleep(40);
-			}
 	}
 
 function cBuilder::SignalBuilder(source, target)
@@ -1123,19 +1022,4 @@ function cBuilder::SignalBuilder(source, target)
 			path = path.GetParent();
 			}
 	return allsuccess;
-	}
-
-function cBuilder::ConvertRailType(tile, newrt)
-// return true if rail endup the good rt
-	{
-    if (!AIMap.IsValidTile) { return 1; }
-    if (tile == -1) { return 1; }
-    if (AIRail.GetRailType(tile) == newrt)	{ return 1; }
-    if (!AIRail.ConvertRailType(tile, tile, newrt))
-			{
-			cDebug.PutSign(tile,"x"); DError("tile convertion failure : "+tile, 1);
-            if (AIError.GetLastError() == AIError.ERR_NOT_ENOUGH_CASH)  { return 0; }
-			return -1;
-			}
-	return 1;
 	}

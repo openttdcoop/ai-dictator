@@ -115,6 +115,7 @@ function RailFollower::FindRailOwner()
 	foreach (grp, value in rail_routes)	if (cRoute.GroupIndexer.HasItem(grp))	uid_list.push(cRoute.GroupIndexer.GetValue(grp));
 	foreach (uid in uid_list)
 		{
+		cDebug.ClearSigns();
 		local road = cRoute.Load(uid);
 		if (!road)	continue;
 		// first re-assign trains state to each station (taker, droppper, using entry/exit)
@@ -144,6 +145,11 @@ function RailFollower::FindRailOwner()
 		src_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
 		bad = (src_tiles.IsEmpty());
 		DInfo("Main line rails : "+src_tiles.Count(), 2)
+		if (!src_tiles.IsEmpty())
+			{
+			road.SourceStation.SetPrimaryLineBuilt();
+			road.TargetStation.SetPrimaryLineBuilt();
+			}
 		local notbad = false; // to find if at least 1 platform is working, else the station is bad/unusable
 		// Find each source station platform tracks
 		foreach (platnum, _ in road.SourceStation.s_Platforms)
@@ -184,6 +190,7 @@ function RailFollower::FindRailOwner()
 		test_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
 		DInfo("Alternate line rails : "+test_tiles.Count(), 2)
 		if (!bad_alt)	bad_alt = (test_tiles.IsEmpty());
+		if (!bad_alt)	{ road.SourceStation.SetAlternateLineBuilt(); road.TargetStation.SetAlternateLineBuilt(); }
 		dst_tiles.AddList(test_tiles);
 		// Remove station tiles out of founded tiles : we don't want any station tile assign as a non station tiles
 		src_tiles.Valuate(AITile.IsStationTile);
@@ -194,17 +201,16 @@ function RailFollower::FindRailOwner()
 		cRoute.RouteDamage.RemoveList(src_tiles);
 		cRoute.RouteDamage.RemoveList(dst_tiles);
 		// Now assign tiles to their station OtherTiles list, and claim them
-		foreach (tiles, _ in src_tiles)	cStationRail.RailStationClaimTile(tiles, road.Source_RailEntry, road.SourceStation.s_ID);
-		foreach (tiles, _ in dst_tiles)	cStationRail.RailStationClaimTile(tiles, road.Target_RailEntry, road.TargetStation.s_ID);
-		road.SourceStation.s_TilesOther = src_tiles;
-		road.TargetStation.s_TilesOther = dst_tiles;
+		cStation.StationClaimTile(src_tiles, road.SourceStation.s_ID, road.Source_RailEntry);
+		cStation.StationClaimTile(dst_tiles, road.TargetStation.s_ID, road.Target_RailEntry);
 		road.SourceStation.s_Train[TrainType.OWNER] = road.UID;
 		road.TargetStation.s_Train[TrainType.OWNER] = road.UID;
 		local killit = false;
 		if (bad)	killit = true;
 			else	{
 				// Change alternate track state if it doesn't match its real state
-				if (bad_alt)	{
+				if (bad_alt)
+							{
 							if (road.Secondary_RailLink)	{ road.Secondary_RailLink = false; road.Route_GroupNameSave(); }
 							local r1, r2 = null;
 							if (road.Source_RailEntry)	r1 = road.SourceStation.s_EntrySide[TrainSide.OUT];
@@ -227,8 +233,7 @@ function RailFollower::FindRailOwner()
 	cRoute.RouteDamage.Valuate(AITile.IsStationTile);
 	cRoute.RouteDamage.RemoveValue(1);
 	DInfo("Unknown rails remaining : "+cRoute.RouteDamage.Count());
-//cBuilder.RailStationPhaseBuildEntrance(thatstation, useEntry, taker, road);
-	cBuilder.RailCleaner(cRoute.RouteDamage);
+	cTrack.RailCleaner(cRoute.RouteDamage);
 	cRoute.RouteDamage.Clear();
 }
 
@@ -324,7 +329,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 	all_rails.RemoveItem(safekeeper_depot);
     foreach (tiles, _ in all_rails)
         {
-        local err = cBuilder.ConvertRailType(tiles, new_railtype);
+        local err = cTrack.ConvertRailType(tiles, new_railtype);
         if (err == -1)	{
                         foreach (o_uid in savetable)
                             {
@@ -340,7 +345,7 @@ function RailFollower::TryUpgradeLine(vehicle)
         }
     cCarrier.VehicleSell(safekeeper, false);
 	if (cCarrier.ToDepotList.HasItem(safekeeper))   cCarrier.ToDepotList.RemoveItem(safekeeper);
-	if (!cBuilder.ConvertRailType(safekeeper_depot, new_railtype))  AITile.DemolishTile(safekeeper_depot);
+	if (!cTrack.ConvertRailType(safekeeper_depot, new_railtype))  AITile.DemolishTile(safekeeper_depot);
 	foreach (uid in savetable)
 		{
 		uid.SourceStation.s_MoneyUpgrade = 0;

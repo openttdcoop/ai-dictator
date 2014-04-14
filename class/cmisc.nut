@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -27,7 +27,7 @@ function cMisc::PickCompanyName(who)
 	local x = 0; local y = 0;
 	if (who == 666)  { x = AIBase.RandRange(7); y = AIBase.RandRange(10); }
 		else	 { x = who; y = who; }
-	return nameo[x]+" "+namet[y]+" (DictatorAI)"; 
+	return nameo[x]+" "+namet[y]+" (DictatorAI)";
 }
 
 function cMisc::SetPresident()
@@ -107,10 +107,9 @@ function cMisc::checkHQ()
 				return;
 				}
 			AIController.Sleep(1);
-			}	
+			}
 		}
 }
-
 
 function GetCurrentGoalCallback(message, self)
 {
@@ -145,7 +144,7 @@ function cMisc::ArrayToList(array)
 	while (temparray.len() > 0) {
 		local arrayitem = temparray.pop();
 		list.AddItem(arrayitem[0], arrayitem[1]);
-	}	
+	}
 	return list;
 }
 
@@ -171,4 +170,35 @@ function cMisc::SplitStars(st)
 	return retValue;
 }
 
+function cMisc::IsAIList(f)
+// return true if it's an AIList
+{
+	if (typeof(f) != "instance")	{ return false; }
+	if (f instanceof AIList)	{ return true; }
+	return false;
+}
+
+function cMisc::toHexString(value)
+{
+	local hexchar = [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70];
+	local c = value % 0x10;
+	local result;
+	if (value - c == 0)	result = hexchar[c].tochar();
+				else	result = cMisc.toHexString((value - c) >> 4) + hexchar[c].tochar();
+	return result;
+}
+
+function cMisc::toHex(value)
+{
+	local k = cMisc.toHexString(value);
+	return "0x"+k;
+}
+
+function cMisc::Locate(tile)
+{
+	if (!AIMap.IsValidTile(tile))	{ return "invalid tile "+tile; }
+	cDebug.PutSign(tile, "X");
+	local z = "0x"+cMisc.toHexString(tile);
+	return "tile="+tile+" "+z+" near "+AITown.GetName(AITile.GetClosestTown(tile));
+}
 

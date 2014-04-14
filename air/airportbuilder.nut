@@ -143,8 +143,8 @@ function cBuilder::AirportMaker(tile, airporttype)
 	DInfo("Cost to build an airport = "+AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate(),2);
 	INSTANCE.main.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate());
 	essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
-	if (essai)	DInfo("-> Built an airport at "+tile,1);
-		else	DError("Cannot build an airport at "+tile,1);
+	if (essai)	DInfo("-> Built an airport at "+cMisc.Locate(tile),1);
+		else	DError("Cannot build an airport at "+cMisc.Locate(tile),1);
 	return essai;
 }
 
@@ -520,7 +520,7 @@ function cBuilder::AirportBestPlace_BuildFromSolve(allsolve, width, height, airp
 			local money=cTileTools.TerraformDoAction(templist, solution, updown, false);
 			if (money != -1)
 				{
-				DInfo("Trying to build an airport at "+tileFrom,1);
+				DInfo("Trying to build an airport at "+cMisc.Locate(tileFrom),1);
 				local success=INSTANCE.main.builder.AirportMaker(tileFrom, airporttype);
 				if (success)	return tileFrom;
 						else	if (cTileTools.terraformCost.HasItem(999995))
@@ -529,7 +529,7 @@ function cBuilder::AirportBestPlace_BuildFromSolve(allsolve, width, height, airp
 								return -1;
 								}
 				}
-			DInfo("Blacklisting tile "+tileFrom,2);
+			DInfo("Blacklisting tile "+cMisc.Locate(tileFrom),2);
 			cTileTools.BlackListTile(tileFrom, -100);
 			}
 		}

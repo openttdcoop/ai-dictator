@@ -64,7 +64,7 @@ function cEngine::CanPullCargo(engineID, cargoID)
 // if NicePlay is true we return the AIEngine.CanPullCargo version
 // else we return real usable wagons list for a train
 	{
-	local setting = DictatorAI.GetSetting("use_nicetrain");
+	local setting = !DictatorAI.GetSetting("use_nicetrain");
 	return cEngineLib.CanPullCargo(engineID, cargoID, setting);
 	}
 

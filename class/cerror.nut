@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -86,3 +86,54 @@ function cError::IsCriticalError()
 		}
 }
 
+function cError::ForceAction(...)
+/** @brief Loop until the action result is not block by a vehicle. Don't use it with functions that change arguments content
+ *
+ * @param ... The first param is the action, others are actions parameters (7 params only as YexoCallFunction limit)
+ *
+ */
+{
+	local action = null;
+	local action_param = [];
+	if (vargc < 1 || vargc > 8)	return;
+	local output="";
+	local tile = -1;
+	for (local i = 0; i < vargc; i++)
+		{
+		if (i ==0)	{ action =vargv[i]; }
+			else	{
+					action_param.push(vargv[i]);
+					if (i == 1)	{ tile = action_param[0]; } // assuming function use tile as first param
+					output += " "+vargv[i];
+					}
+		}
+	local result = -1;
+	local error = -666;
+	local count = 100;
+	local move = false;
+	while (error != AIError.ERR_NONE && count > 0)
+		{
+		count--;
+		result = cTileTools.YexoCallFunction(action, action_param);
+		error = AIError.GetLastError();
+		if (error != AIError.ERR_VEHICLE_IN_THE_WAY)	{ return result; }
+		DError("ForceAction delayed : tile="+tile+" params="+output,1);
+//		if (!move)
+			//{
+			//move = true;
+			if (tile != null && AIMap.IsValidTile(tile))
+				{
+				local veh = AIVehicleList();
+				veh.Valuate(AIVehicle.GetLocation);
+				veh.KeepValue(tile);
+				foreach (v, _ in veh)	{
+										local kind = DepotAction.WAITING+30;
+										if (cStation.IsDepot(tile))	{ kind = DepotAction.SELL; INSTANCE.main.carrier.VehicleIsWaitingInDepot(); }
+										cCarrier.VehicleSendToDepot(v, kind);
+										}
+				//}
+			}
+		AIController.Sleep(30);
+		}
+	return result;
+}

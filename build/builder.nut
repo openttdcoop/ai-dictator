@@ -152,13 +152,9 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 // return true if compatible
 {
 	local compare=cStation.Load(stationID);
-	if (!compare)	// might happen, we found an unknown station
-		{
-		compare = cStation.InitNewStation(stationID);
-		if (compare == null)	return false; // try add this one as known
-		}
-	local sourcevalid = (typeof(INSTANCE.main.route.SourceStation) == "instance");
-	local targetvalid = (typeof(INSTANCE.main.route.TargetStation) == "instance");
+	if (!compare)	{ return false; }
+	local sourcevalid = cMisc.ValidInstance(INSTANCE.main.route.SourceStation);
+	local targetvalid = cMisc.ValidInstance(INSTANCE.main.route.TargetStation);
 	if (sourcevalid && compare.s_ID == INSTANCE.main.route.SourceStation.s_ID)	return false;
 	if (targetvalid && compare.s_ID == INSTANCE.main.route.TargetStation.s_ID)	return false;
 	// bad we are comparing the same station with itself
@@ -186,7 +182,7 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 			return false;
 			}
 	// here stations are compatibles, but still do that station is within our original station area ?
-	DInfo("Checking if "+compare.s_Name+" is within area of our industry/town",2);
+	DInfo("     Checking if "+compare.s_Name+" is within area of our industry/town",2);
 	local tilecheck = null;
 	local goal=null;
 	local istown=false;
@@ -197,7 +193,7 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 		tilecheck=cTileTools.StationIsWithinTownInfluence(compare.s_ID, goal);
 		if (!tilecheck)
 			{
-			DInfo("Station "+compare.s_Name+" is outside "+cProcess.GetProcessName(goal, true)+" influence",2);
+			DInfo("     Station "+compare.s_Name+" is outside "+cProcess.GetProcessName(goal, true)+" influence",2);
 			return false;
 			}
 		}
@@ -211,9 +207,9 @@ function cBuilder::FindCompatibleStationExistForAllCases(start, stationID)
 			if (tilecheck.HasItem(position))	{ touching = true; break; }
 			}
 		if (touching)
-			{ DInfo("Station "+compare.s_Name+" is within range of "+cProcess.GetProcessName(goal, false),2); }
+			{ DInfo("     Station "+compare.s_Name+" is within range of "+cProcess.GetProcessName(goal, false),2); }
 		else	{
-			{ DInfo("Station "+compare.s_Name+" is outside range of "+cProcess.GetProcessName(goal, false),2); }
+			{ DInfo("     Station "+compare.s_Name+" is outside range of "+cProcess.GetProcessName(goal, false),2); }
 			return false;
 			}
 		}
@@ -299,7 +295,7 @@ function cBuilder::TryBuildThatRoute()
                                     else    { success = true; }
                     }
 			DInfo("Building using railtype "+AIRail.GetName(INSTANCE.main.route.RailType),2);
-			cBuilder.SetRailType(INSTANCE.main.route.RailType);
+			cTrack.SetRailType(INSTANCE.main.route.RailType);
 		break;
 		case	RouteType.ROAD:
 			success = cCarrier.GetRoadVehicle(null, INSTANCE.main.route.CargoID);
@@ -348,7 +344,7 @@ function cBuilder::TryBuildThatRoute()
 		{
 		if (INSTANCE.main.route.SourceStation == null)
 				{
-				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	{ INSTANCE.main.builder.SetRailType(INSTANCE.main.route.RailType); }
+				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	{ cTrack.SetRailType(INSTANCE.main.route.RailType); }
 				if (INSTANCE.main.route.SourceProcess.IsTown && AITown.GetRating(INSTANCE.main.route.SourceProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	{ cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID); }
 				success = INSTANCE.main.builder.BuildStation(true);
 				if (!success && cError.IsError())	INSTANCE.main.route.SourceProcess.ZeroProcess();
@@ -381,7 +377,7 @@ function cBuilder::TryBuildThatRoute()
 				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)
 					{
                     if (INSTANCE.main.route.TargetProcess.IsTown && AITown.GetRating(INSTANCE.main.route.TargetProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID);
-					INSTANCE.main.builder.SetRailType(INSTANCE.main.route.RailType);
+					cTrack.SetRailType(INSTANCE.main.route.RailType);
 					}
 				success=INSTANCE.main.builder.BuildStation(false);
 				if (!success && cError.IsError())	INSTANCE.main.route.TargetProcess.ZeroProcess();
@@ -394,13 +390,13 @@ function cBuilder::TryBuildThatRoute()
 			{ // attach the new station object to the route, stationID of the new station is hold in TargetStation for road
 			INSTANCE.main.route.TargetStation=cStation.Load(INSTANCE.main.route.TargetStation);
 			if (!INSTANCE.main.route.TargetStation)	{ cError.RaiseError(); success= false; }
-									else	INSTANCE.main.route.TargetStation.OwnerClaimStation(INSTANCE.main.route.UID);
+											else	INSTANCE.main.route.TargetStation.OwnerClaimStation(INSTANCE.main.route.UID);
 
 			}
 		if (!success)
 			{ // we cannot do destination station
 			if (cError.IsError())	INSTANCE.main.route.Status = RouteStatus.DEAD;
-									else	{ INSTANCE.buildDelay=2; return false; }
+							else	{ INSTANCE.buildDelay=2; return false; }
 			}
 		else	{ INSTANCE.main.route.Status=4 }
 		}
@@ -463,11 +459,9 @@ function cBuilder::TryBuildThatRoute()
 			DInfo("Route set as oneway",1);
 			INSTANCE.main.route.Twoway=false;
 			}
-		//if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	INSTANCE.buildDelay = 2; // we delay building after a rail route has been setup
 		INSTANCE.main.builder.building_route=-1; // Allow us to work on a new route now
 		if (INSTANCE.safeStart >0 && INSTANCE.main.route.VehicleType == RouteType.ROAD)	INSTANCE.safeStart--;
 		INSTANCE.main.route.DutyOnRoute();
-		//INSTANCE.buildDelay = 1;
 		}
 	if (INSTANCE.main.route.Status == RouteStatus.DEAD)
 		{

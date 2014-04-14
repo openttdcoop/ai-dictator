@@ -519,12 +519,12 @@ function cCarrier::VehicleSendToDepotAndSell(uid)
 function cCarrier::FreeDepotOfVehicle(depotID)
 // this function remove any vehicle in depot
 {
-	if (!cStation.IsDepot(depotID))	return true;
+	if (!cStation.IsDepot(depotID))	{ return true; }
 	DInfo("Selling all vehicles at depot "+depotID+" to remove it.",2);
 	local vehlist = AIVehicleList();
 	vehlist.Valuate(AIVehicle.GetLocation);
 	vehlist.KeepValue(depotID);
-	if (vehlist.IsEmpty())	return true;
+	if (vehlist.IsEmpty())	{ return true; }
 	foreach (veh, _ in vehlist)	{ cCarrier.VehicleSell(veh, false); local pause = cLooper(); }
 	vehlist.Valuate(AIVehicle.IsValidVehicle);
 	vehlist.RemoveValue(1);

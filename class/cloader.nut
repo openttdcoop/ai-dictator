@@ -282,6 +282,7 @@ function cLoader::LoadSaveGame()
 	foreach(group, _ in groupList)
 		{
 		local temp_route = cRoute();
+		local dead_route = false;
 		temp_route.GroupID = group;
 		temp_route.VehicleType = AIGroup.GetVehicleType(group);
 		local gname = AIGroup.GetName(temp_route.GroupID);
@@ -310,16 +311,36 @@ function cLoader::LoadSaveGame()
 		temp_route.Target_RailEntry = cMisc.CheckBit(temp, 1);
 		temp_route.Primary_RailLink = cMisc.CheckBit(temp, 2);
 		temp_route.Secondary_RailLink = cMisc.CheckBit(temp, 3);
-		if (!cMisc.ValidInstance(temp_route.SourceProcess))	{ DInfo("Bad source process: "+temp_route.SourceProcess,1); continue; }
-		if (!cMisc.ValidInstance(temp_route.TargetProcess))	{ DInfo("Bad target process: "+temp_route.SourceProcess,1); continue; }
-		if (!cMisc.ValidInstance(temp_route.SourceStation))	{ DInfo("Bad source station: "+temp_route.SourceStation,1); continue; }
-		if (!cMisc.ValidInstance(temp_route.TargetStation))	{ DInfo("Bad target station: "+temp_route.TargetStation,1); continue; }
+		if (!cMisc.ValidInstance(temp_route.SourceProcess))	{ DInfo("Bad source process: "+temp_route.SourceProcess,1); dead_route = true; }
+		if (!cMisc.ValidInstance(temp_route.TargetProcess))	{ DInfo("Bad target process: "+temp_route.SourceProcess,1); dead_route = true; }
+		if (!cMisc.ValidInstance(temp_route.SourceStation))	{ DInfo("Bad source station: "+temp_route.SourceStation,1); dead_route = true; }
+		if (!cMisc.ValidInstance(temp_route.TargetStation))	{ DInfo("Bad target station: "+temp_route.TargetStation,1); dead_route = true; }
+		if (dead_route) {
+						temp_route.Status = RouteStatus.DEAD;
+						local veh_list = AIVehicleList_Group(group);
+						if (!veh_list.IsEmpty())
+							{
+							foreach (veh, _ in veh_list)	{ AIVehicle.SendVehicleToDepot(veh); }
+							}
+						local wait = 0;
+						local count = veh_list.Count();
+						foreach (veh, _ in veh_list)
+							{
+							local removed = false;
+							while (wait < 100 && AIVehicle.GetState(veh) != AIVehicle.VS_IN_DEPOT)
+								{
+								AIController.Sleep(10);
+								wait++;
+								}
+							}
+						}
+		if (dead_route)	{ continue; }
 		if (temp_route.VehicleType == AIVehicle.VT_AIR)
 			{
 			if (AIStation.IsAirportClosed(temp_route.SourceStation.s_ID))	AIStation.OpenCloseAirport(temp_route.SourceStation.s_ID);
 			if (AIStation.IsAirportClosed(temp_route.TargetStation.s_ID))	AIStation.OpenCloseAirport(temp_route.TargetStation.s_ID);
 			}
-		temp = cJobs();
+        temp = cJobs();
 		temp.UID = null;
 		temp.cargoID = temp_route.CargoID;
 		temp.roadType = temp_route.VehicleType;
