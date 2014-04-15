@@ -117,7 +117,7 @@ function cError::ForceAction(...)
 		result = cTileTools.YexoCallFunction(action, action_param);
 		error = AIError.GetLastError();
 		if (error != AIError.ERR_VEHICLE_IN_THE_WAY)	{ return result; }
-		DError("ForceAction delayed : tile="+tile+" params="+output,1);
+		DWarn("ForceAction delayed : tile="+tile+" params="+output+" @"+cMisc.Locate(tile),1);
 //		if (!move)
 			//{
 			//move = true;

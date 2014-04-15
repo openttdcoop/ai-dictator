@@ -495,7 +495,7 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 	DInfo("Connecting rail station "+srcStation.s_Name+" to "+dstStation.s_Name,1);
 	if (cStationRail.IsPrimaryLineBuilt(fromObj) && cStationRail.IsPrimaryLineBuilt(toObj))
 		{
-		if (!cStationRail.IsAlternateLineBuilt(fromOjb) || !cStationRail.IsAlternateLineBuilt(toObj))	return false;
+		if (!cStationRail.IsAlternateLineBuilt(fromObj) || !cStationRail.IsAlternateLineBuilt(toObj))	return false;
 		return true;
 		}
 	local retry=true;

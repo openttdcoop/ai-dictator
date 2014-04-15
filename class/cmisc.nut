@@ -196,6 +196,7 @@ function cMisc::toHex(value)
 function cMisc::Locate(tile)
 {
 	if (!AIMap.IsValidTile(tile))	{ return "invalid tile "+tile; }
+	local md = AIExecMode();
 	cDebug.PutSign(tile, "X");
 	local z = "0x"+cMisc.toHexString(tile);
 	return "tile="+tile+" "+z+" near "+AITown.GetName(AITile.GetClosestTown(tile));

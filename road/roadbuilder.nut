@@ -506,8 +506,14 @@ function cBuilder::CheckRoadHealth(routeUID)
 						{
 						msg+="Damage & ";
 						INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID);
-						if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
-								{ msg+=error_error; good=false; srcEntries.SetValue(tile, -1); }
+						if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD)) // source depot cannot be reach
+								{
+								msg+=error_error; good=false;
+								local other_depot = -1;
+								if (INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD)	{ other_depot = 1; }
+								// but target depot could be reach
+								srcEntries.SetValue(tile, other_depot);
+								}
 						else	{ msg+=error_repair; srcEntries.SetValue(tile, 1); }
 						DInfo(msg,1);
 						}
@@ -523,7 +529,12 @@ function cBuilder::CheckRoadHealth(routeUID)
 						msg+="Damage & ";
 						INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID);
 						if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
-								{ msg+=error_error; good=false; dstEntries.SetValue(tile, -1); }
+								{
+								msg+=error_error; good=false;
+								local other_depot = -1;
+								if (INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD)	{ other_depot = 1; }
+								dstEntries.SetValue(tile, other_depot);
+								}
 						else	{ msg+=error_repair; dstEntries.SetValue(tile, 1); }
 						DInfo(msg,1);
 						}
