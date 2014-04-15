@@ -42,7 +42,7 @@ function cLoader::OldSaveWarn()
 	AILog.Info("I have add a compatibility loader to help restoring old savegames but it doesn't support all versions");
 	AILog.Info("If you re-save your game, it will be saved with the new save format.");
 	AILog.Error("WARNING");
-	AIController.Sleep(20);
+	AIController.Sleep(40);
 }
 
 function cLoader::VehicleFindStationInOrders(vehicle)

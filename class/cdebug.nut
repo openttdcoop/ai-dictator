@@ -32,7 +32,6 @@ function cDebug::ClearSigns()
 	local sweeper=AISignList();
 	sweeper.Valuate(AISign.GetLocation);
 	sweeper.RemoveValue(INSTANCE.main.SCP.SCPTile);
-	AIController.Sleep(20);
 	foreach (i, dummy in sweeper)	{ AISign.RemoveSign(i); }
 }
 
@@ -45,7 +44,9 @@ function cDebug::showLogic(item)
 		}
 	//AIController.Break("logic first "+cMisc.Locate(item.Begin()));
 	print("logic at "+cMisc.Locate(item.Begin()));
+	print("remain opcode="+AIController.GetOpsTillSuspend());
 	AIController.Sleep(40);
+	print("after sleep40="+AIController.GetOpsTillSuspend());
 	cDebug.ClearSigns();
 }
 

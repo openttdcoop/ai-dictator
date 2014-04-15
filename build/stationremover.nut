@@ -57,7 +57,6 @@ function cBuilder::DestroyStation(stationid)
             }
         if (!cTrack.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
 										else	{ DInfo("Removing depot link to station "+wasnamed,0); }
-		AIController.Sleep(1);
 		if (!cStation.DeleteStation(stationid))	{ return false; }
 		if (temp.s_SubType == -2)   { return true; }
 		}

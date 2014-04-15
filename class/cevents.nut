@@ -90,8 +90,8 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
+			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo(cCarrier.GetVehicleName(vehicle) + " is lost, not a good news",0);
-			if (!AIVehicle.IsValidVehicle(vehicle)) return;
 			INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
 			local rcheck=INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle);
 			INSTANCE.main.builder.RouteIsDamage(rcheck);
@@ -99,8 +99,8 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
+			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo(cCarrier.GetVehicleName(vehicle) + " is not profitable, sending it to depot",0);
-			if (!AIVehicle.IsValidVehicle(vehicle)) return;
 			INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
 			INSTANCE.main.builder.RouteIsDamage(INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle));
 			INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);

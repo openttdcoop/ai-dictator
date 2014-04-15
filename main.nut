@@ -183,17 +183,10 @@ function DictatorAI::Start()
 			main.bank.CashFlow();
 			main.event.HandleEvents();
 			main.jobs.DeleteIndustry();
-			AIController.Sleep(1);
 			cPathfinder.AdvanceAllTasks();
-			AIController.Sleep(1);
 			main.builder.WeeklyChecks();
-			AIController.Sleep(1);
 			main.builder.MonthlyChecks();
-			AIController.Sleep(1);
-			cPathfinder.AdvanceAllTasks();
-			AIController.Sleep(1);
 			main.jobs.RawJobHandling();
-			AIController.Sleep(1);
 			cPathfinder.AdvanceAllTasks();
 			AIController.Sleep(1);
 			cDebug.ClearSigns();

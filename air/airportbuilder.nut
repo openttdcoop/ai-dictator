@@ -278,17 +278,16 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				DInfo("Found a flat area to try at "+newTile,1);
 				cDebug.PutSign(newTile,"*");
 				for (local tt=0; tt < 50; tt++)
-					{
-					if (airportUpgrade && !oldAirport_Remove)
 						{
-						cCarrier.FreeDepotOfVehicle(oldAirport.s_Depot);
-						oldAirport_Remove=AIAirport.RemoveAirport(oldAirport.s_Location);
-						DInfo("Removing old airport : "+oldAirport.s_Name,1);
-						if (oldAirport_Remove)	{ break; }
+						if (airportUpgrade && !oldAirport_Remove)
+								{
+								cCarrier.FreeDepotOfVehicle(oldAirport.s_Depot);
+								oldAirport_Remove=AIAirport.RemoveAirport(oldAirport.s_Location);
+								DInfo("Removing old airport : "+oldAirport.s_Name,1);
+								if (oldAirport_Remove)	{ break; }
+								}
+						else	break;
 						}
-					else	break;
-					AIController.Sleep(10);
-					}
 				if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; break; }
 				success=cBuilder.AirportMaker(newTile, airporttype);
 				if (!success && cError.IsCriticalError())	break;
@@ -320,7 +319,6 @@ function cBuilder::BuildAirStation(start, routeID=null)
 									if (oldAirport_Remove)	break;
 									}
 								else	break;
-								AIController.Sleep(10);
 								}
 							if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; }
 							if (!needTime)

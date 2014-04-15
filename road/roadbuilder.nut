@@ -316,7 +316,7 @@ function cBuilder::PathfindRoadROAD(head1, head2)
 			path = pathfinder.FindPath(250);
 			counter++;
 			AISign.SetName(pfInfo,"Pathfinding... "+counter);
-			AIController.Sleep(1);
+//			AIController.Sleep(1);
 			}
 	// restore our money
 	INSTANCE.main.bank.RaiseFundsBy(savemoney);
@@ -687,7 +687,6 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 					if (!cError.IsError())	{ allfail=false; } // if we have only critical errors we're doom
 					cError.ClearError(); // discard it
 					if (new_sta_pos != -1)	{ break; }
-					AIController.Sleep(1);
 					INSTANCE.NeedDelay(50);
 					cDebug.ClearSigns();
 					i++;

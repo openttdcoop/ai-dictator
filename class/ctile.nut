@@ -110,7 +110,7 @@ function cTileTools::DemolishTile(tile)
 	if (AITile.IsStationTile(tile))
 	{
 	AISign.BuildSign(tile,"S");
-	AIController.Break("attacking station");
+	AIController.Break("attacking station "+" "+AIStation.GetName(AIStation.GetStationID(tile))+" "+cMisc.Locate(tile));
 	}
 	if (cTileTools.IsBuildable(tile)) return true;
 	if (AIRail.IsRailDepotTile(tile))	{ return cTrack.StationKillRailDepot(tile); }
@@ -409,7 +409,6 @@ function cTileTools::ShapeTile(tile, wantedHeight, evaluateOnly)
 			}
 		//DInfo("Tile: "+tile+" Slope: "+slope+" compSlope: "+compSlope+" target: "+wantedHeight+" srcL: "+srcL+" srcH: "+srcH+" real slope: "+AITile.GetSlope(tile),2,"ShapeTile");
 		cDebug.PutSign(tile,"!");
-		AIController.Sleep(1);
 		if ((srcH < wantedHeight || srcL < wantedHeight) && !generror)
 			{
 			if (AITile.GetSlope(tile) == AITile.SLOPE_ELEVATED)

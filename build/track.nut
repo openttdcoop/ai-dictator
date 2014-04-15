@@ -156,7 +156,7 @@ function cTrack::DropRailHere(railneed, pos, stationID = -1, useEntry = -1)
 						if (!cTileTools.DemolishTile(pos))	{ return false; }
 						break;
 					case	AIError.ERR_VEHICLE_IN_THE_WAY:
-						AIController.Sleep(10);
+							AIController.Sleep(10);
 						break;
 					case AIError.ERR_ALREADY_BUILT:
 						return true;
@@ -241,7 +241,6 @@ function cTrack::StationKillRailDepot(tile, stationID = -1)
 		DInfo("Starting "+cCarrier.GetVehicleName(veh)+"...",0);
 		cTrain.SetDepotVisit(veh);
 		cCarrier.StartVehicle(veh);
-		AIController.Sleep(40);
 		}
 	local removed = cError.ForceAction(AITile.DemolishTile, tile);
 	if (!removed)	{ return false; }

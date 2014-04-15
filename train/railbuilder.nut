@@ -1016,7 +1016,6 @@ function cBuilder::SignalBuilder(source, target)
 							if (smallerror == -1)	{ return false; }
 							}
 					}
-			AIController.Sleep(1);
 			cc++;
 			prev=tile;
 			path = path.GetParent();

@@ -106,7 +106,6 @@ function cMisc::checkHQ()
 				DInfo("Built company headquarters near " + name,0);
 				return;
 				}
-			AIController.Sleep(1);
 			}
 		}
 }

@@ -1,4 +1,4 @@
-/* -*- Mode: C++; tab-width: 6 -*- */ 
+/* -*- Mode: C++; tab-width: 6 -*- */
 /**
  *    This file is part of DictatorAI
  *    (c) krinn@chez.com
@@ -21,7 +21,7 @@ class cSCP extends cClass
 	SCPInstance= null;
 	SCPTile = null;
 	goal_callback = null;
-	
+
 	constructor()
 		{
 		this.ClassName="cSCP";
@@ -43,8 +43,8 @@ function cSCP::WaitReady()
 	cEngineLib.EngineCacheInit();
 	for (local j=0; j < 10; j++)
 		{
-		if (!this.SCPInstance.CanSpeakWith())	{ AIController.Sleep(10); this.SCPInstance.Check(); }
-								else	return;
+		if (!this.SCPInstance.CanSpeakWith())	{ AIController.Sleep(4); this.SCPInstance.Check(); }
+										else	return;
 		}
 	this.GetCurrentGoal();
 }
