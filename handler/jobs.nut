@@ -48,8 +48,8 @@ function cJobs::Save()
 	{
 	local dualrouteavoid=cJobs();
 	dualrouteavoid.UID=null;
-	dualrouteavoid.sourceObject = this.targetObject; // swap source and target
-	dualrouteavoid.targetObject = this.sourceObject;
+	dualrouteavoid.SourceProcess = this.TargetProcess; // swap source and target
+	dualrouteavoid.TargetProcess = this.SourceProcess;
 	dualrouteavoid.roadType=this.roadType;
 	dualrouteavoid.cargoID=this.cargoID;
 	dualrouteavoid.GetUID();
@@ -61,9 +61,9 @@ function cJobs::Save()
 			}
 	dualrouteavoid=null;
 	local jobinfo=cCargo.GetCargoLabel(this.cargoID)+"-"+cRoute.RouteTypeToString(this.roadType)+" "+this.distance+"m from ";
-	jobinfo+=this.sourceObject.Name;
+	jobinfo+=this.SourceProcess.Name;
 	jobinfo+=" to ";
-	jobinfo+=this.targetObject.Name;
+	jobinfo+=this.TargetProcess.Name;
 	this.Name=jobinfo;
 	if (this.UID in database)	{ DInfo("Job "+this.UID+" already in database",4); }
                         else    {
@@ -79,14 +79,14 @@ function cJobs::GetUID()
 	{
 	local uID=null;
 	local parentID = null;
-	if (this.UID == null && this.sourceObject.ID != null && this.targetObject.ID != null && this.cargoID != null && this.roadType != null)
+	if (this.UID == null && this.SourceProcess.ID != null && this.TargetProcess.ID != null && this.cargoID != null && this.roadType != null)
 			{
 			local v1=this.roadType+1;
 			local v2=(this.cargoID+15);
-			local v3=(this.targetObject.ID+100);
-			if (this.targetObject.IsTown)	{ v3+=1000; }
-			local v4=(this.sourceObject.ID+10000);
-			if (this.sourceObject.IsTown) { v4+=4000; }
+			local v3=(this.TargetProcess.ID+100);
+			if (this.TargetProcess.IsTown)	{ v3+=1000; }
+			local v4=(this.SourceProcess.ID+10000);
+			if (this.SourceProcess.IsTown) { v4+=4000; }
 			parentID= v4+(this.cargoID+1);
 			if (this.roadType == RouteType.AIR)	{ parentID = v4+(this.cargoID+100); }
 			if (this.roadType == RouteType.ROAD && this.cargoID == cCargo.GetPassengerCargo())
@@ -105,10 +105,10 @@ function cJobs::GetUID()
 function cJobs::RankThisJob()
 // rank the current job
 	{
-	local srcTown = this.sourceObject.IsTown;
-	local dstTown = this.targetObject.IsTown;
-	this.cargoAmount = this.sourceObject.ScoreProduction;
-	if (srcTown && dstTown)	{ this.cargoAmount= ((this.sourceObject.ScoreProduction + this.targetObject.ScoreProduction) / 2); }
+	local srcTown = this.SourceProcess.IsTown;
+	local dstTown = this.TargetProcess.IsTown;
+	this.cargoAmount = this.SourceProcess.ScoreProduction;
+	if (srcTown && dstTown)	{ this.cargoAmount= ((this.SourceProcess.ScoreProduction + this.TargetProcess.ScoreProduction) / 2); }
 	local valuerank = this.cargoAmount * this.cargoValue;
 	if (this.subsidy)
 			{
@@ -116,22 +116,22 @@ function cJobs::RankThisJob()
                                                         else	{ valuerank=valuerank * 2; }
 			}
 	// grant a bonus to subsidy
-	local stationrank = this.sourceObject.ScoreRating * this.targetObject.ScoreRating;
+	local stationrank = this.SourceProcess.ScoreRating * this.TargetProcess.ScoreRating;
 	if (this.cargoID == cCargo.GetPassengerCargo() || this.cargoID == cCargo.GetMailCargo)
         {
         local src_drank = 0;
         local dst_drank = 0;
-        if (srcTown && cJobs.TownAbuse.HasItem(this.sourceObject.ID))
+        if (srcTown && this.SourceProcess.UsedBy.Count() > 0)
             {
             if (this.roadType == RouteType.RAIL)   { src_drank = valuerank; }
-                                            else   { src_drank = ((20 * valuerank) / 100) * cJobs.TownAbuse.GetValue(this.sourceObject.ID); }
-            DInfo("Downranking because "+AITown.GetName(this.sourceObject.ID)+" is already use : Lost "+src_drank,4);
+                                            else   { src_drank = ((20 * valuerank) / 100) * this.SourceProcess.UsedBy.Count(); }
+            DInfo("Downranking because "+AITown.GetName(this.SourceProcess.ID)+" is already use : Lost "+src_drank,4);
             }
-        if (dstTown && cJobs.TownAbuse.HasItem(this.targetObject.ID))
+        if (dstTown && this.TargetProcess.UsedBy.Count() > 0)
             {
             if (this.roadType == RouteType.RAIL)   { dst_drank = valuerank; }
-                                             else   { dst_drank = ((20 * valuerank) / 100) * cJobs.TownAbuse.GetValue(this.targetObject.ID); }
-            DInfo("Downranking because "+AITown.GetName(this.targetObject.ID)+" is already use : Lost "+dst_drank,4);
+											else   { dst_drank = ((20 * valuerank) / 100) * this.SourceProcess.UsedBy.Count(); }
+			DInfo("Downranking because "+AITown.GetName(this.TargetProcess.ID)+" is already use : Lost "+dst_drank,4);
             }
         valuerank -= (src_drank + dst_drank);
         }
@@ -151,15 +151,15 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	if (!myjob)	{ return null; }
 	local badind=false;
 	// avoid handling a dead industry we didn't get the event yet
-	if (!myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))
+	if (!myjob.SourceProcess.IsTown && !AIIndustry.IsValidIndustry(myjob.SourceProcess.ID))
 			{
 			badind=true;
-			cJobs.MarkIndustryDead(myjob.sourceObject.ID);
+			cJobs.MarkIndustryDead(myjob.SourceProcess.ID);
 			}
-	if (!myjob.targetObject.IsTown && !AIIndustry.IsValidIndustry(myjob.targetObject.ID))
+	if (!myjob.TargetProcess.IsTown && !AIIndustry.IsValidIndustry(myjob.TargetProcess.ID))
 			{
 			badind=true;
-			cJobs.MarkIndustryDead(myjob.targetObject.ID);
+			cJobs.MarkIndustryDead(myjob.TargetProcess.ID);
 			}
 	if (badind)
 			{
@@ -173,8 +173,8 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	if (myjob.isUse)	{ return; }	// no need to refresh an already done job
 	local pause = cLooper();
 	// moneyGains, ranking & cargoAmount
-	myjob.sourceObject.UpdateScore();
-	myjob.targetObject.UpdateScore();
+	myjob.SourceProcess.UpdateScore();
+	myjob.TargetProcess.UpdateScore();
 	if (updateCost)	{ myjob.EstimateCost(); }
 	myjob.RankThisJob();
 	}
@@ -394,6 +394,7 @@ function cJobs::UpdateDoableJobs()
     local top50 = 0;
     foreach (id, value in cRoute.RouteIndexer)
 		{
+		if (id < 2)	{ continue; } // ignore virtual
 		local j = cJobs.Load(id);
 		if (!j)	{ continue; }
 		parentListID.AddItem(j.parentID,0);
@@ -411,7 +412,7 @@ function cJobs::UpdateDoableJobs()
 		// not doable if disabled
 		if (doable && myjob.ranking==0)	{ doable=false; }
 		// not doable if ranking is at 0
-		//if (doable && (myjob.sourceObject.ScoreRating == 0 || myjob.targetObject.ScoreRating ==0))	{ doable = false; }
+		//if (doable && (myjob.SourceProcess.ScoreRating == 0 || myjob.TargetProcess.ScoreRating ==0))	{ doable = false; }
 		// not doable if score rating is at 0
 		if (doable)
 			// not doable if max distance is limited and lower the job distance
@@ -425,15 +426,15 @@ function cJobs::UpdateDoableJobs()
 					DInfo("Job already done by parent job ! First pass filter",4);
 					doable=false;
 					}
-		if (doable && !myjob.sourceObject.IsTown && !AIIndustry.IsValidIndustry(myjob.sourceObject.ID))	{ doable=false; }
+		if (doable && !myjob.SourceProcess.IsTown && !AIIndustry.IsValidIndustry(myjob.SourceProcess.ID))	{ doable=false; }
 		// not doable if the industry no longer exist
-		if (doable && myjob.roadType == RouteType.AIR && (myjob.sourceObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 100 || myjob.targetObject.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 100))	{ doable=false; }
+		if (doable && myjob.roadType == RouteType.AIR && (myjob.SourceProcess.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 100 || myjob.TargetProcess.CargoProduce.GetValue(cCargo.GetPassengerCargo()) < 100))	{ doable=false; }
 		// not doable because aircraft with poor towns don't make good jobs
 		if (doable && !INSTANCE.main.bank.unleash_road && myjob.roadType == RouteType.RAIL && myjob.cargoID == cCargo.GetPassengerCargo())	{ doable=false; }
 		// not doable until roads are unleash, trains aren't nice in town, so wait at least a nice big town to build them
-		if (doable && myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 1)	{ doable=false; }
+		if (doable && myjob.SourceProcess.IsTown && DictatorAI.GetSetting("allowedjob") == 1)	{ doable=false; }
 		// not doable if town jobs is not allow
-		if (doable && !myjob.sourceObject.IsTown && DictatorAI.GetSetting("allowedjob") == 2)	{ doable=false; }
+		if (doable && !myjob.SourceProcess.IsTown && DictatorAI.GetSetting("allowedjob") == 2)	{ doable=false; }
 		// not doable if industry jobs is not allow
 		if (doable && INSTANCE.safeStart > 0 && myjob.roadType != RouteType.ROAD && cJobs.IsTransportTypeEnable(RouteType.ROAD))	{ doable = false; }
 		// disable until safeStart is over
@@ -474,7 +475,26 @@ function cJobs::UpdateDoableJobs()
         local airValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.AIR] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.AIR]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.AIR]) && cJobs.IsTransportTypeEnable(RouteType.AIR) && INSTANCE.safeStart == 0);
 		if (airValid && myjob.roadType == RouteType.ROAD && myjob.cargoID == cCargo.GetPassengerCargo())	{ doable = false; }
 		// disable because we have funds to build an aircraft job
-        local trainValid=(doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && cJobs.IsTransportTypeEnable(RouteType.RAIL) && INSTANCE.safeStart == 0);
+		local train_check = true;
+		if (doable)
+				{
+				foreach (s_juid, _ in myjob.SourceProcess.UsedBy) // check if source process is use by another train job
+					{
+					local tload = cJobs.Load(s_juid);
+					if (!tload || tload.roadType == RouteType.RAIL)	{ train_check = false; break; }
+					}
+				}
+		else	{ train_check = false; }
+		if (train_check)
+				{
+				foreach (t_juid, _ in myjob.TargetProcess.UsedBy)
+					{
+					local tload = cJobs.Load(t_juid);
+					if (!tload || tload.roadType == RouteType.RAIL)	{ doable = false; train_check = false; break; }
+					}
+				}
+		// disable train if source or target is already use by another train job.
+        local trainValid=(train_check && doable && !INSTANCE.main.bank.unleash_road && cJobs.CostTopJobs[RouteType.RAIL] > 0 && (cBanker.CanBuyThat(cJobs.CostTopJobs[RouteType.RAIL]) || INSTANCE.main.carrier.warTreasure > cJobs.CostTopJobs[RouteType.RAIL]) && cJobs.IsTransportTypeEnable(RouteType.RAIL) && INSTANCE.safeStart == 0);
         if (trainValid && myjob.roadType == RouteType.ROAD) { doable = false; }
         // disable if we can make a train instead of a road
 		if (doable && !cBanker.CanBuyThat(myjob.moneyToBuild))	{ doable=false; }
@@ -511,24 +531,24 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 // Create a new Job
 	{
 	local newjob=cJobs();
-	newjob.sourceObject = cProcess.Load(srcUID);
-	if (!newjob.sourceObject)	{ return; }
+	newjob.SourceProcess = cProcess.Load(srcUID);
+	if (!newjob.SourceProcess)	{ return; }
 	if (cCargo.IsCargoForTown(cargo_id))	{ dstID=cProcess.GetUID(dstID, true); }
-	newjob.targetObject = cProcess.Load(dstID);
-	if (!newjob.targetObject)	{ return; }
+	newjob.TargetProcess = cProcess.Load(dstID);
+	if (!newjob.TargetProcess)	{ return; }
 	// filters unwanted jobs
 
-	if (road_type == RouteType.WATER && (!newjob.sourceObject.WaterAccess || !newjob.targetObject.WaterAccess))   { return; }
+	if (road_type == RouteType.WATER && (!newjob.SourceProcess.WaterAccess || !newjob.TargetProcess.WaterAccess))   { return; }
     // disable boat job without reachable access
 	if (road_type == RouteType.AIR && cargo_id != cCargo.GetPassengerCargo()) { return; }
 	// only pass for aircraft, we will randomize if pass or mail later
-	if (AIIndustry.IsBuiltOnWater(newjob.sourceObject.ID))
+	if (AIIndustry.IsBuiltOnWater(newjob.SourceProcess.ID))
         {
         if (cargo_id == cCargo.GetPassengerCargo()) { if (road_type != RouteType.AIR)  { return; } }
                                             else    { if (road_type != RouteType.WATER)  { return; } }
         }
     // allow passenger only for aircraft, and other cargos only for boats
-	if (cargo_id == cCargo.GetPassengerCargo() && !newjob.sourceObject.IsTown && road_type == RouteType.AIR && !AIIndustry.HasHeliport(newjob.sourceObject.ID))	{ return; }
+	if (cargo_id == cCargo.GetPassengerCargo() && !newjob.SourceProcess.IsTown && road_type == RouteType.AIR && !AIIndustry.HasHeliport(newjob.SourceProcess.ID))	{ return; }
 	// make sure the industry have an heliport we could use for aircraft (choppers), should fix FIRS Industry hotels.
 	newjob.distance = _distance;
 	newjob.roadType = road_type;
@@ -583,7 +603,7 @@ function cJobs::DeleteIndustry()
 		{
 		foreach (industryID, _ in cJobs.deadIndustry)
 			{
-			if ((!object.sourceObject.IsTown && object.sourceObject.ID == industryID) || (!object.targetObject.IsTown && object.targetObject.ID == industryID))	{ cJobs.DeleteJob(object.UID); }
+			if ((!object.SourceProcess.IsTown && object.SourceProcess.ID == industryID) || (!object.TargetProcess.IsTown && object.TargetProcess.ID == industryID))	{ cJobs.DeleteJob(object.UID); }
 			}
 		local pause = cLooper();
 		}
@@ -692,7 +712,7 @@ function cJobs::GetUIDFromSubsidy(subID, onoff)
 	foreach (UID, _dummy in cJobs.jobDoable)
 		{
 		local j = cJobs.Load(UID);
-		if (j.cargoID == cargoID && j.sourceObject.IsTown == sourceIsTown && j.targetObject.IsTown == targetIsTown && j.sourceObject.ID == sourceID && j.targetObject.ID == targetID)
+		if (j.cargoID == cargoID && j.SourceProcess.IsTown == sourceIsTown && j.TargetProcess.IsTown == targetIsTown && j.SourceProcess.ID == sourceID && j.TargetProcess.ID == targetID)
 				{
 				j.subsidy=onoff;
 				DInfo("Setting subsidy to "+onoff+" for jobs "+j.Name,1);

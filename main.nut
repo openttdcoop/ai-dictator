@@ -46,7 +46,6 @@ enum DepotAction
 
 }
 
-enum SuperLib { log, tile }
 enum RouteStatus
 {
 	// from 0 to 7 are use for build steps

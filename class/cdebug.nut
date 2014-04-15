@@ -68,8 +68,8 @@ function cBuilder::DumpJobs(uid)
 {
 	if (!INSTANCE.debug)	return;
 	local tjob=cJobs.GetJobObject(uid);
-	local src=tjob.sourceObject.Name;
-	local dst=tjob.targetObject.Name;
+	local src=tjob.SourceProcess.Name;
+	local dst=tjob.TargetProcess.Name;
 	DInfo("Jobs #"+uid+" "+src+"->"+dst+" Ranking="+tjob.ranking+" "+cCargo.GetCargoLabel(tjob.cargoID)+" value="+tjob.cargoValue+" cargo="+tjob.cargoAmount+" "+cRoute.RouteTypeToString(tjob.roadType)+" Cost: "+tjob.moneyToBuild+" doable? "+tjob.isdoable,1);
 }
 

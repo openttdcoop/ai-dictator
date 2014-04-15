@@ -229,8 +229,8 @@ function cLoader::Load169()
 			if (jrt >= RouteType.AIR)	{ crg=cCargo.GetPassengerCargo(); jrt=RouteType.AIR; }
 			temp.roadType = jrt;
 			temp.cargoID = crg;
-			temp.sourceObject = obj.SourceProcess;
-			temp.targetObject = obj.TargetProcess;
+			temp.SourceProcess = obj.SourceProcess;
+			temp.TargetProcess = obj.TargetProcess;
 			temp.GetUID();
 			obj.UID=temp.UID;
 			cJobs.CreateNewJob(obj.SourceProcess.UID, obj.TargetProcess.ID, crg, jrt, 0);	// recreate the job
@@ -345,8 +345,8 @@ function cLoader::LoadSaveGame()
 		temp.cargoID = temp_route.CargoID;
 		temp.roadType = temp_route.VehicleType;
 		if (temp.roadType >= RouteType.AIR)	{ temp.cargoID = cCargo.GetPassengerCargo(); temp.roadType = RouteType.AIR; }
-		temp.sourceObject = temp_route.SourceProcess;
-		temp.targetObject = temp_route.TargetProcess;
+		temp.SourceProcess = temp_route.SourceProcess;
+		temp.TargetProcess = temp_route.TargetProcess;
 		temp.GetUID();
 		temp_route.UID = temp.UID;
 		temp_route.Distance = AIMap.DistanceManhattan(temp_route.SourceProcess.Location, temp_route.TargetProcess.Location);

@@ -114,8 +114,8 @@ function cRoute::CreateNewRoute(UID)
 	if (!jobs) return; // workaround to loading savegame where the jobs has disapears
 	jobs.isUse = true;
 	this.UID = jobs.UID;
-	this.SourceProcess = jobs.sourceObject;
-	this.TargetProcess = jobs.targetObject;
+	this.SourceProcess = jobs.SourceProcess;
+	this.TargetProcess = jobs.TargetProcess;
 	this.VehicleType	= jobs.roadType;
 	this.CargoID = jobs.cargoID;
 	switch (this.VehicleType)
@@ -187,15 +187,16 @@ function cRoute::RouteRailGetPathfindingLine(uid, mainline)
 	if (mainline)
 		{
 		if (road.Source_RailEntry)	srclink=road.SourceStation.s_EntrySide[TrainSide.IN_LINK];
-						else	srclink=road.SourceStation.s_ExitSide[TrainSide.IN_LINK];
+							else	srclink=road.SourceStation.s_ExitSide[TrainSide.IN_LINK];
 		if (road.Target_RailEntry)	dstlink=road.TargetStation.s_EntrySide[TrainSide.OUT_LINK];
-						else	dstlink=road.TargetStation.s_ExitSide[TrainSide.OUT_LINK];
+							else	dstlink=road.TargetStation.s_ExitSide[TrainSide.OUT_LINK];
 		}
-	else	{
+	else
+		{
 		if (road.Source_RailEntry)	srclink=road.SourceStation.s_EntrySide[TrainSide.OUT_LINK];
-						else	srclink=road.SourceStation.s_ExitSide[TrainSide.OUT_LINK];
+							else	srclink=road.SourceStation.s_ExitSide[TrainSide.OUT_LINK];
 		if (road.Target_RailEntry)	dstlink=road.TargetStation.s_EntrySide[TrainSide.IN_LINK];
-						else	dstlink=road.TargetStation.s_ExitSide[TrainSide.IN_LINK];
+							else	dstlink=road.TargetStation.s_ExitSide[TrainSide.IN_LINK];
 		}
 	srcpos = srclink+cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry);
 	dstpos = dstlink+cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry);
@@ -230,6 +231,8 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 		if (!vehlist.IsEmpty())	return;
 		local stasrc = null;
 		local stadst = null;
+		if (cMisc.ValidInstance(route.SourceProcess))	{ route.SourceProcess.UsedBy.RemoveItem(route.UID); }
+		if (cMisc.ValidInstance(route.TargetProcess))	{ route.TargetProcess.UsedBy.RemoveItem(route.UID); }
 		if (cMisc.ValidInstance(route.SourceStation)) { stasrc = route.SourceStation.s_ID; route.RouteReleaseStation(route.SourceStation.s_ID); }
 		if (cMisc.ValidInstance(route.TargetStation)) { stadst = route.TargetStation.s_ID; route.RouteReleaseStation(route.TargetStation.s_ID); }
 		cBuilder.DestroyStation(stasrc);

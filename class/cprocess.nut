@@ -37,11 +37,13 @@ class cProcess extends cClass
 		IndustryType    = null; // 1 - produce, 2- accept, 3- both
 		WaterAccess     = null; // true if we can use a dock to access it
 		StationLocation = null; // this is the location of the station if one exist (dock/heliport)
+		UsedBy			= null; // list of jobs UID using that process
 
 
 		constructor()
 			{
 			this.ClassName	= "cProcess";
+			// everything is init by AddNewProcess
 			}
         function GetProcessObject(UID)  { return UID in cProcess.database ? cProcess.database[UID] : null; }
 		function Load(uid) {}
@@ -135,6 +137,7 @@ function cProcess::AddNewProcess(_id, _istown)
 	if (!p.CargoProduce.IsEmpty())  p.IndustryType += 1;
 	p.UpdateDate=null;
 	p.FailureDate = null;
+	p.UsedBy = AIList();
 	p.UpdateScore();
 	p.Save();
 	}
@@ -149,6 +152,15 @@ function cProcess::Load(uid)
 			return false;
 			}
 	return obj;
+	}
+
+function cProcess::GetProcessUsage(uid, istown)
+// Return the list of jobs using that process
+	{
+	local puid = cProcess.GetUID(uid, istown)
+	local p = cProcess.Load(puid);
+	if (!p) { return -1; }
+	return p.UsedBy;
 	}
 
 function cProcess::GetProcessName(uid, istown)

@@ -29,7 +29,6 @@ static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
 static	badJobs=AIList();		// List of jobs we weren't able to do
 static	WagonType=AIList();		// engine wagon to use for cargo : item=cargo, value= wagon engine id
 static	rawJobs=AIList();		// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
-static	TownAbuse = AIList();	// List of towns we use already to drop/take passenger/mail
 static	deadIndustry = AIList();// List all industries that are dead and so jobs using them need to be removed
 
 
@@ -39,8 +38,8 @@ static	function GetJobObject(UID)
 		}
 
 	Name			= null;	// name of jobs
-	sourceObject	= null;	// source process object
-	targetObject	= null;	// target process object
+	SourceProcess	= null;	// source process object
+	TargetProcess	= null;	// target process object
 	cargoID		    = null;	// cargo id
 	roadType		= null;	// RouteType type
 	UID			    = null;	// a UID for the job
@@ -59,8 +58,8 @@ static	function GetJobObject(UID)
 		{
 		this.ClassName	= "cJobs";
 		Name			= "unknown job";
-		sourceObject	= null;
-		targetObject	= null;
+		SourceProcess	= null;
+		TargetProcess	= null;
 		cargoID	    	= null;
 		roadType		= null;
 		UID			    = null;

@@ -332,20 +332,20 @@ function cRoute::DutyOnRoute()
 				}
 		local remain = cargowait - capacity;
 		if (remain < 1)	{ vehneed=0; }
-		else	{ vehneed = (cargowait / capacity)+1; }
+				else	{ vehneed = (cargowait / capacity)+1; }
 		DInfo("Capacity ="+capacity+" wait="+cargowait+" remain="+remain+" needbycapacity="+vehneed,2);
 		if (vehneed >= vehonroute) { vehneed-=vehonroute; }
 		if (vehneed+vehonroute > maxveh) { vehneed=maxveh-vehonroute; }
 		if (AIStation.GetCargoRating(road.SourceStation.s_ID, cargoid) < 25 && vehonroute < 8)	{ vehneed++; }
 		if (firstveh)
 				{
-				if (road.CargoID == cCargo.GetPassengerCargo() && road.VehicleType != RouteType.RAIL)
-						{
-						// force 2 vehicle if none exists yet for truck/bus & aircraft / boat
-						if (vehneed < 2)	{ vehneed=2; }
+				if (road.VehicleType == RouteType.RAIL)
+						{ vehneed = 1; } // stuck train to 1 only
+				else	{
+						if (road.CargoID == cCargo.GetPassengerCargo())
+								{ vehneed = 2; } // block passenger to 2 vehicle max
+						else	{ if (vehneed > 8)	{ vehneed = 8; } } // max 8 at creation time
 						}
-				else	{ vehneed=1; } // everyones else is block to 1 vehicle
-				if (vehneed > 8)	{ vehneed=8; } // max 8 at creation time
 				}
 		if (vehneed > 0)
 				{

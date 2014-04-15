@@ -26,9 +26,6 @@ function cBuilder::BuildWaterDepotAtTile(tile, destination)
         if (reuse)  { return position; }
         }
     reusedepot.KeepValue(0);
-    reusedepot.Valuate(AITile.GetDistanceManhattanToTile, tile);
-    reusedepot.RemoveBelowValue(3);
-    reusedepot.KeepBelowValue(16);
     reusedepot.Valuate(AITile.IsWaterTile);
     reusedepot.KeepValue(1);
     reusedepot.Valuate(AITile.IsStationTile);
@@ -37,9 +34,13 @@ function cBuilder::BuildWaterDepotAtTile(tile, destination)
     reusedepot.KeepValue(0);
     reusedepot.Valuate(AIMarine.IsDockTile);
     reusedepot.KeepValue(0);
-   // reusedepot.Valuate(AITile.GetDistanceManhattanToTile, destination);
-    //reusedepot.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+    reusedepot.Valuate(AITile.GetDistanceManhattanToTile, tile);
+    reusedepot.RemoveBelowValue(3);
+    reusedepot.KeepBelowValue(16);
+	reusedepot.Valuate(AITile.GetDistanceSquareToTile, destination);
+    reusedepot.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
     local newpos=-1;
+cDebug.showLogic(reusedepot);
     foreach (tile, dummy in reusedepot)
         {
         local dir = cBuilder.GetDirection(tile, destination);
@@ -139,11 +140,13 @@ function cBuilder::BuildWaterStation(start)
             if (!INSTANCE.terraform)    { sta_tile = -100; }
                                 else    { testedList.AddList(tilelist); sta_tile = -2; }
             }
+	cDebug.showLogic(tilelist);
+
     if (sta_tile != -100)
             {
-            testedList.Valuate(AITile.GetDistanceSquareToTile, otherplace);
-            testedList.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
-            foreach (tile, _ in testedList)
+            //testedList.Valuate(AITile.GetDistanceSquareToTile, otherplace);
+            testedList.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
+            foreach (tile, _ in tilelist)
                 {
                 local success = false;
                 cDebug.PutSign(tile, ".");
@@ -228,15 +231,15 @@ function cBuilder::RepairWaterRoute(idx)
     local road = cRoute.Load(idx);
     if (!road)  { return false; }
     cBanker.RaiseFundsBigTime();
-    if (!AIMarine.IsWaterDepot(road.SourceStation.s_Depot))
+    if (!AIMarine.IsWaterDepotTile(road.SourceStation.s_Depot))
         {
         road.SourceStation.s_Depot = cBuilder.BuildWaterDepotAtTile(road.SourceStation.s_Location, road.TargetStation.s_Location);
         }
-    if (!AIMarine.IsWaterDepot(road.TargetStation.s_Depot))
+    if (!AIMarine.IsWaterDepotTile(road.TargetStation.s_Depot))
         {
         road.TargetStation.s_Depot = cBuilder.BuildWaterDepotAtTile(road.TargetStation.s_Location, road.SourceStation.s_Location);
         }
-    if (!AIMarine.IsWaterDepot(road.SourceStation.s_Depot) && !AIMarine.IsWaterDepot(road.TargetStation.s_Depot))
+    if (!AIMarine.IsWaterDepotTile(road.SourceStation.s_Depot) && !AIMarine.IsWaterDepotTile(road.TargetStation.s_Depot))
         {
         DInfo("RepairWaterRoute mark #"+idx+" undoable",1);
         road.RouteIsNotDoable();

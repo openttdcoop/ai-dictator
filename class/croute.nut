@@ -225,11 +225,11 @@ function cRoute::RouteDone()
 	if (this.SourceProcess.IsTown)	{ cProcess.statueTown.AddItem(this.SourceProcess.ID,0); }
 	if (this.TargetProcess.IsTown)	{ cProcess.statueTown.AddItem(this.TargetProcess.ID,0); }
 	this.RouteAirportCheck();
-	if (this.UID > 1 && (this.CargoID == cCargo.GetPassengerCargo() || this.CargoID == cCargo.GetMailCargo))
-        {
-        if (this.SourceProcess.IsTown)  { cJobs.ReuseTownSet(this.SourceProcess.ID); }
-        if (this.TargetProcess.IsTown)  { cJobs.ReuseTownSet(this.TargetProcess.ID); }
-        }
+	if (this.UID > 1)
+		{
+		this.SourceProcess.UsedBy.AddItem(this.UID,0);
+		this.TargetProcess.UsedBy.AddItem(this.UID,0);
+		}
 	local srcprod=this.SourceStation.IsCargoProduce(this.CargoID);
 	local srcacc=this.SourceStation.IsCargoAccept(this.CargoID);
 	local dstprod=this.TargetStation.IsCargoProduce(this.CargoID);
@@ -239,7 +239,7 @@ function cRoute::RouteDone()
 	if (dstprod)	{ this.TargetStation.s_CargoProduce.AddItem(this.CargoID,0); }
 	if (dstacc)	{ this.TargetStation.s_CargoAccept.AddItem(this.CargoID,0); }
 	if (srcprod && srcacc && dstprod && dstacc)	{ this.Twoway=true; }
-	else	{ this.Twoway=false; }
+										else	{ this.Twoway=false; }
 	}
 
 function cRoute::RouteInitNetwork()
