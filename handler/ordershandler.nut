@@ -291,7 +291,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 // set all orders of the vehicle to force it going to a depot
 	{
 	if (veh == null)	{ return; }
-	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
+	local idx=cCarrier.VehicleFindRouteIndex(veh);
 	local road=cRoute.Load(idx);
 	local homedepot = null;
 	local srcValid = false;
@@ -440,16 +440,14 @@ function cCarrier::TrainSetOrders(trainID)
 	if (uid==null)	{ DError("Cannot find route uid for that train",1); return false; }
 	local road=cRoute.GetRouteObject(uid);
 	if (!road)	{ return false; }
-	//if (road.status ==
 	cCarrier.VehicleOrdersReset(trainID);
-	DInfo("Append orders to "+cCarrier.GetVehicleName(trainID),2);
-	local firstorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
-	local secondorder=AIOrder.OF_NON_STOP_INTERMEDIATE;
-	if (!road.Twoway)	{ firstorder+=AIOrder.OF_FULL_LOAD_ANY; secondorder=AIOrder.OF_NO_LOAD; }
+	DInfo("Append orders to "+cCarrier.GetVehicleName(trainID)+" twoway="+road.Twoway,2);
+	local firstorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
+	local secondorder = AIOrder.OF_NON_STOP_INTERMEDIATE;
+	if (!road.Twoway)	{ firstorder += AIOrder.OF_FULL_LOAD_ANY; secondorder += AIOrder.OF_NO_LOAD; }
 	if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.SourceStation.s_ID), firstorder))
 			{ DError(cCarrier.GetVehicleName(trainID)+" refuse first order",2); return false; }
 	if (!AIOrder.AppendOrder(trainID, AIStation.GetLocation(road.TargetStation.s_ID), secondorder))
 			{ DError(cCarrier.GetVehicleName(trainID)+" refuse second order",2); return false; }
 	return true;
 	}
-

@@ -38,7 +38,7 @@ function cBuilder::MonthlyChecks()
 	INSTANCE.main.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
 	INSTANCE.main.carrier.VehicleMaintenance();
 	INSTANCE.main.builder.RoadStationsBalancing();
-	INSTANCE.main.route.DutyOnRoute();
+	cRoute.DutyOnRoute();
 	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BoostedBuys();
 	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BridgeUpgrader();
 	if (INSTANCE.SixMonth == 6)	INSTANCE.main.builder.HalfYearChecks();

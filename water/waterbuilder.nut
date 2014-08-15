@@ -40,7 +40,6 @@ function cBuilder::BuildWaterDepotAtTile(tile, destination)
 	reusedepot.Valuate(AITile.GetDistanceSquareToTile, destination);
     reusedepot.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
     local newpos=-1;
-cDebug.showLogic(reusedepot);
     foreach (tile, dummy in reusedepot)
         {
         local dir = cBuilder.GetDirection(tile, destination);

@@ -18,7 +18,7 @@ require("class/cjobs.nut");
 require("class/cmisc.nut");
 require("class/cevents.nut");
 require("handler/routes.nut");
-require("train/railpf.nut")
+require("train/railpf.nut");
 require("handler/pathfinder.nut");
 require("handler/bridgehandler.nut");
 require("build/builder.nut");
