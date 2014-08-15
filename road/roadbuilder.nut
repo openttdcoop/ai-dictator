@@ -227,7 +227,7 @@ function cBuilder::BuildRoadStation(start)
 					{
 					staid = AIStation.GetStationID(statile);
 					// try build depot closer to our station
-					tilelist.Valuate(AITile.GetDistanceManhattanToTile,statile);
+/*					tilelist.Valuate(AITile.GetDistanceManhattanToTile,statile);
 					tilelist.Sort(AIList.SORT_BY_VALUE, true);
 					foreach (tile, dummy in tilelist)
 						{
@@ -235,14 +235,17 @@ function cBuilder::BuildRoadStation(start)
 						deptile=cBuilder.BuildAndStickToRoad(tile, AIRoad.ROADVEHTYPE_BUS+100000, -1); // depot
 						if (deptile >= 0)	{ depotbuild = true; break; }
 						}
+*/
 					}
 			}
-	success=(depotbuild && stationbuild);
-	if ((statile==-1 || deptile==-1) && !istown && isneartown)
+//	success=(depotbuild && stationbuild);
+	success = (stationbuild);
+//	if ((statile==-1 || deptile==-1) && !istown && isneartown)
+	if (statile == -1 && !istown && isneartown)
 			{
 			// We fail to build the station, but it's because we force build station close to roads and there is no roads
-			if (statile > 0)	{ cTileTools.DemolishTile(statile); }
-			if (deptile > 0)	{ cTileTools.DemolishTile(deptile); }
+			//if (statile > 0)	{ cTileTools.DemolishTile(statile); }
+			//if (deptile > 0)	{ cTileTools.DemolishTile(deptile); }
 			isneartown=false;
 			tilelist.AddList(checklist); // restore the list of original tiles
 			tilelist.Valuate(AITile.IsBuildable);
@@ -261,14 +264,15 @@ function cBuilder::BuildRoadStation(start)
 							{
 							statile = cBuilder.BuildRoadStationOrDepotAtTile(tile, tile+s_front, stationtype, AIStation.STATION_NEW);
 							stationbuild = (statile > 0);
-							if (stationbuild)	{ staid = AIStation.GetStationID(statile); }
+							if (stationbuild)	{ staid = AIStation.GetStationID(statile); success = true; }
 							}
-						if (!depotbuild && stationbuild)
+/*						if (!depotbuild && stationbuild)
 							{
 							deptile = cBuilder.BuildRoadDepotAtTile(tile, -1);
 							depotbuild = (deptile > 0);
 							}
 						success = (depotbuild && stationbuild);
+*/
 						if (success)	{ break; }
 						}
 				}
@@ -279,9 +283,9 @@ function cBuilder::BuildRoadStation(start)
 	print("station at "+cMisc.Locate(statile)+" ID="+AIStation.GetStationID(statile));
 	local newStation = INSTANCE.main.route.CreateNewStation(start);
 	if (newStation == null)	{ return false; }
-	newStation.s_Depot = deptile; // attach a depot to that station
-	cStation.StationClaimTile(deptile, staid);
-	cBuilder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(deptile), AIRoad.GetRoadStationFrontTile(statile), staid);
+	//newStation.s_Depot = deptile; // attach a depot to that station
+	//cStation.StationClaimTile(deptile, staid);
+	//cBuilder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(deptile), AIRoad.GetRoadStationFrontTile(statile), staid);
 	local stadir = cBuilder.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
 	local tileFrom= statile + cTileTools.GetRightRelativeFromDirection(stadir);
 	local tileTo= statile + cTileTools.GetLeftRelativeFromDirection(stadir);
