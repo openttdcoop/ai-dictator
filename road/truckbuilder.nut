@@ -59,7 +59,7 @@ function cCarrier::CreateRoadVehicle(roadidx)
 			INSTANCE.main.carrier.vehicle_cash -= price;
 			}
 		else	{
-			DError("Cannot create the road vehicle "+cEngine.GetName(engineID),2);
+			DError("Cannot create the road vehicle "+cEngine.GetName(engineID)+" Cargo="+cCargo.GetCargoLabel(road.CargoID)+" depot="+cMisc.Locate(homedepot),2);
 			return false;
 			}
 	local firstorderflag = AIOrder.OF_NON_STOP_INTERMEDIATE + AIOrder.OF_FULL_LOAD_ANY;

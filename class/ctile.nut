@@ -18,6 +18,12 @@ static	terraformCost = AIList();
 static	TilesBlackList = AIList(); // item=tile, value=stationID that own the tile
 }
 
+function cTileTools::TileIsOur(tile)
+// return true if we own that tile
+{
+	return (AICompany.IsMine(AITile.GetOwner(tile)));
+}
+
 function cTileTools::IsTilesBlackList(tile)
 {
 	return cTileTools.TilesBlackList.HasItem(tile);

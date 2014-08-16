@@ -54,7 +54,7 @@ function cBridge::GetBridgeUID(tile)
 // Return the bridge UID (our internal ID) from that tile
 	{
 	local validstart=cBridge.IsValidTile(tile);
-	if (!validstart)	{ INSTANCE.DError("This is not a bridge",2); return null; }
+	if (!validstart)	{ INSTANCE.DError("This is not a bridge at "+cMisc.Locate(tile),2); return null; }
 	return 0-( (tile+1)*(AIBridge.GetOtherBridgeEnd(tile)+1) );
 	}
 
@@ -83,6 +83,7 @@ function cBridge::Load(bUID)
 	local cobj=cBridge();
 	if (AIMap.IsValidTile(bUID))
 			{
+       print("bridgeload "+bUID);
 			cobj.bridgeUID=cBridge.GetBridgeUID(bUID);
 			if (cobj.bridgeUID!=null)	{ cobj.firstside=bUID; }
                                 else	{ return null; }
@@ -90,8 +91,7 @@ function cBridge::Load(bUID)
 			}
 	else	{ cobj.bridgeUID=bUID; }
 	if (bUID in cBridge.bridgedatabase)	{ cobj=cBridge.GetBridgeObject(bUID); cobj.CheckBridge(); }
-	else	{ cobj.Save(); } // we will not save a null bridgeUID
-	return cobj;
+	return null;
 	}
 
 function cBridge::GetLength(bUID)

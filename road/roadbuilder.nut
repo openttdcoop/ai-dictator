@@ -449,7 +449,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 		}
 	// the source depot
 	msg=space+"Source Depot "+repair.SourceStation.s_Depot+" is ";
-	if (!AIRoad.IsRoadDepotTile(repair.SourceStation.s_Depot))
+	if (!AIRoad.IsRoadDepotTile(repair.SourceStation.s_Depot) || !cTileTools.TileIsOur(repair.SourceStation.s_Depot))
 			{
 			msg+="invalid. ";
 			repair.SourceStation.s_Depot = cBuilder.BuildRoadDepotAtTile(repair.SourceStation.GetRoadStationEntry(), repair.SourceStation.s_ID);
@@ -474,7 +474,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 			}
 	// the destination depot
 	msg=space+"Destination Depot "+repair.TargetStation.s_Depot+" is ";
-	if (!AIRoad.IsRoadDepotTile(repair.TargetStation.s_Depot))
+	if (!AIRoad.IsRoadDepotTile(repair.TargetStation.s_Depot) || !cTileTools.TileIsOur(repair.TargetStation.s_Depot))
 			{
 			msg+="invalid. ";
 			repair.TargetStation.s_Depot = INSTANCE.main.builder.BuildRoadDepotAtTile(repair.TargetStation.GetRoadStationEntry(), repair.TargetStation.s_ID);
