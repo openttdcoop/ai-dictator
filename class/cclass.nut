@@ -120,7 +120,7 @@ function cMain::CheckAccount()
 	if (cRoute.database.len()==3 && dgroute == 3)
 		{
 		DWarn("DEBUG Disabling more than 1 route");
-		//bank.canBuild=false;   // FIXME : debug keep 1 route enable only
+		bank.canBuild=false;   // FIXME : debug keep 1 route enable only
 		}
 	else print("DEBUG route state : "+dgroute);
 		//AIController.Break("route size="+cRoute.database.len());

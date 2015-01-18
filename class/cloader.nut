@@ -390,6 +390,15 @@ function cLoader::LoadSaveGame()
 		}
 	cRoute.RouteRebuildIndex();
 	RailFollower.FindRailOwner();
+	// Now register back the trains
+/*    local trains = AIVehicle_List();
+    trains.Valuate(AIVehicle.GetVehicleType);
+    trains.KeepValue(AIVehicle.VT_RAIL);
+    foreach (veh in trains)
+		{
+		local train_uid = cCarrier.VehicleFindRouteIndex(veh);
+		if (train_uid != null)	{ cRoute.AddTrain(train_uid, veh); }
+		} */
 }
 
 function cLoader::LoadOther()

@@ -664,7 +664,7 @@ function cStationRail::StationAddTrain(taker, useEntry, stationID=null)
 {
 	local thatstation=false;
 	if (stationID==null)	thatstation=this;
-			else		thatstation=cStation.Load(stationID);
+				else		thatstation=cStation.Load(stationID);
 	if (!thatstation)	{ DError("Invalid stationID "+stationID,1); return -1; }
 	local ted=thatstation.s_Train[TrainType.TED];
 	local txd=thatstation.s_Train[TrainType.TXD];

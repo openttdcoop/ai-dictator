@@ -189,16 +189,16 @@ function cCarrier::VehicleSendToDepot(veh,reason)
 		if (reason < DepotAction.LINEUPGRADE)	return false;
 							// ignore order if we already have one, but not ignoring LINEUPGRADE, SIGNALUPGRADE or WAITING to crush previous one
 		}
-	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	INSTANCE.main.carrier.TrainSetDepotOrder(veh);
-										else	INSTANCE.main.carrier.VehicleSetDepotOrder(veh);
-	local understood=false;
+	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)
+				cCarrier.TrainSetDepotOrder(veh);
+		else	cCarrier.VehicleSetDepotOrder(veh);
 	local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 	local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
 	AIController.Sleep(6);	// wait it to move a bit
 	local newtake=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
 	if (AIVehicle.GetVehicleType(veh)!=AIVehicle.VT_RAIL && newtake > dist)
 		{
-		DInfo("Reversing direction of "+INSTANCE.main.carrier.GetVehicleName(veh),1);
+		DInfo("Reversing direction of "+cCarrier.GetVehicleName(veh),1);
 		AIVehicle.ReverseVehicle(veh);
 		}
 	local rr="";
@@ -286,9 +286,6 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 	if (betterEngine == -1)
 		{
 		DWarn("That vehicle have its engine already at top",1);
-		//cCarrier.VehicleBuildOrders(road.GroupID,false);
-		//cCarrier.StartVehicle(vehID);
-		//return false;
 		}
 	local homedepot=cRoute.GetDepot(idx);
 	if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
@@ -298,7 +295,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 		{
 		case AIVehicle.VT_RAIL:
 		// Upgrading the loco engine is doable, but it might get too complexe for nothing, so i will destroy the train, and X more wagons
-			local numwagon = cEngineLib.GetNumberOfWagons(vehID);
+			local numwagon = cEngineLib.VehicleGetNumberOfWagons(vehID);
 			cCarrier.VehicleSell(vehID, false);
 			DInfo("Train vehicle "+oldenginename+" removed, a new train will be built with "+numwagon+" wagons",0);
 			cCarrier.ForceAddTrain(idx, numwagon);
@@ -306,11 +303,11 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 		break;
 		case AIVehicle.VT_ROAD:
 			cCarrier.VehicleSell(vehID,false);
-			new_vehID = cEngineLib.CreateVehicle(homedepot, betterEngine, road.CargoID);
+			new_vehID = cEngineLib.VehicleCreate(homedepot, betterEngine, road.CargoID);
 		break;
 		case AIVehicle.VT_AIR:
 			cCarrier.VehicleSell(vehID,false);
-			new_vehID = cEngineLib.CreateVehicle(homedepot, betterEngine, road.CargoID);
+			new_vehID = cEngineLib.VehicleCreate(homedepot, betterEngine, road.CargoID);
 		break;
 		case AIVehicle.VT_WATER:
 			cCarrier.VehicleSell(vehID,false);
@@ -492,14 +489,14 @@ function cCarrier::CrazySolder(moneytoget)
 function cCarrier::VehicleSell(veh, recordit)
 // sell the vehicle and update route info
 {
-	DInfo("Selling Vehicle "+INSTANCE.main.carrier.GetVehicleName(veh),0);
-	local uid=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
-	local road=cRoute.Load(uid);
-	local vehvalue=AIVehicle.GetCurrentValue(veh);
-	local vehtype=AIVehicle.GetVehicleType(veh);
+	DInfo("Selling Vehicle "+cCarrier.GetVehicleName(veh),0);
+	local uid = cCarrier.VehicleFindRouteIndex(veh);
+	local road = cRoute.Load(uid);
+	local vehvalue = AIVehicle.GetCurrentValue(veh);
+	local vehtype = AIVehicle.GetVehicleType(veh);
 	INSTANCE.main.carrier.vehicle_cash -= vehvalue;
 	if (INSTANCE.main.carrier.vehicle_cash < 0)	INSTANCE.main.carrier.vehicle_cash = 0;
-	if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_RAIL)	cTrain.DeleteVehicle(veh);	// must be call before selling the vehicle
+	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	cTrain.DeleteVehicle(veh);	// must be call before selling the vehicle
 	cEngine.RabbitUnset(veh);
 	AIVehicle.SellVehicle(veh);
 	if (!road) return;
@@ -667,11 +664,11 @@ function cCarrier::TrainExitDepot(vehID)
 {
 	if (!AIVehicle.GetVehicleType(vehID) == AIVehicle.VT_RAIL || !AIVehicle.GetState(vehID) == AIVehicle.VS_IN_DEPOT) return;
 	local loaded=cCarrier.VehicleGetCargoLoad(vehID);
-	INSTANCE.main.carrier.TrainSetOrders(vehID);
+	cCarrier.TrainSetOrders(vehID);
 	if (loaded > 0)	AIOrder.SkipToOrder(vehID, 1);
 			else	AIOrder.SkipToOrder(vehID, 0);
 	cCarrier.StartVehicle(vehID);
-	if (INSTANCE.main.carrier.ToDepotList.HasItem(vehID))	INSTANCE.main.carrier.ToDepotList.RemoveItem(vehID);
+	if (cCarrier.ToDepotList.HasItem(vehID))	cCarrier.ToDepotList.RemoveItem(vehID);
 }
 
 function cCarrier::StartVehicle(vehID)

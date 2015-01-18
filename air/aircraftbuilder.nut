@@ -56,7 +56,7 @@ function cCarrier::CreateAirVehicle(routeidx)
             }
 	local price = cEngine.GetPrice(engineID);
 	cBanker.RaiseFundsBy(price);
-	local vehID = cEngineLib.CreateVehicle(homedepot, engineID, -1); // force no refit
+	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, -1); // force no refit
 	if (vehID != -1)
 			{
 			DInfo("Just brought a new aircraft vehicle: "+cCarrier.GetVehicleName(vehID),0);
@@ -84,7 +84,7 @@ function cCarrier::CreateAirVehicle(routeidx)
 function cCarrier::AircraftIsChopper(vehicle)
 // return true if we are a chopper
 {
-	local vehlist = AIEngineList(AIVehicle.VT_AIR);
+	local vehlist = cEngineLib.GetEngineList(AIVehicle.VT_AIR);
 	vehlist.Valuate(AIEngine.GetPlaneType);
 	vehlist.KeepValue(AIAirport.PT_HELICOPTER);
 	local vehengine=AIVehicle.GetEngineType(vehicle);

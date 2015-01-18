@@ -243,7 +243,7 @@ function cCarrier::GetEngineWagonEfficiency(engine, cargoID)
 	local idx = -1;
 	if (AIGameSettings.GetValue("wagon_speed_limits") == 1)
 		{
-		if (speed == 0)	speed = cEngineLib.GetTrainMaximumSpeed();
+		if (speed == 0)	speed = cEngineLib.RailTypeGetSpeed(cEngineLib.RailTypeGetFastestType());
 		idx = speed * capacity;
 		}
 	else	idx = capacity;
@@ -382,24 +382,24 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 	cEngineLib.EngineFilter(vehlist, object.cargo_id, -1, object.engine_id, object.bypass);
 	// force roadtype to -1 to prevent filtering by railtype
 	if (AIEngine.IsWagon(vehlist.Begin()))
-		{
-		vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
-		vehlist.Sort(AIList.SORT_BY_VALUE, false);
-		}
-	else	{
-		vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
-		vehlist.Sort(AIList.SORT_BY_VALUE, true);
-		if (!vehlist.IsEmpty())	cEngine.RailTypeIsTop(vehlist.Begin(), object.cargo_id, true);
-		// before railtype filtering, add this engine as topengine using any railtype
-		if (object.engine_roadtype != -1)
 			{
-			vehlist.Valuate(AIEngine.HasPowerOnRail, object.engine_roadtype);
-			vehlist.KeepValue(1);
+			vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
+			vehlist.Sort(AIList.SORT_BY_VALUE, false);
+			}
+	else	{
 			vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 			vehlist.Sort(AIList.SORT_BY_VALUE, true);
+			if (!vehlist.IsEmpty())	cEngine.RailTypeIsTop(vehlist.Begin(), object.cargo_id, true);
+			// before railtype filtering, add this engine as topengine using any railtype
+			if (object.engine_roadtype != -1)
+				{
+				vehlist.Valuate(AIEngine.HasPowerOnRail, object.engine_roadtype);
+				vehlist.KeepValue(1);
+				vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
+				vehlist.Sort(AIList.SORT_BY_VALUE, true);
+				}
+			if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trains
 			}
-		if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trains
-		}
 }
 
 function cCarrier::RouteNeedVehicle(gid, amount)

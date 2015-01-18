@@ -208,11 +208,11 @@ function cBridge::IsRailBridge(bUID)
 function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 // return a bridge ID to build a bridge of that size and type at needed speed
 	{
-	local needSpeed=cEngineLib.GetTrainMaximumSpeed();//INSTANCE.main.carrier.speed_MaxTrain;
+	local needSpeed = cEngineLib.RailTypeGetSpeed(cEngineLib.RailTypeGetFastestType());
 	if (btype == AIVehicle.VT_ROAD)	{ needSpeed=INSTANCE.main.carrier.speed_MaxRoad; }
 	if (needSpeed == 0)
 			{
-			local vehlist=AIEngineList(btype);
+			local vehlist=cEngineLib.GetEngineList(btype);
 			vehlist.Valuate(AIEngine.GetMaxSpeed);
 			vehlist.KeepAboveValue(1); // remove 0 speed engines
 			vehlist.Sort(AIList.SORT_BY_VALUE, true);

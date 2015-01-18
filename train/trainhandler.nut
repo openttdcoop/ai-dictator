@@ -31,7 +31,6 @@ class cTrain extends cClass
 		src_useEntry	= null;	// source station is use by its entry=true, exit=false;
 		dst_useEntry	= null;	// destination station is use by its entry=true, exit=false;
 		stationbit		= null;	// bit0 source station, bit1=destination station :: set to 1 train load or 0 train unload at station
-		full			= null; 	// set to true if train cannot have more wagons attach to it
 		wagonPrice		= null;	// price to buy a new wagon for that train
 		lastdepotvisit	= null;	// record last time that train was in a depot
 		extraengine		= null;	// true if we have two engines
@@ -47,7 +46,6 @@ class cTrain extends cClass
 			src_useEntry	= null;
 			dst_useEntry	= null;
 			stationbit		= 0;
-			full			= false;
 			wagonPrice		= 0;
 			lastdepotvisit	= 0;
 			extraengine		= false;
@@ -115,18 +113,15 @@ function cTrain::DeleteVehicle(vehID)
 	}
 
 function cTrain::IsFull(vehID)
-// return the cTrain.full value
-	{
-	local train=cTrain.Load(vehID);
-	return train.full;
-	}
-
-function cTrain::SetFull(vehID, fullstate)
-// set the isFull value of a train
-	{
-	local train=cTrain.Load(vehID);
-	train.full=fullstate;
-	}
+// return true if train couldn't get more wagons
+{
+	local train = cTrain.Load(vehID);
+	local station = cStation.Load(train.srcStationID);
+	if (!station)	return false;
+	local stationLen = station.s_Train[TrainType.DEPTH]*16;
+	local veh_len = AIVehicle.GetLength(vehID);
+	return (veh_len >= stationLen);
+}
 
 function cTrain::SetWagonPrice(vehID, wprice)
 // Set the price for a wagon

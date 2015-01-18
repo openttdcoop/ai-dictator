@@ -61,7 +61,7 @@ const	DIR_SW = 3;
 
 import("pathfinder.road", "RoadPathFinder", 4);
 import("pathfinder.rail", "RailPathFinder", 1);
-import("Library.cEngineLib", "cEngineLib", 6);
+import("Library.cEngineLib", "cEngineLib", 8);
 
 require("require.nut");
 
@@ -320,6 +320,12 @@ function DictatorAI::CheckCurrentSettings()
 			use_train = false;
 			use_air = false;
 			}
+	// TODO: debug remove block on any other transport systems
+	use_boat = false;
+	use_train = true;
+	use_air = false;
+	use_road = false;
+
 	}
 
 function DictatorAI::DInfo(putMsg, debugValue=0, func = "Unknown")

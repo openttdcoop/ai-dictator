@@ -124,8 +124,9 @@ function RailFollower::FindRailOwner()
 		foreach (plat, _ in road.TargetStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Target_RailEntry);
 		foreach (trains, _ in train_list)
 			{
-			road.SourceStation.StationAddTrain(true, road.Source_RailEntry);
-			road.TargetStation.StationAddTrain(false, road.Target_RailEntry);
+			cRoute.AddTrain(uid, trains);
+//			road.SourceStation.StationAddTrain(true, road.Source_RailEntry);
+	//		road.TargetStation.StationAddTrain(false, road.Target_RailEntry);
 			}
 		DInfo("Finding rails for route "+road.Name);
 		if (!road.Primary_RailLink)	{ DInfo("FindRailOwner mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
@@ -135,6 +136,7 @@ function RailFollower::FindRailOwner()
                             else	src_target = road.SourceStation.s_ExitSide[TrainSide.IN];
 		if (road.Target_RailEntry)	dst_target = road.TargetStation.s_EntrySide[TrainSide.OUT];
                             else	dst_target = road.TargetStation.s_ExitSide[TrainSide.OUT];
+		print("src_target="+cMisc.Locate(src_target)+" dst_target="+cMisc.Locate(dst_target));
 		local bad = false;
 		local src_tiles = AIList();
 		local dst_tiles = AIList();
@@ -239,10 +241,10 @@ function RailFollower::FindRailOwner()
 
 function RailFollower::TryUpgradeLine(vehicle)
 {
-	local wagonproto = cEngineLib.GetWagonFromVehicle(vehicle);
+	local wagonproto = cEngineLib.VehicleGetRandomWagon(vehicle);
 	if (wagonproto == -1)	{ print("bad proto"); return -1; }
 	local wagon_type = AIVehicle.GetWagonEngineType(vehicle, wagonproto);
-	local cargo = cEngineLib.GetCargoType(wagon_type);
+	local cargo = cEngine.GetCargoType(wagon_type);
 	local loco_engine = AIVehicle.GetEngineType(vehicle);
 	local upgrade_cost = 0;
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
@@ -318,7 +320,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local wagon_lost = [];
 	foreach (veh, uid in all_vehicle)
             {
-            local z = cEngineLib.GetNumberOfWagons(veh);
+            local z = cEngineLib.VehicleGetNumberOfWagons(veh);
             wagon_lost.push(z);
             wagon_lost.push(uid);
             if (veh != safekeeper)  {

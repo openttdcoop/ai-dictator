@@ -30,7 +30,7 @@ function cTrack::SetRailType(rtype = -1)
 			{
 			local railtypes = AIRailTypeList();
 			if (railtypes.IsEmpty())	{ DError("There's no railtype avaiable !",1); return false; }
-			rtype = cEngineLib.GetBestRailType();
+			rtype = cEngineLib.RailTypeGetFastestType();
 			}
 	if (!AIRail.IsRailTypeAvailable(rtype))	{ DError("Railtype "+rtype+" is not available !",1); return false; }
 	AIRail.SetCurrentRailType(rtype);

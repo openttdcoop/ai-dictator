@@ -476,10 +476,15 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
 					}
 			else	{ DInfo("... not all signals were built",2); success = false; }
 			}
-	foreach (vehicle, dummy in vehlist)
+	vehlist = AIVehicleList();
+	vehlist.Valuate(AIVehicle.IsStoppedInDepot);
+	vehlist.KeepValue(1);
+	vehlist.Valuate(AIVehicle.GetLocation);
+	local srcDepot = cRoute.GetDepot(road.UID, 1);
+	local dstDepot = cRoute.GetDepot(road.UID, 2);
+	foreach (vehicle, location in vehlist)
 		{
-		if (cCarrier.ToDepotList.HasItem(vehicle))	{ cCarrier.ToDepotList.RemoveItem(vehicle); }
-		cCarrier.TrainExitDepot(vehicle);
+        if (location == srcDepot || location == dstDepot)	{ cCarrier.TrainExitDepot(vehicle); }
 		}
 	return success;
 	}
@@ -610,10 +615,17 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local trainExitTotal = trainExitDropper + trainExitTaker;
 	local allTaker = trainExitTaker + trainEntryTaker;
 	local allDropper = trainExitDropper + trainEntryDropper;
+	local dbvehc = AIVehicleList();
+	if (allTaker + allDropper > dbvehc.Count()+1)	{ AIController.Break("BUG: "+dbvehc.Count()+" too many vehicle"); }
+	print("veh use: "+dbvehc.Count());
 	local needTaker = allTaker;
 	local needDropper = allDropper;
-	if (allTaker > 2)   { needTaker = (allTaker >> 1) + (allTaker % 2); }
-	if (allDropper > 2)	{ needDropper = (allDropper >> 2) + (allDropper % 4); }
+	if (allTaker > 1) { needTaker = allTaker; }
+	if (allDropper > 2)	{
+						needDropper = (allDropper >> 1);
+						if ((allDropper % 2) !=0) needDropper++;
+						}
+	// limit to station size for dropper trains
 	local newStationSize = needTaker + needDropper;
 	if (allDropper+allTaker == 1)	{ newStationSize = 0; } // don't grow the station until we have a real train using it
 	DWarn("STATION : "+thatstation.s_Name,1);
@@ -637,6 +649,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
     if (cangrow)	{ DInfo("Station can be upgrade",1); }
             else	{ DInfo("Station is at its maximum size",1); }
 	local cmpsize = thatstation.s_Train[TrainType.GOODPLATFORM];
+	print("cmpsize="+cmpsize);
 	if (newStationSize > cmpsize && cangrow)	{ thatstation.RailStationPhaseUpdate(); cmpsize = thatstation.s_Train[TrainType.GOODPLATFORM]; }
 	DInfo("Station have "+cmpsize+" working platforms",1);
 	if (newStationSize > cmpsize)

@@ -868,14 +868,13 @@ function cBuilder::RoadRunnerHelper(source, target, road_type, walkedtiles=null,
 	local found=false;
 	local solve= AIList();
 	if (source == target)	{ found = true; }
-	local directions=[AIMap.GetTileIndex(0, 1), AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, -1)];
 	local dirswap = AIList();
 	if (cBridge.IsBridgeTile(source) || AITunnel.IsTunnelTile(source))
 			{
 			local endat = cBridge.IsBridgeTile(source) ? AIBridge.GetOtherBridgeEnd(source) : AITunnel.GetOtherTunnelEnd(source);
 			if (AIMap.IsValidTile(endat))   { source = endat }
 			}
-			dirswap.AddItem(source+AIMap.GetTileIndex(0, 1), 0);
+	dirswap.AddItem(source+AIMap.GetTileIndex(0, 1), 0);
 	dirswap.AddItem(source+AIMap.GetTileIndex(1, 0), 0);
 	dirswap.AddItem(source+AIMap.GetTileIndex(-1, 0), 0);
 	dirswap.AddItem(source+AIMap.GetTileIndex(0, -1), 0);
@@ -889,7 +888,6 @@ function cBuilder::RoadRunnerHelper(source, target, road_type, walkedtiles=null,
 		if (road_type==666) { valid = (AITile.IsBuildable(direction) || AITile.IsWaterTile(direction)); }
 		local currdistance = Distance(direction, target);
 		if (currdistance > origin+max_wrong_direction)	{ valid=false; }
-		if (walkedtiles.Count() > 5 * origin) { valid = false; }
 		if (walkedtiles.HasItem(direction))	{ valid=false; }
 		if (valid)	{ walkedtiles.AddItem(direction,0); }
 		//if (valid && INSTANCE.debug)	cDebug.PutSign(direction, currdistance);

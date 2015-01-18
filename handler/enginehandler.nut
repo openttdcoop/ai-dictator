@@ -146,11 +146,11 @@ function cEngine::RailTypeIsTop(engineID, cargoID, setTopRail)
 	if (!cEngine.BestEngineList.HasItem(EUID))	setTopRail = true;
 	if (setTopRail)	cEngine.SetBestEngine(EUID, engineID);
 	topengine = cEngine.BestEngineList.GetValue(EUID);
-	local toprail = cEngineLib.GetBestRailType(topengine);
-	local engrail = cEngineLib.GetBestRailType(engineID);
+	local toprail = cEngineLib.RailTypeGetFastestType(topengine);
+	local engrail = cEngineLib.RailTypeGetFastestType(engineID);
 	if (toprail == engrail) 	{ return -1; }
                         else	{
-                                print("BREAKRAIL : New best railtype for "+cCargo.GetCargoLabel(cargoID)+" set to use "+cEngine.GetName(topengine)+" using railtype "+AIRail.GetName(cEngineLib.GetBestRailType(topengine)));
+                                DInfo("New best railtype for "+cCargo.GetCargoLabel(cargoID)+" set to use "+cEngine.GetName(topengine)+" using railtype "+AIRail.GetName(cEngineLib.RailTypeGetFastestType(topengine)),2);
                                 return toprail; // we return the railtype need to upgrade
                                 }
 	}

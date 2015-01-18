@@ -255,7 +255,7 @@ function cJobs::EstimateCost()
 				if (engine != -1)
 						{
 						engineprice+=cEngine.GetPrice(engine);
-						rtype=cEngineLib.GetBestRailType(engine);
+						rtype=cEngineLib.RailTypeGetFastestType(engine);
 						if (rtype==-1)	{ rtype=null; }
 						}
 				else	{ engineprice=500000; }

@@ -51,7 +51,7 @@ function cCarrier::CreateWaterVehicle(routeidx)
             }
 	local price = cEngine.GetPrice(engineID);
 	cBanker.RaiseFundsBy(price);
-	local vehID = cEngineLib.CreateVehicle(homedepot, engineID, road.CargoID);
+	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, road.CargoID);
 	if (vehID != -1)
 			{
 			DInfo("Just brought a new boat: "+cCarrier.GetVehicleName(vehID),0);

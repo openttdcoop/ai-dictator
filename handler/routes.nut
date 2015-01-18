@@ -367,6 +367,7 @@ function cRoute::CanAddTrainToStation(uid)
 	DInfo("src="+road.Source_RailEntry+" 2way="+road.Twoway+" tgt="+road.Target_RailEntry,1);
 	canAdd=cBuilder.RailStationGrow(road.SourceStation.s_ID, road.Source_RailEntry, true);
 	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.TargetStation.s_ID, road.Target_RailEntry, false);
+	AIController.Break("CanAddTrain: "+canAdd);
 	return canAdd;
 	}
 

@@ -286,7 +286,7 @@ function cBuilder::TryBuildThatRoute()
                     local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, -1);
                     if (trainspec[0] == -1)	{ success = false; }
                                     else	{ success = true; }
-                    if (success)    { INSTANCE.main.route.RailType = cEngineLib.GetBestRailType(trainspec[0]); }
+                    if (success)    { INSTANCE.main.route.RailType = cEngineLib.RailTypeGetFastestType(trainspec[0]); }
                     }
             else    {
                     local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, INSTANCE.main.route.RailType);
