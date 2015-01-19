@@ -120,8 +120,9 @@ function cTrain::IsFull(vehID)
 	if (!station)	return false;
 	local stationLen = station.s_Train[TrainType.DEPTH]*16;
 	local veh_len = AIVehicle.GetLength(vehID);
-	local one_more = cEngineLib.GetLength(cEngineLib.VehicleGetRandomWagon(vehID));
-	// we look if with one more wagon the train gets too big, else not full station size train but without enough for another wagon would return not full status
+	if (veh_len >= stationLen)	return true; // well just make it quick if we could
+	local one_more = cEngineLib.GetLength(AIVehicle.GetWagonEngineType(vehID, cEngineLib.VehicleGetRandomWagon(vehID)));
+	// we look if with one more wagon the train gets too big, else a not full station size train but without enough for another wagon would return a non full status
 	return ((one_more + veh_len) >= stationLen);
 }
 
