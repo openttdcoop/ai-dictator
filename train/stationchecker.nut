@@ -276,7 +276,8 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 	local rail=railFront;
 	local j=1;
 	local fromtile=-1;
-	local sigtype=AIRail.SIGNALTYPE_PBS;
+//	local sigtype=AIRail.SIGNALTYPE_PBS;
+	local sigtype = AIRail.SIGNALTYPE_NORMAL+AIRail.SIGNALTYPE_TWOWAY;
 	local position = stationObj.GetLocation()
 					 local sigdir=0;
 	local se_IN=stationObj.GetRailStationIN(true);
@@ -451,10 +452,12 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
                         else	{ srcpos=road.SourceStation.s_ExitSide[TrainSide.IN]; }
 	if (road.Target_RailEntry)  { dstpos=road.TargetStation.s_EntrySide[TrainSide.OUT];	}
                         else	{ dstpos=road.TargetStation.s_ExitSide[TrainSide.OUT]; }
+	success = cBuilder.SignalSwapper(road.SourceStation.s_ID, road.Source_RailEntry);
+	success = (success && cBuilder.SignalSwapper(road.TargetStation.s_ID, road.Target_RailEntry));
 	if (!road.SourceStation.IsRailStationPrimarySignalBuilt())
 			{
 			DInfo("Building signals on primary track",2);
-			if (cBuilder.SignalBuilder(srcpos, dstpos))
+			if (success && cBuilder.SignalBuilder(srcpos, dstpos))
 					{
 					DInfo("...done",2);
 					road.SourceStation.RailStationSetPrimarySignalBuilt();
@@ -469,7 +472,7 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
 	if (!road.TargetStation.IsRailStationSecondarySignalBuilt())
 			{
 			DInfo("Building signals on secondary track",2);
-			if (cBuilder.SignalBuilder(dstpos, srcpos))
+			if (success && cBuilder.SignalBuilder(dstpos, srcpos))
 					{
 					DInfo("...done",2);
 					road.TargetStation.RailStationSetSecondarySignalBuilt();
@@ -485,6 +488,34 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
 	foreach (vehicle, location in vehlist)
 		{
         if (location == srcDepot || location == dstDepot)	{ cCarrier.TrainExitDepot(vehicle); }
+		}
+	return success;
+	}
+
+function cBuilder::SignalSwapper(stationID, useEntry)
+	{
+    local pstype = AIRail.SIGNALTYPE_NORMAL+AIRail.SIGNALTYPE_TWOWAY;
+    local nstype = AIRail.SIGNALTYPE_PBS;
+    local fwd = cStationRail.GetRelativeTileForward(stationID, useEntry); // one tile backward
+    local bck = cStationRail.GetRelativeTileBackward(stationID, useEntry); // one tile forward
+    local success=true;
+	local station = cStation.Load(stationID);
+	if (!station)	return false;
+    local MainTrack = station.s_EntrySide[TrainSide.IN];
+    local AltTrack = station.s_EntrySide[TrainSide.OUT];
+    if (!useEntry)	{
+					MainTrack = station.s_ExitSide[TrainSide.IN];
+					AltTrack = station.s_ExitSide[TrainSide.OUT];
+					}
+    if (AIRail.GetSignalType(MainTrack, MainTrack+bck) == pstype)
+		{
+		cError.ForceAction(AIRail.RemoveSignal, MainTrack, MainTrack+bck);
+		success = cError.ForceAction(AIRail.BuildSignal, MainTrack, MainTrack+bck, nstype);
+		}
+    if (success && AIRail.GetSignalType(AltTrack, AltTrack+fwd) == pstype)
+		{
+		cError.ForceAction(AIRail.RemoveSignal, AltTrack, AltTrack+fwd);
+		success = cError.ForceAction(AIRail.BuildSignal, AltTrack, AltTrack+fwd, nstype);
 		}
 	return success;
 	}
