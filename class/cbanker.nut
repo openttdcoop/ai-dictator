@@ -125,5 +125,5 @@ function cBanker::CashFlow()
 
 function cBanker::GetInflationRate()
 {
-	return (AICompany.GetMaxLoanAmount() / (AIGameSettings.GetValue("difficulty.max_loan")) );
+	return (AICompany.GetMaxLoanAmount() / AIGameSettings.GetValue("difficulty.max_loan").tofloat());
 }
