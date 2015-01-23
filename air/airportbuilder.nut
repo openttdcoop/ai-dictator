@@ -59,7 +59,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	townrating=AITown.GetRating(townid, AICompany.COMPANY_SELF);
 	if (townrating < AITown.TOWN_RATING_GOOD)
 		{ DInfo("Cannot upgrade airport, too dangerous with our current rating with this town.",1); station.s_DateLastUpgrade+=70; return false; }
-	local cost=AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate();
+	local cost=AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate().tointeger();
 	cost+=1000; // i'm not sure how much i need to destroy old airport
 	INSTANCE.main.bank.RaiseFundsBy(cost);
 	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
@@ -140,8 +140,8 @@ function cBuilder::AirportMaker(tile, airporttype)
 		DInfo("Town doesn't like us...",1);
 		cTileTools.terraformCost.AddItem(999995,1); // tell rating is poor
 		}
-	DInfo("Cost to build an airport = "+AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate(),2);
-	INSTANCE.main.bank.RaiseFundsBy(AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate());
+	DInfo("Cost to build an airport = "+(AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger(),2);
+	INSTANCE.main.bank.RaiseFundsBy((AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger());
 	essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
 	if (essai)	DInfo("-> Built an airport at "+cMisc.Locate(tile),1);
 		else	DError("Cannot build an airport at "+cMisc.Locate(tile),1);

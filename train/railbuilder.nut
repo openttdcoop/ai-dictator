@@ -84,7 +84,7 @@ function cBuilder::BuildTrainStation(start)
 	local success = false;
 	local buildmode=0;
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
-	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate()),2);
+	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger()),2);
 	INSTANCE.main.bank.RaiseFundsBy(cost*4);
 	local ssize=6+INSTANCE.main.carrier.train_length;
 	/* 3 build mode:
@@ -263,7 +263,15 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					else
 							{
 							local targetTile=path.GetTile();
-							cTileTools.DemolishTile(targetTile); // try cleanup the place before
+							local bm = AITile.GetMinHeight(prevprev);
+							local am = AITile.GetMinHeight(targetTile);
+							local cm = AITile.GetMinHeight(prev);
+							local bh = AITile.GetMaxHeight(prevprev);
+                            local ah = AITile.GetMaxHeight(targetTile);
+                            local ch = AITile.GetMaxHeight(prev);
+                            local droit = (AIMap.GetTileX(prevprev) == AIMap.GetTileX(targetTile) || AIMap.GetTileY(prevprev) == AIMap.GetTileY(targetTile));
+							if (droit && bh == ah && bh == ch && abs(cm - bm) == 1)	{ cTileTools.TerraformLevelTiles(prevprev, targetTile); } // kill small holes
+							if (droit && bm == am && bm == cm && abs(ch - bh) == 1) 	{ cTileTools.TerraformLevelTiles(prevprev, targetTile); } // or small hills
 							if (!AIRail.BuildRail(prevprev, prev, targetTile))
 									{
 									smallerror=cBuilder.EasyError(AIError.GetLastError());
@@ -293,7 +301,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					}
 			}
 	local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, head2));
-	local source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
+	//local source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
 	if (smallerror == -2)
 			{
 			DError("Pathfinder has detect a failure.",1);
@@ -301,7 +309,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					{
 					DInfo("Pathfinder cannot do more",1);
 					// unroll all tasks and fail
-					source=cPathfinder.GetUID(mytask.source, mytask.target);
+					/*source=cPathfinder.GetUID(mytask.source, mytask.target);
 					while (source != null)
 							{
 							// remove all sub-tasks
@@ -312,7 +320,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 									cPathfinder.CloseTask(mytask.source, mytask.target);
 									mytask=cPathfinder.GetPathfinderObject(source);
 									}
-							}
+							}*/
 					DInfo("Pathfinder task "+mytask.UID+" failure !",1);
 					mytask.status = -1;
 					local badtiles = AIList();
@@ -340,18 +348,20 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					local newtarget=[prev, prevprev];
 					DInfo("Pathfinder is calling an helper task",1);
 					// Create the helper task
-					local dummy= cPathfinder.GetStatus(head1, newtarget, stationID, useEntry);
+					cPathfinder.CreateSubTask(mytask.UID, head1, newtarget);
+					/*local dummy= cPathfinder.GetStatus(head1, newtarget, stationID, useEntry);
 					dummy=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, newtarget));
 					dummy.r_source=head1;
 					dummy.r_target=head2;
 					mytask.status=3; // wait for subtask end
+					*/
 					return false;
 					}
 			}
 	else	  // we cannot get smallerror==-1 because on -1 it always return, so limit to 0 or -2
 			{
 			// let's see if we success or an helper task has succeed for us
-			if (source != null)
+			/*if (source != null)
 					{
 					source=cPathfinder.GetUID(mytask.source, mytask.target);
 					while (source != null)
@@ -365,7 +375,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 									mytask=cPathfinder.GetPathfinderObject(source);
 									}
 							}
-					}
+					}*/
 			DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
 			local verifypath = RailFollower.GetRailPathing(mytask.source, mytask.target);
 			//src_target, src_link, dst_target, dst_link);
@@ -384,7 +394,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 			else
 					{
 					DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
-					mytask.status=2;
+					mytask.status = 2;
 					INSTANCE.buildDelay=0;
 					local bltiles=AIList();
 					bltiles.AddList(cTileTools.TilesBlackList);
@@ -581,7 +591,7 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, link = AIStati
 	{
 	local c = AITile.GetTownAuthority(tilepos);
 	if (AITown.IsValidTown(c) && AITown.GetRating(c, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	{ cTileTools.SeduceTown(c); }
-	local money = INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate();
+	local money = (INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate()).tointeger();
 	if (!cBanker.CanBuyThat(money))	{ DInfo("We lack money to buy the station",1); }
 	cBanker.RaiseFundsBy(money);
 	if (link != AIStation.STATION_NEW && AIStation.IsValidStation(link))

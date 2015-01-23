@@ -341,7 +341,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 	local orderindex = 0;
 	if (isAircraft)
 			{
-			local shortpath = FindClosestHangarForAircraft(veh);
+			local shortpath = cCarrier.FindClosestHangarForAircraft(veh);
 			DInfo("Routing aircraft "+cCarrier.GetVehicleName(veh)+" to the closest airport at "+shortpath,2);
 			if (!AIOrder.AppendOrder(veh, shortpath, AIOrder.OF_STOP_IN_DEPOT))
 					{ DError("Vehicle refuse goto closest airport order",2); }

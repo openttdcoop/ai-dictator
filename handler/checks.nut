@@ -40,7 +40,7 @@ function cBuilder::MonthlyChecks()
 	INSTANCE.main.builder.RoadStationsBalancing();
 	cRoute.DutyOnRoute();
 	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BoostedBuys();
-	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BridgeUpgrader();
+	if (INSTANCE.SixMonth == 1)	INSTANCE.main.builder.BridgeUpgrader();
 	if (INSTANCE.SixMonth == 6)	INSTANCE.main.builder.HalfYearChecks();
 }
 

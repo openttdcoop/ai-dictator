@@ -254,7 +254,10 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local new_railtype = cEngine.RailTypeIsTop(loco_engine, cargo, false);
 	if (new_railtype == -1 || new_railtype == road.RailType)
             { print("no new railtype"); return -1; }
-    else    { print("BREAKRAIL "+AIRail.GetName(road.RailType)+" will be replace with "+AIRail.GetName(new_railtype)); }
+    else    {
+			if (cPathfinder.CheckPathfinderTaskIsRunning([road.TargetStation.s_ID]))	{ print("No rail upgrade while pathfinder is working"); return -1; }
+			print("BREAKRAIL "+AIRail.GetName(road.RailType)+" will be replace with "+AIRail.GetName(new_railtype));
+			}
 	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
 	DInfo("Cost to upgrade rails : "+upgrade_cost);
 	if (!cBanker.CanBuyThat(upgrade_cost))	{ return 0; }

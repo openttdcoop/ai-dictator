@@ -406,8 +406,13 @@ function cCarrier::RouteNeedVehicle(gid, amount)
 // store the vehicle need by all routes
 {
     if (amount == 0)    return;
-    if (!INSTANCE.main.carrier.vehicle_wishlist.HasItem(gid))	{ INSTANCE.main.carrier.vehicle_wishlist.AddItem(gid, 0); }
-    INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, amount);
+    if (INSTANCE.main.carrier.vehicle_wishlist.HasItem(gid))	return;
+    INSTANCE.main.carrier.vehicle_wishlist.AddItem(gid, amount);
+//    local current = INSTANCE.carrier.vehicle_wishlist.GetValue(gid);
+ //   local x = 0;
+  //  if (current > 1000)	{ x = 1000; }
+   // if (current < (x + amount))	{ current = (x + amount); }
+    //INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, current);
 }
 
 function cCarrier::PriorityGroup(gid)
@@ -449,7 +454,6 @@ function cCarrier::Process_VehicleWish()
     cleanList.KeepValue(1);
     cleanList.Valuate(cCarrier.PriorityGroup);
     cleanList.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
-    DInfo(cleanList.Count()+" queries to buy vehicle waiting",1);
     if (INSTANCE.debug)
         {
         foreach (gid, amount in cleanList)
@@ -460,6 +464,7 @@ function cCarrier::Process_VehicleWish()
             DInfo(r.Name+" Need: "+INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid),1);
             }
         }
+    DInfo(cleanList.Count()+" queries to buy vehicle waiting",1);
     local amount = 0;
     foreach (gid, _ in cleanList)
         {
@@ -467,12 +472,13 @@ function cCarrier::Process_VehicleWish()
         local r = cRoute.Load(uid);
         if (!r || r.Status != RouteStatus.WORKING || !AIGroup.IsValidGroup(gid))
 			{
-			INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(uid);
+			INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid);
 			continue;
 			}
         gtype = AIGroup.GetVehicleType(gid);
         engine = cCarrier.GetVehicle(uid);
         amount = INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid);
+        if (amount == 0 || amount == 1000)    { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); continue; }
         if (engine == null || engine == -1) { continue; }
         if (typeof(engine) == "array")
             {
@@ -481,15 +487,11 @@ function cCarrier::Process_VehicleWish()
             }
         local price = cEngineLib.GetPrice(engine);
         local aircraft = false;
-        if (amount >= 1000)
-                {
-                amount -= 1000;
-                }
-        else    {
+        if (amount < 1000)
+				{
                 INSTANCE.main.carrier.vehicle_cash += (price * amount);
                 INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, 1000 + amount);
                 }
-        if (amount == 0)    { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); continue; }
         local creation = null;
         switch  (gtype)
                 {
@@ -499,7 +501,8 @@ function cCarrier::Process_VehicleWish()
                 break;
                 case    AIVehicle.VT_RAIL:
                     if (cCarrier.IsTrainRouteBusy(uid)) { continue; }
-                    cCarrier.AddWagon(uid, amount);
+                    cCarrier.AddWagon(uid, (amount-1000));
+                    cCarrier.Lower_VehicleWish(gid, (amount-1000));
                 continue;
                 case    AIVehicle.VT_ROAD:
                     creation = cCarrier.CreateRoadVehicle;
@@ -509,7 +512,7 @@ function cCarrier::Process_VehicleWish()
                 break;
                 }
         if (creation == null)   continue;
-        for (local z = 0; z < amount; z++)
+        for (local z = 1000; z < amount; z++)
             {
             if (cBanker.CanBuyThat(price))
                     {

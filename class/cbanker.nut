@@ -43,7 +43,8 @@ function cBanker::GetLoanValue(money)
 
 function cBanker::RaiseFundsTo(money)
 {
-	local toloan = AICompany.GetLoanAmount() + money;
+	local toloan = (AICompany.GetLoanAmount() + money).tointeger();
+	money = money.tointeger();
 	local curr=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	local success=true;
 	if (curr > money) success=true;

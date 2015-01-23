@@ -21,7 +21,7 @@ class cPathfinder extends cClass
 		static	function GetPathfinderObject(UID)
 			{
 			if (UID in cPathfinder.database)	{ return cPathfinder.database[UID]; }
-			else	{ return null; }
+										else	{ return null; }
 			}
 
 		UID			= null;	// UID of the pathfinding task
@@ -36,12 +36,15 @@ class cPathfinder extends cClass
 		useEntry	= null;	// the entry of the stationID will be use or not
 		// if we success at pathfinding, we will try build the route, and if we fail at building the route, we will recall the pathfinder or try to rebuild it
 		// we will then report failure in status
-		r_source	= null;	// the original pathfind source point, use when pathfinding a subtask.
-		r_target	= null;	// the original pathfind target point
+		child		= null;	// the array list of child, first element is parent UID (or its own UID if it have no parent)
+		autofail	= null; // a function that test a condition and return true if condition is fine, false when condition is no more met
+		autofail_arg= null; // parameters to pass to autofail function
+
+//		r_source	= null;	// the original pathfind source point, use when pathfinding a subtask.
+//		r_target	= null;	// the original pathfind target point
 
 		constructor()
 			{
-			// * are saved variables
 			UID			    = null;
 			signHandler		= 0;
 			pathHandler		= null;
@@ -52,8 +55,11 @@ class cPathfinder extends cClass
 			stationID		= null;
 			useEntry		= null;
 			status		    = 0;
-			r_source		= null;
-			r_target		= null;
+			child			= [this.UID];
+//			r_source		= null;
+//			r_target		= null;
+			autofail		= cPathfinder.StationExist;
+			autofail_arg	= [this.stationID];
 			this.ClassName	= "cPathfinder";
 			}
 	}
@@ -71,6 +77,16 @@ function cPathfinder::GetUID(src, tgt)
 	if (src.len() != 2 || tgt.len() != 2)	{ DInfo("Bad pathfinder source ("+src.len()+") or target ("+tgt.len()+")",1); return null; }
 	if (!AIMap.IsValidTile(src[0]) || !AIMap.IsValidTile(tgt[1]))	{ return null; }
 	return src[0]+tgt[1];
+	}
+
+function cPathfinder::CheckPathfinderTaskIsRunning(condition)
+	{
+	if (typeof condition != "array")	{ DError("conditions must be an array with args to pass to your own autofail test function"); return false; }
+	foreach (obj in cPathfinder.database)
+		{
+		if (obj.autofail(condition))	return true;
+		}
+	return false;
 	}
 
 function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
@@ -104,14 +120,20 @@ function cPathfinder::GetSolve(source, target)
 	}
 
 function cPathfinder::CloseTask(source, target)
-// Destroy that task
+// Destroy that task and its children
 	{
 	source = cPathfinder.GetSourceX(source);
 	target = cPathfinder.GetTargetX(target);
-	local UID=cPathfinder.GetUID(source, target);
+	local UID = cPathfinder.GetUID(source, target);
 	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
-	local pftask=cPathfinder.GetPathfinderObject(UID);
+	local pftask = cPathfinder.GetPathfinderObject(UID);
 	if (pftask == null)	{ return; }
+	for (local i = 1; i < pftask.child.len(); i++)
+		{
+		local fils = cPathfinder.GetPathfinderObject(pftask.child[i]);
+		if (fils == null)	continue;
+		cPathfinder.CloseTask(fils.source, fils.target);
+		}
 	if (pftask.UID in cPathfinder.database)
 			{
 			delete cPathfinder.database[pftask.UID];
@@ -120,6 +142,18 @@ function cPathfinder::CloseTask(source, target)
 			}
 	}
 
+function cPathfinder::GetRootTask(uid)
+// it return the uid of the root task
+{
+    while (true)
+		{
+		local ptask = cPathfinder.GetPathfinderObject(uid);
+		if (ptask == null)	return -1;
+		if (ptask.child[0] == null)	return ptask.UID;
+							else	uid = ptask.child[0];
+		}
+}
+
 function cPathfinder::AdvanceTask(UID)
 // Advance the pathfinding search
 	{
@@ -127,10 +161,28 @@ function cPathfinder::AdvanceTask(UID)
 	local maxStep=5;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);
+	local tlist = "Parent:";
+	for (local k = 0; k < pftask.child.len(); k++)
+			{
+			if (k == 0)
+				{
+				if (pftask.child[0] == null)	{ tlist += "ROOT "; }
+										else	{ tlist += pftask.child[0]+" "; }
+				continue;
+				}
+			if (k == 1)	tlist += "Children: ";
+			local fils = cPathfinder.GetPathfinderObject(pftask.child[k]);
+			tlist += pftask.child[k]+":"+fils.status+" ";
+			}
 	switch (pftask.status)
 			{
 			case	-1:
-				DInfo("Pathfinder task "+pftask.UID+" has end : nothing more could be done, failure.",1);
+				DInfo("Pathfinder task "+pftask.UID+" has end : nothing more could be done, failure. "+tlist,1);
+                if (pftask.child[0] != null) // it have a parent
+					{
+					local p_task = cPathfinder.GetPathfinderObject(pftask.child[0]);
+					p_task.status = -1;
+					}
 				return;
 			case	1:
 				if (!cBanker.CanBuyThat(30000))	{ return; }
@@ -140,14 +192,19 @@ function cPathfinder::AdvanceTask(UID)
                                         else	{ cBuilder.BuildRoadRAIL(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
 				return;
 			case	2:
-				DInfo("Pathfinder task "+pftask.UID+" has end building the path.",1);
+				DInfo("Pathfinder task "+pftask.UID+" has end building the path. "+tlist,1);
+                if (pftask.child[0] != null) // it have a parent
+					{
+					local p_task = cPathfinder.GetPathfinderObject(pftask.child[0]);
+					p_task.status = 2;
+					}
 				return;
 			case	3:
-				DInfo("Pathfinder task "+pftask.UID+" is waiting its subtask result.",1);
+				DInfo("Pathfinder task "+pftask.UID+" is waiting subtask result. "+tlist,1);
 				return;
 			}
 	if (pftask.status != 0)	{ DInfo("Pathfinder task "+pftask.UID+" search is over with status "+pftask.status,1); return; }
-	local check=false;
+	local check = false;
 	DInfo("Pathfinder is working on task "+pftask.UID);
 	while (check == false && _counter < maxStep)
 			{
@@ -169,7 +226,7 @@ function cPathfinder::AdvanceTask(UID)
 			pftask.InfoSign("Pathfinding "+pftask.UID+"... failure");
 			pftask.status=-1;
 			}
-	if (!AIStation.IsValidStation(pftask.stationID))
+	if (!pftask.autofail(pftask.autofail_arg))
 			{
 			DInfo("Pathfinder is autoclosing task "+pftask.UID,1);
 			cPathfinder.CloseTask(pftask.source[0], pftask.target[1]);
@@ -177,6 +234,12 @@ function cPathfinder::AdvanceTask(UID)
 	}
 
 // private
+
+function cPathfinder::StationExist(arg)
+{
+	if (stationID == null)	return false;
+	return AIStation.IsValidStation(stationID);
+}
 
 function cPathfinder::GetSourceX(x)
 // This convert integer coord to internal usage (same as railpathfinder)
@@ -257,3 +320,41 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station)
 	cPathfinder.database[pftask.UID] <- pftask;
 	}
 
+function cPathfinder::CreateSubTask(mainUID, newSource, newTarget)
+// Create a subtask of mainUID task
+{
+	local parentTask = cPathfinder.GetPathfinderObject(mainUID);
+	if (parentTask == null)	return -1;
+//	local oldparentID = parentTask.child[0];
+	local filsUID = cPathfinder.GetUID(newSource, newTarget);
+	local fils = null;
+	if (filsUID == mainUID)
+		{
+        fils = cPathfinder.GetPathfinderObject(filsUID);
+        if (fils == null)	return -1;
+        parentTask = cPathfinder.GetPathfinderObject(fils.child[0]);
+        if (parentTask == null)	return -1;
+        AISign.RemoveSign(fils.signHandler);
+		delete cPathfinder.database[filsUID];
+		DInfo("Re-running subtask "+filsUID,1);
+		}
+	local subTask = cPathfinder.GetStatus(newSource, newTarget, parentTask.stationID, parentTask.useEntry);
+	if (subTask != -1)
+			{
+			fils = cPathfinder.GetPathfinderObject(cPathfinder.GetUID(newSource, newTarget));
+//			if (fils.UID != mainUID)
+	//				{
+					if (filsUID != mainUID)	parentTask.child.push(fils.UID);
+					parentTask.status = 3;
+					fils.child[0] = parentTask.UID;
+					DInfo("Pathfinder add subtask "+fils.UID+" to "+parentTask.UID,1);
+		//			}
+		//	else	{
+			//		DInfo("Rerunning subtask "+fils.UID);
+              //      fils.child[0] = oldparentID;
+                //    fils.status = 0;
+					//}
+			}
+	else	parentTask.status = -1; // set parent task failure if we couldn't create a child for it
+	return subTask; // return the error code result
+}

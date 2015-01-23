@@ -219,9 +219,8 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					canorder.Valuate(AIVehicle.GetNumWagons);
 					canorder.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 					local veh = canorder.Begin();
-					local wagonID = AIVehicle.GetWagonEngineType(veh, 1);
-					local wagonprice = 1000;
-					if (AIEngine.IsValidEngine(wagonID))	{ wagonprice = AIEngine.GetPrice(wagonID); }
+					local wagonID = AIVehicle.GetWagonEngineType(veh, cEngineLib.VehicleGetRandomWagon(veh));
+					local wagonprice = cEngineLib.GetPrice(wagonID);
 					wagonprice = wagonNeed * wagonprice;
 					if (!cBanker.CanBuyThat(wagonprice)) { return false; } // don't call it if we lack money
 					DInfo("Sending a train to depot to add "+wagonNeed+" more wagons",1);
@@ -275,7 +274,7 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					depotID=AIVehicle.GetLocation(tID);
 					local freightlimit=cCargo.IsFreight(road.CargoID);
 					if (road.MoreTrain == 3 || numTrains > 1 || beforesize+wagonNeed < 5)
-                            { tID=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); print("add wagons"); road.MoreTrain = 3; }
+                            { local res=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); print("add wagons"); road.MoreTrain = 3; }
 					else
 							{
 							print("forcing new train");
@@ -284,21 +283,22 @@ function cCarrier::AddWagon(uid, wagonNeed)
                             couple.push(AIVehicle.GetEngineType(tID));
                             couple.push(AIVehicle.GetWagonEngineType(tID, cEngineLib.VehicleGetRandomWagon(tID)));
 							local maxwagon = cEngineLib.GetMaxWagons(couple, stationLen); // get how many wagons we could handle at max
-                            if (maxwagon == -1) { return; }
+                            if (maxwagon == -1) { continue; }
 							print("maxwagon = "+maxwagon);
 							local balance_train1 = 0;
 							local balance_train2 = 0;
                             if (beforesize + wagonNeed < maxwagon*2)
 										{
 										balance_train2 = (wagonNeed + beforesize) / 2;
-										balance_train1 = (balance_train2 - beforesize);
+										balance_train1 = beforesize - (balance_train2 - beforesize);
 										}
 								else	{
 										balance_train1 = (maxwagon - beforesize);
-										balance_train2 = maxwagon;
+										balance_train2 = wagonNeed - (maxwagon - beforesize);
 										}
+							if (balance_train2 == 0)	{ balance_train2++; balance_train1--; }
 							print("balance_train1="+balance_train1+" balance_train2="+balance_train2);
-							tID=cCarrier.AddNewTrain(uid, tID, balance_train1, depotID, stationLen);
+							local res=cCarrier.AddNewTrain(uid, tID, balance_train1, depotID, stationLen);
 							processTrains.push(-1);
 							DInfo("Adding "+balance_train1+" wagons to this train and create another one with "+balance_train2,1);
 							}
@@ -310,7 +310,6 @@ function cCarrier::AddWagon(uid, wagonNeed)
 							local res = cEngineLib.VehicleRestrictLength(tID, stationLen);
 							print("res="+res+" newwagon="+newwagon);
                             if (res != -1)  { wagonNeed += res;}
-                            //if (res != 0)	{ cTrain.SetFull(tID, true); }
 							if (cEngineLib.VehicleGetNumberOfWagons(tID) == 0)
 									{
 									DInfo("Train have no wagons... selling it",2);
@@ -320,6 +319,7 @@ function cCarrier::AddWagon(uid, wagonNeed)
 									{
 									cCarrier.Lower_VehicleWish(road.GroupID, newwagon - wagonNeed);
 									cCarrier.TrainExitDepot(tID);
+                                    print(cCarrier.GetVehicleName(tID)+" exit depot with "+cEngineLib.VehicleGetNumberOfWagons(tID));
 									cTrain.SetDepotVisit(tID);
 									}
 							}

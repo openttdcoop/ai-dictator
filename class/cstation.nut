@@ -253,6 +253,7 @@ function cStation::InitNewStation(stationID)
 				_station.s_Depot = AIAirport.GetHangarOfAirport(_Location);
 				break;
 			}
+	if (_station == null)	return;
 	// now common properties
 	_station.s_Location = _Location;
 	_station.s_Type = _StationType;

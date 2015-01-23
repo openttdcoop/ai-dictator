@@ -215,14 +215,14 @@ function cBridge::GetCheapBridgeID(btype, length, needresult=true)
 			local vehlist=cEngineLib.GetEngineList(btype);
 			vehlist.Valuate(AIEngine.GetMaxSpeed);
 			vehlist.KeepAboveValue(1); // remove 0 speed engines
-			vehlist.Sort(AIList.SORT_BY_VALUE, true);
+			vehlist.Sort(AIList.SORT_BY_VALUE, false);
 			if (!vehlist.IsEmpty()) { needSpeed=vehlist.GetValue(vehlist.Begin()); }
 			}
 	local blist=AIBridgeList_Length(length);
 	blist.Valuate(AIBridge.GetMaxSpeed);
 	blist.KeepAboveValue((needSpeed -1));
 	blist.Sort(AIList.SORT_BY_VALUE, true); // slowest first as this are all bridges faster than our train speed anyway
-	if (blist.IsEmpty() && needresult)	{ blist=AIBridgeList_Length(length); }
+	if (blist.IsEmpty() && needresult)	{ blist=AIBridgeList_Length(length); blist.Valuate(AIBridge.GetMaxSpeed); blist.Sort(AIList.SORT_BY_VALUE, false); }
 	if (blist.IsEmpty())	{ return -1; }
                     else	{ return blist.Begin(); }
 	}

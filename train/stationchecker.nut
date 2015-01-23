@@ -310,7 +310,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
         else	{ if (road.Primary_RailLink)	{ building_maintrack=false; }}
 	do  {
 		local temptile=fromtile+(j*forwardTileOf);
-		for (local kb = 0; kb < 6; kb++)	{ cTileTools.DemolishTile(j+(kb*forwardTileOf)); }
+		for (local kb = 0; kb < 6; kb++)	{ cMisc.Locate(j+(kb*forwardTileOf)); cTileTools.DemolishTile(j+(kb*forwardTileOf)); }
 		cTileTools.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				{
@@ -326,11 +326,13 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 				if (cTileTools.CanUseTile(temptile+(1*forwardTileOf), stationObj.s_ID))
 						{
 						success = cTrack.DropRailHere(rail, temptile+(1*forwardTileOf), stationObj.s_ID, useEntry);
+						if (!success)	{ cError.RaiseError(); return false; }
 						}
 				else	{ cError.RaiseError(); return false; }
 				if (cTileTools.CanUseTile(temptile+(2*forwardTileOf), stationObj.s_ID))
 						{
 						success = cTrack.DropRailHere(rail, temptile+(2*forwardTileOf), stationObj.s_ID, useEntry);
+						if (!success)	{ cError.RaiseError(); return false; }
 						}
 				else	{ cError.RaiseError(); return false; }
 				}

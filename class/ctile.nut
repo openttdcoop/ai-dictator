@@ -69,6 +69,20 @@ function cTileTools::UnBlackListTile(tile)
 	if (cTileTools.IsTilesBlackList(tile))	{ cTileTools.TilesBlackList.RemoveItem(tile); }
 }
 
+function cTileTools::IsRiverTile(tile)
+// pfff, finally a solve to detect river
+{
+	if (!AITile.IsWaterTile(tile))	return false;
+	if (AITile.IsCoastTile(tile))	return false; // just assume a river cost tile is a water tile
+	if (AIMarine.IsDockTile(tile))	return false;
+	if (AIMarine.IsWaterDepotTile(tile))	return false;
+	if (AIMarine.IsBuoyTile(tile))	return false;
+	if (AIMarine.IsCanalTile(tile))	return false;
+	if (AIMarine.IsLockTile(tile))	return false;
+	if (AITile.GetMinHeight(tile) > 0)	return true; // no need to check its maxheight, coasttile already answer it
+	return false;
+}
+
 function cTileTools::PurgeBlackListTiles(alist, creation=false)
 // remove all tiles that are blacklist from an AIList and return it
 // if creation is false, don't remove tiles that cannot be use for station creation
@@ -118,7 +132,7 @@ function cTileTools::DemolishTile(tile)
 	AISign.BuildSign(tile,"S");
 	AIController.Break("attacking station "+" "+AIStation.GetName(AIStation.GetStationID(tile))+" "+cMisc.Locate(tile));
 	}
-	if (cTileTools.IsBuildable(tile)) return true;
+//	if (cTileTools.IsBuildable(tile)) return true;
 	if (AIRail.IsRailDepotTile(tile))	{ return cTrack.StationKillRailDepot(tile); }
 	if (AIRoad.IsRoadDepotTile(tile) || AIMarine.IsWaterDepotTile(tile))	{ return cTrack.DestroyDepot(tile); }
 	if (AIRail.IsRailTile(tile))	return false;
@@ -161,8 +175,8 @@ function cTileTools::IsBuildable(tile)
 	if (AIMarine.IsCanalTile(tile))	return false;
 	if (AIMarine.IsLockTile(tile))	return false;
 	if (!AITile.IsWaterTile(tile))	{ return AITile.IsBuildable(tile); }
-						else	return INSTANCE.terraform; // if no terraform is allow, water tile cannot be use
-	return AITile.IsBuildable(tile);
+	if (cTileTools.IsRiverTile(tile))	return true; // even without terraform, we could demolish the tile.
+	return INSTANCE.terraform; // if no terraform is allow, water tile cannot be use
 }
 
 function cTileTools::IsAreaFlat(startTile, width, height)

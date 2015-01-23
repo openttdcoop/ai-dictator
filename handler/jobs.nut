@@ -231,6 +231,7 @@ function cJobs::EstimateCost()
 	{
 	local money = 0;
 	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_ROCKY)*cBanker.GetInflationRate();
+	clean.tointeger();
 	local engine=0;
 	local engineprice=0;
 	local daystransit=0;
