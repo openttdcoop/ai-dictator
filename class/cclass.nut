@@ -112,16 +112,17 @@ function cMain::CheckAccount()
 			bank.canBuild=true;
 			if (cJobs.rawJobs.IsEmpty())	{ DInfo("Hard times going on, unleashing routes"); bank.unleash_road=true; }
 			} // we have 0 vehicles force a build
-	local dgroute=0;
+/*	local dgroute=0;
 	foreach (route in cRoute.database)
 		{
 		if (route.Status == RouteStatus.WORKING)	dgroute++;
 		}
-//	if (cRoute.database.len()==3 && dgroute == 3)
-//		{
-//		DWarn("DEBUG Disabling more than 1 route");
-//		bank.canBuild=false;   // FIXME : debug keep 1 route enable only
-//		}
+	if (cRoute.database.len()==3 && dgroute == 3)
+		{
+		DWarn("DEBUG Disabling more than 1 route");
+		bank.canBuild=false;   // FIXME : debug keep 1 route enable only
+		}
+		*/
 //	else print("DEBUG route state : "+dgroute);
 		//AIController.Break("route size="+cRoute.database.len());
 	DWarn("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehicle_cash="+carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+carrier.vehicle_wishlist.Count(),1);

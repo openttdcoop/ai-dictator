@@ -265,3 +265,16 @@ function cTrack::ConvertRailType(tile, newrt)
 	return 1;
 	}
 
+function cTrack::GetRailFromDirection(direction)
+{
+	switch (direction)
+		{
+		case DIR_NE:
+		case DIR_SW:
+			return AIRail.RAILTRACK_NE_SW;
+		case DIR_SE:
+		case DIR_NW:
+			return AIRail.RAILTRACK_NW_SE;
+		}
+	return AIRail.RAILTRACK_INVALID;
+}

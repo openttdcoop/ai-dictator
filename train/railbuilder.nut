@@ -181,31 +181,57 @@ function cBuilder::EasyError(error)
 	return -2;
 	}
 
-function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
-	{
-	local status=cPathfinder.GetStatus(head1, head2, stationID, useEntry);
-	local path=cPathfinder.GetSolve(head1, head2);
-	local smallerror=0;
-	if (path == null)	{ smallerror=-2; }
-	switch (status)
-			{
-			case	0:	// still pathfinding
-				return 0;
-			case	-1:	// failure
-				return -1;
-			case	2:	// succeed
-				return 2;
-			case	3:	// waiting child to end
-				return 0;
-			}
-	// 1 is non covered as it's end of pathfinding, and should call us to build
+function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
+{
+	local status = cPathfinder.GetStatus(head1, head2, stationID, useEntry);
+	local mytask = cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, head2));
+	if (mytask == null)	return -2;
+	if (status == 2) // success
+		{
+		DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
+		local verifypath = RailFollower.GetRailPathing(mytask.source, mytask.target);
+		if (verifypath.IsEmpty())
+					{
+					mytask.status = -1;
+					DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
+					local badtiles=AIList();
+					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
+					badtiles.KeepValue(0 - (1000 + mytask.stationID));
+					cTrack.RailCleaner(badtiles); // remove all rail we've built
+					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
+					cError.RaiseError();
+					return -2;
+					}
+			else
+					{
+					DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
+					INSTANCE.buildDelay=0;
+					local bltiles=AIList();
+					bltiles.AddList(cTileTools.TilesBlackList);
+					bltiles.KeepValue(0-(1000+stationID));
+					cStation.StationClaimTile(bltiles, stationID, useEntry); // assign tiles to that station
+					local staobj = cStation.Load(stationID);
+					if (!staobj)	{ cError.RaiseError(); return 0; }
+					if (cStationRail.IsPrimaryLineBuilt(stationID) && !cStationRail.IsAlternateLineBuilt(stationID))
+						{
+						local uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
+						if (!uid_obj)	{ return 0; }
+						cBuilder.RailStationPathfindAltTrack(uid_obj);
+						}
+					return 0;
+					}
+		}
+	if (status == -1)	return -2; // failure, we have nothing to do if status is already set to failure
+	local path = cPathfinder.GetSolve(head1, head2);
+	local smallerror = 0;
+	if (path == null)	{ smallerror = -2; } // if we couldn't get a valid solve here, there's something wrong then
 	cBanker.RaiseFundsBigTime();
 	local prev = null;
 	local prevprev = null;
 	local pp1, pp2, pp3 = null;
 	local walked=[];
 	cTrack.SetRailType(AIRail.GetRailType(AIStation.GetLocation(stationID)));
-	while (path != null && smallerror==0)
+	while (path != null && smallerror == 0)
 			{
 			if (prevprev != null)
 					{
@@ -220,7 +246,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 											if (smallerror==-1)
 													{
 													DInfo("That tunnel would be too expensive. Construction aborted.",2);
-													return false;
+													return -1;
 													}
 											if (smallerror==-2)	{ break; }
 											}
@@ -241,7 +267,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 											if (smallerror==-1)
 													{
 													DInfo("That bridge would be too expensive. Construction aborted.",2);
-													return false;
+													return -1;
 													}
 											if (smallerror==-2)	{ break; }
 											}
@@ -278,7 +304,7 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 									if (smallerror==-1)
 											{
 											DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
-											return false;
+											return -1;
 											}
 									if (smallerror==-2)	{ break; }
 									}
@@ -300,36 +326,20 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					walked.push(prev);
 					}
 			}
-	local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, head2));
-	//local source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
 	if (smallerror == -2)
 			{
 			DError("Pathfinder has detect a failure.",1);
 			if (walked.len() < 4)
 					{
 					DInfo("Pathfinder cannot do more",1);
-					// unroll all tasks and fail
-					/*source=cPathfinder.GetUID(mytask.source, mytask.target);
-					while (source != null)
-							{
-							// remove all sub-tasks
-							DInfo("Pathfinder helper task "+source+" failure !",1);
-							source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
-							if (source != null)
-									{
-									cPathfinder.CloseTask(mytask.source, mytask.target);
-									mytask=cPathfinder.GetPathfinderObject(source);
-									}
-							}*/
 					DInfo("Pathfinder task "+mytask.UID+" failure !",1);
-					mytask.status = -1;
 					local badtiles = AIList();
 					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
 					badtiles.KeepValue(0 - (1000+ mytask.stationID));
 					cTrack.RailCleaner(badtiles); // remove all rail we've built
 					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
 					cError.RaiseError();
-					return false;
+					return -2;
 					}
 			else
 					{
@@ -347,71 +357,12 @@ function cBuilder::BuildRoadRAIL(head1, head2, useEntry, stationID)
 					cTileTools.TilesBlackList.RemoveList(alist);
 					local newtarget=[prev, prevprev];
 					DInfo("Pathfinder is calling an helper task",1);
-					// Create the helper task
 					cPathfinder.CreateSubTask(mytask.UID, head1, newtarget);
-					/*local dummy= cPathfinder.GetStatus(head1, newtarget, stationID, useEntry);
-					dummy=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, newtarget));
-					dummy.r_source=head1;
-					dummy.r_target=head2;
-					mytask.status=3; // wait for subtask end
-					*/
-					return false;
+					return -1;
 					}
 			}
-	else	  // we cannot get smallerror==-1 because on -1 it always return, so limit to 0 or -2
-			{
-			// let's see if we success or an helper task has succeed for us
-			/*if (source != null)
-					{
-					source=cPathfinder.GetUID(mytask.source, mytask.target);
-					while (source != null)
-							{
-							// remove all sub-tasks
-							DInfo("Pathfinder helper task "+source+" succeed !",1);
-							source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
-							if (source != null)
-									{
-									cPathfinder.CloseTask(mytask.source, mytask.target);
-									mytask=cPathfinder.GetPathfinderObject(source);
-									}
-							}
-					}*/
-			DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
-			local verifypath = RailFollower.GetRailPathing(mytask.source, mytask.target);
-			//src_target, src_link, dst_target, dst_link);
-			if (verifypath.IsEmpty())
-					{
-					mytask.status = -1;
-					DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
-					local badtiles=AIList();
-					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-					badtiles.KeepValue(0 - (1000 + mytask.stationID));
-					cTrack.RailCleaner(badtiles); // remove all rail we've built
-					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
-					cError.RaiseError();
-					return false;
-					}
-			else
-					{
-					DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
-					mytask.status = 2;
-					INSTANCE.buildDelay=0;
-					local bltiles=AIList();
-					bltiles.AddList(cTileTools.TilesBlackList);
-					bltiles.KeepValue(0-(1000+stationID));
-					cStation.StationClaimTile(bltiles, stationID, useEntry); // assign tiles to that station
-					local staobj = cStation.Load(stationID);
-					if (!staobj)	{ cError.RaiseError(); return false; }
-					if (cStationRail.IsPrimaryLineBuilt(stationID) && !cStationRail.IsAlternateLineBuilt(stationID))
-						{
-						local uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
-						if (!uid_obj)	{ return false; }
-						cBuilder.RailStationPathfindAltTrack(uid_obj);
-						}
-					return true;
-					}
-			}
-	}
+	return 0; // success
+}
 
 function cBuilder::FindStationEntryToExitPoint(src, dst)
 // find the closest path from station src to station dst

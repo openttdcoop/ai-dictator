@@ -930,34 +930,37 @@ function cBuilder::BuildRoadROAD(head1, head2, stationID)
 			cPathfinder.AdvanceAllTasks();
 			}
 	print("out BuildRoadROAD");
+	return false;
 	}
 
-function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
+function cBuilder::BuildPath_ROAD(src, dst, stationID)
 // this construct (build) the road we get from path
-	{
-	local status=cPathfinder.GetStatus(src, dst, stationID);
-	local path=cPathfinder.GetSolve(src, dst);
+{
+	local status = cPathfinder.GetStatus(src, dst, stationID);
+	local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, dst));
+	if (mytask == null)	return -2;
+	if (status == 2) // success
+		{
+		DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
+		INSTANCE.buildDelay = 0;
+		local bltiles=AIList();
+		bltiles.AddList(cTileTools.TilesBlackList);
+		bltiles.KeepValue(-stationID);
+		local sta = cStation.Load(stationID);
+		if (cMisc.ValidInstance(sta))	{ sta.s_TilesOther.AddList(bltiles); }
+		return 0;
+		}
+	if (status == -1)	return -2; // failure, we have nothing to do if status is already set to failure
+	local path = cPathfinder.GetSolve(src, dst);
 	local smallerror = 0;
-	if (path == null)	{ smallerror = -2; }
-	switch (status)
-			{
-			case	0:	// still pathfinding
-				return 0;
-			case	-1:	// failure
-				return -1;
-			case	2:	// succeed
-				return 2;
-			case	3:	// waiting child to end
-				return 0;
-			}
-	// 1 is non covered as it's end of pathfinding, and should call us to build
+	if (path == null)	{ smallerror = -2; } // if we couldn't get a valid solve here, there's something wrong then
+	cBanker.RaiseFundsBigTime();
 	DInfo("Building road structure",0);
 	local prev = null;
 	local prevprev = null;
 	local prevprevprev = null;
 	local counter=0;
 	local walked=[];
-	cBanker.RaiseFundsBigTime();
 	while (path != null)
 			{
 			local par = path.GetParent();
@@ -971,7 +974,7 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 									if (smallerror==-1)
 											{
 											DInfo("An error occured while I was building the road: " + AIError.GetLastErrorString(),2);
-											return false;
+											return -1;
 											}
 									if (smallerror==-2)	{ break; }
 									}
@@ -993,7 +996,7 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 													if (smallerror==-1)
 															{
 															DInfo("An error occured while I was building the tunnel: " + AIError.GetLastErrorString(),2);
-															return false;
+															return -1;
 															}
 													if (smallerror==-2)	{ break; }
 													}
@@ -1011,7 +1014,7 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 													if (smallerror==-1)
 															{
 															DInfo("An error occured while I was building the bridge: " + AIError.GetLastErrorString(),2);
-															return false;
+															return -1;
 															}
 													if (smallerror==-2)	{ break; }
 													}
@@ -1026,35 +1029,19 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 			prev = path;
 			path = par;
 			}
-	local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, dst));
-	//local source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
 	if (smallerror == -2)
 			{
 			DError("Pathfinder has detect a failure.",1);
 			if (walked.len() < 4)
 					{
 					DInfo("Pathfinder cannot do more",1);
-					// unroll all tasks and fail
-					/*source=cPathfinder.GetUID(mytask.source, mytask.target);
-					while (source != null)
-							{
-							// remove all sub-tasks
-							DInfo("Pathfinder helper task "+source+" failure !",1);
-							source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
-							if (source != null)
-									{
-									cPathfinder.CloseTask(mytask.source, mytask.target);
-									mytask=cPathfinder.GetPathfinderObject(source);
-									}
-							}*/
 					DInfo("Pathfinder task "+mytask.UID+" failure !",1);
-					mytask.status=-1;
 					local badtiles=AIList();
 					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
 					badtiles.KeepValue(-mytask.stationID);
 					foreach (tiles, dummy in badtiles)	cTileTools.UnBlackListTile(tiles); // and release them for others
 					cError.RaiseError();
-					return false;
+					return -2;
 					}
 			else
 					{
@@ -1072,43 +1059,8 @@ function cBuilder::AsyncConstructRoadROAD(src, dst, stationID)
 					local newtarget=[0, prev];
 					DInfo("Pathfinder is calling an helper task",1);
 					cPathfinder.CreateSubTask(mytask.UID, src, newtarget);
-					// Create the helper task
-					/*local dummy= cPathfinder.GetStatus(src, newtarget, stationID);
-					dummy=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, newtarget));
-					dummy.r_source=cPathfinder.GetSourceX(src);
-					dummy.r_target=cPathfinder.GetTargetX(newtarget);
-					mytask.status=3; // wait for subtask end*/
-
-					return false;
+					return -1;
 					}
 			}
-	else	  // we cannot get smallerror==-1 because on -1 it always return, so limit to 0 or -2
-			{
-			// let's see if we success or an helper task has succeed for us
-			/*if (source != null)
-					{
-					source=cPathfinder.GetUID(mytask.source, mytask.target);
-					while (source != null)
-							{
-							// remove all sub-tasks
-							DInfo("Pathfinder helper task "+source+" succeed !",1);
-							source=cPathfinder.GetUID(mytask.r_source, mytask.r_target);
-							if (source != null)
-									{
-									//DInfo("Pathfinder helper task "+source+" succeed !",1);
-									cPathfinder.CloseTask(mytask.source, mytask.target);
-									mytask=cPathfinder.GetPathfinderObject(source);
-									}
-							}
-					}  */
-			DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
-			mytask.status=2;
-			INSTANCE.buildDelay = 0;
-			local bltiles=AIList();
-			bltiles.AddList(cTileTools.TilesBlackList);
-			bltiles.KeepValue(-stationID);
-			local sta = cStation.Load(stationID);
-			if (cMisc.ValidInstance(sta))	{ sta.s_TilesOther.AddList(bltiles); }
-			return true;
-			}
-	}
+	return 0; // success
+}
