@@ -63,6 +63,24 @@ class cPathfinder extends cClass
 			}
 	}
 
+function cPathfinder::CheckPathCondition()
+{
+	if (this.useEntry == null)
+				{
+				if (!AIRoad.IsRoadTile(this.source[0]))	return false;
+				if (!AIRoad.IsRoadTile(this.target[1]))	return false;
+				}
+		else	{
+				if (!AIRail.IsRailTile(this.source[1]))	return false; // must be rail
+				if (!AIRail.IsRailTile(this.target[1]))	return false;
+
+				// must be clear or something we own (like a rail...)
+ 				if (!AITile.IsBuildable(this.source[0]) && AITile.GetOwner(this.source[0]) != AICompany.COMPANY_SELF)	return false;
+				if (!AITile.IsBuildable(this.target[0]) && AITile.GetOwner(this.target[0]) != AICompany.COMPANY_SELF)	return false;
+				}
+	return true;
+}
+
 function cPathfinder::GetUID(src, tgt)
 // return UID of the task
 	{
@@ -105,12 +123,6 @@ function cPathfinder::BuildShortPoints(source, target)
     seek_area.Valuate(cPathfinder.ThreeTileCheck, fwd, AITile.IsBuildable, 1);
     seek_area.KeepValue(1);
     print("buildable options="+seek_area.Count());
-    if (seek_area.IsEmpty())
-		{ // lets try to see if we could build over a water area
-		seek_area.AddRectangle(mid + AIMap.GetTileIndex(5, 5), mid - AIMap.GetTileIndex(5,5));
-		seek_area.Valuate(cPathfinder.ThreeTileCheck, fwd, cTileTools.IsBuildable, 1);
-		seek_area.KeepValue(1);
-		}
 	if (seek_area.IsEmpty())	return -1; // no place to build
     seek_area.Valuate(cPathfinder.ThreeTileCheck, fwd, AITile.GetSlope, AITile.SLOPE_FLAT);
     local need_terraform = false;
@@ -131,9 +143,11 @@ function cPathfinder::BuildShortPoints(source, target)
     local fwdTile = null;
 	foreach (tile, distance in seek_area)
 		{
-		if (need_terraform)	{ cTileTools.TerraformLevelTiles(tile + fwd, tile - fwd); }
-		if (cPathfinder.ThreeTileCheck(tile, fwd, AITile.GetSlope, AITile.SLOPE_FLAT))	{ mainTile = tile; break; }
+		if (need_terraform)	{ cBanker.RaiseFundsBigTime(); cTileTools.TerraformLevelTiles(tile + fwd, tile - fwd); }
+		if (cPathfinder.ThreeTileCheck(tile, fwd, AITile.GetSlope, AITile.SLOPE_FLAT) && cPathfinder.ThreeTileCheck(tile, fwd, AITile.IsBuildable, 1))
+				{ mainTile = tile; break; }
 		}
+	print("mainTile ="+mainTile);
 	if (mainTile == null)	return -1;
 	cTrack.DropRailHere(track, mainTile);
     bckTile = mainTile - fwd;
@@ -160,8 +174,6 @@ function cPathfinder::CheckPathfinderTaskIsRunning(condition)
 function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
 // return the status of the task, and create it if we didn't plane it yet
 	{
-	source = cPathfinder.GetSourceX(source);
-	target = cPathfinder.GetTargetX(target);
 	local uid=cPathfinder.GetUID(source, target);
 	if (uid == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
 	if (uid in cPathfinder.database)	{ }
@@ -179,36 +191,37 @@ function cPathfinder::AdvanceAllTasks()
 function cPathfinder::GetSolve(source, target)
 // return the solver instance
 	{
-	source = cPathfinder.GetSourceX(source);
-	target = cPathfinder.GetTargetX(target);
 	local UID=cPathfinder.GetUID(source, target);
 	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
 	local pftask=cPathfinder.GetPathfinderObject(UID);
 	return pftask.solve;
 	}
 
+function cPathfinder::CloseTaskAndChildren(id)
+{
+	local task = cPathfinder.GetPathfinderObject(id);
+	if (task == null)	return;
+	for (local i = 1; i < task.child.len(); i++)
+		{
+		cPathfinder.CloseTaskAndChildren(task.child[i]);
+		}
+	if (task.UID in cPathfinder.database)
+		{
+		delete cPathfinder.database[task.UID];
+		AISign.RemoveSign(task.signHandler);
+		DInfo("Pathfinder task "+task.UID+" closed.",1);
+		}
+}
+
 function cPathfinder::CloseTask(source, target)
 // Destroy that task and its children
-	{
-	source = cPathfinder.GetSourceX(source);
-	target = cPathfinder.GetTargetX(target);
+{
 	local UID = cPathfinder.GetUID(source, target);
-	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
-	local pftask = cPathfinder.GetPathfinderObject(UID);
-	if (pftask == null)	{ return; }
-	for (local i = 1; i < pftask.child.len(); i++)
-		{
-		local fils = cPathfinder.GetPathfinderObject(pftask.child[i]);
-		if (fils == null)	continue;
-		cPathfinder.CloseTask(fils.source, fils.target);
-		}
-	if (pftask.UID in cPathfinder.database)
-			{
-			delete cPathfinder.database[pftask.UID];
-			AISign.RemoveSign(pftask.signHandler);
-			DInfo("Pathfinder task "+pftask.UID+" closed.",1);
-			}
-	}
+	if (UID == null)	return;
+	local root_id = cPathfinder.GetRootTask(UID);
+	if (root_id == null)	return;
+	cPathfinder.CloseTaskAndChildren(root_id);
+}
 
 function cPathfinder::GetRootTask(uid)
 // it return the uid of the root task
@@ -219,19 +232,6 @@ function cPathfinder::GetRootTask(uid)
 		if (ptask == null)	return -1;
 		if (ptask.child[0] == null)	return ptask.UID;
 							else	uid = ptask.child[0];
-		}
-}
-
-function cPathfinder::PropageToChildren(id, status)
-{
-	local main = cPathfinder.GetPathfinderObject(id);
-	if (main == null)	return;
-	main.status = status;
-	for (local i = 1; i < main.child.len(); i++)
-		{
-		local child = cPathfinder.GetPathfinderObject(main.child[i]);
-		child.status = status;
-		cPathfinder.PropagateToChildren(main.child[i], status);
 		}
 }
 
@@ -250,20 +250,17 @@ function cPathfinder::PropagateChange(id)
 		if (fils.status != 2)	allsuccess = false;
 		print(task.UID+" child "+fils.UID+" status "+fils.status);
 		}
-	if (anerror)	{ cPathfinder.PropagateToChildren(root_id, -1); return; }
+	if (anerror)	{
+					if (root_id == task.UID)	{ task.status = -1; return -1; }
+					local root = cPathfinder.GetPathfinderObject(root_id);
+					if (root == null)	return -1;
+					root.status = -1;
+					return -1;
+					}
 	if (allsuccess)	{
 					task.status = 2;
 					if (task.child[0] != null)	cPathfinder.PropagateChange(task.child[0]); // see if its parent now end too
 					}
-}
-
-function cPathfinder::IsRootTaskEnd(id)
-{
-	local root_id = cPathfinder.GetRootTask(id);
-	if (root_id == -1)	return false;
-	local root = cPathfinder.GetPathfinderObject(root_id);
-	if (root == null)	return false;
-	return (root.status == 2);
 }
 
 function cPathfinder::AdvanceTask(UID)
@@ -273,6 +270,7 @@ function cPathfinder::AdvanceTask(UID)
 	local maxStep=5;		// maximum time put on a try
 	local _counter=0;
 	local pftask=cPathfinder.GetPathfinderObject(UID);
+	if (pftask == null)	return;
 	local tlist = "Parent:";
 	for (local k = 0; k < pftask.child.len(); k++)
 			{
@@ -284,12 +282,22 @@ function cPathfinder::AdvanceTask(UID)
 				}
 			if (k == 1)	tlist += "Children: ";
 			local fils = cPathfinder.GetPathfinderObject(pftask.child[k]);
+			if (fils == null)	return;
 			tlist += pftask.child[k]+":"+fils.status+"  ";
 			}
 	switch (pftask.status)
 			{
 			case	-1:
 				DInfo("Pathfinder task "+pftask.UID+" has end : nothing more could be done, failure. "+tlist,1);
+				local root = cPathfinder.GetRootTask(pftask.UID);
+				if (root == -1)	return;
+				// give it a last chance to handle the failure
+				pftask = cPathfinder.GetPathfinderObject(root);
+				if (pftask == null)	return;
+				pftask.status = -1; // we set root task to failure
+				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID); }
+                                        else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
+				cPathfinder.CloseTask(pftask.source, pftask.target);
 				return;
 			case	1:
 				if (!cBanker.CanBuyThat(30000))	{ return; }
@@ -306,6 +314,7 @@ function cPathfinder::AdvanceTask(UID)
 				DInfo("Pathfinder task "+pftask.UID+" has end task. "+tlist,1);
 				if (pftask.child[0] == null) // we're end and we are root task
 					{
+					local result = 0;
 					// recalling function to handle the work is finish
 					if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID); }
 											else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
@@ -333,7 +342,7 @@ function cPathfinder::AdvanceTask(UID)
 			pftask.solve = check;
 			return;
 			}
-	if (check == null || pftask.timer > maxTimer)
+	if (check == null || pftask.timer > maxTimer || !pftask.CheckPathCondition())
 			{
 			DInfo("Pathfinder task "+pftask.UID+" failure",1);
 			pftask.InfoSign("Pathfinding "+pftask.UID+"... failure");
@@ -451,7 +460,7 @@ function cPathfinder::AddSubTask(mainUID)
 			s2 = [point[2], point[3]];
 			}
 		}
-	if (distance > 120)
+	if (distance > 80)
 		{
 		point = cPathfinder.BuildShortPoints(s4[0], s4[1]);
 		if (point != -1)

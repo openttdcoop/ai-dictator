@@ -221,9 +221,9 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					return 0;
 					}
 		}
-	if (status == -1)	return -2; // failure, we have nothing to do if status is already set to failure
-	local path = cPathfinder.GetSolve(head1, head2);
 	local smallerror = 0;
+	if (status == -1)	smallerror = -2; // failure, we have nothing to do if status is already set to failure
+	local path = cPathfinder.GetSolve(head1, head2);
 	if (path == null)	{ smallerror = -2; } // if we couldn't get a valid solve here, there's something wrong then
 	cBanker.RaiseFundsBigTime();
 	local prev = null;

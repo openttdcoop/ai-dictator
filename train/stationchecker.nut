@@ -276,10 +276,9 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 	local rail=railFront;
 	local j=1;
 	local fromtile=-1;
-//	local sigtype=AIRail.SIGNALTYPE_PBS;
 	local sigtype = AIRail.SIGNALTYPE_NORMAL+AIRail.SIGNALTYPE_TWOWAY;
 	local position = stationObj.GetLocation()
-					 local sigdir=0;
+	local sigdir=0;
 	local se_IN=stationObj.GetRailStationIN(true);
 	local se_OUT=stationObj.GetRailStationOUT(true);
 	local sx_IN=stationObj.GetRailStationIN(false);
@@ -310,7 +309,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
         else	{ if (road.Primary_RailLink)	{ building_maintrack=false; }}
 	do  {
 		local temptile=fromtile+(j*forwardTileOf);
-		for (local kb = 0; kb < 6; kb++)	{ cMisc.Locate(j+(kb*forwardTileOf)); cTileTools.DemolishTile(j+(kb*forwardTileOf)); }
+		//for (local kb = 0; kb < 6; kb++)	{ cMisc.Locate(j+(kb*forwardTileOf)); cTileTools.DemolishTile(j+(kb*forwardTileOf)); }
 		cTileTools.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				{

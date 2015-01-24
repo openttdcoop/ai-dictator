@@ -950,9 +950,9 @@ function cBuilder::BuildPath_ROAD(src, dst, stationID)
 		if (cMisc.ValidInstance(sta))	{ sta.s_TilesOther.AddList(bltiles); }
 		return 0;
 		}
-	if (status == -1)	return -2; // failure, we have nothing to do if status is already set to failure
-	local path = cPathfinder.GetSolve(src, dst);
 	local smallerror = 0;
+	if (status == -1)	smallerror = -2; // failure, we have nothing to do if status is already set to failure
+	local path = cPathfinder.GetSolve(src, dst);
 	if (path == null)	{ smallerror = -2; } // if we couldn't get a valid solve here, there's something wrong then
 	cBanker.RaiseFundsBigTime();
 	DInfo("Building road structure",0);

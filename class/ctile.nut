@@ -481,7 +481,7 @@ function cTileTools::TerraformLevelTiles(tileFrom, tileTo)
 // return true if success
 {
 	local tlist=AITileList();
-	if (AITile.IsWaterTile(tileFrom))	{ AITile.RaiseTile(tileFrom, AITile.SLOPE_NWS + AITile.SLOPE_E); }
+	if (AITile.IsWaterTile(tileFrom))	{ print("raising fromtile "+AITile.RaiseTile(tileFrom, AITile.SLOPE_N + AITile.SLOPE_S)); }
 	tlist.AddRectangle(tileFrom, tileTo);
 	if (tlist.IsEmpty())	DInfo("No tiles to work with !",4);
 	local Solve=cTileTools.TerraformHeightSolver(tlist);
