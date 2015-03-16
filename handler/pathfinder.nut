@@ -364,6 +364,7 @@ function cPathfinder::AdvanceTask(UID)
 				local result = 0;
 				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID); }
                                         else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
+				if (result == -1)	return; // don't let it propagate success if we lack money to endup all builds
 				if (result == 0)	pftask.status = 2;
 				if (result == -2)	pftask.status = -1;
 				cPathfinder.PropagateChange(pftask.UID);

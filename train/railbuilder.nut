@@ -246,7 +246,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 									{
 									if (!AITunnel.BuildTunnel(AIVehicle.VT_RAIL, prev))
 											{
-											DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
+											DInfo("An error occured while I was building the tunnel: " + AIError.GetLastErrorString(),2);
 											smallerror=cBuilder.EasyError(AIError.GetLastError());
 											if (smallerror==-1)
 													{
@@ -267,7 +267,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 									local bridgeID = cBridge.GetCheapBridgeID(AIVehicle.VT_RAIL, AIMap.DistanceManhattan(path.GetTile(), prev) + 1);
 									if (!AIBridge.BuildBridge(AIVehicle.VT_RAIL, bridgeID, prev, path.GetTile()))
 											{
-											DInfo("An error occured while I was building the rail: " + AIError.GetLastErrorString(),2);
+											DInfo("An error occured while I was building the bridge: " + AIError.GetLastErrorString(),2);
 											smallerror=cBuilder.EasyError(AIError.GetLastError());
 											if (smallerror==-1)
 													{
