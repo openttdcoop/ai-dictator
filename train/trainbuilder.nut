@@ -88,6 +88,7 @@ function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
                             else	{ wagontype = locotype[1]; locotype = locotype[0]; }
 			}
 	else	{ locotype=AIVehicle.GetEngineType(trainID); }
+	print("wagontype = "+wagontype);
 	if (wagontype == -1)
 			{
 			// Try pickup a new (better) wagontype
@@ -96,6 +97,7 @@ function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
 									if (trainID != null)
 										{
 										local awagon = cEngineLib.VehicleGetRandomWagon(trainID);
+										// Pickup a wagon directly from the train if we cannot manage to find a better one
 										if (awagon != -1)	wagontype = AIVehicle.GetWagonEngineType(trainID, awagon);
 													else	return -1;
 										}
@@ -254,7 +256,9 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					while (!stop)
 							{
 							stop=true;
-							tID=cCarrier.AddNewTrain(uid, null, 0, depotID, stationLen);
+							tID=cCarrier.AddNewTrain(uid, null, 1, depotID, stationLen);
+							// We must force at least one wagon, else if we lack money to build another engine for that train and the train have no wagon, we couldn't
+							// find what kind of wagon it will then need, making the train remain empty.
 							if (AIVehicle.IsValidVehicle(tID))
 									{
 									numTrains++;
@@ -266,6 +270,7 @@ function cCarrier::AddWagon(uid, wagonNeed)
 											DInfo("Setting maximum speed for trains to "+topspeed+"km/h",0);
 											INSTANCE.main.carrier.speed_MaxTrain=topspeed;
 											}
+									wagonNeed--; // balance the new wagon attach to this train
 									}
 							else
 									{
@@ -295,16 +300,11 @@ function cCarrier::AddWagon(uid, wagonNeed)
 							print("maxwagon = "+maxwagon);
 							local balance_train1 = 0;
 							local balance_train2 = 0;
-                            if (beforesize + wagonNeed < maxwagon*2)
-										{
-										balance_train2 = (wagonNeed + beforesize) / 2;
-										balance_train1 = beforesize - (balance_train2 - beforesize);
-										}
-								else	{
-										balance_train1 = (maxwagon - beforesize);
-										balance_train2 = wagonNeed - (maxwagon - beforesize);
-										}
-							if (balance_train2 == 0)	{ balance_train2++; balance_train1--; }
+							if (wagonNeed > maxwagon * 2)	wagonNeed = maxwagon * 2;
+							// limit number of wagons to 2 full trains
+							local average = wagonNeed / 2;
+							balance_train1 = wagonNeed - average - beforesize;
+							balance_train2 = wagonNeed - balance_train1;
 							print("balance_train1="+balance_train1+" balance_train2="+balance_train2);
 							local res=cCarrier.AddNewTrain(uid, tID, balance_train1, depotID, stationLen);
 							processTrains.push(-1);
