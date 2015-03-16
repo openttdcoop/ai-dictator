@@ -115,6 +115,8 @@ function cTrain::DeleteVehicle(vehID)
 function cTrain::IsFull(vehID)
 // return true if train couldn't get more wagons
 {
+   	local guess_locos = cEngineLib.VehicleLackPower(vehID);
+   	if (guess_locos)	return false; // force a train that lack power to be seen as non full so it have a chance to get call for change (adding the extra engine need)
 	local train = cTrain.Load(vehID);
 	local station = cStation.Load(train.srcStationID);
 	if (!station)	return false;
