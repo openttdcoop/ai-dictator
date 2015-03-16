@@ -300,11 +300,18 @@ function cCarrier::AddWagon(uid, wagonNeed)
 							print("maxwagon = "+maxwagon);
 							local balance_train1 = 0;
 							local balance_train2 = 0;
-							if (wagonNeed > maxwagon * 2)	wagonNeed = maxwagon * 2;
 							// limit number of wagons to 2 full trains
+							if (wagonNeed > maxwagon * 2)	wagonNeed = maxwagon * 2;
 							local average = wagonNeed / 2;
 							balance_train1 = wagonNeed - average - beforesize;
-							balance_train2 = wagonNeed - balance_train1;
+							if (balance_train1 < 0)
+								{
+								balance_train1 = 0;
+								if (beforesize < maxwagon - 1)	balance_train1 = 1;
+								// if it can hold another wagon we give it one, in case train2 lack money to be build at least we grow up by one at every trys until full.
+								}
+							balance_train2 = wagonNeed - balance_train1; // will get the reminder for itself
+							if (balance_train2 == 0)	{ balance_train2++; balance_train1--; } // but we must keep at least 1 for train2
 							print("balance_train1="+balance_train1+" balance_train2="+balance_train2);
 							local res=cCarrier.AddNewTrain(uid, tID, balance_train1, depotID, stationLen);
 							processTrains.push(-1);
