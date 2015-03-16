@@ -918,7 +918,7 @@ function cBuilder::BuildRoadROAD(head1, head2, stationID)
 	{
 	print("in BuildRoadROAD stationID="+stationID);
 	local trys = 0;
-	while (trys < 20)
+	while (trys < 100)
 			{
 			local result = cPathfinder.GetStatus(head1, head2, stationID);
 			print("pathfinder result="+result);

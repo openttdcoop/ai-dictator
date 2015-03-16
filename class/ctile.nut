@@ -127,12 +127,7 @@ function cTileTools::StationIsWithinTownInfluence(stationid, townid)
 function cTileTools::DemolishTile(tile)
 // same as AITile.DemolishTile but retry after a little wait, protect rails, tunnel and bridge
 {
-	if (AITile.IsStationTile(tile))
-	{
-	AISign.BuildSign(tile,"S");
-	AIController.Break("attacking station "+" "+AIStation.GetName(AIStation.GetStationID(tile))+" "+cMisc.Locate(tile));
-	}
-//	if (cTileTools.IsBuildable(tile)) return true;
+	if (AITile.IsStationTile(tile))	return false; // must check if we have a real way to destroy station if need
 	if (AIRail.IsRailDepotTile(tile))	{ return cTrack.StationKillRailDepot(tile); }
 	if (AIRoad.IsRoadDepotTile(tile) || AIMarine.IsWaterDepotTile(tile))	{ return cTrack.DestroyDepot(tile); }
 	if (AIRail.IsRailTile(tile))	return false;

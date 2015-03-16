@@ -90,9 +90,17 @@ function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
 	else	{ locotype=AIVehicle.GetEngineType(trainID); }
 	if (wagontype == -1)
 			{
+			// Try pickup a new (better) wagontype
 			wagontype= cCarrier.ChooseRailCouple(road.CargoID, road.SourceStation.s_SubType, depot, locotype);
-			if (wagontype[0] == -1)	{ return -1; }
-			wagontype = wagontype[1];
+			if (wagontype[0] == -1)	{ // couldn't, no better wagon, lack of money for tests...
+									if (trainID != null)
+										{
+										local awagon = cEngineLib.VehicleGetRandomWagon(trainID);
+										if (awagon != -1)	wagontype = AIVehicle.GetWagonEngineType(trainID, awagon);
+													else	return -1;
+										}
+									}
+							else	wagontype = wagontype[1];
 			}
 	local wagonID = null;
 	local pullerID = null;

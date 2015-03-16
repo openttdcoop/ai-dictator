@@ -107,8 +107,12 @@ function cJobs::RankThisJob()
 	{
 	local srcTown = this.SourceProcess.IsTown;
 	local dstTown = this.TargetProcess.IsTown;
-	this.cargoAmount = this.SourceProcess.ScoreProduction;
-	if (srcTown && dstTown)	{ this.cargoAmount= ((this.SourceProcess.ScoreProduction + this.TargetProcess.ScoreProduction) / 2); }
+//	this.cargoAmount = this.SourceProcess.ScoreProduction;
+//			this.CargoProduce.SetValue(cargoID, current);
+	this.cargoAmount = this.SourceProcess.CargoProduce.GetValue(this.cargoID);
+//	if (srcTown && dstTown)	{ this.cargoAmount= ((this.SourceProcess.ScoreProduction + this.TargetProcess.ScoreProduction) / 2); }
+	if (srcTown && dstTown)	{ this.cargoAmount= ((this.SourceProcess.CargoProduce.GetValue(cCargo.GetPassengerCargo()) + this.TargetProcess.CargoProduce.GetValue(cCargo.GetPassengerCargo())) / 2); }
+	if (this.cargoID == cCargo.GetCargoFavorite())	{ this.cargoAmount *= cCargo.GetCargoFavoriteBonus(); }
 	local valuerank = this.cargoAmount * this.cargoValue;
 	if (this.subsidy)
 			{
@@ -261,6 +265,7 @@ function cJobs::EstimateCost()
 						}
 				else	{ engineprice=500000; }
 				money+=engineprice;
+				if (this.cargoID == cCargo.GetPassengerCargo())	money+=engineprice;
 				money+=(8*clean);
 				if (rtype==null)	{ money+=500000; }
                             else    {

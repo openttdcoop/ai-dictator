@@ -273,7 +273,7 @@ function DictatorAI::CheckCurrentSettings()
 	if (main.carrier.GetVehicleCount(AIVehicle.VT_AIR)+1 > AIGameSettings.GetValue("vehicle.max_aircraft")) { use_air = false; job_air = false; }
 	if (main.carrier.GetVehicleCount(AIVehicle.VT_WATER) + 1 > AIGameSettings.GetValue("vehicle.max_ships")) { use_boat = false; job_boat = false; }
 	main.carrier.train_length = AIGameSettings.GetValue("max_train_length");
-	if (main.carrier.train_length > 8)	{ main.carrier.train_length = 8; }
+	if (main.carrier.train_length > 5)	{ main.carrier.train_length = 5; }
 	if (main.carrier.train_length < 3)	{ use_train = false; job_train = false; }
 	switch (fairlevel)
 			{

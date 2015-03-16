@@ -42,17 +42,19 @@ function cBanker::GetLoanValue(money)
 }
 
 function cBanker::RaiseFundsTo(money)
+// Raise money to that level if possible, if we have already the amount do nothing, else raise to max we could reach
 {
 	local toloan = (AICompany.GetLoanAmount() + money).tointeger();
 	money = money.tointeger();
 	local curr=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	print("Funds: "+curr+" wish: "+money);
 	local success=true;
-	if (curr > money) success=true;
-			else	success=AICompany.SetMinimumLoanAmount(toloan);
+	if (curr > money)	success=true;
+				else	success=AICompany.SetMinimumLoanAmount(toloan);
 	if (!success)	{ // can't get what we need, raising to what we could do so
 				DInfo("Cannot raise money to "+money+". Raising money to max we can",2);
-				toloan=AICompany.GetMaxLoanAmount();
-				success=AICompany.SetMinimumLoanAmount(toloan);
+				toloan = AICompany.GetMaxLoanAmount();
+				success = AICompany.SetMinimumLoanAmount(toloan);
 				}
 	return success;
 }
@@ -60,10 +62,8 @@ function cBanker::RaiseFundsTo(money)
 function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
-	//local max=(AICompany.GetMaxLoanAmount()*95/100)-AICompany.GetLoanAmount();
-	return cBanker.RaiseFundsBy(9 * AICompany.GetLoanInterval());
-	//if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < 2000000)	INSTANCE.main.bank.RaiseFundsTo(AICompany.GetBankBalance(AICompany.COMPANY_SELF)+max);
-	// Don't use the loan if we have plenty cash
+	local max=(AICompany.GetMaxLoanAmount()*0.95).tointeger()-AICompany.GetLoanAmount();
+	return cBanker.RaiseFundsBy(max);
 }
 
 function cBanker::CanBuyThat(money)
@@ -72,7 +72,7 @@ function cBanker::CanBuyThat(money)
 	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
 	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	if (cash >= money)	return true;
-	if (cash + loan < cash)	return true;
+	if (cash + loan < cash)	return true; // overflow
 	if (cash + loan >= money)	return true;
 	return false;
 }
@@ -99,10 +99,11 @@ function cBanker::SaveMoney()
 }
 
 function cBanker::RaiseFundsBy(money)
+// Raise account by money amount.
 {
 	local curr = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	if (curr < 0) curr=0;
-	if (money < curr)	return true; // set we have the money to build it
+	//if (money < curr)	return true; // set we have the money to build it
 	local needed = money + curr;
 	return (cBanker.RaiseFundsTo(needed));
 }

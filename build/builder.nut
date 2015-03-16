@@ -76,6 +76,16 @@ function cBuilder::GetDirection(tilefrom, tileto)
 	return ret;
 }
 
+function cBuilder::DirectionToString(dir1)
+// true if direction oppose each other
+{
+	if (dir1 == DIR_SE)	return "DIR_SE("+DIR_SE+")";
+	if (dir1 == DIR_NW)	return "DIR_NW("+DIR_NW+")";
+	if (dir1 == DIR_NE)	return "DIR_NE("+DIR_NE+")";
+	if (dir1 == DIR_SW)	return "DIR_SW("+DIR_SW+")";
+	return "(invalid direction:"+dir1+")";
+}
+
 function cBuilder::BuildStation(start)
 // Build start station, reroute to the correct station builder depending on the road type to build
 {

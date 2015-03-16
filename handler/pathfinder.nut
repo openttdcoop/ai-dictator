@@ -113,10 +113,66 @@ function cPathfinder::BuildShortPoints(source, target)
 	local RT = (AIRail.IsRailTile(start) && AIRail.IsRailTile(end));
 	if (!RT)	{ return -1; }
 	RT = AIRail.GetRailType(start);
-	local mid = AIMap.GetTileIndex( (AIMap.GetTileX(start) + AIMap.GetTileX(end)) / 2, (AIMap.GetTileY(start) + AIMap.GetTileY(end)) / 2);
+//	local mid = AIMap.GetTileIndex( (AIMap.GetTileX(start) + AIMap.GetTileX(end)) / 2, (AIMap.GetTileY(start) + AIMap.GetTileY(end)) / 2);
 	local direction = cBuilder.GetDirection(start, end);
-	print("direction="+direction);
     local track = cTrack.GetRailFromDirection(direction);
+    local startdir = cBuilder.GetDirection(source[1], source[0]); // to see if both are going toward same direction
+    local enddir = cBuilder.GetDirection(target[1], target[0]);
+    local s_x = AIMap.GetTileX(start);
+    local s_y = AIMap.GetTileY(start);
+    local e_x = AIMap.GetTileX(end);
+    local e_y = AIMap.GetTileY(end);
+    local mid = AIMap.GetTileIndex( (s_x + e_x) / 2, (s_y + e_y) / 2); // mid position default, between half of both points
+    AISign.BuildSign(mid,"S");
+	local m_x = 0;
+    local m_y = 0;
+    switch (direction)
+		{
+		case	DIR_SE:
+		case		DIR_NW:
+				print("SE/NW case");
+/*				if (s_x > e_x)	{ m_x = e_x; m_y = (s_y + e_y) / 2; }
+						else	{ m_x = s_x; m_y = (s_y + e_y) / 2; }*/
+				m_x = s_x;
+				if (startdir == DIR_NE || startdir == DIR_SW)
+					{
+					if (m_x > e_x)	m_x += AIMap.GetTileIndex(-1, 0);
+							else	m_x += AIMap.GetTileIndex(1, 0);
+					}
+				m_y = (s_y + e_y) / 2;
+				//if (startdir == enddir) { print("shorten point"); m_x = e_x; m_y = (s_y + e_y * 2) / 3; }
+				// closer to start
+				break;
+/*		case	DIR_NW:
+				if (s_x > e_x)	{ m_x = e_x; m_y = s_y; }
+						else	{ m_x = s_x; m_y = e_y; }
+				break;*/
+        case	DIR_NE:
+		case		DIR_SW:
+				print("NE/SW case");
+				//if (s_y > e_y)	{ m_x = e_x; m_y = s_y; }  //852*188g 852*215d
+					//	else	{ m_x = s_x; m_y = e_y; }
+				m_x = (s_x + e_x) / 2;
+				m_y = s_y;
+				if (startdir == DIR_NW || startdir == DIR_SE)
+					{
+					if (m_y > e_y)	m_y += AIMap.GetTileIndex(0, -1);
+							else	m_y += AIMap.GetTileIndex(0, 1);
+					}
+				//if (startdir == enddir)	{ print("shorten point"); m_x = (s_x + e_x * 2) / 3; m_y = e_y; }
+				break;
+/*		case	DIR_SW:
+				if (s_x > e_x)	{ m_x = s_x; m_y = e_y; }
+						else	{ m_x = e_x; m_y = s_y; }
+				break;*/
+		}
+	mid = AIMap.GetTileIndex(m_x, m_y);
+    print("distancemax = "+AIMap.DistanceMax(start, end));
+    print("s_x="+s_x+" s_y="+s_y+" e_x="+e_x+" e_y="+e_y+" startdir="+cBuilder.DirectionToString(startdir)+" enddir="+cBuilder.DirectionToString(enddir));
+    print("DIR_NE="+DIR_NE+" DIR_SE="+DIR_SE+" DIR_NW="+DIR_NW+" DIR_SW="+DIR_SW+" direction="+cBuilder.DirectionToString(direction));
+	AISign.BuildSign(mid, "M");
+   // AIController.Break("point check mid_x="+AIMap.GetTileX(mid)+" mid_y="+AIMap.GetTileY(mid));
+
 	local fwd = cTileTools.GetForwardRelativeFromDirection(direction);
     local seek_area = AITileList();
     seek_area.AddRectangle(mid + AIMap.GetTileIndex(5, 5), mid - AIMap.GetTileIndex(5,5));
@@ -157,6 +213,7 @@ function cPathfinder::BuildShortPoints(source, target)
     newpath.push([bckTile, mainTile]);
     newpath.push([fwdTile, mainTile]);
     newpath.push(target);
+    AIController.Break("point");
     cDebug.ClearSigns();
 	return newpath;
 }
@@ -295,6 +352,7 @@ function cPathfinder::AdvanceTask(UID)
 				pftask = cPathfinder.GetPathfinderObject(root);
 				if (pftask == null)	return;
 				pftask.status = -1; // we set root task to failure
+				local result;
 				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID); }
                                         else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
 				cPathfinder.CloseTask(pftask.source, pftask.target);
@@ -416,15 +474,15 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station, split = false)
 	else	  // rail
 			{
             pftask.pathHandler= MyRailPF();
-			pftask.pathHandler.cost.bridge_per_tile = 50;//70
-			pftask.pathHandler.cost.tunnel_per_tile = 50;//70
-			pftask.pathHandler.cost.turn = 80;//200
+//			pftask.pathHandler.cost.bridge_per_tile = 50;//70
+//			pftask.pathHandler.cost.tunnel_per_tile = 50;//70
+//			pftask.pathHandler.cost.turn = 80;//200
 			pftask.pathHandler.cost.max_bridge_length=30;
 			pftask.pathHandler.cost.max_tunnel_length=30;
 			pftask.pathHandler.cost.tile=100;
 			pftask.pathHandler.cost.slope=110;//80
-			pftask.pathHandler.cost.coast = 20;
-			pftask.pathHandler.cost.diagonal_tile=70;
+			pftask.pathHandler.cost.coast = 140;
+			pftask.pathHandler.cost.diagonal_tile=100;
 			pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 			}
 	DInfo("New pathfinder task : "+pftask.UID,1);

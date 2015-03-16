@@ -272,8 +272,9 @@ function cProcess::UpdateScoreProduction()
 		if (best < current)	{ best=current; bestcargo=cargoID; }
 		this.CargoProduce.SetValue(cargoID, current);
 		}
-	if (bestcargo == cCargo.GetCargoFavorite())	{ this.ScoreProduction = best * cCargo.GetCargoFavoriteBonus(); }
-                                        else	{ this.ScoreProduction = best; }
+	this.ScoreProduction = best;
+//	if (bestcargo == cCargo.GetCargoFavorite())	{ this.ScoreProduction = best * cCargo.GetCargoFavoriteBonus(); }
+//                                       else	{ this.ScoreProduction = best; }
 	}
 
 function cProcess::UpdateScore()
