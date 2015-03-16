@@ -42,7 +42,6 @@ function cDebug::showLogic(item)
 		{
 		cDebug.PutSign(i,dummy);
 		}
-	//AIController.Break("logic first "+cMisc.Locate(item.Begin()));
 	print("logic at "+cMisc.Locate(item.Begin()));
 	print("remain opcode="+AIController.GetOpsTillSuspend());
 	AIController.Sleep(40);

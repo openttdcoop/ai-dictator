@@ -171,7 +171,6 @@ function cPathfinder::BuildShortPoints(source, target)
     print("s_x="+s_x+" s_y="+s_y+" e_x="+e_x+" e_y="+e_y+" startdir="+cBuilder.DirectionToString(startdir)+" enddir="+cBuilder.DirectionToString(enddir));
     print("DIR_NE="+DIR_NE+" DIR_SE="+DIR_SE+" DIR_NW="+DIR_NW+" DIR_SW="+DIR_SW+" direction="+cBuilder.DirectionToString(direction));
 	AISign.BuildSign(mid, "M");
-   // AIController.Break("point check mid_x="+AIMap.GetTileX(mid)+" mid_y="+AIMap.GetTileY(mid));
 
 	local fwd = cTileTools.GetForwardRelativeFromDirection(direction);
     local seek_area = AITileList();
@@ -213,7 +212,6 @@ function cPathfinder::BuildShortPoints(source, target)
     newpath.push([bckTile, mainTile]);
     newpath.push([fwdTile, mainTile]);
     newpath.push(target);
-    AIController.Break("point");
     cDebug.ClearSigns();
 	return newpath;
 }

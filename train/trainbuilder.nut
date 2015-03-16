@@ -304,7 +304,7 @@ function cCarrier::AddWagon(uid, wagonNeed)
 							if (wagonNeed > maxwagon * 2)	wagonNeed = maxwagon * 2;
 							local average = wagonNeed / 2;
 							balance_train1 = wagonNeed - average - beforesize;
-							if (balance_train1 < 0)
+							if (balance_train1 <= 0)
 								{
 								balance_train1 = 0;
 								if (beforesize < maxwagon - 1)	balance_train1 = 1;
