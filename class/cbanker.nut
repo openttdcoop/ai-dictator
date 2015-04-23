@@ -47,7 +47,6 @@ function cBanker::RaiseFundsTo(money)
 	local toloan = (AICompany.GetLoanAmount() + money).tointeger();
 	money = money.tointeger();
 	local curr=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	print("Funds: "+curr+" wish: "+money);
 	local success=true;
 	if (curr > money)	success=true;
 				else	success=AICompany.SetMinimumLoanAmount(toloan);
@@ -103,7 +102,6 @@ function cBanker::RaiseFundsBy(money)
 {
 	local curr = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	if (curr < 0) curr=0;
-	//if (money < curr)	return true; // set we have the money to build it
 	local needed = money + curr;
 	return (cBanker.RaiseFundsTo(needed));
 }
@@ -111,13 +109,8 @@ function cBanker::RaiseFundsBy(money)
 function cBanker::PayLoan()
 {
 	local money = 0 - (AICompany.GetBankBalance(AICompany.COMPANY_SELF) - AICompany.GetLoanAmount()) + AICompany.GetLoanInterval();
-	if (money > 0)
-		{
-		if (AICompany.SetMinimumLoanAmount(money)) return true; else return false;
-		}
-	else	{
-		if (AICompany.SetMinimumLoanAmount(0)) return true; else return false;
-		}
+	if (money > 0)	{	if (AICompany.SetMinimumLoanAmount(money)) return true; else return false; }
+			else	{	if (AICompany.SetMinimumLoanAmount(0)) return true; else return false;	}
 }
 
 function cBanker::CashFlow()

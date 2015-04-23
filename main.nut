@@ -363,4 +363,3 @@ function DictatorAI::DWarn(putMsg, debugValue=1, func = "Unknown")
 			AILog.Warning(func+putMsg);
 			}
 	}
-

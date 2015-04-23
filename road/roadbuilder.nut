@@ -72,6 +72,10 @@ function cBuilder::BuildRoadDepotAtTile(tile, stationID)
 	reusedepot.KeepAboveValue(0);
 	reusedepot.Valuate(AIRoad.IsRoadTile);
 	reusedepot.KeepValue(0);
+	reusedepot.Valuate(AIBridge.IsBridgeTile);
+	reusedepot.KeepValue(0); // road or tunnel bridge don't answer to IsRoadTile, making tunnel/bridge destroy as result
+	reusedepot.Valuate(AITunnel.IsTunnelTile);
+	reusedepot.KeepValue(0);
 	reusedepot.Valuate(AITile.GetDistanceManhattanToTile,tile);
 	reusedepot.Sort(AIList.SORT_BY_VALUE, true);
 	local newpos=-1;

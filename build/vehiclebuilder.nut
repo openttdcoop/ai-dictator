@@ -340,18 +340,18 @@ function cCarrier::VehicleFilterAir(vehlist, object)
 					special = RouteType.SMALLAIR;
 					}
 				else	special=RouteType.AIR;
-			if (AICargo.GetTownEffect(object.cargo_id) == AICargo.TE_MAIL)
-				{ // mail/fast ones
-				vehlist.Valuate(AIEngine.GetMaxSpeed);
-				special++;	// add one to fall on mail: AIRMAIL OR SMALLMAIL
-				vehlist.Sort(AIList.SORT_BY_VALUE,false);
-				vehlist.KeepTop(5); // best fastest engine out of the 5 top fast one
-				}
+			if (AICargo.GetTownEffect(object.cargo_id) == AICargo.TE_MAIL && INSTANCE.main.bank.unleash_road)
+					{ // mail/fast ones but only if we unleash roads (they are too costly for start)
+					vehlist.Valuate(AIEngine.GetMaxSpeed);
+					special++;	// add one to fall on mail: AIRMAIL OR SMALLMAIL
+					vehlist.Sort(AIList.SORT_BY_VALUE,false);
+					vehlist.KeepTop(5); // best fastest engine out of the 5 top fast one
+					}
 			else	{ // passengers
-				vehlist.Valuate(AIEngine.GetCapacity);
-				vehlist.Sort(AIList.SORT_BY_VALUE,false);
-				vehlist.KeepTop(5);
-				}
+					vehlist.Valuate(AIEngine.GetCapacity);
+					vehlist.Sort(AIList.SORT_BY_VALUE,false);
+					vehlist.KeepTop(5);
+					}
 			vehlist.Valuate(cCarrier.GetEngineEfficiency, passCargo); // passenger/big ones
 			vehlist.Sort(AIList.SORT_BY_VALUE,true);
 		break;

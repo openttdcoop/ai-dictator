@@ -89,6 +89,8 @@ function cJobs::GetUID()
 			if (this.SourceProcess.IsTown) { v4+=4000; }
 			parentID= v4+(this.cargoID+1);
 			if (this.roadType == RouteType.AIR)	{ parentID = v4+(this.cargoID+100); }
+			if (this.roadType == RouteType.RAIL && this.cargoID == cCargo.GetPassengerCargo())
+					{ parentID = v4+(this.cargoID+100); } // let train doing passenger share the same ID as aircraft, so either aircraft or train can do it but not both
 			if (this.roadType == RouteType.ROAD && this.cargoID == cCargo.GetPassengerCargo())
 					{ parentID = v4+(this.cargoID+300); }
 			// parentID: prevent a route done by a transport to be done by another transport
