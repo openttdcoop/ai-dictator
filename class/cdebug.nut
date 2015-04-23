@@ -43,9 +43,7 @@ function cDebug::showLogic(item)
 		cDebug.PutSign(i,dummy);
 		}
 	print("logic at "+cMisc.Locate(item.Begin()));
-	print("remain opcode="+AIController.GetOpsTillSuspend());
 	AIController.Sleep(40);
-	print("after sleep40="+AIController.GetOpsTillSuspend());
 	cDebug.ClearSigns();
 }
 

@@ -37,8 +37,7 @@ class cPathfinder extends cClass
 		// if we success at pathfinding, we will try build the route, and if we fail at building the route, we will recall the pathfinder or try to rebuild it
 		// we will then report failure in status
 		child		= null;	// the array list of child, first element is parent UID (or its own UID if it have no parent)
-		autofail	= null; // a function that test a condition and return true if condition is met, false when condition is no more met
-		autofail_arg= null; // parameters to pass to autofail function
+		autofail	= null; // a function that test a condition and return true if condition is met, the "this" context is the task object
 		road_build	= null;	// a function to call to build road paths
 		rail_build	= null;	// a function to call to build rail paths
 
@@ -56,7 +55,6 @@ class cPathfinder extends cClass
 			status		    = 0;
 			child			= [this.UID];
 			autofail		= cPathfinder.StationExist;
-			autofail_arg	= [this.stationID];
 			this.ClassName	= "cPathfinder";
 			this.road_build	= cBuilder.BuildPath_ROAD;
 			this.rail_build = cBuilder.BuildPath_RAIL;
@@ -405,7 +403,7 @@ function cPathfinder::AdvanceTask(UID)
 			pftask.InfoSign("Pathfinding "+pftask.UID+"... failure");
 			pftask.status = -1;
 			}
-	if (!pftask.autofail(pftask.autofail_arg))
+	if (!pftask.autofail())
 			{
 			DInfo("Pathfinder is autoclosing task "+pftask.UID,1);
 			cPathfinder.CloseTask(pftask.source[0], pftask.target[1]);
@@ -414,10 +412,12 @@ function cPathfinder::AdvanceTask(UID)
 
 // private
 
-function cPathfinder::StationExist(arg)
+function cPathfinder::StationExist()
 {
-	if (stationID == null)	return false;
-	return AIStation.IsValidStation(stationID);
+    print("AUTOFAIL pf >>> "+" this="+this.stationID+" task:"+this.UID)
+	if (this.stationID == null)	return false;
+	print("AUTOFAIL pf >>> "+AIStation.IsValidStation(this.stationID));
+	return AIStation.IsValidStation(this.stationID);
 }
 
 function cPathfinder::GetSourceX(x)
