@@ -116,6 +116,10 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 			local engine = cCarrier.GetAirVehicle(null, cargoID);
 			if (engine != -1)	cEngine.SetBestEngine(EUID, engine);
 			return engine;
+		case	AIVehicle.VT_WATER:
+			local engine = cCarrier.GetWaterVehicle(null, cargoID);
+			if (engine != -1)	cEngine.SetBestEngine(EUID, engine);
+			return engine;
 		}
 	return -1;
 	}
