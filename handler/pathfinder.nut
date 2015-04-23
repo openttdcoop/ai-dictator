@@ -214,12 +214,12 @@ function cPathfinder::BuildShortPoints(source, target)
 	return newpath;
 }
 
-function cPathfinder::CheckPathfinderTaskIsRunning(condition)
+function cPathfinder::CheckPathfinderTaskIsRunning(stations)
 	{
-	if (typeof condition != "array")	{ DError("conditions must be an array with args to pass to your own autofail test function"); return false; }
+	if (typeof stations != "array")	{ DError("stations must be an array with source stationID and target stationID"); return false; }
 	foreach (obj in cPathfinder.database)
 		{
-		if (obj.autofail(condition))	return true;
+		if (obj.stationID == stations[0] || obj.stationID == stations[1])	return true;
 		}
 	return false;
 	}
@@ -412,7 +412,7 @@ function cPathfinder::AdvanceTask(UID)
 
 // private
 
-function cPathfinder::StationExist()
+function cPathfinder::StationExist(station)
 {
     print("AUTOFAIL pf >>> "+" this="+this.stationID+" task:"+this.UID)
 	if (this.stationID == null)	return false;
