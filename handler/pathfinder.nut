@@ -412,7 +412,7 @@ function cPathfinder::AdvanceTask(UID)
 
 // private
 
-function cPathfinder::StationExist(station)
+function cPathfinder::StationExist()
 {
     print("AUTOFAIL pf >>> "+" this="+this.stationID+" task:"+this.UID)
 	if (this.stationID == null)	return false;
