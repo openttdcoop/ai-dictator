@@ -358,6 +358,9 @@ function RailFollower::TryUpgradeLine(vehicle)
 		uid.SourceStation.s_SubType = new_railtype;
 		uid.TargetStation.s_SubType = new_railtype;
 		uid.RailType = new_railtype;
+		// now reset stations max size in order to see if we can retry upgrade it now that we change its railtype
+		uid.SourceStation.s_MaxSize = INSTANCE.main.carrier.rail_max;
+		uid.TargetStation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 		}
 	INSTANCE.buildDelay = 1;
 	DInfo("We upgrade route to use railtype #"+new_railtype,0);

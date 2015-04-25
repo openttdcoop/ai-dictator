@@ -89,8 +89,6 @@ function cStationRail::GetRailStationMiscInfo(stationID=null)
 	local entrypos=AIStation.GetLocation(thatstation.s_ID);
 	local stationtype = AIRail.GetRailType(entrypos);
 	thatstation.s_SubType = stationtype;
-	/*local statiles = cTileTools.FindStationTiles(entrypos);
-	thatstation.s_Tiles.AddList(statiles);*/
 	local statiles = AIList();
 	statiles.AddList(thatstation.s_Tiles);
 	statiles.Valuate(AIRail.GetRailType);

@@ -294,13 +294,13 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					else
 							{
 							local targetTile=path.GetTile();
-                            local slope_c = AITile.GetSlope(prev);
+                            /*local slope_c = AITile.GetSlope(prev);
                             local slope_a = AITile.GetSlope(targetTile);
                             local slope_add = slope_a + slope_c;
 							if (slope_c != AITile.SLOPE_FLAT && slope_a != AITile.SLOPE_FLAT && ((slope_add == AITile.SLOPE_NW || slope_add == AITile.SLOPE_NW || slope_add == AITile.SLOPE_SE || slope_add == AITile.SLOPE_NE) || (AITile.IsSteepSlope(prev) && AITile.IsSteepSlope(targetTile)) || ((slope_c ^ slope_a) == 15 && (slope_c == AITile.SLOPE_NW || slope_c == AITile.SLOPE_SW || slope_c == AITile.SLOPE_SE || slope_c == AITile.SLOPE_NE))))
 								{ // kill small climb/down we could avoid
 								cTileTools.TerraformLevelTiles(prevprev, targetTile);
-								}
+								}*/
 							if (!AIRail.BuildRail(prevprev, prev, targetTile))
 									{
 									smallerror=cBuilder.EasyError(AIError.GetLastError());
