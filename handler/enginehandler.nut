@@ -133,7 +133,7 @@ function cEngine::SetBestEngine(EUID, engineID)
 	if (exist)	{
 			oldvalue=cEngine.BestEngineList.GetValue(EUID);
 			cEngine.BestEngineList.SetValue(EUID, engineID);
-			if (oldvalue != engineID)	INSTANCE.DInfo("Setting new top engine for EUID #"+EUID+" to "+engineID+"-"+AIEngine.GetName(engineID)+" was "+oldvalue+"-"+AIEngine.GetName(engineID),2);
+			if (oldvalue != engineID)	INSTANCE.DInfo("Setting new top engine for EUID #"+EUID+" to "+engineID+"-"+AIEngine.GetName(engineID)+" was "+oldvalue+"-"+AIEngine.GetName(oldvalue),2);
 			}
 		else	cEngine.BestEngineList.AddItem(EUID, engineID);
 	}

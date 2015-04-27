@@ -82,28 +82,27 @@ while (AIEventController.IsEventWaiting())
 			local vehicle = null;
 			event = AIEventVehicleCrashed.Convert(event);
 			vehicle = event.GetVehicleID();
-			DInfo("Vehicle "+INSTANCE.main.carrier.GetVehicleName(vehicle)+" has crashed!!!",0);
+			DInfo("Vehicle "+cCarrier.GetVehicleName(vehicle)+" has crashed!!!",0);
 		break;
 		case AIEvent.ET_VEHICLE_WAITING_IN_DEPOT:
-			INSTANCE.main.carrier.VehicleIsWaitingInDepot();
+			cCarrier.VehicleIsWaitingInDepot();
 		break;
 		case AIEvent.ET_VEHICLE_LOST:
 			event = AIEventVehicleLost.Convert(event);
 			local vehicle = event.GetVehicleID();
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo(cCarrier.GetVehicleName(vehicle) + " is lost, not a good news",0);
-			INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
-			local rcheck=INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle);
-			INSTANCE.main.builder.RouteIsDamage(rcheck);
+			cCarrier.VehicleMaintenance_Orders(vehicle);
+			local rcheck = cCarrier.VehicleFindRouteIndex(vehicle);
+			cBuilder.RouteIsDamage(rcheck);
 		break;
 		case AIEvent.ET_VEHICLE_UNPROFITABLE:
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo(cCarrier.GetVehicleName(vehicle) + " is not profitable, sending it to depot",0);
-			cCarrier.VehicleMaintenance_Orders(vehicle);
 			cBuilder.RouteIsDamage(cCarrier.VehicleFindRouteIndex(vehicle));
-			cCarrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+			cRoute.CheckRouteProfit(cCarrier.VehicleFindRouteIndex(vehicle));
 		break;
 		case AIEvent.ET_COMPANY_IN_TROUBLE:
 			event = AIEventCompanyInTrouble.Convert(event);
@@ -122,7 +121,7 @@ while (AIEventController.IsEventWaiting())
                 vehlist.KeepAboveValue(0);
 				foreach (vehicle, profit in vehlist)
 					{ // sell all non profitable vehicles
-					INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+					cCarrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 					}
 				if (!vehlist.IsEmpty()) { INSTANCE.buildDelay = 6; }
 				}

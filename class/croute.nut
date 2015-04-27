@@ -361,3 +361,33 @@ function cRoute::RouteClaimsTiles(uid = null)
 		AIController.Break("pause");
 		}
 }
+
+function cRoute::CheckRouteProfit(uid)
+// Check if a route is profitable and remove it if not
+{
+	local road = cRoute.GetRouteObject(uid);
+	if (!road)	return;
+	local vehlist = AIVehicleList_Group(road.GroupID);
+	if (vehlist.IsEmpty())	return;
+	vehlist.Valuate(AIVehicle.GetAge);
+	vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
+	local oldest = vehlist.GetValue(vehlist.Begin());
+	vehlist.Valuate(AIVehicle.GetProfitThisYear);
+	vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+	local totvalue = 0;
+	foreach (veh, profit in vehlist)
+		{
+		totvalue += profit;
+		if (totvalue > 100000)	break; // we don't really need to check its real amount
+		}
+	if (totvalue < 0 && oldest > (365 * 2))	{ DInfo("CheckRouteProfit mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); return; }
+	// even making some money, we get call because some vehicle aren't
+    local badveh = AIList();
+    badveh.AddList(vehlist);
+    badveh.KeepBelowValue(0);
+    foreach (veh, profit in badveh)
+		{
+		if (vehlist.Count() < 3)	return; // Keep at least 2 vehicle in the group, even they aren't making money
+        if (AIVehicle.GetAge(veh) > 365)	{ cCarrier.VehicleSendToDepot(veh, DepotAction.SELL); vehlist.RemoveItem(veh); }
+        }
+}
