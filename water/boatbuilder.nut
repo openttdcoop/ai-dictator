@@ -69,7 +69,7 @@ function cCarrier::CreateWaterVehicle(routeidx)
 	AIOrder.AppendOrder(vehID, srcplace, firstorderflag);
 	AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
 	AIGroup.MoveVehicle(road.GroupID, vehID);
-	if (altplace)	INSTANCE.main.carrier.VehicleOrderSkipCurrent(vehID);
+	if (altplace)	cCarrier.VehicleOrderSkipCurrent(vehID);
 	if (!cCarrier.StartVehicle(vehID))  {
                                         DError("Cannot start the vehicle: "+cCarrier.GetVehicleName(vehID),2);
                                         cCarrier.VehicleSell(vehID, false);

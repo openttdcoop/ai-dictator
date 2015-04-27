@@ -117,7 +117,6 @@ function cBuilder::YearlyChecks()
 	INSTANCE.TwelveMonth=0;
 	DInfo("Yearly checks run...",1);
 	INSTANCE.main.jobs.CheckTownStatue();
-//	INSTANCE.main.carrier.do_profit.Clear(); // TODO: Keep or remove that, it's not use yet
 	INSTANCE.main.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
 }
 

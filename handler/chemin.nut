@@ -144,8 +144,8 @@ function cRoute::VirtualAirNetworkUpdate()
 			}
 			*/
 	DInfo("NETWORK -> Airnetwork route length is now : "+cCarrier.VirtualAirRoute.len()+" max distance="+virtroad.Distance,1);
-	INSTANCE.main.route.RouteUpdateAirPath();
-	INSTANCE.main.carrier.AirNetworkOrdersHandler();
+	cRoute.RouteUpdateAirPath();
+	cCarrier.AirNetworkOrdersHandler();
 	}
 
 function cRoute::DutyOnAirNetwork()
@@ -157,8 +157,8 @@ function cRoute::DutyOnAirNetwork()
 	if (virtroad.Status != 100)	{ return; }
 	local vehlist=AIList();
 	local passengerID=cCargo.GetPassengerCargo();
-	local maillist=AIVehicleList_Group(INSTANCE.main.route.GetVirtualAirMailGroup());
-	local passlist=AIVehicleList_Group(INSTANCE.main.route.GetVirtualAirPassengerGroup());
+	local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
+	local passlist=AIVehicleList_Group(cRoute.GetVirtualAirPassengerGroup());
 	vehlist.AddList(passlist);
 	local totalcapacity=0;
 	local onecapacity=0;
@@ -219,7 +219,7 @@ function cRoute::DutyOnAirNetwork()
 			{
 			for (local k = 0; k < vehneed; k++)
 					{
-					if (INSTANCE.main.carrier.CanAddNewVehicle(0, true, k))
+					if (cCarrier.CanAddNewVehicle(0, true, k))
 							{
 							if ((vehnumber + k) % 3 == 0)   { tomail++; }
 													else    { topass++; }
@@ -259,7 +259,7 @@ function cRoute::DutyOnRoute()
 	local road=null;
 	local chopper=false;
 	local dual=false;
-	INSTANCE.main.route.DutyOnAirNetwork(); // we handle the network load here
+	cRoute.DutyOnAirNetwork(); // we handle the network load here
 	foreach (uid, dummy in cRoute.RouteIndexer)
 		{
 		local pause = cLooper();
@@ -268,10 +268,10 @@ function cRoute::DutyOnRoute()
 		if (!road)	{ continue; }
 		if (road.Status != RouteStatus.WORKING)	{ continue; }
 		if (road.VehicleType == RouteType.AIRNET || road.VehicleType == RouteType.AIRNETMAIL)	{ continue; }
-		if (road.VehicleType == RouteType.RAIL)	{ INSTANCE.main.route.DutyOnRailsRoute(uid); continue; }
+		if (road.VehicleType == RouteType.RAIL)	{ cRoute.DutyOnRailsRoute(uid); continue; }
 		local maxveh=0;
 		local cargoid=road.CargoID;
-		local futur_engine=INSTANCE.main.carrier.GetVehicle(uid);
+		local futur_engine = cCarrier.GetVehicle(uid);
 		local futur_engine_capacity=1;
 		if (futur_engine != null)	{ futur_engine_capacity=cEngine.GetCapacity(futur_engine, road.CargoID); }
 		else	{ continue; }
@@ -349,10 +349,10 @@ function cRoute::DutyOnRoute()
 				}
 		if (vehneed > 0)
 				{
-				local allowmax=INSTANCE.main.carrier.CanAddNewVehicle(uid, true, vehneed);
+				local allowmax = cCarrier.CanAddNewVehicle(uid, true, vehneed);
 				if (allowmax < vehneed)	{ vehneed=allowmax; }
 				DInfo("CanAddNewVehicle for "+road.SourceStation.s_Name+" says "+vehneed,2);
-				allowmax=INSTANCE.main.carrier.CanAddNewVehicle(uid, false, vehneed);
+				allowmax= cCarrier.CanAddNewVehicle(uid, false, vehneed);
 				if (allowmax < vehneed)	{ vehneed=allowmax; }
 				DInfo("CanAddNewVehicle for "+road.TargetStation.s_Name+" says "+vehneed,2);
 				}

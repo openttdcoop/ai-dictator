@@ -61,7 +61,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		{ DInfo("Cannot upgrade airport, too dangerous with our current rating with this town.",1); station.s_DateLastUpgrade+=70; return false; }
 	local cost=AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate().tointeger();
 	cost+=1000; // i'm not sure how much i need to destroy old airport
-	INSTANCE.main.bank.RaiseFundsBy(cost);
+	cBanker.RaiseFundsBy(cost);
 	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) < cost)
 		{ DInfo("Cannot upgrade airport, need "+cost+" money for success.",1); return false; }
 	DInfo("Trying to upgrade airport #"+stationid+" "+station.s_Name,0);
@@ -72,13 +72,13 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		{
 		local dummyObj=cRoute.Load(ownID);
 		if (!dummyObj)	continue;
-		INSTANCE.main.carrier.VehicleBuildOrders(dummyObj.GroupID,true);
+		cCarrier.VehicleBuildOrders(dummyObj.GroupID,true);
 		}
-	INSTANCE.main.carrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
+	cCarrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 	local counter=0;
 	local maxcount=100;
 	local result=false;
-	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID, true);
+	cCarrier.VehicleHandleTrafficAtStation(station.s_ID, true);
 	cBuilder.CloseAirport(station.s_ID);
 	// time to pray a bit for success, we could invalidate a working route here
 	do	{
@@ -89,13 +89,13 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		if (!result)
 			{
 			AIController.Sleep(40);
-			INSTANCE.main.carrier.FreeDepotOfVehicle(station.s_Depot); // try remove aircraft from airport
+			cCarrier.FreeDepotOfVehicle(station.s_Depot); // try remove aircraft from airport
 			}
 		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);
-	result=INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
+	result = INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
 	if (result == -1)	cBuilder.OpenAirport(station.s_ID);
 			else	cBuilder.OpenAirport(result);
-	INSTANCE.main.carrier.VehicleHandleTrafficAtStation(station.s_ID,false);
+	cCarrier.VehicleHandleTrafficAtStation(station.s_ID,false);
 	if (result == -1)	return false;
 	DInfo("Airport was upgrade successfuly !",1);
 }
@@ -141,7 +141,7 @@ function cBuilder::AirportMaker(tile, airporttype)
 		cTileTools.terraformCost.AddItem(999995,1); // tell rating is poor
 		}
 	DInfo("Cost to build an airport = "+(AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger(),2);
-	INSTANCE.main.bank.RaiseFundsBy((AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger());
+	cBanker.RaiseFundsBy((AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger());
 	essai=AIAirport.BuildAirport(tile, airporttype, AIStation.STATION_NEW);
 	if (essai)	DInfo("-> Built an airport at "+cMisc.Locate(tile),1);
 		else	DError("Cannot build an airport at "+cMisc.Locate(tile),1);

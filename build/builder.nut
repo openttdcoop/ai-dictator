@@ -293,13 +293,13 @@ function cBuilder::TryBuildThatRoute()
 		case	RouteType.RAIL:
             if (INSTANCE.main.route.RailType == -1)
                     {
-                    local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, -1);
+                    local trainspec = cCarrier.ChooseRailCouple(INSTANCE.main.route.CargoID, -1);
                     if (trainspec[0] == -1)	{ success = false; }
                                     else	{ success = true; }
                     if (success)    { INSTANCE.main.route.RailType = cEngineLib.RailTypeGetFastestType(trainspec[0]); }
                     }
             else    {
-                    local trainspec = INSTANCE.main.carrier.ChooseRailCouple(INSTANCE.main.route.CargoID, INSTANCE.main.route.RailType);
+                    local trainspec = cCarrier.ChooseRailCouple(INSTANCE.main.route.CargoID, INSTANCE.main.route.RailType);
                     // must be sure one exist, as reusing a station could have change the railtype to use
                     if (trainspec[0] == -1) { success = false; }
                                     else    { success = true; }

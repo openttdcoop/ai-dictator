@@ -81,7 +81,7 @@ function cCarrier::CreateRoadVehicle(roadidx)
 		return false;
 		}
 	AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
-	if (altplace)	{ INSTANCE.main.carrier.VehicleOrderSkipCurrent(vehID); }
+	if (altplace)	{ cCarrier.VehicleOrderSkipCurrent(vehID); }
 	road.VehicleCount++;
 	if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle:",2); cCarrier.VehicleSell(vehID, false); return false; }
 	cEngine.CheckMaxSpeed(engineID);

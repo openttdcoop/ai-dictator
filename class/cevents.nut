@@ -101,9 +101,9 @@ while (AIEventController.IsEventWaiting())
 			local vehicle = event.GetVehicleID();
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
 			DInfo(cCarrier.GetVehicleName(vehicle) + " is not profitable, sending it to depot",0);
-			INSTANCE.main.carrier.VehicleMaintenance_Orders(vehicle);
-			INSTANCE.main.builder.RouteIsDamage(INSTANCE.main.carrier.VehicleFindRouteIndex(vehicle));
-			INSTANCE.main.carrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
+			cCarrier.VehicleMaintenance_Orders(vehicle);
+			cBuilder.RouteIsDamage(cCarrier.VehicleFindRouteIndex(vehicle));
+			cCarrier.VehicleSendToDepot(vehicle, DepotAction.SELL);
 		break;
 		case AIEvent.ET_COMPANY_IN_TROUBLE:
 			event = AIEventCompanyInTrouble.Convert(event);

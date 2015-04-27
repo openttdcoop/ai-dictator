@@ -25,19 +25,6 @@ foreach (cargo, dummy in cargotype)
 	}
 }
 
-function cCarrier::VehicleGetProfit(veh)
-// add a vehicle to do_profit list, calc its profit and also return it
-{
-local profit=AIVehicle.GetProfitThisYear(veh);
-local oldprofit=0;
-if (INSTANCE.main.carrier.do_profit.HasItem(veh))	oldprofit=INSTANCE.main.carrier.do_profit.GetValue(veh);
-                                            else	INSTANCE.main.carrier.do_profit.AddItem(veh,0);
-if (profit > oldprofit)	oldprofit=profit - oldprofit;
-			else	oldprofit=oldprofit+profit;
-INSTANCE.main.carrier.do_profit.SetValue(veh, oldprofit);
-return oldprofit;
-}
-
 function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 // check if we can add another vehicle at the start/end station of that route
 {

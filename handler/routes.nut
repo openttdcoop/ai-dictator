@@ -216,7 +216,7 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 			vehlist = AIVehicleList_Group(route.GroupID);
 			vehlist.Valuate(AIVehicle.GetState);
 			vehlist.KeepValue(AIVehicle.VS_IN_DEPOT);
-			foreach (veh, _ in vehlist)	INSTANCE.main.carrier.VehicleSell(veh, false);
+			foreach (veh, _ in vehlist)	cCarrier.VehicleSell(veh, false);
 			vehlist = AIVehicleList_Group(route.GroupID);
 			foreach (veh, _ in vehlist)
 				{

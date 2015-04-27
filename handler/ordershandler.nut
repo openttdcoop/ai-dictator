@@ -153,7 +153,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 	filterveh.KeepValue(2); // only a 2 orders vehicle is valid for us
 	if (filterveh.IsEmpty())	{ orderReset=true; } // no vehicle with valid orders is usable as sharing target
 						else	{ veh=filterveh.Begin(); }
-	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
+	local idx = cCarrier.VehicleFindRouteIndex(veh);
 	local road = cRoute.Load(idx);
 	if (!road)	{ return false; }
 	if (!typeof(road.SourceStation) == "instance")	{ return false; }
@@ -198,7 +198,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 				break;
 			case RouteType.AIRNET:
 			case RouteType.AIRNETMAIL: // it's the air network
-				INSTANCE.main.carrier.AirNetworkOrdersHandler();
+				cCarrier.AirNetworkOrdersHandler();
 				return true;
 				break;
 			case RouteType.CHOPPER:
@@ -212,7 +212,7 @@ function cCarrier::VehicleBuildOrders(groupID, orderReset)
 	DInfo("Setting orders for route "+cRoute.GetRouteName(idx),2);
 	if (orderReset)
 			{
-			INSTANCE.main.carrier.VehicleOrdersReset(veh);
+			cCarrier.VehicleOrdersReset(veh);
 			if (!AIOrder.AppendOrder(veh, srcplace, oneorder))
 					{ DError("First order refuse",2); }
 			if (!AIOrder.AppendOrder(veh, dstplace, twoorder))
@@ -261,7 +261,7 @@ function cCarrier::TrainSetDepotOrder(veh)
 // Set orders to force a train going to depot
 	{
 	if (veh == null)	{ return; }
-	local idx=INSTANCE.main.carrier.VehicleFindRouteIndex(veh);
+	local idx=cCarrier.VehicleFindRouteIndex(veh);
 	local road=cRoute.Load(idx);
 	if (!road)
 			{
@@ -305,7 +305,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 			}
 	local prevDest=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 	AIOrder.UnshareOrders(veh);
-	INSTANCE.main.carrier.VehicleOrdersReset(veh);
+	cCarrier.VehicleOrdersReset(veh);
 	if (homedepot == null || !cStation.IsDepot(homedepot))
 			{
 			local vehloc=AIVehicle.GetLocation(veh);
@@ -393,7 +393,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 			AIOrder.SkipToOrder(veh, 1);
 			AIOrder.SkipToOrder(veh, 0);
 			}
-	DInfo("Setting depot order for vehicle "+INSTANCE.main.carrier.GetVehicleName(veh),2);
+	DInfo("Setting depot order for vehicle "+cCarrier.GetVehicleName(veh),2);
 	}
 
 function cCarrier::VehicleOrderIsValid(vehicle,orderpos)
@@ -436,7 +436,7 @@ function cCarrier::VehicleOrderIsValid(vehicle,orderpos)
 function cCarrier::TrainSetOrders(trainID)
 // Set orders for a train
 	{
-	local uid=INSTANCE.main.carrier.VehicleFindRouteIndex(trainID);
+	local uid = cCarrier.VehicleFindRouteIndex(trainID);
 	if (uid==null)	{ DError("Cannot find route uid for that train",1); return false; }
 	local road=cRoute.GetRouteObject(uid);
 	if (!road)	{ return false; }

@@ -38,7 +38,6 @@ static	function GetVehicleObject(vehicleID)
 	road_max_onroute=null;	// maximum road vehicle on a route
 	train_length	=null;	// maximum length for train/rail station
 	vehicle_cash    =null;	// amount of money we need to buy vehicle
-	do_profit		=null;	// Record each vehicle profits
 	warTreasure		=null;	// total current value of nearly all our road vehicle
 	highcostAircraft=null;	// the highest cost for an aircraft we need
 	highcostTrain	=null;	// the highest cost for a train
@@ -60,7 +59,6 @@ static	function GetVehicleObject(vehicleID)
 		road_max_onroute= 0;
 		train_length	= 0;
 		vehicle_cash	= 0;
-		do_profit		= AIList();
 		warTreasure		= 0;
 		highcostAircraft= 0;
 		highcostTrain	= 0;
