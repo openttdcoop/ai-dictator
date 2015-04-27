@@ -130,6 +130,7 @@ function cError::ForceAction(...)
 										local kind = DepotAction.WAITING+30;
 										if (cStation.IsDepot(tile))	{ kind = DepotAction.SELL; INSTANCE.main.carrier.VehicleIsWaitingInDepot(); }
 										cCarrier.VehicleSendToDepot(v, kind);
+										AIController.Sleep(74); // give it a day to move
 										}
 				//}
 			}

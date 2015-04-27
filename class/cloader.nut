@@ -287,7 +287,7 @@ function cLoader::LoadSaveGame()
 		temp_route.VehicleType = AIGroup.GetVehicleType(group);
 		local gname = AIGroup.GetName(temp_route.GroupID);
 		local info = cMisc.SplitStars(gname);
-		if (info.len() != 7)	{ DInfo("Invalid route info length "+info.len(),1); continue; }
+		if (info.len() != 7)	{ DInfo("Invalid route info length "+info.len()+" for "+gname,1); continue; }
 		temp_route.CargoID = info[1].tointeger();
 		local src_IsTown = (info[2].slice(0,1) == "T");
 		local dst_IsTown = (info[3].slice(0,1) == "T");
@@ -301,7 +301,6 @@ function cLoader::LoadSaveGame()
             local staID = AIStation.GetStationID(temp_route.SourceProcess.Location);
   			local t = cStation.InitNewStation(staID);
   			t.s_SubType = -2;
-  			// TODO: fix platform
             }
 		temp_route.SourceStation = cStation.Load(temp);
 		temp = info[5].tointeger(); // target station id
@@ -352,7 +351,7 @@ function cLoader::LoadSaveGame()
 		temp_route.Distance = AIMap.DistanceManhattan(temp_route.SourceProcess.Location, temp_route.TargetProcess.Location);
 		cJobs.CreateNewJob(temp_route.SourceProcess.UID, temp_route.TargetProcess.ID, temp.cargoID, temp.roadType, temp_route.Distance);	// recreate the job
 		temp = cJobs.Load(temp_route.UID); // now try load it
-		if (!temp)	continue;
+		if (!temp)	{ DInfo("Cannot load job for that route",1); continue; }
 		temp.isUse = true;
 		temp_route.SourceStation.OwnerClaimStation(temp_route.UID);
 		temp_route.TargetStation.OwnerClaimStation(temp_route.UID);
@@ -390,15 +389,6 @@ function cLoader::LoadSaveGame()
 		}
 	cRoute.RouteRebuildIndex();
 	RailFollower.FindRailOwner();
-	// Now register back the trains
-/*    local trains = AIVehicle_List();
-    trains.Valuate(AIVehicle.GetVehicleType);
-    trains.KeepValue(AIVehicle.VT_RAIL);
-    foreach (veh in trains)
-		{
-		local train_uid = cCarrier.VehicleFindRouteIndex(veh);
-		if (train_uid != null)	{ cRoute.AddTrain(train_uid, veh); }
-		} */
 }
 
 function cLoader::LoadOther()

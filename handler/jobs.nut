@@ -540,20 +540,19 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	{
 	local newjob=cJobs();
 	newjob.SourceProcess = cProcess.Load(srcUID);
-	if (!newjob.SourceProcess)	{ return; }
+	if (!newjob.SourceProcess)	{ return false; }
 	if (cCargo.IsCargoForTown(cargo_id))	{ dstID=cProcess.GetUID(dstID, true); }
 	newjob.TargetProcess = cProcess.Load(dstID);
-	if (!newjob.TargetProcess)	{ return; }
+	if (!newjob.TargetProcess)	{ return false; }
 	// filters unwanted jobs
-
-	if (road_type == RouteType.WATER && (!newjob.SourceProcess.WaterAccess || !newjob.TargetProcess.WaterAccess))   { return; }
+	if (road_type == RouteType.WATER && (!newjob.SourceProcess.WaterAccess || !newjob.TargetProcess.WaterAccess))   { return false; }
     // disable boat job without reachable access
-	if (road_type == RouteType.AIR && cargo_id != cCargo.GetPassengerCargo()) { return; }
+	if (road_type == RouteType.AIR && cargo_id != cCargo.GetPassengerCargo()) { return false; }
 	// only pass for aircraft, we will randomize if pass or mail later
-	if (AIIndustry.IsBuiltOnWater(newjob.SourceProcess.ID))
+	if (srcUID < 10000 && AIIndustry.IsBuiltOnWater(newjob.SourceProcess.ID))
         {
-        if (cargo_id == cCargo.GetPassengerCargo()) { if (road_type != RouteType.AIR)  { return; } }
-                                            else    { if (road_type != RouteType.WATER)  { return; } }
+        if (cargo_id == cCargo.GetPassengerCargo()) { if (road_type != RouteType.AIR)  { return false; } }
+                                            else    { if (road_type != RouteType.WATER)  { return false; } }
         }
     // allow passenger only for aircraft, and other cargos only for boats
 	if (cargo_id == cCargo.GetPassengerCargo() && !newjob.SourceProcess.IsTown && road_type == RouteType.AIR && !AIIndustry.HasHeliport(newjob.SourceProcess.ID))	{ return; }
@@ -564,6 +563,7 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	newjob.GetUID();
 	newjob.Save();
 	INSTANCE.main.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount... must be call after GetUID
+    return true;
 	}
 
 function cJobs::AddNewIndustryOrTown(industryID, istown)

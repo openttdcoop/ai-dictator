@@ -110,6 +110,9 @@ function RailFollower::FindRailOwner()
 	local rail_routes = AIGroupList();
 	rail_routes.Valuate(AIGroup.GetVehicleType);
 	rail_routes.KeepValue(AIVehicle.VT_RAIL);
+	local full_trainlist = AIVehicleList();
+	full_trainlist.Valuate(AIVehicle.GetVehicleType);
+	full_trainlist.KeepValue(AIVehicle.VT_RAIL);
 	local uid_list = [];
 	local rebuildentry = [];
 	foreach (grp, value in rail_routes)	if (cRoute.GroupIndexer.HasItem(grp))	uid_list.push(cRoute.GroupIndexer.GetValue(grp));
@@ -120,6 +123,7 @@ function RailFollower::FindRailOwner()
 		if (!road)	continue;
 		// first re-assign trains state to each station (taker, droppper, using entry/exit)
 		local train_list = AIVehicleList_Group(road.GroupID);
+		full_trainlist.RemoveList(train_list);
 		foreach (plat, _ in road.SourceStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Source_RailEntry);
 		foreach (plat, _ in road.TargetStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Target_RailEntry);
 		train_list.Valuate(AIVehicle.GetState);
@@ -137,7 +141,7 @@ function RailFollower::FindRailOwner()
                             else	src_target = road.SourceStation.s_ExitSide[TrainSide.IN];
 		if (road.Target_RailEntry)	dst_target = road.TargetStation.s_EntrySide[TrainSide.OUT];
                             else	dst_target = road.TargetStation.s_ExitSide[TrainSide.OUT];
-		print("src_target="+cMisc.Locate(src_target)+" dst_target="+cMisc.Locate(dst_target));
+		DInfo("src_target="+cMisc.Locate(src_target)+" dst_target="+cMisc.Locate(dst_target),2);
 		local bad = false;
 		local src_tiles = AIList();
 		local dst_tiles = AIList();
@@ -195,11 +199,6 @@ function RailFollower::FindRailOwner()
 		if (!bad_alt)	bad_alt = (test_tiles.IsEmpty());
 		if (!bad_alt)	{ road.SourceStation.SetAlternateLineBuilt(); road.TargetStation.SetAlternateLineBuilt(); }
 		dst_tiles.AddList(test_tiles);
-/*		// Remove station tiles out of founded tiles : we don't want any station tile assign as a non station tiles
-		src_tiles.Valuate(AITile.IsStationTile);
-		src_tiles.KeepValue(0);
-		dst_tiles.Valuate(AITile.IsStationTile);
-		dst_tiles.KeepValue(0);*/
 		// Remove all tiles we found from the "unknown" tiles list
 		cRoute.RouteDamage.RemoveList(src_tiles);
 		cRoute.RouteDamage.RemoveList(dst_tiles);
@@ -226,9 +225,7 @@ function RailFollower::FindRailOwner()
 					road.RailType = -1; // force bad railtype of route to force the upgrade
 					road.SourceStation.s_SubType = -1;
 					road.TargetStation.s_SubType = -1;
-					//	RailFollower.TryUpgradeLine(train_list.Begin());
 					}
-
 		local killit = false;
 		if (bad)	killit = true;
 			else	{
@@ -256,6 +253,18 @@ function RailFollower::FindRailOwner()
 		}
 	cRoute.RouteDamage.Valuate(AITile.IsStationTile);
 	cRoute.RouteDamage.RemoveValue(1);
+	local delay = 0;
+	while (delay < 30 && !full_trainlist.IsEmpty())
+		{
+		foreach (veh, _ in full_trainlist)
+				{
+				if (AIVehicle.IsValidVehicle(veh))	cCarrier.VehicleSendToDepot(veh, DepotAction.SELL);
+											else	full_trainlist.RemoveItem(veh);
+				}
+        AIController.Sleep(74);
+		cCarrier.VehicleIsWaitingInDepot(false);
+		delay++;
+		}
 	DInfo("Unknown rails remaining : "+cRoute.RouteDamage.Count());
 	cTrack.RailCleaner(cRoute.RouteDamage);
 	cRoute.RouteDamage.Clear();
