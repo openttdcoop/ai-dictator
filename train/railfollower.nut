@@ -318,6 +318,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 	if (!temp)	return 0; // if all stopped or no vehicle, temp will remain true
 	cBanker.RaiseFundsBigTime();
 	DInfo("Changing "+road.Name+" railtype #"+road.RailType+" to #"+new_railtype,1);
+	AIController.Break("Before change");
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];

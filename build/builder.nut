@@ -448,7 +448,7 @@ function cBuilder::TryBuildThatRoute()
 		INSTANCE.main.route.RouteDone();
 		INSTANCE.main.route.RouteBuildGroup();
 		INSTANCE.main.route.Route_GroupNameSave();
-		DInfo("Route contruction complete ! "+INSTANCE.main.route.Name,0);
+		DInfo("Route construction complete ! "+INSTANCE.main.route.Name,0);
 		print("cargoID ="+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID));
 		local srcprod=INSTANCE.main.route.SourceStation.IsCargoProduce(INSTANCE.main.route.CargoID);
 		local srcacc=INSTANCE.main.route.SourceStation.IsCargoAccept(INSTANCE.main.route.CargoID);
@@ -469,6 +469,7 @@ function cBuilder::TryBuildThatRoute()
 			DInfo("Route set as oneway",1);
 			INSTANCE.main.route.Twoway=false;
 			}
+		INSTANCE.main.route.RouteClaimsTiles();
 		INSTANCE.main.builder.building_route=-1; // Allow us to work on a new route now
 		if (INSTANCE.safeStart >0 && INSTANCE.main.route.VehicleType == RouteType.ROAD)	INSTANCE.safeStart--;
 		INSTANCE.main.route.DutyOnRoute();

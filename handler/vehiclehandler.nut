@@ -307,7 +307,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 		break;
 		case AIVehicle.VT_AIR:
 			cCarrier.VehicleSell(vehID,false);
-			new_vehID = cEngineLib.VehicleCreate(homedepot, betterEngine, road.CargoID);
+			new_vehID = cEngineLib.VehicleCreate(homedepot, betterEngine, cCargo.GetPassengerCargo());
 		break;
 		case AIVehicle.VT_WATER:
 			cCarrier.VehicleSell(vehID,false);
@@ -592,26 +592,25 @@ foreach (i, dummy in tlist)
 		{
 		case	DepotAction.SELL:
 			DInfo("Vehicle "+name+" is waiting in depot to be sold",1);
-			INSTANCE.main.carrier.VehicleSell(i,true);
+			cCarrier.VehicleSell(i,true);
 		break;
 		case	DepotAction.UPGRADE:
 			DInfo("Vehicle "+name+" is waiting in depot to be upgrade",1);
-			INSTANCE.main.carrier.VehicleUpgradeEngine(i);
+			cCarrier.VehicleUpgradeEngine(i);
 		break;
 		case	DepotAction.REPLACE:
 			DInfo("Vehicle "+name+" is waiting in depot to be replace",1);
-			//INSTANCE.main.carrier.VehicleSell(i,false);
-			INSTANCE.main.carrier.VehicleUpgradeEngine(i);
+			cCarrier.VehicleUpgradeEngine(i);
 		break;
 		case	DepotAction.CRAZY:
-			INSTANCE.main.carrier.VehicleSell(i,false);
+			cCarrier.VehicleSell(i,false);
 		break;
 		case	DepotAction.REMOVEROUTE:
-			INSTANCE.main.carrier.VehicleSell(i, false);
+			cCarrier.VehicleSell(i, false);
 		break;
 		case	DepotAction.ADDWAGON:
 			DInfo("Vehicle "+name+" is waiting at depot to get "+parameter+" wagons",1);
-			INSTANCE.main.carrier.AddWagon(uid, parameter);
+			cCarrier.AddWagon(uid, parameter);
 		break;
 		case	DepotAction.LINEUPGRADE:
 			cCarrier.ToDepotList.AddItem(i, DepotAction.LINEUPGRADE);

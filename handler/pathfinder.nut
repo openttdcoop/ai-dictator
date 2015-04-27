@@ -116,16 +116,16 @@ function cPathfinder::NextToTrackBonus(tile, trackplace, direction)
 	local b = 80; // a big malus from being on the wrong side
 	switch (direction)
 			{
-			case	DIR_SE: //ok
+			case	DIR_SE:
 				if (tr_x < ti_x)	b = -10;
 				break;
 			case	DIR_NW:
 				if (tr_x > ti_x)	b = -10;
 				break;
-			case	DIR_NE: //ok
+			case	DIR_NE:
 				if (tr_y < ti_y)	b = -10;
 				break;
-			case	DIR_SW: //ok
+			case	DIR_SW:
 				if (tr_y > ti_y)	b = -10;
 				break;
 			}
@@ -149,9 +149,10 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
     local e_x = AIMap.GetTileX(end);
     local e_y = AIMap.GetTileY(end);
     local mid = AIMap.GetTileIndex( (s_x + e_x) / 2, (s_y + e_y) / 2); // mid position default, between half of both points
-    AISign.BuildSign(mid,"S");
 	local m_x = AIMap.GetTileX(mid);
     local m_y = AIMap.GetTileY(mid);
+    local correct = mid;
+    AISign.BuildSign(mid, "M");
     if (close_source)
 		switch (startdir)
 			{
@@ -168,13 +169,9 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 				if (m_x < s_x)	m_x = s_x;
 				break;
 			}
-	mid = AIMap.GetTileIndex(m_x, m_y);
-    print("distancemax = "+AIMap.DistanceMax(start, end));
-    print("m_x="+m_x+" m_y="+m_y);
-    print("s_x="+s_x+" s_y="+s_y+" e_x="+e_x+" e_y="+e_y+" startdir="+cBuilder.DirectionToString(startdir));
-    print("DIR_NE="+DIR_NE+" DIR_SE="+DIR_SE+" DIR_NW="+DIR_NW+" DIR_SW="+DIR_SW+" direction="+cBuilder.DirectionToString(direction));
-	AISign.BuildSign(mid, "C");
-
+	correct = AIMap.GetTileIndex(m_x, m_y);
+	AISign.BuildSign(correct, "C");
+	if (AIMap.DistanceManhattan(correct, start) > 9) mid = correct; // use correct point if it doesn't fall to close start point only
 	local fwd = cTileTools.GetForwardRelativeFromDirection(direction);
     local seek_area = AITileList();
     seek_area.AddRectangle(mid + AIMap.GetTileIndex(5, 5), mid - AIMap.GetTileIndex(5,5));
@@ -184,13 +181,11 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 		if (AIRail.IsRailTile(tile) && AICompany.IsMine(AITile.GetOwner(tile)))
 			{
 			any_rail = tile;
-			print("found rail at "+cMisc.Locate(tile));
 			break;
 			}
 		}
     seek_area.Valuate(cPathfinder.ThreeTileCheck, fwd, AITile.IsBuildable, 1);
     seek_area.KeepValue(1);
-    print("buildable options="+seek_area.Count());
 	if (seek_area.IsEmpty())	return -1; // no place to build
     seek_area.Valuate(cPathfinder.ThreeTileCheck, fwd, AITile.GetSlope, AITile.SLOPE_FLAT);
     local need_terraform = false;
@@ -207,7 +202,6 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 	if (any_rail != null)	seek_area.Valuate(cPathfinder.NextToTrackBonus, any_rail, direction);
 					else	seek_area.Valuate(AIMap.DistanceManhattan, mid);
 	seek_area.Sort(AIList.SORT_BY_VALUE, true);
-	cDebug.showLogic(seek_area);
 	local mainTile = null;
 	local bckTile = null;
     local fwdTile = null;
@@ -217,7 +211,6 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 		if (cPathfinder.ThreeTileCheck(tile, fwd, AITile.GetSlope, AITile.SLOPE_FLAT) && cPathfinder.ThreeTileCheck(tile, fwd, AITile.IsBuildable, 1))
 				{ mainTile = tile; break; }
 		}
-	print("mainTile ="+mainTile);
 	if (mainTile == null)	return -1;
 	cTrack.DropRailHere(track, mainTile);
     bckTile = mainTile - fwd;
@@ -227,8 +220,6 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
     newpath.push([bckTile, mainTile]);
     newpath.push([fwdTile, mainTile]);
     newpath.push(target);
-    AIController.Break("points set");
-    cDebug.ClearSigns();
 	return newpath;
 }
 
@@ -433,9 +424,7 @@ function cPathfinder::AdvanceTask(UID)
 
 function cPathfinder::StationExist()
 {
-    print("AUTOFAIL pf >>> "+" this="+this.stationID+" task:"+this.UID)
 	if (this.stationID == null)	return false;
-	print("AUTOFAIL pf >>> "+AIStation.IsValidStation(this.stationID));
 	return AIStation.IsValidStation(this.stationID);
 }
 

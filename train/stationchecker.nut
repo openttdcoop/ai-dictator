@@ -431,6 +431,7 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
 			roadObj.TargetStation.SetAlternateLineBuilt();
 			cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 			cBuilder.RailConnectorSolver(dstpos, dstpos+cTileTools.GetForwardRelativeFromDirection(cBuilder.GetDirection(dstlink, dstpos)), true);
+			roadObj.RouteClaimsTiles();
 			}
 	return true;
 	}

@@ -364,6 +364,7 @@ function cStation::StationClaimTile(tile, stationID, useEntry = -1)
 **/
 	{
 	local station = cStation.Load(stationID);
+	print("prior tiles count: "+station.s_TilesOther.Count());
 	if (!station)	{ return; }
 	local wlist = AIList();
 	if (cMisc.IsAIList(tile))	{ wlist.AddList(tile); }
@@ -378,9 +379,10 @@ function cStation::StationClaimTile(tile, stationID, useEntry = -1)
 	foreach (t, _ in wlist)
 		{
 		cTileTools.BlackListTile(t, stationID);
-		if (AITile.IsStationTile(t))	{ station.s_Tiles.AddItem(t, value); }
+		if (AITile.IsStationTile(t))	{ station.s_Tiles.AddItem(t, stationID); }
 								else	{ station.s_TilesOther.AddItem(t, value); }
 		}
+	print("after tiles count: "+station.s_TilesOther.Count());
 	}
 
 function cStation::StationReleaseTile(tile, stationID)

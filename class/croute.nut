@@ -329,3 +329,35 @@ function cRoute::RouteChangeStation(uid, o_Object, n_Object)
 	cRoute.SetRouteGroupName(road.GroupID, road.SourceProcess.ID, road.TargetProcess.ID, road.SourceProcess.IsTown, road.TargetProcess.IsTown, road.CargoID, false, road.SourceStation.s_ID, road.TargetStation.s_ID);
 	road.RouteAirportCheck();
 	}
+
+function cRoute::RouteClaimsTiles(uid = null)
+{
+	local road;
+	if (uid == null)	road = this;
+				else	road = cRoute.Load(uid);
+	if (!road)	return;
+	if (road.UID < 2)	return;
+	if (road.StationType != AIStation.STATION_TRAIN)	return;
+	local bltiles=AIList();
+	bltiles.AddList(cTileTools.TilesBlackList);
+	bltiles.KeepValue(0-(100000+road.SourceStation.s_ID));
+	cStation.StationClaimTile(bltiles, road.SourceStation.s_ID, -1); // assign tiles to that station
+	bltiles.AddList(cTileTools.TilesBlackList);
+	bltiles.KeepValue(0-(100000+road.TargetStation.s_ID));
+	cStation.StationClaimTile(bltiles, road.TargetStation.s_ID, -1);
+	if (INSTANCE.debug)
+		{
+		local z = AIList();
+		local s = road.SourceStation;
+		local t = road.TargetStation;
+		z.AddList(s.s_Tiles);
+		z.AddList(s.s_TilesOther);
+		z.AddList(t.s_Tiles);
+		z.AddList(t.s_TilesOther);
+		print("Station "+cStation.GetStationName(s.s_ID)+" tiles: "+s.s_Tiles.Count()+" other: "+s.s_TilesOther.Count());
+		print("Station "+cStation.GetStationName(t.s_ID)+" tiles: "+t.s_Tiles.Count()+" other: "+t.s_TilesOther.Count());
+		print("route tiles: "+z.Count());
+		cDebug.showLogic(z);
+		AIController.Break("pause");
+		}
+}

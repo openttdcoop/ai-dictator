@@ -201,7 +201,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
 					local badtiles=AIList();
 					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-					badtiles.KeepValue(0 - (1000 + mytask.stationID));
+					badtiles.KeepValue(0 - (100000 + mytask.stationID));
 					cTrack.RailCleaner(badtiles); // remove all rail we've built
 					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
 					cError.RaiseError();
@@ -211,16 +211,29 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					{
 					DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
 					INSTANCE.buildDelay=0;
-					local bltiles=AIList();
+/*					local bltiles=AIList();
 					bltiles.AddList(cTileTools.TilesBlackList);
-					bltiles.KeepValue(0-(1000+stationID));
+					bltiles.KeepValue(0-(100000+stationID));
+					print("tiles in blacklist for station: "+AIStation.GetName(stationID)+" "+bltiles.Count());
 					cStation.StationClaimTile(bltiles, stationID, useEntry); // assign tiles to that station
 					local staobj = cStation.Load(stationID);
-					if (!staobj)	{ cError.RaiseError(); return 0; }
+					if (!staobj)	{ cError.RaiseError(); return -2; }
+					local totrail = AIList();
+					totrail.AddList(staobj.s_Tiles);
+					totrail.AddList(staobj.s_TilesOther);
+					cDebug.showLogic(totrail);
+					print("total rails for station "+AIStation.GetName(stationID)+" "+totrail.Count());
+					if (totrail.Count() < 50)
+							{
+							AIController.Break("low rail count : "+totrail.Count());
+							cDebug.showLogic(totrail);
+							}*/
 					if (cStationRail.IsPrimaryLineBuilt(stationID) && !cStationRail.IsAlternateLineBuilt(stationID))
 						{
+						// if we are building mainline, then IsPrmaryLineBuild is false ; so if it's true, we are building altline and we were called to build it
+						// so let's recall it to let it know where we are.
 						local uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
-						if (!uid_obj)	{ return 0; }
+						if (!uid_obj)	{ return -2; }
 						cBuilder.RailStationPathfindAltTrack(uid_obj);
 						}
 					return 0;
@@ -257,9 +270,9 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 											}
 									else
 											{
-											cTileTools.BlackListTile(prev, 0 -(1000+stationID));
+											cTileTools.BlackListTile(prev, 0 -(100000+stationID));
 											// i mark them as blacklist and assign to -stationID, so i could recover them later
-											cTileTools.BlackListTile(path.GetTile(), 0 - (1000+stationID));
+											cTileTools.BlackListTile(path.GetTile(), 0 - (100000+stationID));
 											}
 									}
 							else
@@ -278,8 +291,8 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 											}
 									else
 											{
-											cTileTools.BlackListTile(prev, 0 - (1000+stationID));
-											cTileTools.BlackListTile(path.GetTile(), 0 -(1000+stationID));
+											cTileTools.BlackListTile(prev, 0 - (100000+stationID));
+											cTileTools.BlackListTile(path.GetTile(), 0 -(100000+stationID));
 											}
 									cBridge.IsBridgeTile(prev); // force bridge check
 									}
@@ -313,8 +326,8 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 									}
 							else
 									{
-									cTileTools.BlackListTile(prev, 0 - (1000+stationID));
-									cTileTools.BlackListTile(path.GetTile(), 0 -(1000+stationID));
+									cTileTools.BlackListTile(prev, 0 - (100000+stationID));
+									cTileTools.BlackListTile(path.GetTile(), 0 -(100000+stationID));
 									}
 							}
 					}
@@ -338,7 +351,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					DInfo("Pathfinder task "+mytask.UID+" failure !",1);
 					local badtiles = AIList();
 					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-					badtiles.KeepValue(0 - (1000+ mytask.stationID));
+					badtiles.KeepValue(0 - (100000+ mytask.stationID));
 					cTrack.RailCleaner(badtiles); // remove all rail we've built
 					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
 					cError.RaiseError();

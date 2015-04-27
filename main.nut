@@ -327,6 +327,9 @@ function DictatorAI::CheckCurrentSettings()
 	use_road = false;*/
 
 	}
+	// TODO: don't refit mail aircraft
+	// TODO: check twoway for mail/pass trains
+	// TODO: check line health every x years for value (to remove it if not making money)
 
 function DictatorAI::DInfo(putMsg, debugValue=0, func = "Unknown")
 // just output AILog message depending on debug level

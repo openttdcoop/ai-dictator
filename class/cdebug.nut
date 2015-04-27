@@ -38,6 +38,7 @@ function cDebug::ClearSigns()
 function cDebug::showLogic(item)
 // this will draw sign with item so we see item influence
 {
+	if (!INSTANCE.debug)	return;
 	foreach (i, dummy in item)
 		{
 		cDebug.PutSign(i,dummy);
