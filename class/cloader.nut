@@ -454,12 +454,9 @@ function cLoader::LoadingGame()
 	INSTANCE.main.carrier.vehicle_cash = 0;
 	INSTANCE.main.bank.mincash=10000;
 	cCargo.SetCargoFavorite();
-	local dead = AIList();
-    dead = AIVehicleList_DefaultGroup(AIVehicle.VT_ROAD);
-    trlist.AddList(AIVehicleList_DefaultGroup(AIVehicle.VT_AIR));
-    dead.AddList(trlist);
-	trlist.AddList(AIVehicleList_DefaultGroup(AIVehicle.VT_RAIL));
-	dead.AddList(trlist);
+	local dead = AIVehicleList();
+	dead.Valuate(AIVehicle.GetGroupID);
+	dead.KeepValue(AIGroup.GROUP_DEFAULT);
 	foreach (veh, _ in dead)	AIVehicle.SendVehicleToDepot(veh); // reset ungroup vehicle so we will catch them fast
 	local alltowns=AITownList();
 	INSTANCE.main.builder.CheckRouteStationStatus();
