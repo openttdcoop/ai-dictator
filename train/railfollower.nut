@@ -246,8 +246,10 @@ function RailFollower::FindRailOwner()
 							}
 				if (!road.Secondary_RailLink && !bad_alt)	{ road.Secondary_RailLink = true; road.Route_GroupNameSave(); }
 				}
-		if (killit)	{
+		if (killit)
+				{
 				DInfo("FindRailOwner mark "+road.UID+" undoable",1);
+				full_trainlist.AddList(train_list);
 				road.RouteIsNotDoable();
 				}
 		}

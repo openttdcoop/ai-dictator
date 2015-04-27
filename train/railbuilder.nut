@@ -211,23 +211,6 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					{
 					DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
 					INSTANCE.buildDelay=0;
-/*					local bltiles=AIList();
-					bltiles.AddList(cTileTools.TilesBlackList);
-					bltiles.KeepValue(0-(100000+stationID));
-					print("tiles in blacklist for station: "+AIStation.GetName(stationID)+" "+bltiles.Count());
-					cStation.StationClaimTile(bltiles, stationID, useEntry); // assign tiles to that station
-					local staobj = cStation.Load(stationID);
-					if (!staobj)	{ cError.RaiseError(); return -2; }
-					local totrail = AIList();
-					totrail.AddList(staobj.s_Tiles);
-					totrail.AddList(staobj.s_TilesOther);
-					cDebug.showLogic(totrail);
-					print("total rails for station "+AIStation.GetName(stationID)+" "+totrail.Count());
-					if (totrail.Count() < 50)
-							{
-							AIController.Break("low rail count : "+totrail.Count());
-							cDebug.showLogic(totrail);
-							}*/
 					if (cStationRail.IsPrimaryLineBuilt(stationID) && !cStationRail.IsAlternateLineBuilt(stationID))
 						{
 						// if we are building mainline, then IsPrmaryLineBuild is false ; so if it's true, we are building altline and we were called to build it
