@@ -94,12 +94,12 @@ function cMain::CheckAccount()
 	local ourLoan = AICompany.GetLoanAmount();
 	local maxLoan = AICompany.GetMaxLoanAmount();
 	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	local goodcash = bank.mincash;
+	local mintobuild = bank.mincash;
 	if (INSTANCE.main.carrier.vehicle_cash < 0) { INSTANCE.main.carrier.vehicle_cash = 0; }
-	if (ourLoan == 0 && cash >= (bank.mincash * cBanker.GetInflationRate()))	{ bank.unleash_road=true; }
-	if (!cBanker.CanBuyThat(goodcash))	{ DInfo("Low on cash, disabling build : "+goodcash,1); bank.canBuild=false; }
-                                else    { cBanker.RaiseFundsTo(goodcash); }
-	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
+	if (ourLoan == 0 && cash >= 4*mintobuild)	{ bank.unleash_road=true; }
+	if (!cBanker.CanBuyThat(mintobuild))	{ DInfo("Low on cash, disabling build : "+mintobuild,1); bank.canBuild=false; }
+									else    { cBanker.RaiseFundsTo(10000); bank.canBuild = true; }
+//	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
 	if (maxLoan > 2000000 && ourLoan > 0 && route.RouteIndexer.Count() > 6)
 			{ DInfo("Trying to repay loan",1); bank.canBuild=false; } // wait to repay loan
 	local veh=AIVehicleList();
@@ -125,5 +125,5 @@ function cMain::CheckAccount()
 		*/
 //	else print("DEBUG route state : "+dgroute);
 		//AIController.Break("route size="+cRoute.database.len());
-	DWarn("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehicle_cash="+carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+carrier.vehicle_wishlist.Count(),1);
+	DWarn("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehicle_cash="+carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+carrier.vehicle_wishlist.Count()+" mintobuild="+mintobuild,1);
 	}

@@ -117,10 +117,17 @@ function cBanker::PayLoan()
 
 function cBanker::CashFlow()
 {
-	this.PayLoan();
+	cBanker.PayLoan();
+    cBanker.SetMinimumCashToBuild();
 }
 
 function cBanker::GetInflationRate()
 {
 	return (AICompany.GetMaxLoanAmount() / AIGameSettings.GetValue("difficulty.max_loan").tofloat());
+}
+
+function cBanker::SetMinimumCashToBuild()
+{
+	local minc = (AICompany.GetLoanInterval() * 2 * cBanker.GetInflationRate()).tointeger();
+	INSTANCE.main.bank.mincash = minc;
 }

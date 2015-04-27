@@ -452,7 +452,7 @@ function cLoader::LoadingGame()
 	INSTANCE.main.bank.canBuild=false;
 	INSTANCE.main.bank.unleash_road=false;
 	INSTANCE.main.carrier.vehicle_cash = 0;
-	INSTANCE.main.bank.mincash=10000;
+	cBanker.SetMinimumCashToBuild();
 	cCargo.SetCargoFavorite();
 	local dead = AIVehicleList();
 	dead.Valuate(AIVehicle.GetGroupID);

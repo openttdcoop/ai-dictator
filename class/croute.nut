@@ -371,7 +371,7 @@ function cRoute::CheckRouteProfit(uid)
 	vehlist.Valuate(AIVehicle.GetAge);
 	vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
 	local oldest = vehlist.GetValue(vehlist.Begin());
-	vehlist.Valuate(AIVehicle.GetProfitThisYear);
+	vehlist.Valuate(AIVehicle.GetProfitLastYear);
 	vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 	local totvalue = 0;
 	foreach (veh, profit in vehlist)
