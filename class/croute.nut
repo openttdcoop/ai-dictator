@@ -358,7 +358,6 @@ function cRoute::RouteClaimsTiles(uid = null)
 		print("Station "+cStation.GetStationName(t.s_ID)+" tiles: "+t.s_Tiles.Count()+" other: "+t.s_TilesOther.Count());
 		print("route tiles: "+z.Count());
 		cDebug.showLogic(z);
-		AIController.Break("pause");
 		}
 }
 

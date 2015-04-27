@@ -147,7 +147,7 @@ function cCarrier::VehicleHandleTrafficAtStation(stationID, reroute)
 			vehlist.RemoveList(cCarrier.ToDepotList); // remove vehicle on their way to depot
 			if (vehlist.IsEmpty()) continue;
 			veh = vehlist.Begin();
-			local orderindex=VehicleFindDestinationInOrders(veh, stationID);
+			local orderindex=cCarrier.VehicleFindDestinationInOrders(veh, stationID);
 			if (orderindex != -1)
 				{
 				DInfo("Re-routing traffic on route "+road.Name+" to ignore "+station.s_Name,0);

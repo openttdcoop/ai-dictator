@@ -424,7 +424,7 @@ function cLoader::LoadingGame()
 	local grouplist = AIGroupList();
 	grouplist.RemoveList(cRoute.GroupIndexer);
 	foreach (grp, _ in grouplist)	AIGroup.DeleteGroup(grp);
-	trlist.Valuate(AIVehicle.GetVehicleType);
+	/*trlist.Valuate(AIVehicle.GetVehicleType);
 	trlist.KeepValue(AIVehicle.VT_RAIL);
 	trlist.Valuate(AIVehicle.GetState);
 	trlist.RemoveValue(AIVehicle.VS_RUNNING);
@@ -435,7 +435,7 @@ function cLoader::LoadingGame()
 			{
 			cCarrier.TrainExitDepot(veh);
 			}
-		}
+		}  */
 	//} catch (z)
       /*  {
         try { cLoader.LoadOther(); }

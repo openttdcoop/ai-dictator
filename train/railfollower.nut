@@ -122,11 +122,12 @@ function RailFollower::FindRailOwner()
 		local train_list = AIVehicleList_Group(road.GroupID);
 		foreach (plat, _ in road.SourceStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Source_RailEntry);
 		foreach (plat, _ in road.TargetStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Target_RailEntry);
-		foreach (trains, _ in train_list)
+		train_list.Valuate(AIVehicle.GetState);
+		foreach (trains, state in train_list)
 			{
 			cRoute.AddTrain(uid, trains);
-//			road.SourceStation.StationAddTrain(true, road.Source_RailEntry);
-	//		road.TargetStation.StationAddTrain(false, road.Target_RailEntry);
+            // We restart all trains here
+			if (state == AIVehicle.VS_IN_DEPOT || state == AIVehicle.VS_STOPPED)	cCarrier.StartVehicle(trains);
 			}
 		DInfo("Finding rails for route "+road.Name);
 		if (!road.Primary_RailLink)	{ DInfo("FindRailOwner mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
@@ -146,7 +147,7 @@ function RailFollower::FindRailOwner()
 		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry)
 		src_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
 		bad = (src_tiles.IsEmpty());
-		DInfo("Main line rails : "+src_tiles.Count(), 2)
+		DInfo("Main line rails : "+src_tiles.Count(), 2);
 		if (!src_tiles.IsEmpty())
 			{
 			road.SourceStation.SetPrimaryLineBuilt();
@@ -190,23 +191,40 @@ function RailFollower::FindRailOwner()
 		src_link = src_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry);
 		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry)
 		test_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
-		DInfo("Alternate line rails : "+test_tiles.Count(), 2)
+		DInfo("Alternate line rails : "+test_tiles.Count(), 2);
 		if (!bad_alt)	bad_alt = (test_tiles.IsEmpty());
 		if (!bad_alt)	{ road.SourceStation.SetAlternateLineBuilt(); road.TargetStation.SetAlternateLineBuilt(); }
 		dst_tiles.AddList(test_tiles);
-		// Remove station tiles out of founded tiles : we don't want any station tile assign as a non station tiles
+/*		// Remove station tiles out of founded tiles : we don't want any station tile assign as a non station tiles
 		src_tiles.Valuate(AITile.IsStationTile);
 		src_tiles.KeepValue(0);
 		dst_tiles.Valuate(AITile.IsStationTile);
-		dst_tiles.KeepValue(0);
+		dst_tiles.KeepValue(0);*/
 		// Remove all tiles we found from the "unknown" tiles list
 		cRoute.RouteDamage.RemoveList(src_tiles);
 		cRoute.RouteDamage.RemoveList(dst_tiles);
-		// Now assign tiles to their station OtherTiles list, and claim them
+		// Now assign tiles to their station, and claim them
 		cStation.StationClaimTile(src_tiles, road.SourceStation.s_ID, road.Source_RailEntry);
 		cStation.StationClaimTile(dst_tiles, road.TargetStation.s_ID, road.Target_RailEntry);
 		road.SourceStation.s_Train[TrainType.OWNER] = road.UID;
 		road.TargetStation.s_Train[TrainType.OWNER] = road.UID;
+		// Check if founded tiles are of the same railtype type (game saved while we were upgrading them)
+		src_tiles.AddList(dst_tiles);
+		src_tiles.Valuate(AIRail.GetRailType);
+		local checkrailtype = src_tiles.Count();
+		src_tiles.KeepValue(src_tiles.GetValue(src_tiles.Begin()));
+		// Can hardly do better than just send train to depot and fake an line upgrade... If this fail, well, we had try...
+		if (src_tiles.Count() != checkrailtype)
+					{
+					DInfo("Mismatch railtype for that route...",2);
+					foreach (trains, _ in train_list)
+						{
+						// We must remove orders so they stop trying to reach a station they couldn't reach and goes to depot instead
+						cCarrier.VehicleOrdersReset(trains);
+						cCarrier.VehicleSendToDepot(trains, DepotAction.LINEUPGRADE);
+						}
+					}
+
 		local killit = false;
 		if (bad)	killit = true;
 			else	{
@@ -318,7 +336,6 @@ function RailFollower::TryUpgradeLine(vehicle)
 	if (!temp)	return 0; // if all stopped or no vehicle, temp will remain true
 	cBanker.RaiseFundsBigTime();
 	DInfo("Changing "+road.Name+" railtype #"+road.RailType+" to #"+new_railtype,1);
-	AIController.Break("Before change");
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];
