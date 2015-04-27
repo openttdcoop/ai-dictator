@@ -60,7 +60,7 @@ function cTileTools::BlackListTile(tile, stationID = -255)
 		if (owner == -1)	{ cTileTools.TilesBlackList.AddItem(tile, stationID); return; }
 		// allow tile to be claim if not own by a station
 		if (owner < 0)	{ cTileTools.TilesBlackList.SetValue(tile, stationID); }
-		// allow temporary claims tiles (0 - 1000+stationID) to be reclaim by a real stationID
+		// allow temporary claims tiles (0 - 100000+stationID) to be reclaim by a real stationID
 		}
 }
 

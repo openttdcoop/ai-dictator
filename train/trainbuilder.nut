@@ -224,7 +224,10 @@ function cCarrier::AddWagon(uid, wagonNeed)
                     if (road.MoreTrain == 1)
 							{
 							DInfo("Not calling that train until MoreTrain query is done",1);
-							return false;
+                            // There a race condition: if we lack money to finally build the stations, we then cannot call pathfinder
+                            // and pathfinder gives us the condition to retry upgrading the station
+                            // So if pathfinder isn't yet working, we have no way to check the station health if no train enter it
+                            if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	return false;
 							}
 					canorder.Valuate(AIVehicle.GetNumWagons);
 					canorder.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);

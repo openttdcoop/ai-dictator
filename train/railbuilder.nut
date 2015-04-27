@@ -232,6 +232,8 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 						{
 						// if we are building mainline, then IsPrmaryLineBuild is false ; so if it's true, we are building altline and we were called to build it
 						// so let's recall it to let it know where we are.
+						local staobj = cStation.Load(stationID);
+						if (!staobj)	{ cError.RaiseError(); return -2; }
 						local uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
 						if (!uid_obj)	{ return -2; }
 						cBuilder.RailStationPathfindAltTrack(uid_obj);
