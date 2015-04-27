@@ -304,7 +304,7 @@ function cBuilder::TryBuildThatRoute()
                     if (trainspec[0] == -1) { success = false; }
                                     else    { success = true; }
                     }
-			DInfo("Building using railtype "+AIRail.GetName(INSTANCE.main.route.RailType),2);
+			DInfo("Building using railtype "+cEngine.GetRailTrackName(INSTANCE.main.route.RailType),2);
 			cTrack.SetRailType(INSTANCE.main.route.RailType);
 		break;
 		case	RouteType.ROAD:

@@ -206,16 +206,13 @@ function cCarrier::GetEngineLocoEfficiency(engine, cargoID, cheap)
 // if cheap=true return the best ratio the loco have for the best ratio prize/efficiency, if false just the best engine without any costs influence
 // return an index, the smallest = the better
 {
-//cheap = false;
 	local price=cEngineLib.GetPrice(engine, cargoID);
-//print("price = "+price+" normalprice="+AIEngine.GetPrice(engine));
 	local power=AIEngine.GetPower(engine);
 	local speed=AIEngine.GetMaxSpeed(engine);
 	local lifetime=AIEngine.GetMaxAge(engine);
 	local runningcost=AIEngine.GetRunningCost(engine);
 	local eff=0;
 	local rawidx=((power*(0.9*speed)) * 0.01)+1;
-//print("rawidx for "+AIEngine.GetName(engine)+" = "+rawidx);
 	if (cheap)	eff=(100000+ (price+(lifetime*runningcost))) / rawidx ;
 		else	eff=(200000 - rawidx);
 	return eff.tointeger();
@@ -277,7 +274,7 @@ function cCarrier::VehicleFilterRoad(vehlist, object)
 	vehlist.Valuate(cEngineLib.GetCapacity, object.cargo_id);
 	vehlist.RemoveBelowValue(8); // clean out too small dumb vehicle size
 	if (INSTANCE.main.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, object.cargo_id, true);
-							else	vehlist.Valuate(cCarrier.GetEngineEfficiency, object.cargo_id);
+									else	vehlist.Valuate(cCarrier.GetEngineEfficiency, object.cargo_id);
 	vehlist.Sort(AIList.SORT_BY_VALUE,true);
 	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trucks
 }
@@ -292,7 +289,7 @@ function cCarrier::VehicleFilterWater(vehlist, object)
 	if (INSTANCE.main.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, object.cargo_id, true);
                                     else	vehlist.Valuate(cCarrier.GetEngineEfficiency, object.cargo_id);
 	vehlist.Sort(AIList.SORT_BY_VALUE,true);
-	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trucks
+	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for boats
 }
 
 function cCarrier::VehicleFilterAir(vehlist, object)
@@ -376,8 +373,8 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 	else	{
 			vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 			vehlist.Sort(AIList.SORT_BY_VALUE, true);
-			if (!vehlist.IsEmpty())	cEngine.RailTypeIsTop(vehlist.Begin(), object.cargo_id, true);
-			// before railtype filtering, add this engine as topengine using any railtype
+			// before we filter trains by railtype, add this engine as topengine using any railtype
+			if (!vehlist.IsEmpty() && object.depot == -1)	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true);
 			if (object.engine_roadtype != -1)
 				{
 				vehlist.Valuate(AIEngine.HasPowerOnRail, object.engine_roadtype);
@@ -385,7 +382,6 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 				vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 				vehlist.Sort(AIList.SORT_BY_VALUE, true);
 				}
-			if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trains
 			}
 }
 

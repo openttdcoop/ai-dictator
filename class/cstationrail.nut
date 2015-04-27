@@ -126,7 +126,7 @@ function cStationRail::GetRailStationMiscInfo(stationID=null)
 		}
 	exitpos=scanner+frontTile;
 	cDebug.PutSign(exitpos,"End");
-	DInfo("Station "+thatstation.s_Name+" depth is "+stalength+" direction="+direction+" start="+entrypos+" end="+exitpos+ " type="+AIRail.GetName(stationtype),1);
+	DInfo("Station "+thatstation.s_Name+" depth is "+stalength+" direction="+direction+" start="+entrypos+" end="+exitpos+ " type="+cEngine.GetRailTrackName(stationtype),1);
 	thatstation.s_Train[TrainType.START_POINT]= entrypos;
 	thatstation.s_Train[TrainType.END_POINT]= exitpos;
 	thatstation.s_Train[TrainType.DIRECTION]= direction;

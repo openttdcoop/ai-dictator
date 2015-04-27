@@ -570,7 +570,7 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, platnum, link 
         }
 	if (!AIRail.BuildRailStation(tilepos, direction, platnum, INSTANCE.main.carrier.train_length, link))
 			{
-			DInfo("Rail station couldn't be built, link="+link+" cost="+money+" err: "+AIError.GetLastErrorString(),1);
+			DInfo("Rail station couldn't be built, link="+link+" cost="+money,1);
 			cDebug.PutSign(tilepos,"!");
 			return false;
 			}

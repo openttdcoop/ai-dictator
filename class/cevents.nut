@@ -75,7 +75,7 @@ while (AIEventController.IsEventWaiting())
 		case AIEvent.ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
-			DInfo("New engine available: " + cEngine.GetName(engine),0);
+			DInfo("New engine available: " + cEngine.GetEngineName(engine),0);
 			INSTANCE.main.carrier.CheckOneVehicleOfGroup(true);
 		break;
 		case AIEvent.ET_VEHICLE_CRASHED:

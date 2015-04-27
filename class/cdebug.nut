@@ -145,7 +145,7 @@ function cDebug::ShowRailTrack()
     local atrack = AIRailTypeList();
     foreach (r, _ in atrack)
         {
-        print("track #"+r+" name: "+AIRail.GetName(r)+" speed: "+AIRail.GetMaxSpeed(r));
+        print("track #"+r+" name: "+cEngine.GetRailTrackName(r)+" speed: "+AIRail.GetMaxSpeed(r));
         }
 }
 

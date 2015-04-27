@@ -29,7 +29,7 @@ function cCarrier::ChooseRailCouple(cargo, rtype = -1, depot = -1, forengine = -
 	local veh = cEngineLib.GetBestEngine(object, cCarrier.VehicleFilterTrain);
 	if (veh[0] != -1)
 			{
-			DInfo("selected train couple : "+cEngine.GetName(veh[0])+" to pull "+cEngine.GetName(veh[1])+" for "+cCargo.GetCargoLabel(cargo)+" using railtype "+veh[2],1);
+			DInfo("selected train couple : "+cEngine.GetEngineName(veh[0])+" to pull "+cEngine.GetEngineName(veh[1])+" for "+cCargo.GetCargoLabel(cargo)+" using railtype "+cEngine.GetRailTrackName(veh[2]),1);
 			}
 	else
 			{
@@ -116,7 +116,7 @@ function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
                             }
                     else	{ pullerID = trainID; }
 	if (pullerID == -1)	{
-                        DError("Cannot create the train engine "+cEngine.GetName(locotype),1);
+                        DError("Cannot create the train engine "+cEngine.GetEngineName(locotype),1);
                         INSTANCE.main.carrier.highcostTrain = cEngineLib.GetPrice(locotype, road.CargoID);
                         return -1;
                         }
@@ -130,7 +130,7 @@ function cCarrier::AddNewTrain(uid, trainID, wagonNeed, depot, maxLength)
 					{
 					if (!AIVehicle.MoveWagonChain(nwagonID, 0, pullerID, AIVehicle.GetNumWagons(pullerID)-1))
 							{
-							DError("Wagon "+AIEngine.GetName(wagontype)+" cannot be attach to "+AIEngine.GetName(locotype),2);
+							DError("Wagon "+cEngine.GetEngineName(wagontype)+" cannot be attach to "+cEngine.GetEngineName(locotype),2);
                             AIVehicle.SellVehicle(nwagonID);
                             INSTANCE.main.carrier.vehicle_cash -= cEngineLib.GetPrice(wagontype, road.CargoID);
                             break;

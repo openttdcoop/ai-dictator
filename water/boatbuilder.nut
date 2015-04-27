@@ -58,7 +58,7 @@ function cCarrier::CreateWaterVehicle(routeidx)
             INSTANCE.main.carrier.vehicle_cash -= price;
 			}
     else	{
-			DError("Cannot create the boat "+cEngine.GetName(engineID),2);
+			DError("Cannot create the boat "+cEngine.GetEngineName(engineID),2);
 			return false;
 			}
 

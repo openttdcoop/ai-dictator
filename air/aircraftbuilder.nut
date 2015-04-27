@@ -64,7 +64,7 @@ function cCarrier::CreateAirVehicle(routeidx)
             INSTANCE.main.carrier.highcostAircraft = 0;
 			}
 		else	{
-			DError("Cannot create the aircraft vehicle "+cEngine.GetName(engineID),2);
+			DError("Cannot create the aircraft vehicle "+cEngine.GetEngineName(engineID),2);
 			return false;
 			}
 	// no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different

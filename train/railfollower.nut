@@ -223,6 +223,10 @@ function RailFollower::FindRailOwner()
 						cCarrier.VehicleOrdersReset(trains);
 						cCarrier.VehicleSendToDepot(trains, DepotAction.LINEUPGRADE);
 						}
+					road.RailType = -1; // force bad railtype of route to force the upgrade
+					road.SourceStation.s_SubType = -1;
+					road.TargetStation.s_SubType = -1;
+					//	RailFollower.TryUpgradeLine(train_list.Begin());
 					}
 
 		local killit = false;
@@ -259,6 +263,7 @@ function RailFollower::FindRailOwner()
 
 function RailFollower::TryUpgradeLine(vehicle)
 {
+	print("upgrade line for "+cCarrier.GetVehicleName(vehicle));
 	local wagonproto = cEngineLib.VehicleGetRandomWagon(vehicle);
 	if (wagonproto == -1)	{ print("bad proto"); return -1; }
 	local wagon_type = AIVehicle.GetWagonEngineType(vehicle, wagonproto);
@@ -269,12 +274,12 @@ function RailFollower::TryUpgradeLine(vehicle)
 	if (uid == null)	{ print("cannot find routeid"); return -1; }
 	local road = cRoute.Load(uid);
 	if (!road)	{ print("bad road"); return -1; }
-	local new_railtype = cEngine.RailTypeIsTop(loco_engine, cargo, false);
+	local new_railtype = cEngineLib.RailTypeGetFastestType();
 	if (new_railtype == -1 || new_railtype == road.RailType)
-            { print("no new railtype"); return -1; }
+            { print("no new railtype roadType: "+road.RailType+" new_railtype: "+new_railtype); return -1; }
     else    {
 			if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	{ print("No rail upgrade while pathfinder is working"); return -1; }
-			print("BREAKRAIL "+AIRail.GetName(road.RailType)+" will be replace with "+AIRail.GetName(new_railtype));
+			print("BREAKRAIL "+cEngine.GetRailTrackName(road.RailType)+" will be replace with "+cEngine.GetRailTrackName(new_railtype));
 			}
 	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
 	DInfo("Cost to upgrade rails : "+upgrade_cost);
@@ -335,7 +340,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		}
 	if (!temp)	return 0; // if all stopped or no vehicle, temp will remain true
 	cBanker.RaiseFundsBigTime();
-	DInfo("Changing "+road.Name+" railtype #"+road.RailType+" to #"+new_railtype,1);
+	DInfo("Changing "+road.Name+" railtype "+cEngine.GetRailTrackName(road.RailType)+" to "+cEngine.GetRailTrackName(new_railtype),0);
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];
@@ -381,7 +386,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		uid.TargetStation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 		}
 	INSTANCE.buildDelay = 1;
-	DInfo("We upgrade route to use railtype #"+new_railtype,0);
+	DInfo("We have upgrade route "+road.Name+" to use railtype "+cEngine.GetRailTrackName(new_railtype),0);
     do
         {
         local uid = wagon_lost.pop();

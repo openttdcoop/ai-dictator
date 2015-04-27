@@ -258,7 +258,7 @@ function cJobs::EstimateCost()
 			case	RouteType.RAIL:
 				// 1 vehicle + 2 stations + 2 depot + 4 destuction + 12 tracks entries and length*rail
 				local rtype=null;
-				engine=cEngine.GetEngineByCache(RouteType.CHOPPER+1, this.cargoID);
+				engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
 				if (engine != -1)
 						{
 						engineprice+=cEngine.GetPrice(engine);

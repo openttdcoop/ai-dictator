@@ -74,7 +74,7 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 			cDebug.showLogic(areaclean);
 			if (cTileTools.IsAreaBuildable(areaclean))	{ cTileTools.ClearArea(areaclean); }
 			cTileTools.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
-			success=INSTANCE.main.builder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, 1, stationObj.s_ID);
+			success=cBuilder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, 1, stationObj.s_ID);
 			cDebug.PutSign(cStationRail.GetPlatformIndex(plat_alt,true)+pside,"+");
 			if (success)	{ foreach (tile, dummy in areaclean)	stationObj.StationClaimTile(tile, stationObj.s_ID); }
 			if (!success)
