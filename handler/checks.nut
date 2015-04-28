@@ -32,16 +32,16 @@ function cBuilder::MonthlyChecks()
 	if (INSTANCE.OneMonth!=month)	{ INSTANCE.OneMonth=month; INSTANCE.SixMonth++; }
 					else	return false;
 	DInfo("Montly checks run...",1);
-	INSTANCE.main.route.VirtualAirNetworkUpdate();
-	INSTANCE.main.builder.RouteNeedRepair();
+	cRoute.VirtualAirNetworkUpdate();
+	cBuilder.RouteNeedRepair();
 	if (INSTANCE.buildDelay > 0)	INSTANCE.buildDelay--; // lower delaying timer
-	INSTANCE.main.carrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
-	INSTANCE.main.carrier.VehicleMaintenance();
-	INSTANCE.main.builder.RoadStationsBalancing();
+	cCarrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
+	cCarrier.VehicleMaintenance();
+	cBuilder.RoadStationsBalancing();
 	cRoute.DutyOnRoute();
-	if (INSTANCE.SixMonth == 2)	INSTANCE.main.builder.BoostedBuys();
-	if (INSTANCE.SixMonth == 1)	INSTANCE.main.builder.BridgeUpgrader();
-	if (INSTANCE.SixMonth == 6)	INSTANCE.main.builder.HalfYearChecks();
+	if (INSTANCE.SixMonth == 2)	cBuilder.BoostedBuys();
+	if (INSTANCE.SixMonth == 1)	cBuilder.BridgeUpgrader();
+	if (INSTANCE.SixMonth == 6)	cBuilder.HalfYearChecks();
 }
 
 function cBuilder::HalfYearChecks()
@@ -85,7 +85,7 @@ function cBuilder::RouteNeedRepair()
 		local trys=state;
 		trys++;
 		DInfo("Trying to repair route #"+routes+" for the "+trys+" time",1);
-		local test=INSTANCE.main.builder.CheckRoadHealth(routes);
+		local test=cBuilder.CheckRoadHealth(routes);
 		if (test)	INSTANCE.main.route.RouteDamage.SetValue(routes, -1)
 			else	INSTANCE.main.route.RouteDamage.SetValue(routes, trys);
 		if (trys >= 3)	{

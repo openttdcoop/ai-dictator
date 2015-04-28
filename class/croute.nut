@@ -379,7 +379,7 @@ function cRoute::CheckRouteProfit(uid)
 		totvalue += profit;
 		if (totvalue > 100000)	break; // we don't really need to check its real amount
 		}
-	if (totvalue < 0 && oldest > (365 * 2))	{ DInfo("CheckRouteProfit mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); return; }
+	if (totvalue < 0 && oldest > (365 * 3))	{ DInfo("CheckRouteProfit mark "+road.UID+" undoable -> oldest: "+oldest+" totvalue="+totvalue,1); road.RouteIsNotDoable(); return; }
 	// even making some money, we get call because some vehicle aren't
     local badveh = AIList();
     badveh.AddList(vehlist);

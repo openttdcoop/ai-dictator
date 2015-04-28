@@ -128,6 +128,6 @@ function cBanker::GetInflationRate()
 
 function cBanker::SetMinimumCashToBuild()
 {
-	local minc = (AICompany.GetLoanInterval() * 2 * cBanker.GetInflationRate()).tointeger();
+	local minc = (AICompany.GetLoanInterval() * 4 * cBanker.GetInflationRate()).tointeger();
 	INSTANCE.main.bank.mincash = minc;
 }

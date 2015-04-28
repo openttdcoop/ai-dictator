@@ -287,9 +287,6 @@ function cBuilder::BuildRoadStation(start)
 	print("station at "+cMisc.Locate(statile)+" ID="+AIStation.GetStationID(statile));
 	local newStation = INSTANCE.main.route.CreateNewStation(start);
 	if (newStation == null)	{ return false; }
-	//newStation.s_Depot = deptile; // attach a depot to that station
-	//cStation.StationClaimTile(deptile, staid);
-	//cBuilder.BuildRoadROAD(AIRoad.GetRoadDepotFrontTile(deptile), AIRoad.GetRoadStationFrontTile(statile), staid);
 	local stadir = cBuilder.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
 	local tileFrom= statile + cTileTools.GetRightRelativeFromDirection(stadir);
 	local tileTo= statile + cTileTools.GetLeftRelativeFromDirection(stadir);
@@ -440,7 +437,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 					cTrack.DestroyDepot(repair.TargetStation.s_Depot);
 					cTrack.DestroyDepot(repair.SourceStation.s_Depot);
 					msg+="Damage & ";
-					INSTANCE.main.builder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID);
+					cBuilder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID);
 					if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 							{ msg+=error_error; good=false; }
 					else	{ msg+=error_repair; minGood=true; break; }
@@ -922,10 +919,11 @@ function cBuilder::BuildRoadROAD(head1, head2, stationID)
 	{
 	print("in BuildRoadROAD stationID="+stationID);
 	local trys = 0;
+	local result = null;
 	while (trys < 100)
 			{
-			local result = cPathfinder.GetStatus(head1, head2, stationID);
-			print("pathfinder result="+result);
+			result = cPathfinder.GetStatus(head1, head2, stationID);
+			AIController.Break("pathfinder result="+result);
 			if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(head1, head2); return false; }
 			if (result == 2)	{ cPathfinder.CloseTask(head1, head2); return true; }
 			if (result == 1)	{ trys++; }
@@ -933,7 +931,7 @@ function cBuilder::BuildRoadROAD(head1, head2, stationID)
 			// We couldn't wait it forever to get money it may never get
 			cPathfinder.AdvanceAllTasks();
 			}
-	print("out BuildRoadROAD");
+	print("out BuildRoadROAD trys="+trys+" result="+result);
 	return false;
 	}
 

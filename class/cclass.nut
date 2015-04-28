@@ -96,7 +96,7 @@ function cMain::CheckAccount()
 	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	local mintobuild = bank.mincash;
 	if (INSTANCE.main.carrier.vehicle_cash < 0) { INSTANCE.main.carrier.vehicle_cash = 0; }
-	if (ourLoan == 0 && cash >= 4*mintobuild)	{ bank.unleash_road=true; }
+	if (ourLoan == 0 && cash >= 3*mintobuild)	{ bank.unleash_road=true; }
 	if (!cBanker.CanBuyThat(mintobuild))	{ DInfo("Low on cash, disabling build : "+mintobuild,1); bank.canBuild=false; }
 									else    { cBanker.RaiseFundsTo(10000); bank.canBuild = true; }
 //	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
