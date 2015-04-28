@@ -91,7 +91,7 @@ function cBuilder::BuildTrainStation(start)
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
 	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger()),2);
 	INSTANCE.main.bank.RaiseFundsBy(cost*4);
-	local ssize=6+INSTANCE.main.carrier.train_length;
+	local ssize= 6 + INSTANCE.main.carrier.train_length;
 	/* 3 build mode:
 	- try find a place with stationsize+11 tiles flatten and buildable
 	- try find a place with stationsize+11 tiles maybe not flat and buildable
@@ -146,6 +146,7 @@ function cBuilder::BuildTrainStation(start)
 						success = cBuilder.CreateAndBuildTrainStation(checkit, dir, platnum);
 						if (!success && cError.IsCriticalError())	{ break; }
 						statile = tile;
+						print("statile return "+statile);
 						break;
 						}
 				}
@@ -160,8 +161,9 @@ function cBuilder::BuildTrainStation(start)
 			}
 	// here, so we success to build one
 	local staID = AIStation.GetStationID(statile);
+	print("staID ="+staID+" statile="+statile+" start="+start);
 	if (start)	{ INSTANCE.main.route.SourceStation = staID; }
-	else	{ INSTANCE.main.route.TargetStation = staID; }
+		else	{ INSTANCE.main.route.TargetStation = staID; }
 	INSTANCE.main.route.CreateNewStation(start);
 	return true;
 	}
@@ -172,6 +174,7 @@ function cBuilder::EasyError(error)
 // -1 a temp easy solvable error
 // -2 a big error
 	{
+	AIController.Break("easy error: "+error+AIError.GetLastErrorString());
 	switch (error)
 			{
 			case	AIError.ERR_NOT_ENOUGH_CASH :
@@ -197,7 +200,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 		local verifypath = RailFollower.GetRailPathing(mytask.source, mytask.target);
 		if (verifypath.IsEmpty())
 					{
-					mytask.status = -1;
+					mytask.status = -2;
 					DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
 					local badtiles=AIList();
 					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
@@ -311,6 +314,8 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 									}
 							else
 									{
+									if (!AIRail.IsRailTile(prev) || !AICompany.IsMine(AITile.GetOwner(prev)))
+										{ AIController.Break("Check tile "+cMisc.Locate(prev)); }
 									cTileTools.BlackListTile(prev, 0 - (100000+stationID));
 									cTileTools.BlackListTile(path.GetTile(), 0 -(100000+stationID));
 									}

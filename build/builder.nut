@@ -142,6 +142,7 @@ function cBuilder::BuildRoadByType()
 			return false;
 		case AIVehicle.VT_RAIL:
 			success=INSTANCE.main.builder.CreateStationsConnection(INSTANCE.main.route.SourceStation.s_ID, INSTANCE.main.route.TargetStation.s_ID);
+			print("create station connection return : "+success);
 			return success;
         case AIVehicle.VT_WATER:
             local src_front= cBuilder.GetDockFrontTile(INSTANCE.main.route.SourceStation.s_Location);
@@ -416,6 +417,7 @@ function cBuilder::TryBuildThatRoute()
 		if (success)
                 { INSTANCE.main.route.Status=5; }
         else	{
+        print("trybuildthatroute: pathfind fail");
 				if (cError.IsError())	{ INSTANCE.main.route.Status = RouteStatus.DEAD; }
                                 else	{ INSTANCE.buildDelay = 1; return false; }
 

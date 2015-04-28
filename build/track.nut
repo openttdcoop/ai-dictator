@@ -260,6 +260,7 @@ function cTrack::ConvertRailType(tile, newrt)
 		local error = AIError.GetLastError();
 		if (error == AIError.ERR_NONE)	{ return 1; }
 		if (error == AIError.ERR_NOT_ENOUGH_CASH)	{ return 0; }
+		DError("ConvertRailType fail with error="+error,1);
 		return -1;
 		}
 	return 1;
