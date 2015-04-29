@@ -174,7 +174,7 @@ function cBuilder::EasyError(error)
 // -1 a temp easy solvable error
 // -2 a big error
 	{
-	print("easy error: "+error+AIError.GetLastErrorString());
+	print("easy error: "+error+" "+AIError.GetLastErrorString());
 	switch (error)
 			{
 			case	AIError.ERR_NOT_ENOUGH_CASH :
@@ -364,7 +364,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					local newtarget=[prev, prevprev];
 					DInfo("Pathfinder is calling an helper task",1);
 					cPathfinder.CreateSubTask(mytask.UID, head1, newtarget);
-					return 0;
+					return -1;
 					}
 			}
 	return 0; // success

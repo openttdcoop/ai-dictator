@@ -319,6 +319,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local savetable = {};
 	temp.AddList(road.SourceStation.s_Owner);
 	temp.AddList(road.TargetStation.s_Owner);
+	local veh_cost = 0;
 	foreach (o_uid, _ in temp)
 		{
 		local r = cRoute.Load(o_uid);
@@ -332,7 +333,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		all_rails.AddList(r.SourceStation.s_TilesOther);
 		all_rails.AddList(r.TargetStation.s_TilesOther);
 		local veh = AIVehicleList_Group(r.GroupID);
-		foreach (v, _ in veh)   { all_vehicle.AddItem(v, r.UID); }
+		foreach (v, _ in veh)   { all_vehicle.AddItem(v, r.UID); veh_cost += cEngine.GetPrice(AIVehicle.GetEngineType(v)); }
 		}
 	if (upgrade_cost == 0)
 		{
@@ -341,10 +342,8 @@ function RailFollower::TryUpgradeLine(vehicle)
 		local raw_basic_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_TRACK) * all_rails.Count();
 		local raw_sig_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_SIGNAL) * (all_rails.Count() / 2);
 		local raw_station_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_STATION) * (savetable.len() * 10);
-		upgrade_cost = raw_basic_cost + raw_sig_cost + raw_station_cost;
+		upgrade_cost = raw_basic_cost + raw_sig_cost + raw_station_cost + veh_cost;
 		cDebug.ClearSigns();
-		if (testengy[0] == -1)	upgrade_cost += 50000;
-						else	upgrade_cost += cEngineLib.GetPrice(testengy[0], road.CargoID);
 		foreach (uid in savetable)	{ uid.SourceStation.s_MoneyUpgrade = upgrade_cost; uid.TargetStation.s_MoneyUpgrade = upgrade_cost; }
 		}
 
