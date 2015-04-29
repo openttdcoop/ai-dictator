@@ -142,7 +142,6 @@ function cBuilder::BuildRoadByType()
 			return false;
 		case AIVehicle.VT_RAIL:
 			success=INSTANCE.main.builder.CreateStationsConnection(INSTANCE.main.route.SourceStation.s_ID, INSTANCE.main.route.TargetStation.s_ID);
-			print("create station connection return : "+success);
 			return success;
         case AIVehicle.VT_WATER:
             local src_front= cBuilder.GetDockFrontTile(INSTANCE.main.route.SourceStation.s_Location);
@@ -288,6 +287,7 @@ function cBuilder::TryBuildThatRoute()
 	local success=false;
 	DInfo("Route "+INSTANCE.main.route.Name,1);
 	DInfo("Status:"+INSTANCE.main.route.Status,1);
+	cError.ClearError();
 	// not using switch/case so we can advance steps in one pass
 	switch (INSTANCE.main.route.VehicleType)
 		{
@@ -417,7 +417,6 @@ function cBuilder::TryBuildThatRoute()
 		if (success)
                 { INSTANCE.main.route.Status=5; }
         else	{
-        print("trybuildthatroute: pathfind fail");
 				if (cError.IsError())	{ INSTANCE.main.route.Status = RouteStatus.DEAD; }
                                 else	{ INSTANCE.buildDelay = 1; return false; }
 
@@ -481,6 +480,7 @@ function cBuilder::TryBuildThatRoute()
 		DInfo("TryBuildThatRoute mark "+INSTANCE.main.route.UID+" undoable",1);
 		INSTANCE.main.route.RouteIsNotDoable();
 		INSTANCE.main.builder.building_route=-1;
+		cError.ClearError();
 		return false;
 		}
 	return success;

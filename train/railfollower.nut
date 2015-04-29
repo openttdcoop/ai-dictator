@@ -222,9 +222,9 @@ function RailFollower::FindRailOwner()
 						cCarrier.VehicleOrdersReset(trains);
 						cCarrier.VehicleSendToDepot(trains, DepotAction.LINEUPGRADE);
 						}
-					road.RailType = -1; // force bad railtype of route to force the upgrade
-					road.SourceStation.s_SubType = -1;
-					road.TargetStation.s_SubType = -1;
+//					road.RailType = -1; // force bad railtype of route to force the upgrade
+//					road.SourceStation.s_SubType = -1;
+//					road.TargetStation.s_SubType = -1;
 					}
 		local killit = false;
 		if (bad)	killit = true;
@@ -273,25 +273,42 @@ function RailFollower::FindRailOwner()
 }
 
 function RailFollower::TryUpgradeLine(vehicle)
+// We will always upgrade the line, even if we will not change the railtype in order to catch if some rails aren't of the same type
+// return 0 if we cannot, -1 if we fail, 1 if we success
 {
 	print("upgrade line for "+cCarrier.GetVehicleName(vehicle));
+	// first: see what cargo it carry
 	local wagonproto = cEngineLib.VehicleGetRandomWagon(vehicle);
 	if (wagonproto == -1)	{ print("bad proto"); return -1; }
 	local wagon_type = AIVehicle.GetWagonEngineType(vehicle, wagonproto);
 	local cargo = cEngine.GetCargoType(wagon_type);
+	// second: look what engine it use
 	local loco_engine = AIVehicle.GetEngineType(vehicle);
+	// last: now we can see if it would be better to change engine to another one with a new railtype
+	local new_railtype = cEngine.IsRailAtTop(vehicle);
+
 	local upgrade_cost = 0;
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
 	if (uid == null)	{ print("cannot find routeid"); return -1; }
 	local road = cRoute.Load(uid);
 	if (!road)	{ print("bad road"); return -1; }
-	local new_railtype = cEngineLib.RailTypeGetFastestType();
-	if (new_railtype == -1 || new_railtype == road.RailType)
-            { print("no new railtype roadType: "+road.RailType+" new_railtype: "+new_railtype); return -1; }
-    else    {
-			if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	{ print("No rail upgrade while pathfinder is working"); return -1; }
-			print("BREAKRAIL "+cEngine.GetRailTrackName(road.RailType)+" will be replace with "+cEngine.GetRailTrackName(new_railtype));
-			}
+//	local testengy = cCarrier.ChooseRailCouple(road.CargoID, -1, -1, -1);
+//	print("current type: "+cEngine.GetRailTrackName(road.RailType));
+//	print("fastest railtype: "+cEngine.GetRailTrackName(cEngineLib.RailTypeGetFastestType()));
+//	print("fastest for this engine: "+cEngine.GetRailTrackName(cEngineLib.RailTypeGetFastestType(AIVehicle.GetEngineType(vehicle))));
+//	local new_railtype = cEngineLib.RailTypeGetFastestType(AIVehicle.GetEngineType(vehicle));
+/*	if (testengy[0] == -1)	{ print("an error with enginelib"); }
+					else	{
+							new_railtype = testengy[2];
+							print("fastest by chooserailcouple: "+cEngine.GetRailTrackName(testengy[2]));
+							}*/
+	if (new_railtype == -1)	new_railtype = road.RailType;
+//	if (new_railtype == -1 || new_railtype == road.RailType)
+  //          { print("no new railtype roadType: "+road.RailType+" new_railtype: "+new_railtype); return -1; }
+   // else    {
+	if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	{ print("No rail upgrade while pathfinder is working"); return -1; }
+	print("BREAKRAIL "+cEngine.GetRailTrackName(road.RailType)+" will be replace with "+cEngine.GetRailTrackName(new_railtype));
+	//		}
 	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
 	DInfo("Cost to upgrade rails : "+upgrade_cost);
 	if (!cBanker.CanBuyThat(upgrade_cost))	{ return 0; }
@@ -326,6 +343,8 @@ function RailFollower::TryUpgradeLine(vehicle)
 		local raw_station_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_STATION) * (savetable.len() * 10);
 		upgrade_cost = raw_basic_cost + raw_sig_cost + raw_station_cost;
 		cDebug.ClearSigns();
+		if (testengy[0] == -1)	upgrade_cost += 50000;
+						else	upgrade_cost += cEngineLib.GetPrice(testengy[0], road.CargoID);
 		foreach (uid in savetable)	{ uid.SourceStation.s_MoneyUpgrade = upgrade_cost; uid.TargetStation.s_MoneyUpgrade = upgrade_cost; }
 		}
 

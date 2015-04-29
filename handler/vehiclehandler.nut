@@ -277,7 +277,6 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 		cCarrier.VehicleSell(vehID, false);
 		return false;
 		}
-	local betterEngine=cEngine.IsVehicleAtTop(vehID);
 	local vehtype=AIVehicle.GetVehicleType(vehID);
 	local new_vehID=null;
 	local road=cRoute.Load(idx);
@@ -405,12 +404,14 @@ foreach (vehicle, dummy in tlist)
 	cCarrier.VehicleMaintenance_Orders(vehicle);
 	local vehtype=AIVehicle.GetVehicleType(vehicle);
 	if (vehtype == AIVehicle.VT_ROAD)	INSTANCE.main.carrier.warTreasure+=AIVehicle.GetCurrentValue(vehicle);
-	local topengine=cEngine.IsVehicleAtTop(vehicle);
+	local topengine = cEngine.IsVehicleAtTop(vehicle);
 	if (topengine != -1)	price=cEngine.GetPrice(topengine);
                     else	price=cEngine.GetPrice(AIVehicle.GetEngineType(vehicle));
 	name = cCarrier.GetVehicleName(vehicle);
 	if (vehtype == AIVehicle.VT_RAIL && line_upgrade)
 		{ // check train can use better rails
+		local nRT = cEngine.IsRailAtTop(vehicle);
+		if (nRT == -1)	{ line_upgrade = false; continue; }
         local ret = RailFollower.TryUpgradeLine(vehicle);
         if (ret == 0)   { line_upgrade = false; continue; }
         if (ret == 1)   { continue; }

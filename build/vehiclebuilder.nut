@@ -276,7 +276,7 @@ function cCarrier::VehicleFilterRoad(vehlist, object)
 	if (INSTANCE.main.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, object.cargo_id, true);
 									else	vehlist.Valuate(cCarrier.GetEngineEfficiency, object.cargo_id);
 	vehlist.Sort(AIList.SORT_BY_VALUE,true);
-	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for trucks
+	if (!vehlist.IsEmpty())	cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, 1); // set top engine for trucks
 }
 
 function cCarrier::VehicleFilterWater(vehlist, object)
@@ -289,7 +289,7 @@ function cCarrier::VehicleFilterWater(vehlist, object)
 	if (INSTANCE.main.bank.unleash_road)	vehlist.Valuate(cCarrier.GetEngineRawEfficiency, object.cargo_id, true);
                                     else	vehlist.Valuate(cCarrier.GetEngineEfficiency, object.cargo_id);
 	vehlist.Sort(AIList.SORT_BY_VALUE,true);
-	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true); // set top engine for boats
+	if (!vehlist.IsEmpty())	cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, 1); // set top engine for boats
 }
 
 function cCarrier::VehicleFilterAir(vehlist, object)
@@ -357,16 +357,21 @@ function cCarrier::VehicleFilterAir(vehlist, object)
 			special = RouteType.CHOPPER;
 		break;
 		}
-	if (!vehlist.IsEmpty())	cEngine.EngineIsTop(vehlist.Begin(), special, true); // set top engine for aircraft
+	if (!vehlist.IsEmpty())	cEngine.IsEngineAtTop(vehlist.Begin(), special, 1); // set top engine for aircraft
 	//if (!vehlist.IsEmpty())	print("aircraft="+cEngine.GetName(vehlist.Begin())+" r_dist="+distance+" r_distSQ="+(distance*distance)+" e_dist="+AIEngine.GetMaximumOrderDistance(vehlist.Begin()));
 }
 
 function cCarrier::VehicleFilterTrain(vehlist, object)
 {
 	cEngineLib.EngineFilter(vehlist, object.cargo_id, -1, object.engine_id, object.bypass);
-	// force roadtype to -1 to prevent filtering by railtype
+	// We must pass -1 as railtype so the filter will not filter them out by railtype: we will handle this ourselves
 	if (AIEngine.IsWagon(vehlist.Begin()))
 			{
+			if (object.engine_roadtype != -1)
+				{
+				vehlist.Valuate(AIEngine.HasPowerOnRail, object.engine_roadtype);
+				vehlist.KeepValue(1);
+				}
 			vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
 			vehlist.Sort(AIList.SORT_BY_VALUE, false);
 			}
@@ -374,13 +379,14 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 			vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 			vehlist.Sort(AIList.SORT_BY_VALUE, true);
 			// before we filter trains by railtype, add this engine as topengine using any railtype
-			if (!vehlist.IsEmpty() && object.depot == -1)	cEngine.EngineIsTop(vehlist.Begin(), object.cargo_id, true);
+			if (!vehlist.IsEmpty() && object.depot == -1)	cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, 1);
 			if (object.engine_roadtype != -1)
 				{
 				vehlist.Valuate(AIEngine.HasPowerOnRail, object.engine_roadtype);
 				vehlist.KeepValue(1);
 				vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 				vehlist.Sort(AIList.SORT_BY_VALUE, true);
+				cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, object.engine_roadtype + 10);
 				}
 			}
 }

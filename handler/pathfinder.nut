@@ -356,6 +356,13 @@ function cPathfinder::AdvanceTask(UID)
 	local root_task = null;
 	if (root_id != -1)	root_task = cPathfinder.GetPathfinderObject(root_id);
 	if (root_task == null)	{ cPathfinder.CloseTaskAndChildren(UID); return; }
+	if (root_task.useEntry == null && (root_task.status == 2 || root_task.status == -2))
+		{
+		if (root_task.timer >= 0)	root_task.timer = -20;
+		if (root_task.timer < 0)	root_task.timer++;
+		print("root_task timer="+root_task.timer);
+		if (root_task.timer == -1)	{ DInfo(spacer+" cleaning tasks...",2); cPathfinder.CloseTaskAndChildren(root_task.UID); AIController.Break("cel"); return; }
+		}
 	switch (pftask.status)
 			{
 			case	-1:
@@ -395,7 +402,7 @@ function cPathfinder::AdvanceTask(UID)
 								else	print("srcmatch is null");
 				if (dstmatch != null)	print("dstmatch="+dstmatch[0]+":"+dstmatch[1]);
 								else	print("dstmatch is null");
-				if (srcmatch != null && drtmatch != null)
+				if (srcmatch != null && dstmatch != null)
 						{
 						local newchild = [];
 						for (local i = 0; i < children.len(); i++)

@@ -236,7 +236,7 @@ function cJobs::EstimateCost()
 // Estimate the cost to build a job
 	{
 	local money = 0;
-	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_ROCKY)*cBanker.GetInflationRate();
+	local clean= AITile.GetBuildCost(AITile.BT_CLEAR_ROCKY);
 	clean.tointeger();
 	local engine=0;
 	local engineprice=0;
@@ -268,7 +268,7 @@ function cJobs::EstimateCost()
 				else	{ engineprice=500000; }
 				money+=engineprice;
 				if (this.cargoID == cCargo.GetPassengerCargo())	money+=engineprice;
-				money+=(8*clean);
+				money+=(11*clean);
 				if (rtype==null)	{ money+=500000; }
                             else    {
                                     money+=((20+distance)*(AIRail.GetBuildCost(rtype, AIRail.BT_TRACK)));

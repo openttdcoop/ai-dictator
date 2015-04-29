@@ -99,6 +99,7 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 // return -1 if we have no match but try to find an engine before
 	{
 	local EUID = cEngine.GetEUID(engineType, cargoID);
+	if (engineType == RouteType.RAIL)	EUID = cEngine.GetEUID(RouteType.CHOPPER + 1, cargoID);
 	if (cEngine.BestEngineList.HasItem(EUID))	return cEngine.BestEngineList.GetValue(EUID);
 	INSTANCE.DInfo("Engine cache miss for "+EUID,2);
 	switch (engineType)
@@ -108,6 +109,13 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 			return engine;
 		case	AIVehicle.VT_RAIL:
 			local engine = cCarrier.ChooseRailCouple(cargoID, -1);
+			if (engine[0] != -1)
+				{
+				cEngine.SetBestEngine(EUID, engine[0]);
+				// Also set best engine for the railtrack found
+				local id = cEngine.GetEUID(RouteType.CHOPPER + 2 + engine[2], engine[0]);
+				cEngine.SetBestEngine(id, engine[0]);
+				}
 			if (cJobs.WagonType.HasItem(cargoID))	cJobs.WagonType.RemoveItem(cargoID);
 			cJobs.WagonType.AddItem(cargoID, engine[1]);
 			return engine[0];
@@ -135,16 +143,26 @@ function cEngine::SetBestEngine(EUID, engineID)
 		else	cEngine.BestEngineList.AddItem(EUID, engineID);
 	}
 
-function cEngine::EngineIsTop(engineID, cargoID, setTopEngine)
+function cEngine::IsEngineAtTop(engineID, cargoID, set_engine)
 // Check if we can use a better engine for a vehicle
 // engineID: the engine ID we wish to test for an upgrade
 // cargoID: for water/road/rail the cargo ID
 // cargoID: for aircraft RouteType.AIR/AIRNET/CHOPPER
-// setTopEngine: true to set engine, false to just read
+// setTopEngine: <0 to not set engine, >0 to set engine
+// setTopEngine: Rail can pass track info by giving track value + 10 (so <= 10 to set, >=10 to not set)
 // return -1 if we are at top engine already
 // return engineID if we can upgrade to a better version
 	{
+	local setTopEngine = (set_engine > 0);
 	local vehicleType = AIEngine.GetVehicleType(engineID);
+	if (vehicleType == AIVehicle.VT_RAIL)
+		{
+		// RouteType.CHOPPER + 1 : best engine without knowing track to use
+		// RouteType.CHOPPER > 1 : best engine with track value of 0, 1...
+		local RT = -1;
+		if (set_engine <= 10 || set_engine >= 10)	RT = abs(set_engine) - 10;
+        vehicleType = RouteType.CHOPPER + 2 + RT;
+        }
 	local EUID = cEngine.GetEUID(vehicleType, cargoID);
 	local topengine = engineID;
 	if (!cEngine.BestEngineList.HasItem(EUID))	setTopEngine=true;
@@ -157,21 +175,43 @@ function cEngine::EngineIsTop(engineID, cargoID, setTopEngine)
 							}
 	}
 
+function cEngine::IsRailAtTop(vehID)
+// Check if we could use better rail to use a better engine for this vehicle
+// return -1 if the vehicle doesn't need upgrade
+// return the better RailTrack type if one exist
+{
+	if (!AIVehicle.IsValidVehicle(vehID))	{ INSTANCE.DError("Not a valid vehicle",2); return -1; }
+	local vehType = AIVehicle.GetVehicleType(vehID);
+	if (vehType != RouteType.RAIL)	return -1; // only rail
+	local idx = cCarrier.VehicleFindRouteIndex(vehID);
+	if (idx == null)	{ INSTANCE.DError("Fail to find the route used by this vehicle: "+cCarrier.GetVehicleName(vehID),2); return -1; }
+	local road = cRoute.Load(idx);
+	if (!road)	return -1;
+	local cargoID = road.CargoID;
+	local engineID = AIVehicle.GetEngineType(vehID);
+	local betterID = cEngine.IsEngineAtTop(engineID, cargoID, -1);
+	local betterRT = -1;
+	if (betterID != -1)	betterRT = cEngineLib.RailTypeGetFastestType(betterID);
+	return betterRT;
+}
+
 function cEngine::IsVehicleAtTop(vehID)
 // Check if a vehicle is using the best engine already
 // return -1 if the vehicle doesn't need upgrade
 // return the better engineID if one exist
 	{
 	if (!AIVehicle.IsValidVehicle(vehID))	{ INSTANCE.DError("Not a valid vehicle",2); return -1; }
-	local idx=cCarrier.VehicleFindRouteIndex(vehID);
+	local idx = cCarrier.VehicleFindRouteIndex(vehID);
 	if (idx == null)	{ INSTANCE.DError("Fail to find the route used by this vehicle: "+cCarrier.GetVehicleName(vehID),2); return -1; }
-	local road=cRoute.Load(idx);
+	local road = cRoute.Load(idx);
 	if (!road)	return -1;
-	local cargoID=road.CargoID;
-	local vehType=AIVehicle.GetVehicleType(vehID);
-	if (vehType==AIVehicle.VT_AIR)	cargoID=road.VehicleType;
-	local engineID=AIVehicle.GetEngineType(vehID);
-	return cEngine.EngineIsTop(engineID, cargoID, false);
+	local cargoID = road.CargoID;
+	local vehType = AIVehicle.GetVehicleType(vehID);
+	if (vehType == AIVehicle.VT_AIR)	cargoID = road.VehicleType;
+	local engineID = AIVehicle.GetEngineType(vehID);
+	local justread = -1;
+	if (vehType == RouteType.RAIL)	justread = 0 - (road.RailType + 10);
+	return cEngine.IsEngineAtTop(engineID, cargoID, justread);
 	}
 
 function cEngine::CheckMaxSpeed(engineID)
