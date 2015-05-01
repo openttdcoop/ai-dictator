@@ -33,6 +33,7 @@ class cPathfinder extends cClass
 		target		= null;	// the target [] to pathfind
 		status		= null;	// 0 - working, -1 fail pathfind, -2 fail building, 1 success pathfind, 2 success build
 		stationID	= null;	// the stationID rails will be assign to
+		PrimaryLane = null; // true if we build main lane, false if we build alt lane
 		useEntry	= null;	// the entry of the stationID will be use or not
 		// if we success at pathfinding, we will try build the route, and if we fail at building the route, we will recall the pathfinder or try to rebuild it
 		// we will then report failure in status
@@ -51,6 +52,7 @@ class cPathfinder extends cClass
 			source		    = [];
 			target	    	= [];
 			stationID		= null;
+			PrimaryLane		= null;
 			useEntry		= null;
 			status		    = 0;
 			child			= [null];
@@ -92,15 +94,17 @@ function cPathfinder::GetUID(src, tgt)
 	return src[0]+tgt[1];
 	}
 
-function cPathfinder::ThreeTileCheck(tile, tile_forward, func, value)
+function cPathfinder::FiveTileCheck(tile, tile_forward, func, value)
 {
 	local zone = AIList();
 	zone.AddItem(tile, 0);
 	zone.AddItem(tile + tile_forward, 1);
+	zone.AddItem(tile + tile_forward + tile_forward, 1);
 	zone.AddItem(tile - tile_forward, 2);
+	zone.AddItem(tile - tile_forward - tile_forward, 2);
 	zone.Valuate(func);
 	zone.KeepValue(value);
-	if (zone.Count() == 3)	return true;
+	if (zone.Count() == 5)	return true;
 	return false;
 }
 
@@ -184,10 +188,10 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 			break;
 			}
 		}
-    seek_area.Valuate(cPathfinder.ThreeTileCheck, fwd, AITile.IsBuildable, 1);
+    seek_area.Valuate(cPathfinder.FiveTileCheck, fwd, AITile.IsBuildable, 1);
     seek_area.KeepValue(1);
 	if (seek_area.IsEmpty())	return -1; // no place to build
-    seek_area.Valuate(cPathfinder.ThreeTileCheck, fwd, AITile.GetSlope, AITile.SLOPE_FLAT);
+    seek_area.Valuate(cPathfinder.FiveTileCheck, fwd, AITile.GetSlope, AITile.SLOPE_FLAT);
     local need_terraform = false;
     foreach (tiles, flat in seek_area)
 		{
@@ -207,8 +211,8 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
     local fwdTile = null;
 	foreach (tile, distance in seek_area)
 		{
-		if (need_terraform)	{ cBanker.RaiseFundsBigTime(); cTileTools.TerraformLevelTiles(tile + fwd, tile - fwd); }
-		if (cPathfinder.ThreeTileCheck(tile, fwd, AITile.GetSlope, AITile.SLOPE_FLAT) && cPathfinder.ThreeTileCheck(tile, fwd, AITile.IsBuildable, 1))
+		if (need_terraform)	{ cBanker.RaiseFundsBigTime(); cTileTools.TerraformLevelTiles(tile + fwd + fwd, tile - fwd - fwd); }
+		if (cPathfinder.FiveTileCheck(tile, fwd, AITile.GetSlope, AITile.SLOPE_FLAT) && cPathfinder.FiveTileCheck(tile, fwd, AITile.IsBuildable, 1))
 				{ mainTile = tile; break; }
 		}
 	if (mainTile == null)	return -1;
@@ -233,14 +237,14 @@ function cPathfinder::CheckPathfinderTaskIsRunning(stations)
 	return false;
 	}
 
-function cPathfinder::GetStatus(source, target, stationID, useEntry = null)
+function cPathfinder::GetStatus(source, target, stationID, primarylane, useEntry)
 // return the status of the task, and create it if we didn't plane it yet
 	{
-	local uid=cPathfinder.GetUID(source, target);
+	local uid = cPathfinder.GetUID(source, target);
 	if (uid == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
 	if (uid in cPathfinder.database)	{ }
-                                else	{ cPathfinder.CreateNewTask(source, target, useEntry, stationID, true); return 0; }
-	local pathstatus=cPathfinder.GetPathfinderObject(uid);
+                                else	{ cPathfinder.CreateNewTask(source, target, stationID, primarylane, useEntry, true); return 0; }
+	local pathstatus = cPathfinder.GetPathfinderObject(uid);
 	return pathstatus.status;
 	}
 
@@ -253,9 +257,10 @@ function cPathfinder::AdvanceAllTasks()
 function cPathfinder::GetSolve(source, target)
 // return the solver instance
 	{
-	local UID=cPathfinder.GetUID(source, target);
+	local UID = cPathfinder.GetUID(source, target);
 	if (UID == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
-	local pftask=cPathfinder.GetPathfinderObject(UID);
+	local pftask = cPathfinder.GetPathfinderObject(UID);
+	if (!pftask)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
 	return pftask.solve;
 	}
 
@@ -309,39 +314,23 @@ function cPathfinder::PropagateChangeToParent(id)
 		{
 		local ptask_child = cPathfinder.GetPathfinderObject(ptask.child[i]);
 		if (ptask_child == null)	return;
-		print("new_state="+state+" child state "+ptask_child.UID+" state: "+ptask_child.status);
 		if (ptask_child.status == -2)	state = -2; // viral failure
         if (state == -2)	ptask_child.status = -2;
-					else	if (ptask_child.status != state)	return;
+		if (ptask_child.status != state)	return;
 		}
     ptask.status = state;
-    DInfo("task #"+ptask.UID+" state change to "+ptask.status,2);
+    DInfo("task #"+ptask.UID+" status change to "+ptask.status,2);
     // tell its own parent about the change
     if (ptask.child[0] != null)	cPathfinder.PropagateChangeToParent(ptask.child[0]);
-}
-
-function cPathfinder::FindPointInTask(uid, point)
-// this browse all tasks from root to find if point can be found as source in some task
-// return taskuid that hold point
-{
-	local c = cPathfinder.GetPathfinderObject(uid);
-	if (c == null)	return -1;
-	for (local j = 1; j < c.child.len(); j++)
-			{
-			local z = cPathfinder.FindPointInTask(c.child[j], point);
-			if (z != -1)	return z;
-			}
-	if (c.source[1] == point && c.child.len() == 1)	return c.UID; // we must find the task that have no child itself
-	return -1;
 }
 
 function cPathfinder::AdvanceTask(UID)
 // Advance the pathfinding search
 {
 	local maxTimer = 300;	// maximum time put on pathfinding a path, but it change with distance
-	local maxStep=5;		// maximum time put on a try
-	local _counter=0;
-	local pftask=cPathfinder.GetPathfinderObject(UID);
+	local maxStep = 5;		// maximum time put on a try
+	local _counter = 0;
+	local pftask = cPathfinder.GetPathfinderObject(UID);
 	if (pftask == null)	return;
 	maxTimer = (AIMap.DistanceManhattan(pftask.source[0], pftask.target[1]) * 4).tointeger();
 	if (maxTimer > 300)	maxTimer = 300;
@@ -359,8 +348,10 @@ function cPathfinder::AdvanceTask(UID)
 			if (fils == null)	return;
 			tlist += pftask.child[k]+"("+fils.status+") ";
 			}
-	DInfo("Pathfinder task #"+UID+"("+pftask.status+") @"+maxTimer+tlist);
+	DInfo("Pathfinder task #"+UID+"("+pftask.status+") @"+maxTimer+tlist,0);
 	local spacer = "        ";
+	DInfo(spacer+" from "+cMisc.Locate(pftask.source[0])+spacer+cMisc.Locate(pftask.source[1]),1);
+	DInfo(spacer+"  to  "+cMisc.Locate(pftask.target[0])+spacer+cMisc.Locate(pftask.target[1]),1);
 	if (!pftask.autofail())
 		{
 		DInfo(spacer+"Pathfinder is autoclosing task "+pftask.UID,1);
@@ -371,46 +362,29 @@ function cPathfinder::AdvanceTask(UID)
 	local root_task = null;
 	if (root_id != -1)	root_task = cPathfinder.GetPathfinderObject(root_id);
 	if (root_task == null)	{ cPathfinder.CloseTaskAndChildren(UID); return; }
-	if (root_task.useEntry == null && (root_task.status == 2 || root_task.status == -2))
-		{
-		if (root_task.timer >= 0)	root_task.timer = -20;
-		if (root_task.timer < 0)	root_task.timer++;
-		print("root_task timer="+root_task.timer);
-		if (root_task.timer == -1)	{ DInfo(spacer+" cleaning tasks...",2); cPathfinder.CloseTaskAndChildren(root_task.UID); AIController.Break("cel"); return; }
-		}
 	switch (pftask.status)
 			{
 			case	-1:
 				DInfo(spacer+" "+pftask.UID+" fail to pathfind",1);
-				local pchk = cPathfinder.FindPointInTask(root_task.UID, pftask.target[1]); // our target point must be in some other task source point
-				if (pchk == -1)	{ pftask.status = -2; cPathfinder.PropagateChangeToParent(pftask.UID); } // mark it dead
-				print("src: "+cMisc.Locate(pftask.source[0])+" src_l: "+cMisc.Locate(pftask.source[1]));
-				print("dst: "+cMisc.Locate(pftask.target[0])+" dst_l: "+cMisc.Locate(pftask.target[1]));
-				print(" ");
-				print(spacer+" Adding task to "+pchk+" to handle the failure of "+pftask.UID);
-				local hack_task = cPathfinder.GetPathfinderObject(pchk);
-				// now branch its old source to be our
-				//hack_task.source = pftask.source;
-				// Reset its status and tell parents about the change
-				//hack_task.status = 0;
-				//cPathfinder.PropagateChangeToParent(hack_task.UID);
-				cPathfinder.CreateSubTask(pchk, pftask.source, hack_task.target);
-				// Set status as finish build for the fail task and tell parents
-				pftask.status = 2;
-				cPathfinder.PropagateChangeToParent(pftask.UID);
-				AIController.Break(" ");
+				if (pftask.UID == root_id)	{ DInfo(spacer+" ROOT task is dead...",1); pftask.status = -2; return; }
+				// kill all child from root task
+				for (local i = 1; i < root_task.child.len(); i++)	cPathfinder.CloseTaskAndChildren(root_task.child[i]);
+				root_task.child = [null];
+				root_task.status = 0;
 				return;
 			case	-2:
 				DInfo(spacer+"nothing more could be done, failure",1);
                 if (root_task.UID != pftask.UID)	{ cPathfinder.PropagateChangeToParent(pftask.UID); return; }
 				// give it a last chance to handle the failure
-				if (pftask.useEntry == null)	pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID);
-                                        else	pftask.rail_build(pftask.source, pftask.target, pftask.useEntry, pftask.stationID);
+				if (pftask.useEntry == null)	pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane);
+                                        else	pftask.rail_build(pftask.source, pftask.target, pftask.stationID, pftask.PrimaryLane, pftask.useEntry);
 				//cPathfinder.CloseTask(pftask.source, pftask.target);
 				return;
-
+			case	-3:
+				cPathfinder.CloseTask(pftask.source, pftask.target);
+				return;
 			case	1:
-				if (!cBanker.CanBuyThat(30000))	 return;
+				if (!cBanker.CanBuyThat(10000))	 return;
 				cBanker.RaiseFundsBy(30000);
 				DInfo(spacer+pftask.UID+" has end search",1);
 				// only start building if root task is ok to build
@@ -419,8 +393,8 @@ function cPathfinder::AdvanceTask(UID)
 				if (pftask.child.len() > 1)	return;
    				DInfo(spacer+pftask.UID+" is building the path",1);
 				local result = 0;
-				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID); }
-                                        else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
+				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane); }
+                                        else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.stationID, pftask.PrimaryLane, pftask.useEntry); }
 				if (result == -1)	return; // retry later
 				if (result == 0)	pftask.status = 2;
 				if (result == -2)	pftask.status = -2;
@@ -432,21 +406,18 @@ function cPathfinder::AdvanceTask(UID)
                 if (root_task.UID != pftask.UID)	return;
 				// recalling function to handle the work is finish
 				local result = 0;
-				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID); }
-										else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.useEntry, pftask.stationID); }
+				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane); }
+										else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.stationID, pftask.PrimaryLane, pftask.useEntry); }
 				// even if we succeed, if the function tell us we fail, set us as fail
-				if (result == -2)	cPathfinder.CloseTask(pftask.source, pftask.target);
+				//cPathfinder.CloseTask(pftask.source, pftask.target);
 				return;
 			}
 	local check = false;
 	DInfo(spacer+"is searching a path @"+pftask.timer);
 	if (!pftask.CheckPathCondition())
 		{
-		AISign.BuildSign(pftask.source[1], "S");
-		AISign.BuildSign(pftask.target[1], "T");
-		AIController.Break("Preconditions fail");
-		pftask.status = -1;
-		root_task.status = -1;
+		if (pftask.UID == root_id)	pftask.status = -2;
+							else	pftask.status = -1;
 		return;
 		}
 	while (check == false && _counter < maxStep)
@@ -466,7 +437,7 @@ function cPathfinder::AdvanceTask(UID)
 			}
 	if (check == null || pftask.timer > maxTimer)
 			{
-			DInfo(spacer+"task failure",1);
+			DInfo(spacer+"task failure : timer="+pftask.timer+" maxTimer="+maxTimer,1);
 			pftask.InfoSign("Pathfinding "+pftask.UID+"... failure");
 			pftask.status = -1;
 			}
@@ -504,18 +475,19 @@ function cPathfinder::InfoSign(msg)
             else	{ this.signHandler=AISign.BuildSign(this.target[1],msg); }
 	}
 
-function cPathfinder::CreateNewTask(src, tgt, entrance, station, split = false)
+function cPathfinder::CreateNewTask(src, tgt, station, primarylane, entrance, split = false)
 // Create a new pathfinding task
 	{
-	local pftask=cPathfinder();
+	local pftask = cPathfinder();
 	src = cPathfinder.GetSourceX(src);
 	tgt = cPathfinder.GetTargetX(tgt);
-	pftask.UID=cPathfinder.GetUID(src, tgt);
-	pftask.source=src;
-	pftask.target=tgt;
+	pftask.UID = cPathfinder.GetUID(src, tgt);
+	pftask.source = src;
+	pftask.target = tgt;
 	pftask.InfoSign("Pathfinder: task #"+cPathfinder.database.len());
-	pftask.useEntry=entrance;
-	pftask.stationID=station;
+	pftask.useEntry = entrance;
+	pftask.PrimaryLane = primarylane;
+	pftask.stationID = station;
 	if (entrance == null)
 			{
 			// road
@@ -528,6 +500,8 @@ function cPathfinder::CreateNewTask(src, tgt, entrance, station, split = false)
 			pftask.pathHandler.cost.tile=70;
 			pftask.pathHandler.cost.slope=120;
 			pftask.pathHandler._cost_level_crossing = 120;
+			// we change the callback function when primarylane is false for road function
+			if (!primarylane)	pftask.road_build = cBuilder.BuildRoadROAD;
 			pftask.pathHandler.InitializePath([pftask.source[0]], [pftask.target[1]]);
 			}
 	else	  // rail
@@ -596,20 +570,13 @@ function cPathfinder::CreateSubTask(mainUID, newSource, newTarget)
 	if (parentTask == null)	return -1;
 	local filsUID = cPathfinder.GetUID(newSource, newTarget);
 	local fils = null;
-	if (filsUID == mainUID)
+	if (filsUID == mainUID || filsUID in cPathfinder.database)
 		{
-/*        fils = cPathfinder.GetPathfinderObject(filsUID);
-        if (fils == null)	return -1;
-        parentTask = cPathfinder.GetPathfinderObject(fils.child[0]);
-        if (parentTask == null)	return -1;
-        AISign.RemoveSign(fils.signHandler);
-		delete cPathfinder.database[filsUID];
-		DInfo("Re-running subtask "+filsUID,1);*/
-		DWarn("Trying to re-run same subtask again",1);
+		DWarn("Trying to re-run same subtask again : "+filsUID,1);
 		parentTask.status = -2;
 		return;
 		}
-	local subTask = cPathfinder.CreateNewTask(newSource, newTarget, parentTask.useEntry, parentTask.stationID, false);
+	local subTask = cPathfinder.CreateNewTask(newSource, newTarget, parentTask.stationID, parentTask.PrimaryLane, parentTask.useEntry, false);
 	fils = cPathfinder.GetPathfinderObject(cPathfinder.GetUID(newSource, newTarget));
 	if (filsUID != mainUID)	parentTask.child.push(fils.UID);
 	parentTask.status = 0;

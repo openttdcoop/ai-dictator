@@ -189,46 +189,47 @@ function cBuilder::EasyError(error)
 	return -2;
 	}
 
-function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
+function cBuilder::BuildPath_RAIL(head1, head2, stationID, primary, useEntry)
 {
-	local status = cPathfinder.GetStatus(head1, head2, stationID, useEntry);
+	local status = cPathfinder.GetStatus(head1, head2, stationID, primary, useEntry);
 	local mytask = cPathfinder.GetPathfinderObject(cPathfinder.GetUID(head1, head2));
-	if (mytask == null)	return -2;
+	if (mytask == null)	return -3;
+	local staobj = cStation.Load(stationID);
+	local uid_obj = null;
+	if (!staobj)	{ cError.RaiseError(); return -3; }
+	if (!primary)	{
+					uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
+					if (!uid_obj)	{ return -3; }
+					}
+    local Destroy = (status == -2);
 	if (status == 2) // success
 		{
 		DInfo("Pathfinder task "+mytask.UID+" succeed !",1);
 		local verifypath = RailFollower.GetRailPathing(mytask.source, mytask.target);
-		if (verifypath.IsEmpty())
-					{
-					mytask.status = -2;
-					DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
-					local badtiles=AIList();
-					badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
-					badtiles.KeepValue(0 - (100000 + mytask.stationID));
-					cTrack.RailCleaner(badtiles); // remove all rail we've built
-					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
-					cError.RaiseError();
-					return -2;
-					}
-			else
-					{
-					DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
-					INSTANCE.buildDelay=0;
-					if (cStationRail.IsPrimaryLineBuilt(stationID) && !cStationRail.IsAlternateLineBuilt(stationID))
-						{
-						// if we are building mainline, then IsPrmaryLineBuild is false ; so if it's true, we are building altline and we were called to build it
-						// so let's recall it to let it know where we are.
-						local staobj = cStation.Load(stationID);
-						if (!staobj)	{ cError.RaiseError(); return -2; }
-						local uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
-						if (!uid_obj)	{ return -2; }
-						cBuilder.RailStationPathfindAltTrack(uid_obj);
-						}
-					return 0;
-					}
+		if (verifypath.IsEmpty())	Destroy = true;
+							else	{
+									DInfo("Pathfinder task "+mytask.UID+" pass checks.",1);
+									INSTANCE.buildDelay=0;
+									if (!primary)	cBuilder.RailStationPathfindAltTrack(uid_obj);
+									return 0;
+									}
 		}
+	if (Destroy)
+		{
+		mytask.status = -2;
+		DError("Pathfinder task "+mytask.UID+" fails when checking the path.",1);
+		local badtiles=AIList();
+		badtiles.AddList(cTileTools.TilesBlackList); // keep blacklisted tiles for -stationID
+		badtiles.KeepValue(0 - (100000 + mytask.stationID));
+		cTrack.RailCleaner(badtiles); // remove all rail we've built
+		cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
+		cError.RaiseError();
+		if (!primary)	cBuilder.RailStationPathfindAltTrack(uid_obj);
+		return -2;
+		}
+
 	local smallerror = 0;
-	if (status == -1)	smallerror = -2; // failure, we have nothing to do if status is already set to failure
+	if (status == -1 || status == -2)	smallerror = -2; // failure, we have nothing to do if status is already set to failure
 	local path = cPathfinder.GetSolve(head1, head2);
 	if (path == null)	{ smallerror = -2; } // if we couldn't get a valid solve here, there's something wrong then
 	cBanker.RaiseFundsBigTime();
@@ -345,6 +346,15 @@ function cBuilder::BuildPath_RAIL(head1, head2, useEntry, stationID)
 					cTrack.RailCleaner(badtiles); // remove all rail we've built
 					cTileTools.TilesBlackList.RemoveList(badtiles); // and release them for others
 					cError.RaiseError();
+					if (!primary)	cBuilder.RailStationPathfindAltTrack(uid_obj);
+	/*				if (cStationRail.IsPrimaryLineBuilt(stationID) && !cStationRail.IsAlternateLineBuilt(stationID))
+						{
+						local staobj = cStation.Load(stationID);
+						if (!staobj)	{ cError.RaiseError(); return -2; }
+						local uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
+						if (!uid_obj)	{ return -2; }
+						cBuilder.RailStationPathfindAltTrack(uid_obj);
+						}*/
 					return -2;
 					}
 			else
@@ -510,10 +520,10 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 							srcpos=srclink+cStationRail.GetRelativeTileBackward(srcStation.s_ID, srcUseEntry);
 							dstpos=dstlink+cStationRail.GetRelativeTileBackward(dstStation.s_ID, dstUseEntry);
 							DInfo("Calling rail pathfinder: srcpos="+srcpos+" dstpos="+dstpos+" srclink="+srclink+" dstlink="+dstlink,2);
-							local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], srcStation.s_ID, srcUseEntry);
+							local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], srcStation.s_ID, true, srcUseEntry);
 							switch (result)
 									{
-									case	-1:
+									case	-2:
 										cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
 										cError.RaiseError();
 										return false;

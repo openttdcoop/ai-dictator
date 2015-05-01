@@ -135,13 +135,13 @@ function cBuilder::BuildRoadByType()
 			local todst=INSTANCE.main.route.TargetStation.GetRoadStationEntry();
 			if (!INSTANCE.main.route.Twoway && INSTANCE.main.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD, INSTANCE.main.route.Distance))	return true;
 			INSTANCE.main.route.Twoway = true; // mark it so roadrunner won't be run on next try
-			local result = cPathfinder.GetStatus(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID);
+			local result = cPathfinder.GetStatus(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID, true, null);
 			cError.ClearError();
-			if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(fromsrc, todst); return false;}
+			if (result == -2)	{ cError.RaiseError(); cPathfinder.CloseTask(fromsrc, todst); return false;}
 			if (result == 2)	{ cPathfinder.CloseTask(fromsrc, todst); return true; }
 			return false;
 		case AIVehicle.VT_RAIL:
-			success=INSTANCE.main.builder.CreateStationsConnection(INSTANCE.main.route.SourceStation.s_ID, INSTANCE.main.route.TargetStation.s_ID);
+			success = cBuilder.CreateStationsConnection(INSTANCE.main.route.SourceStation.s_ID, INSTANCE.main.route.TargetStation.s_ID);
 			return success;
         case AIVehicle.VT_WATER:
             local src_front= cBuilder.GetDockFrontTile(INSTANCE.main.route.SourceStation.s_Location);

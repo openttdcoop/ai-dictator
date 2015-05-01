@@ -114,7 +114,7 @@ function cBuilder::BuildRoadStation(start)
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
 					checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
 					isneartown=true; istown=true;
-					if (!cTileTools.TownRatingNice(INSTANCE.main.route.SourceProcess.ID))
+					if (!cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID))
 							{
 							DInfo("Our rating with "+AITown.GetName(INSTANCE.main.route.SourceProcess.ID)+" is too poor",1);
 							return false;
@@ -137,7 +137,7 @@ function cBuilder::BuildRoadStation(start)
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
 					checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
 					isneartown=true; istown=true;
-					if (!cTileTools.TownRatingNice(INSTANCE.main.route.TargetProcess.ID))
+					if (!cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID))
 							{
 							DInfo("Our rating with "+AITown.GetName(INSTANCE.main.route.TargetProcess.ID)+" is too poor",1);
 							return false;
@@ -230,26 +230,12 @@ function cBuilder::BuildRoadStation(start)
 			if (stationbuild)
 					{
 					staid = AIStation.GetStationID(statile);
-					// try build depot closer to our station
-/*					tilelist.Valuate(AITile.GetDistanceManhattanToTile,statile);
-					tilelist.Sort(AIList.SORT_BY_VALUE, true);
-					foreach (tile, dummy in tilelist)
-						{
-						if (tile == statile) { continue; } // don't build on the same place as our new station
-						deptile=cBuilder.BuildAndStickToRoad(tile, AIRoad.ROADVEHTYPE_BUS+100000, -1); // depot
-						if (deptile >= 0)	{ depotbuild = true; break; }
-						}
-*/
 					}
 			}
-//	success=(depotbuild && stationbuild);
 	success = (stationbuild);
-//	if ((statile==-1 || deptile==-1) && !istown && isneartown)
 	if (statile == -1 && !istown && isneartown)
 			{
 			// We fail to build the station, but it's because we force build station close to roads and there is no roads
-			//if (statile > 0)	{ cTileTools.DemolishTile(statile); }
-			//if (deptile > 0)	{ cTileTools.DemolishTile(deptile); }
 			isneartown=false;
 			tilelist.AddList(checklist); // restore the list of original tiles
 			tilelist.Valuate(AITile.IsBuildable);
@@ -270,13 +256,6 @@ function cBuilder::BuildRoadStation(start)
 							stationbuild = (statile > 0);
 							if (stationbuild)	{ staid = AIStation.GetStationID(statile); success = true; }
 							}
-/*						if (!depotbuild && stationbuild)
-							{
-							deptile = cBuilder.BuildRoadDepotAtTile(tile, -1);
-							depotbuild = (deptile > 0);
-							}
-						success = (depotbuild && stationbuild);
-*/
 						if (success)	{ break; }
 						}
 				}
@@ -296,48 +275,6 @@ function cBuilder::BuildRoadStation(start)
 	cTileTools.TerraformLevelTiles(tileFrom+cTileTools.GetLeftRelativeFromDirection(stadir), tileTo+cTileTools.GetRightRelativeFromDirection(stadir));
 	cTileTools.TerraformLevelTiles(tileFrom+cTileTools.GetLeftRelativeFromDirection(stadir), tileTo+cTileTools.GetRightRelativeFromDirection(stadir)+cTileTools.GetForwardRelativeFromDirection(stadir));
 	return true;
-	}
-
-function cBuilder::PathfindRoadROAD(head1, head2)
-// just pathfind the road, but still don't build it
-	{
-	local pathfinder = MyRoadPF();
-	pathfinder._cost_level_crossing = 1000;
-	pathfinder._cost_coast = 100;
-	pathfinder._cost_slope = 100;
-	pathfinder._cost_bridge_per_tile = 100;
-	pathfinder._cost_tunnel_per_tile = 80;
-	pathfinder._max_bridge_length = 20;
-	pathfinder.InitializePath([head1], [head2]);
-	local savemoney=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	local pfInfo=null;
-	INSTANCE.main.bank.SaveMoney(); // thinking long time, don't waste money
-	pfInfo=AISign.BuildSign(head1,"Pathfinding...");
-	DInfo("Road Pathfinding...",1);
-	local path = false;
-	local counter=0;
-	while (path == false && counter < 250)
-			{
-			path = pathfinder.FindPath(250);
-			counter++;
-			AISign.SetName(pfInfo,"Pathfinding... "+counter);
-//			AIController.Sleep(1);
-			}
-	// restore our money
-	INSTANCE.main.bank.RaiseFundsBy(savemoney);
-	AISign.RemoveSign(pfInfo);
-	if (path != null && path != false)
-			{
-			DInfo("Path found. (" + counter + ")",0);
-			return path;
-			}
-	else
-			{
-			cDebug.ClearSigns();
-			DInfo("Pathfinding failed.",1);
-			cError.RaiseError();
-			return false;
-			}
 	}
 
 function cBuilder::BuildRoadFrontTile(tile, targettile, stationID)
@@ -437,7 +374,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 					cTrack.DestroyDepot(repair.TargetStation.s_Depot);
 					cTrack.DestroyDepot(repair.SourceStation.s_Depot);
 					msg+="Damage & ";
-					cBuilder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID);
+					cBuilder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID, false);
 					if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 							{ msg+=error_error; good=false; }
 					else	{ msg+=error_repair; minGood=true; break; }
@@ -510,7 +447,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 				if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
 						{
 						msg+="Damage & ";
-						INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID);
+						INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID, false);
 						if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD)) // source depot cannot be reach
 								{
 								msg+=error_error; good=false;
@@ -532,7 +469,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 				if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 						{
 						msg+="Damage & ";
-						INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID);
+						INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID, false);
 						if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 								{
 								msg+=error_error; good=false;
@@ -734,9 +671,9 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 				local dep_front = AIRoad.GetRoadDepotFrontTile(work.s_Depot);
 				foreach (tile, front in work.s_Tiles)
 					{
-					if (!INSTANCE.main.builder.RoadRunner(front, dep_front, AIVehicle.VT_ROAD))
+					if (!cBuilder.RoadRunner(front, dep_front, AIVehicle.VT_ROAD))
 						{
-						INSTANCE.main.builder.BuildRoadROAD(front, dep_front, work.s_ID);
+						cBuilder.BuildRoadROAD(front, dep_front, work.s_ID, false);
 						}
 					}
 				}
@@ -914,32 +851,32 @@ function cBuilder::RoadRunner(source, target, road_type, distance = null)
 	return result;
 	}
 
-function cBuilder::BuildRoadROAD(head1, head2, stationID)
+function cBuilder::BuildRoadROAD(head1, head2, stationID, primarylane)
 // Pathfind and building the road.
+// cPathfinder will callback us when primarylane is false
 	{
-	print("in BuildRoadROAD stationID="+stationID);
 	local trys = 0;
 	local result = null;
-	while (trys < 100)
+	while (trys < 20)
 			{
-			result = cPathfinder.GetStatus(head1, head2, stationID);
-			AIController.Break("pathfinder result="+result);
-			if (result == -1)	{ cError.RaiseError(); cPathfinder.CloseTask(head1, head2); return false; }
+			// As we are the new callback for building road with primarylane == false, we must call ourselves the cBuilder.BuildPath_ROAD to build the road
+			result = cBuilder.BuildPath_ROAD(head1, head2, stationID, primarylane);
+			//result = cPathfinder.GetStatus(head1, head2, stationID, false, null);
+			if (result == -2)	{ cPathfinder.CloseTask(head1, head2); cError.RaiseError(); return false; }
 			if (result == 2)	{ cPathfinder.CloseTask(head1, head2); return true; }
-			if (result == 1)	{ trys++; }
+			trys++;
 			// If result == 1 pathfinder is trying to build the route but if it stays at 1 it is because we lack money
 			// We couldn't wait it forever to get money it may never get
 			cPathfinder.AdvanceAllTasks();
 			}
-	print("out BuildRoadROAD trys="+trys+" result="+result);
 	return false;
 	}
 
-function cBuilder::BuildPath_ROAD(src, dst, stationID)
+function cBuilder::BuildPath_ROAD(src, dst, stationID, primarylane)
 // this construct (build) the road we get from path
 {
-	local status = cPathfinder.GetStatus(src, dst, stationID);
-	local mytask=cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, dst));
+	local status = cPathfinder.GetStatus(src, dst, stationID, primarylane, null);
+	local mytask = cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, dst));
 	if (mytask == null)	return -2;
 	if (status == 2) // success
 		{
@@ -953,7 +890,7 @@ function cBuilder::BuildPath_ROAD(src, dst, stationID)
 		return 0;
 		}
 	local smallerror = 0;
-	if (status == -1)	smallerror = -2; // failure, we have nothing to do if status is already set to failure
+	if (status == -2)	smallerror = -2; // failure, we have nothing to do if status is already set to failure
 	local path = cPathfinder.GetSolve(src, dst);
 	if (path == null)	{ smallerror = -2; } // if we couldn't get a valid solve here, there's something wrong then
 	cBanker.RaiseFundsBigTime();

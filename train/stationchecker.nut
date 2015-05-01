@@ -405,10 +405,10 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
 	if (pval == -1)	{ cError.RaiseError(); return false; }
 	srclink = pval[0]; srcpos = pval[1]; dstlink=pval[2], dstpos=pval[3];
 	DInfo("Calling rail pathfinder: srcpos="+srcpos+" srclink="+srclink+" dstpos="+dstpos+" dstlink="+dstlink,2);
-	local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], roadObj.TargetStation.s_ID, roadObj.Target_RailEntry);
+	local result=cPathfinder.GetStatus([srclink,srcpos],[dstlink,dstpos], roadObj.TargetStation.s_ID, false, roadObj.Target_RailEntry);
 	if (result != 2)
 			{
-			if (result == -1)
+			if (result == -2)
 					{
 					DError("We cannot build the alternate track for that station ",1);
 					if (roadObj.Source_RailEntry)	{ cStationRail.RailStationCloseEntry(roadObj.SourceStation.s_ID); }

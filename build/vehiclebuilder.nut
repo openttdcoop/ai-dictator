@@ -153,16 +153,16 @@ function cCarrier::GetVehicle(routeidx)
 	switch (road.VehicleType)
 		{
 		case	RouteType.RAIL:
-			return INSTANCE.main.carrier.ChooseRailCouple(road.CargoID, road.RailType, road.GetDepot(routeidx));
+			return  cCarrier.ChooseRailCouple(road.CargoID, road.RailType, road.GetDepot(routeidx));
 		break;
 		case	RouteType.WATER:
-			return INSTANCE.main.carrier.GetWaterVehicle(routeidx);
+			return cCarrier.GetWaterVehicle(routeidx);
 		break;
 		case	RouteType.ROAD:
-			return INSTANCE.main.carrier.GetRoadVehicle(routeidx);
+			return cCarrier.GetRoadVehicle(routeidx);
 		break;
 		default: // to catch all AIR type
-			return INSTANCE.main.carrier.GetAirVehicle(routeidx);
+			return cCarrier.GetAirVehicle(routeidx);
 		break;
 		}
 }
@@ -363,27 +363,18 @@ function cCarrier::VehicleFilterAir(vehlist, object)
 
 function cCarrier::VehicleFilterTrain(vehlist, object)
 {
-	cEngineLib.EngineFilter(vehlist, object.cargo_id, -1, object.engine_id, object.bypass);
-	// We must pass -1 as railtype so the filter will not filter them out by railtype: we will handle this ourselves
+	cEngineLib.EngineFilter(vehlist, object.cargo_id, object.engine_roadtype, object.engine_id, object.bypass);
 	if (AIEngine.IsWagon(vehlist.Begin()))
 			{
-			if (object.engine_roadtype != -1)
-				{
-				vehlist.Valuate(AIEngine.HasPowerOnRail, object.engine_roadtype);
-				vehlist.KeepValue(1);
-				}
 			vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
 			vehlist.Sort(AIList.SORT_BY_VALUE, false);
 			}
 	else	{
 			vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 			vehlist.Sort(AIList.SORT_BY_VALUE, true);
-			// before we filter trains by railtype, add this engine as topengine using any railtype
-			if (!vehlist.IsEmpty() && object.depot == -1)	cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, 1);
-			if (object.engine_roadtype != -1)
+			if (!vehlist.IsEmpty())
 				{
-				vehlist.Valuate(AIEngine.HasPowerOnRail, object.engine_roadtype);
-				vehlist.KeepValue(1);
+				if (object.depot == -1)	cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, 1);
 				vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
 				vehlist.Sort(AIList.SORT_BY_VALUE, true);
 				cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, object.engine_roadtype + 10);
