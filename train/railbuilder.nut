@@ -13,6 +13,22 @@
  *
 **/
 
+function cBuilder::EvalDistanceProduction(tilelist, to_tile)
+// this set a new AIList with a ratio distance/value of the given tilelist list
+// to_tile the aim goal to check the distance
+{
+	local n_list = AIList();
+	foreach (tile, value in tilelist)
+		{
+		local distance = AIMap.DistanceManhattan(tile, to_tile);
+		local res = ((tilelist.GetValue(tile) + 1000) - distance).tointeger();
+		res = tilelist.GetValue(tile);
+        n_list.AddItem(tile, res);
+        }
+	n_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
+	return n_list;
+}
+
 function cBuilder::BuildTrainStation(start)
 // It's where we find a spot for our train station
 // Unlike classic stations that need best spot where to get cargo, train stations best spot
@@ -83,67 +99,107 @@ function cBuilder::BuildTrainStation(start)
 					istown=false;
 					}
 			}
-	tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-    tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+	tilelist = cBuilder.EvalDistanceProduction(tilelist, otherplace);
+//	tilelist.Valuate(cBuilder.DistanceProductionValuator, otherplace, );
+ //   tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+/*	foreach (tile, _ in tilelist)
+			{
+			if (cTileTools.IsBuildableRectangleFlat(tile, 2, 5))	cDebug.PutSign(tile, "1");
+													else		cDebug.PutSign(tile, "0"); }
+													AIController.Break("bildabl"); */
+    foreach (tile, _ in tilelist)	cDebug.PutSign(tile, _);//cDebug.showLogic(tilelist);
+    AIController.Break("stop");
     if (istown)	platnum = 2;
+		else    {
+				if (!start)	platnum = 1;
+					else	platnum = (AIIndustry.GetLastMonthProduction(INSTANCE.main.route.SourceProcess.ID,INSTANCE.main.route.CargoID) / 25) >= INSTANCE.main.carrier.train_length ? 2 : 1;
+				}
 	local success = false;
 	local buildmode=0;
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
 	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger()),2);
 	INSTANCE.main.bank.RaiseFundsBy(cost*4);
 	local ssize= 6 + INSTANCE.main.carrier.train_length;
-	/* 3 build mode:
+	/* 4 build mode:
 	- try find a place with stationsize+11 tiles flatten and buildable
+	- try again but with the other direction
 	- try find a place with stationsize+11 tiles maybe not flat and buildable
+	- try again but with the other direction
 	- try find a place with stationsize+11 tiles maybe not flat and buildable even on water
 	*/
 	do
 			{
 			foreach (tile, _ in tilelist)
 				{
+				local direction = dir;
 				cDebug.PutSign(tile, buildmode);
-				if (start)	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location); }
-					else	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.TargetProcess.Location); }
+				//if (start)	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location); }
+				//	else	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.TargetProcess.Location); }
+//				if (start)	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location); }
+	//				else	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.TargetProcess.Location); }
+					print("dir = "+cBuilder.DirectionToString(dir));
 				switch (dir)
 						{
 						case DIR_NW: //0 south
-							if (istown)	{ dir=AIRail.RAILTRACK_NW_SE; }
-							else	{ dir=AIRail.RAILTRACK_NE_SW; }
+							//if (istown)	{ dir=AIRail.RAILTRACK_NW_SE; }
+							//else	{ dir=AIRail.RAILTRACK_NE_SW; }
+							direction = AIRail.RAILTRACK_NW_SE;
 							break;
 						case DIR_SE: //1 north
-							if (istown)	{ dir=AIRail.RAILTRACK_NW_SE; }
-							else	{ dir=AIRail.RAILTRACK_NE_SW; }
+							//if (istown)	{ dir=AIRail.RAILTRACK_NW_SE; }
+							//else	{ dir=AIRail.RAILTRACK_NE_SW; }
+							direction = AIRail.RAILTRACK_NW_SE;
 							break;
 						case DIR_SW: //3 est/droite
-							if (istown)	{ dir=AIRail.RAILTRACK_NE_SW; }
-							else	{ dir=AIRail.RAILTRACK_NW_SE; }
+							//if (istown)	{ dir=AIRail.RAILTRACK_NE_SW; }
+							//else	{ dir=AIRail.RAILTRACK_NW_SE; }
+							direction = AIRail.RAILTRACK_NE_SW;
 							break;
 						case DIR_NE: //2 west/gauche
-							if (istown)	{ dir=AIRail.RAILTRACK_NE_SW; }
-							else	{ dir=AIRail.RAILTRACK_NW_SE; }
+							//if (istown)	{ dir=AIRail.RAILTRACK_NE_SW; }
+							//else	{ dir=AIRail.RAILTRACK_NW_SE; }
+							direction = AIRail.RAILTRACK_NE_SW;
 							break;
 						}
+				if (buildmode == 1 || buildmode == 3)
+					{
+					if (direction == AIRail.RAILTRACK_NE_SW)	direction = AIRail.RAILTRACK_NW_SE;
+														else	direction = AIRail.RAILTRACK_NE_SW;
+                    }
 				local checkit = false;
 				switch (buildmode)
 						{
 						case	0:
-							if (dir == AIRail.RAILTRACK_NW_SE)	{ checkit = cTileTools.IsBuildableRectangleFlat(tile, 2, ssize); }
-							else	{ checkit = cTileTools.IsBuildableRectangleFlat(tile, ssize, 2); }
-							if (checkit)	{ checkit = tile; }
+						print("mode0");
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTileTools.IsBuildableRectangleFlat(tile, platnum, ssize); } // platnum = width
+																else	{ checkit = cTileTools.IsBuildableRectangleFlat(tile, ssize, platnum); }
+							if (checkit)	cDebug.PutSign(tile, "1");
+									else	cDebug.PutSign(tile, "0");
+							local z = AITileList();
+							z.AddRectangle(tile, tile+11);
+							//if (checkit)	{ checkit = tile; }
 							break;
 						case	1:
-							if (dir == AIRail.RAILTRACK_NW_SE)	{ checkit = AITile.IsBuildableRectangle(tile, 2, ssize); }
-							else	{ checkit = AITile.IsBuildableRectangle(tile, ssize, 2); }
-							if (checkit)	{ checkit = tile; }
+						print("mode1");
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = AITile.IsBuildableRectangle(tile, platnum, ssize); }
+																else	{ checkit = AITile.IsBuildableRectangle(tile, ssize, platnum); }
+							//if (checkit)	{ checkit = tile; }
 							break;
 						case	2:
-							if (dir == AIRail.RAILTRACK_NW_SE)	{ checkit = cTileTools.CheckLandForConstruction(tile, 2, ssize); }
-							else	{ checkit = cTileTools.CheckLandForConstruction(tile, ssize, 2); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTileTools.CheckLandForConstruction(tile, platnum, ssize); }
+																else	{ checkit = cTileTools.CheckLandForConstruction(tile, ssize, platnum); }
 							break;
 						}
 				if (checkit != false)
 						{
-						success = cBuilder.CreateAndBuildTrainStation(checkit, dir, platnum);
+						local newGRF = [];
+						newGRF.push(AIStation.STATION_NEW);
+						newGRF.push(INSTANCE.main.route.CargoID);
+						newGRF.push(INSTANCE.main.route.SourceProcess.UID);
+						newGRF.push(INSTANCE.main.route.TargetProcess.UID);
+						newGRF.push(start);
+						success = cBuilder.CreateAndBuildTrainStation(tile, direction, platnum, newGRF);
+						AIController.Break("station");
 						if (!success && cError.IsCriticalError())	{ break; }
 						statile = tile;
 						print("statile return "+statile);
@@ -152,7 +208,7 @@ function cBuilder::BuildTrainStation(start)
 				}
 			buildmode++;
 			}
-	while (buildmode != 4 && !success);
+	while (buildmode != 6 && !success);
 	if (!success)
 			{
 			DInfo("Can't find a good place to build the train station ! "+tilelist.Count(),1);
@@ -551,22 +607,53 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 	return true;
 	}
 
-function cBuilder::CreateAndBuildTrainStation(tilepos, direction, platnum, link = AIStation.STATION_NEW)
+function cBuilder::CreateAndBuildTrainStation(tilepos, direction, platnum, newGRF)
 // Create a new station, we still don't know if station will be usable
 // that's a task handle by CreateStationConnection
-// link: true to link to a previous station
+// newGRF: an array of [AIStation.NEW] or [stationID to link with, cargoid, source industry, target industry, Is_station_at_source]
 	{
+	local link = newGRF[0];
 	local c = AITile.GetTownAuthority(tilepos);
 	if (AITown.IsValidTown(c) && AITown.GetRating(c, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	{ cTileTools.SeduceTown(c); }
 	local money = (INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate()).tointeger();
 	if (!cBanker.CanBuyThat(money))	{ DInfo("We lack money to buy the station",1); }
 	cBanker.RaiseFundsBy(money);
 	if (link != AIStation.STATION_NEW && AIStation.IsValidStation(link))
-        {
-        local rt = AIRail.GetRailType(AIStation.GetLocation(link));
-        cTrack.SetRailType(rt);
-        }
-	if (!AIRail.BuildRailStation(tilepos, direction, platnum, INSTANCE.main.carrier.train_length, link))
+				{
+				local rt = AIRail.GetRailType(AIStation.GetLocation(link));
+				cTrack.SetRailType(rt);
+				local sta_obj = cStation.Load(link);
+				if (!sta_obj)	return false;
+				local route_obj = cRoute.Load(sta_obj.s_Train[TrainType.OWNER]);
+				if (!route_obj)	return false;
+				newGRF.push(sta_obj.CargoID);
+				newGRF.push(sta_obj.SourceProcess.UID);
+				newGRF.push(sta_obj.TargetProcess.UID);
+				if (sta_obj.SourceStation.s_ID == link)	newGRF.push(true);
+												else	newGRF.push(false);
+				}
+	local cargo = newGRF[1];
+	local src_istown = false;
+	local dst_istown = false;
+	local src_id = newGRF[2];
+	local dst_id = newGRF[3];
+	local src_type = AIIndustryType.INDUSTRYTYPE_UNKNOWN;
+	local dst_type = AIIndustryType.INDUSTRYTYPE_UNKNOWN;
+	if (src_id > 10000)
+		{
+		src_istown = true;
+		src_id -= 10000;
+		src_type = AIIndustryType.INDUSTRYTYPE_TOWN;
+		}
+	if (dst_id > 10000)
+		{
+		dst_istown = true;
+		dst_id -= 10000;
+		dst_type = AIIndustryType.INDUSTRYTYPE_TOWN;
+		}
+	local distance = AIMap.DistanceManhattan(AIIndustry.GetLocation(src_id), AIIndustry.GetLocation(dst_id));
+	if (!AIRail.BuildNewGRFRailStation(tilepos, direction, platnum, INSTANCE.main.carrier.train_length, link, cargo, src_type, dst_type, distance, newGRF[4]))
+//	if (!AIRail.BuildRailStation(tilepos, direction, platnum, INSTANCE.main.carrier.train_length, link))
 			{
 			DInfo("Rail station couldn't be built, link="+link+" cost="+money,1);
 			cDebug.PutSign(tilepos,"!");
