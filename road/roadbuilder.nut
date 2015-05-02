@@ -243,7 +243,7 @@ function cBuilder::BuildRoadStation(start)
 			tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
 			tilelist.Sort(AIList.SORT_BY_VALUE, true);
 			}
-	local s_front = cTileTools.GetForwardRelativeFromDirection(dir);
+	local s_front = cDirection.GetForwardRelativeFromDirection(dir);
 	if (!isneartown)
 			{
 			foreach (tile, dummy in tilelist)
@@ -267,13 +267,13 @@ function cBuilder::BuildRoadStation(start)
 	local newStation = INSTANCE.main.route.CreateNewStation(start);
 	if (newStation == null)	{ return false; }
 	local stadir = cBuilder.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
-	local tileFrom= statile + cTileTools.GetRightRelativeFromDirection(stadir);
-	local tileTo= statile + cTileTools.GetLeftRelativeFromDirection(stadir);
+	local tileFrom= statile + cDirection.GetRightRelativeFromDirection(stadir);
+	local tileTo= statile + cDirection.GetLeftRelativeFromDirection(stadir);
 	cTileTools.TerraformLevelTiles(tileFrom, tileTo); // try levels mainstation and its neighbourg
-	tileTo=statile+cTileTools.GetLeftRelativeFromDirection(stadir)+cTileTools.GetForwardRelativeFromDirection(stadir)+cTileTools.GetForwardRelativeFromDirection(stadir);
+	tileTo=statile+cDirection.GetLeftRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir);
 	cTileTools.TerraformLevelTiles(tileFrom, tileTo); // try levels all tiles a station could use to grow
-	cTileTools.TerraformLevelTiles(tileFrom+cTileTools.GetLeftRelativeFromDirection(stadir), tileTo+cTileTools.GetRightRelativeFromDirection(stadir));
-	cTileTools.TerraformLevelTiles(tileFrom+cTileTools.GetLeftRelativeFromDirection(stadir), tileTo+cTileTools.GetRightRelativeFromDirection(stadir)+cTileTools.GetForwardRelativeFromDirection(stadir));
+	cTileTools.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir));
+	cTileTools.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir));
 	return true;
 	}
 
@@ -797,7 +797,7 @@ function cBuilder::RoadRunnerHelper(source, target, road_type, walkedtiles=null,
 // return solve in an AIList() if we reach target by running the path
 	{
 	local Distance = AITile.GetDistanceManhattanToTile;
-	if (road_type == AIVehicle.VT_WATER) { Distance = cTileTools.GetDistanceChebyshevToTile; }
+	if (road_type == AIVehicle.VT_WATER) { Distance = cDirection.GetDistanceChebyshevToTile; }
 	local max_wrong_direction=15;
 	if (origin == null)	{ origin = Distance(source, target); }
 	if (walkedtiles == null)	{ walkedtiles=AIList(); }

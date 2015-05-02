@@ -31,8 +31,8 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 	local station_left = null;
 	local station_right = null;
 	local station_right = cBuilder.GetDirection(cStationRail.GetPlatformIndex(topRightPlatform, false), cStationRail.GetPlatformIndex(topRightPlatform, true));
-	local station_left=cTileTools.GetLeftRelativeFromDirection(station_right);
-	station_right=cTileTools.GetRightRelativeFromDirection(station_right);
+	local station_left=cDirection.GetLeftRelativeFromDirection(station_right);
+	station_right=cDirection.GetRightRelativeFromDirection(station_right);
 	cDebug.PutSign(station_left+idxLeftPlatform,"LS");
 	cDebug.PutSign(station_right+idxRightPlatform,"RS");
 	// default: main station + exit in use = best place to build a platform : left side
@@ -430,7 +430,7 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
 			roadObj.SourceStation.SetAlternateLineBuilt();
 			roadObj.TargetStation.SetAlternateLineBuilt();
 			cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
-			cBuilder.RailConnectorSolver(dstpos, dstpos+cTileTools.GetForwardRelativeFromDirection(cBuilder.GetDirection(dstlink, dstpos)), true);
+			cBuilder.RailConnectorSolver(dstpos, dstpos+cDirection.GetForwardRelativeFromDirection(cBuilder.GetDirection(dstlink, dstpos)), true);
 			roadObj.RouteClaimsTiles();
 			}
 	return true;

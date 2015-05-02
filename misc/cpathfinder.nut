@@ -176,7 +176,7 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 	correct = AIMap.GetTileIndex(m_x, m_y);
 	AISign.BuildSign(correct, "C");
 	if (AIMap.DistanceManhattan(correct, start) > 9) mid = correct; // use correct point if it doesn't fall to close start point only
-	local fwd = cTileTools.GetForwardRelativeFromDirection(direction);
+	local fwd = cDirection.GetForwardRelativeFromDirection(direction);
     local seek_area = AITileList();
     seek_area.AddRectangle(mid + AIMap.GetTileIndex(5, 5), mid - AIMap.GetTileIndex(5,5));
 	local any_rail = null;

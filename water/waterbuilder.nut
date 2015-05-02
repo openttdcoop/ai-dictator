@@ -43,7 +43,7 @@ function cBuilder::BuildWaterDepotAtTile(tile, destination)
     foreach (tile, dummy in reusedepot)
         {
         local dir = cBuilder.GetDirection(tile, destination);
-        local front = cTileTools.GetForwardRelativeFromDirection(dir);
+        local front = cDirection.GetForwardRelativeFromDirection(dir);
         if (!AITile.IsWaterTile(tile+front) || !(AITile.IsWaterTile(tile+front+front))) { continue; } // boats will stay stuck in it else
         newpos = AIMarine.BuildWaterDepot(tile, tile+front);
         if (newpos)	{ return tile; }

@@ -44,3 +44,4 @@ require("misc/ctiletools.nut");
 require("misc/cterraform.nut");
 require("train/railfollower.nut");
 require("misc/cscp.nut");
+require("misc/cdirection.nut");
