@@ -202,3 +202,13 @@ function cMisc::Locate(tile)
 	return "tile="+tile+" "+z+" near "+AITown.GetName(AITile.GetClosestTown(tile));
 }
 
+function cMisc::MostItemInList(list, item)
+// add item to list if not exist and set counter to 1, else increase counter
+// return the list
+{
+	if (!list.HasItem(item))	{ list.AddItem(item,1); }
+					else	{ local c=list.GetValue(item); c++; list.SetValue(item,c); }
+	return list;
+}
+
+
