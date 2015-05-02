@@ -105,13 +105,13 @@ function cBuilder::BuildStation(start)
 	switch (INSTANCE.main.route.VehicleType)
 		{
 		case AIVehicle.VT_ROAD:
-		success=INSTANCE.main.builder.BuildRoadStation(start);
+		success = cBuilder.BuildRoadStation(start);
 		break;
 		case AIVehicle.VT_RAIL:
-		success=INSTANCE.main.builder.BuildTrainStation(start);
+		success = cBuilder.BuildTrainStation(start);
 		break;
 		case AIVehicle.VT_WATER:
-		success=INSTANCE.main.builder.BuildWaterStation(start);
+		success = cBuilder.BuildWaterStation(start);
 		break;
 		case RouteType.AIR:
 		case RouteType.AIRMAIL:
@@ -120,7 +120,7 @@ function cBuilder::BuildStation(start)
 		case RouteType.SMALLAIR:
 		case RouteType.SMALLMAIL:
 		case RouteType.CHOPPER:
-		success=INSTANCE.main.builder.BuildAirStation(start);
+		success = cBuilder.BuildAirStation(start);
 		// we get the stationID return, but builder expect it to be in SourceStation or TargetStation to claim it
 		if (success != -1)
 			{
@@ -145,7 +145,7 @@ function cBuilder::BuildRoadByType()
 			DInfo("Calling road pathfinder: from "+INSTANCE.main.route.SourceStation.s_Name+" to "+INSTANCE.main.route.TargetStation.s_Name,2);
 			local fromsrc=INSTANCE.main.route.SourceStation.GetRoadStationEntry();
 			local todst=INSTANCE.main.route.TargetStation.GetRoadStationEntry();
-			if (!INSTANCE.main.route.Twoway && INSTANCE.main.builder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD, INSTANCE.main.route.Distance))	return true;
+			if (!INSTANCE.main.route.Twoway && cBuilder.RoadRunner(fromsrc, todst, AIVehicle.VT_ROAD, INSTANCE.main.route.Distance))	return true;
 			INSTANCE.main.route.Twoway = true; // mark it so roadrunner won't be run on next try
 			local result = cPathfinder.GetStatus(fromsrc, todst, INSTANCE.main.route.SourceStation.s_ID, true, null);
 			cError.ClearError();
@@ -247,14 +247,14 @@ function cBuilder::FindCompatibleStationExists()
 	local sList=AIStationList(INSTANCE.main.route.StationType);
 
 	DInfo("Looking for a compatible station sList="+sList.Count(),2);
-	INSTANCE.main.builder.DumpRoute();
+	cBuilder.DumpRoute();
 	local source_success=false;
 	local target_success=false;
 	if (!sList.IsEmpty())
 		{
 		foreach (stations_check, dummy in sList)
 			{
-			source_success=INSTANCE.main.builder.FindCompatibleStationExistForAllCases(true, stations_check);
+			source_success = cBuilder.FindCompatibleStationExistForAllCases(true, stations_check);
 			if (source_success)
 				{
 				INSTANCE.main.route.SourceStation = stations_check;
@@ -264,7 +264,7 @@ function cBuilder::FindCompatibleStationExists()
 			}
 		foreach (stations_check, dummy in sList)
 			{
-			target_success=INSTANCE.main.builder.FindCompatibleStationExistForAllCases(false, stations_check);
+			target_success = cBuilder.FindCompatibleStationExistForAllCases(false, stations_check);
 			if (target_success)
 				{
 				INSTANCE.main.route.TargetStation = stations_check;
@@ -349,7 +349,7 @@ function cBuilder::TryBuildThatRoute()
 	else	{ if (INSTANCE.main.route.Status==0)	INSTANCE.main.route.Status=1; } // advance to next phase
 	if (INSTANCE.main.route.Status==1)
 		{
-		INSTANCE.main.builder.FindCompatibleStationExists();
+		cBuilder.FindCompatibleStationExists();
 		if (cError.IsCriticalError())	// we could get an error when checking to upgrade station
 			{
 			if (cError.IsError())
@@ -369,7 +369,7 @@ function cBuilder::TryBuildThatRoute()
 				{
 				if (INSTANCE.main.route.VehicleType == RouteType.RAIL)	{ cTrack.SetRailType(INSTANCE.main.route.RailType); }
 				if (INSTANCE.main.route.SourceProcess.IsTown && AITown.GetRating(INSTANCE.main.route.SourceProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	{ cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID); }
-				success = INSTANCE.main.builder.BuildStation(true);
+				success = cBuilder.BuildStation(true);
 				if (!success && cError.IsError())	INSTANCE.main.route.SourceProcess.ZeroProcess();
 				}
         else	{
@@ -402,7 +402,7 @@ function cBuilder::TryBuildThatRoute()
                     if (INSTANCE.main.route.TargetProcess.IsTown && AITown.GetRating(INSTANCE.main.route.TargetProcess.ID, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID);
 					cTrack.SetRailType(INSTANCE.main.route.RailType);
 					}
-				success=INSTANCE.main.builder.BuildStation(false);
+				success = cBuilder.BuildStation(false);
 				if (!success && cError.IsError())	INSTANCE.main.route.TargetProcess.ZeroProcess();
 				}
 			else	{
@@ -425,7 +425,7 @@ function cBuilder::TryBuildThatRoute()
 		}
 	if (INSTANCE.main.route.Status==4) // pathfinding
 		{
-		success=INSTANCE.main.builder.BuildRoadByType();
+		success = cBuilder.BuildRoadByType();
 		if (success)
                 { INSTANCE.main.route.Status=5; }
         else	{
@@ -438,7 +438,7 @@ function cBuilder::TryBuildThatRoute()
 		{ // check the route is really valid
             if (INSTANCE.main.route.VehicleType == AIVehicle.VT_ROAD)
                 {
-                success=INSTANCE.main.builder.CheckRoadHealth(INSTANCE.main.route.UID);
+                success = cBuilder.CheckRoadHealth(INSTANCE.main.route.UID);
                 }
 		else	{ success=true; } // other route type for now are ok
 		if (success)	{ INSTANCE.main.route.Status=6; }

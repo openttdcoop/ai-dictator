@@ -60,7 +60,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 					// limit by vehicle disable (this can happen if we reach max vehicle game settings too
 					if ( (thatstation.s_VehicleCount+max_allow) > thatstation.s_VehicleMax)
 						{ // we must upgrade
-						INSTANCE.main.builder.RoadStationNeedUpgrade(roadidx, start);
+						cBuilder.RoadStationNeedUpgrade(roadidx, start);
 						local fake=thatstation.CanUpgradeStation(); // to see if upgrade success
 						}
 					if (thatstation.s_VehicleCount+max_allow > thatstation.s_VehicleMax)
@@ -114,7 +114,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 			if (!INSTANCE.use_air)	{ max_allow = 0; }
 			if (thatstation.CanUpgradeStation())
 				{
-				INSTANCE.main.builder.AirportNeedUpgrade(thatstation.s_ID);
+				cBuilder.AirportNeedUpgrade(thatstation.s_ID);
 				max_allow=0;
 				}
 			local limitmax = INSTANCE.main.carrier.air_max;
@@ -388,11 +388,6 @@ function cCarrier::RouteNeedVehicle(gid, amount)
     if (amount == 0)    return;
     if (INSTANCE.main.carrier.vehicle_wishlist.HasItem(gid))	return;
     INSTANCE.main.carrier.vehicle_wishlist.AddItem(gid, amount);
-//    local current = INSTANCE.carrier.vehicle_wishlist.GetValue(gid);
- //   local x = 0;
-  //  if (current > 1000)	{ x = 1000; }
-   // if (current < (x + amount))	{ current = (x + amount); }
-    //INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, current);
 }
 
 function cCarrier::PriorityGroup(gid)

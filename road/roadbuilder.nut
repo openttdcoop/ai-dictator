@@ -108,7 +108,7 @@ function cBuilder::BuildRoadStation(start)
 	local dir, tilelist, checklist, otherplace, istown, isneartown=null;
 	if (start)
 			{
-			dir = INSTANCE.main.builder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
+			dir = cBuilder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
 			if (INSTANCE.main.route.SourceProcess.IsTown)
 					{
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
@@ -131,7 +131,7 @@ function cBuilder::BuildRoadStation(start)
 			}
 	else
 			{
-			dir = INSTANCE.main.builder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
+			dir = cBuilder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
 			if (INSTANCE.main.route.TargetProcess.IsTown)
 					{
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
@@ -269,11 +269,11 @@ function cBuilder::BuildRoadStation(start)
 	local stadir = cBuilder.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
 	local tileFrom= statile + cDirection.GetRightRelativeFromDirection(stadir);
 	local tileTo= statile + cDirection.GetLeftRelativeFromDirection(stadir);
-	cTileTools.TerraformLevelTiles(tileFrom, tileTo); // try levels mainstation and its neighbourg
+	cTerraform.TerraformLevelTiles(tileFrom, tileTo); // try levels mainstation and its neighbourg
 	tileTo=statile+cDirection.GetLeftRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir);
-	cTileTools.TerraformLevelTiles(tileFrom, tileTo); // try levels all tiles a station could use to grow
-	cTileTools.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir));
-	cTileTools.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir));
+	cTerraform.TerraformLevelTiles(tileFrom, tileTo); // try levels all tiles a station could use to grow
+	cTerraform.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir));
+	cTerraform.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir));
 	return true;
 	}
 
@@ -368,14 +368,14 @@ function cBuilder::CheckRoadHealth(routeUID)
 		foreach (dtile, dfront in repair.TargetStation.s_Tiles)
 			{
 			msg=space+"Connnection from "+repair.SourceStation.s_Name+" Entry #"+stile+" to "+repair.TargetStation.s_Name+" Entry #"+dtile+" : ";
-			if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
+			if (!cBuilder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 					{
 					// Removing depots that might prevents us from reaching our target
 					cTrack.DestroyDepot(repair.TargetStation.s_Depot);
 					cTrack.DestroyDepot(repair.SourceStation.s_Depot);
 					msg+="Damage & ";
 					cBuilder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID, false);
-					if (!INSTANCE.main.builder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
+					if (!cBuilder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 							{ msg+=error_error; good=false; }
 					else	{ msg+=error_repair; minGood=true; break; }
 					DInfo(msg,1);
@@ -415,7 +415,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 	if (!AIRoad.IsRoadDepotTile(repair.TargetStation.s_Depot) || !cTileTools.TileIsOur(repair.TargetStation.s_Depot))
 			{
 			msg+="invalid. ";
-			repair.TargetStation.s_Depot = INSTANCE.main.builder.BuildRoadDepotAtTile(repair.TargetStation.GetRoadStationEntry(), repair.TargetStation.s_ID);
+			repair.TargetStation.s_Depot = cBuilder.BuildRoadDepotAtTile(repair.TargetStation.GetRoadStationEntry(), repair.TargetStation.s_ID);
 			if (AIRoad.IsRoadDepotTile(repair.TargetStation.s_Depot))	{ msg+=error_repair; }
 			else	{ msg+=error_error; good=false; }
 			}
@@ -428,7 +428,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 			if (!AIRoad.AreRoadTilesConnected(repair.TargetStation.s_Depot, depotfront))
 					{
 					msg+="not usable. ";
-					correction=INSTANCE.main.builder.BuildRoadFrontTile(repair.TargetStation.s_Depot, depotfront, repair.TargetStation.s_ID);
+					correction = cBuilder.BuildRoadFrontTile(repair.TargetStation.s_Depot, depotfront, repair.TargetStation.s_ID);
 					if (correction)	{ msg+=error_repair; }
 							else	{ msg+=error_error; good=false; }
 					}
@@ -444,15 +444,15 @@ function cBuilder::CheckRoadHealth(routeUID)
 			foreach (tile, front in repair.SourceStation.s_Tiles)
 				{
 				msg=space+"Connnection from source station -> Entry "+tile+" to its depot : ";
-				if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
+				if (!cBuilder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
 						{
 						msg+="Damage & ";
-						INSTANCE.main.builder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID, false);
-						if (!INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD)) // source depot cannot be reach
+						cBuilder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID, false);
+						if (!cBuilder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD)) // source depot cannot be reach
 								{
 								msg+=error_error; good=false;
 								local other_depot = -1;
-								if (INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))	{ other_depot = 1; }
+								if (cBuilder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))	{ other_depot = 1; }
 								// but target depot could be reach
 								srcEntries.SetValue(tile, other_depot);
 								}
@@ -466,15 +466,15 @@ function cBuilder::CheckRoadHealth(routeUID)
 			foreach (tile, front in repair.TargetStation.s_Tiles)
 				{
 				msg=space+"Connnection from destination station -> Entry "+tile+" to its depot : ";
-				if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
+				if (!cBuilder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 						{
 						msg+="Damage & ";
-						INSTANCE.main.builder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID, false);
-						if (!INSTANCE.main.builder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
+						cBuilder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID, false);
+						if (!cBuilder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 								{
 								msg+=error_error; good=false;
 								local other_depot = -1;
-								if (INSTANCE.main.builder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))	{ other_depot = 1; }
+								if (cBuilder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))	{ other_depot = 1; }
 								dstEntries.SetValue(tile, other_depot);
 								}
 						else	{ msg+=error_repair; dstEntries.SetValue(tile, 1); }
@@ -562,7 +562,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 	local new_dep_pos=-1;
 	local success=false;
 	local upgradepos=[];
-	local facing=INSTANCE.main.builder.GetDirection(sta_pos, sta_front);
+	local facing=cBuilder.GetDirection(sta_pos, sta_front);
 	local p_left = cTileTools.GetPosRelativeFromDirection(0, facing);
 	local p_right = cTileTools.GetPosRelativeFromDirection(1, facing);
 	local p_forward = cTileTools.GetPosRelativeFromDirection(2, facing);
@@ -653,7 +653,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 	if (depotdead)
 			{
 			DWarn("Road depot was destroy while upgrading",1);
-			new_dep_pos=INSTANCE.main.builder.BuildRoadDepotAtTile(new_sta_pos, work.s_ID);
+			new_dep_pos = cBuilder.BuildRoadDepotAtTile(new_sta_pos, work.s_ID);
 			work.s_Depot = new_dep_pos;
 			cError.ClearError();
 			// Should be more than enough
@@ -688,7 +688,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 					}
 			success=false;
 			}
-	if (!work.s_Owner.IsEmpty())	{ INSTANCE.main.builder.RouteIsDamage(work.s_Owner.Begin()); }
+	if (!work.s_Owner.IsEmpty())	{ cBuilder.RouteIsDamage(work.s_Owner.Begin()); }
 	// ask ourselves a check for one route that own that station
 	if (success)	{ work.s_MoneyUpgrade = 0; work.s_DateLastUpgrade = null; }
 	return success;
@@ -830,7 +830,7 @@ function cBuilder::RoadRunnerHelper(source, target, road_type, walkedtiles=null,
 		if (valid)	{ walkedtiles.AddItem(direction,0); }
 		//if (valid && INSTANCE.debug)	cDebug.PutSign(direction, currdistance);
 		//if (INSTANCE.debug) DInfo("Valid="+valid+" curdist="+currdistance+" origindist="+origin+" source="+source+" dir="+direction+" target="+target,2);
-		if (!found && valid)	{ solve = INSTANCE.main.builder.RoadRunnerHelper(direction, target, road_type, walkedtiles, origin); }
+		if (!found && valid)	{ solve = cBuilder.RoadRunnerHelper(direction, target, road_type, walkedtiles, origin); }
 		if (!found)	{ found = !solve.IsEmpty(); }
 		if (found) { solve.AddItem(source,walkedtiles.Count()); return solve; }
 		}

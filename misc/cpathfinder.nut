@@ -211,7 +211,7 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
     local fwdTile = null;
 	foreach (tile, distance in seek_area)
 		{
-		if (need_terraform)	{ cBanker.RaiseFundsBigTime(); cTileTools.TerraformLevelTiles(tile + fwd + fwd, tile - fwd - fwd); }
+		if (need_terraform)	{ cBanker.RaiseFundsBigTime(); cTerraform.TerraformLevelTiles(tile + fwd + fwd, tile - fwd - fwd); }
 		if (cPathfinder.FiveTileCheck(tile, fwd, AITile.GetSlope, AITile.SLOPE_FLAT) && cPathfinder.FiveTileCheck(tile, fwd, AITile.IsBuildable, 1))
 				{ mainTile = tile; break; }
 		}

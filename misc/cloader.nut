@@ -459,6 +459,6 @@ function cLoader::LoadingGame()
 	dead.KeepValue(AIGroup.GROUP_DEFAULT);
 	foreach (veh, _ in dead)	AIVehicle.SendVehicleToDepot(veh); // reset ungroup vehicle so we will catch them fast
 	local alltowns=AITownList();
-	INSTANCE.main.builder.CheckRouteStationStatus();
+	cBuilder.CheckRouteStationStatus();
 }
 

@@ -15,6 +15,10 @@
 class cTileTools extends cClass
 {
 static	TilesBlackList = AIList(); // item=tile, value=stationID that own the tile
+		constructor()
+			{
+			this.ClassName	= "cTileTools";
+			}
 }
 
 function cTileTools::TileIsOur(tile)
@@ -79,6 +83,62 @@ function cTileTools::PurgeBlackListTiles(alist, creation=false)
 	return alist;
 }
 
+function cTileTools::GetTilesAroundPlace(place,maxsize)
+// Get tiles around a place
+{
+	local tiles = AITileList();
+	local mapSizeX = AIMap.GetMapSizeX();
+	local mapSizeY = AIMap.GetMapSizeY();
+	local ox = AIMap.GetTileX(place);
+	local oy = AIMap.GetTileY(place);
+	local tx = ox;
+	local ty = oy;
+	if (ox - maxsize < 1)	ox = 1;
+					else	ox = ox - maxsize;
+	if (tx + maxsize >= mapSizeX-2)	tx = mapSizeX-2;
+							else	tx = tx + maxsize;
+	if (oy - maxsize < 1)	oy = 1;
+					else	oy = oy - maxsize;
+	if (ty + maxsize >= mapSizeY-2)	ty = mapSizeY-2;
+							else	ty = ty + maxsize;
+	local o = AIMap.GetTileIndex(ox, oy);
+	local t = AIMap.GetTileIndex(tx, ty);
+	tiles.AddRectangle(o, t);
+	return tiles;
+}
+
+function cTileTools::GetRectangle(tile, width, height)
+// A wrapper to get back an AITileList with the tiles from the rectangle in it
+// If the rectangle is out of map we return an empty AITileList
+{
+	if (!AIMap.IsValidTile(tile))	return AITileList();
+	local tile_to = tile + AIMap.GetTileIndex(width, height);
+	if (!AIMap.IsValidTile(tile_to))	return AITileList();
+	local t = AITileList();
+    t.AddRectangle(tile, tile_to);
+    return t;
+}
+
+function cTileTools::GetRectangleBorders(tile, width, height)
+// Return the tiles that surround a rectangle, the rectangle itself must be valid, borders may not
+// We will return an AITileList with tiles from the valid borders found or an empty list if the rectangle wasn't itself good
+{
+	local rect = cTileTools.GetRectangle(tile, width, height);
+	if (rect.IsEmpty())	return AITileList();
+    local b_tile = tile + AIMap.GetTileIndex(0, -1);
+    if (!AIMap.IsValidTile(b_tile))	b_tile = tile;
+    local c_tile = b_tile + AIMap.GetTileIndex(-1, 0);
+    if (AIMap.IsValidTile(c_tile))	b_tile = c_tile;
+    // now check if width and height may not get out of bound themselves
+    if (AIMap.IsValidTile(b_tile + AIMap.GetTileIndex(width + 1, 0)))	width++;
+    if (AIMap.IsValidTile(b_tile + AIMap.GetTileIndex(0, height + 1)))	height++;
+    // now get the border surrounding it
+    local border = cTileTools.GetRectangle(b_tile, width, height);
+    border.RemoveList(rect);
+    return border;
+}
+
+
 function cTileTools::GetTilesAroundTown(town_id)
 // Get tile around a town
 {
@@ -131,30 +191,6 @@ function cTileTools::DemolishTile(tile, safe = true)
 	return res;
 }
 
-function cTileTools::GetTilesAroundPlace(place,maxsize)
-// Get tiles around a place
-{
-	local tiles = AITileList();
-	local mapSizeX = AIMap.GetMapSizeX();
-	local mapSizeY = AIMap.GetMapSizeY();
-	local ox = AIMap.GetTileX(place);
-	local oy = AIMap.GetTileY(place);
-	local tx = ox;
-	local ty = oy;
-	if (ox - maxsize < 1)	ox = 1;
-				else	ox = ox - maxsize;
-	if (tx + maxsize >= mapSizeX-2)	tx = mapSizeX-2;
-						else	tx = tx + maxsize;
-	if (oy - maxsize < 1)	oy = 1;
-				else	oy = oy - maxsize;
-	if (ty + maxsize >= mapSizeY-2)	ty = mapSizeY-2;
-						else	ty = ty + maxsize;
-	local o = AIMap.GetTileIndex(ox, oy);
-	local t = AIMap.GetTileIndex(tx, ty);
-	tiles.AddRectangle(o, t);
-	return tiles;
-}
-
 function cTileTools::IsRiverTile(tile)
 // pfff, finally a solve to detect river
 {
@@ -170,14 +206,9 @@ function cTileTools::IsRiverTile(tile)
 }
 
 function cTileTools::IsBuildable(tile)
-// function to check if a tile is buildable, assuming a water tile is buildable
+// function to check if a tile is buildable, but a water tile is buildable
 {
 	if (!AITile.IsWaterTile(tile))	return AITile.IsBuildable(tile);
-	if (AIMarine.IsDockTile(tile))	return false;
-	if (AIMarine.IsWaterDepotTile(tile))	return false;
-	if (AIMarine.IsBuoyTile(tile))	return false;
-	if (AIMarine.IsCanalTile(tile))	return false;
-	if (AIMarine.IsLockTile(tile))	return false;
 	if (cTileTools.IsRiverTile(tile))	return true; // even without terraform, we could demolish the tile.
 	return INSTANCE.terraform; // if no terraform is allow, water tile cannot be use
 }
@@ -246,43 +277,36 @@ function cTileTools::SeduceTown(townID)
 	return (AITown.GetRating(townID, weare) >= AITown.TOWN_RATING_POOR);
 }
 
-function cTileTools::IsRemovable(tile)
-// return true/false if the tile could be remove
+function cTileTools::IsTileClear(tile, safe_clear, mode, only_cost)
+// return the cost to clear a tile
+// safe_clear is pass to cTileTools.DemolishTile
+// mode :	0 - Clear only tile but not tile with something on it
+//			1 - Clear only tile with something on it (rivers and water are considered something)
+//			2 - Clear the tile, with or without something on it
+// only_cost if true we will not clear it for real, but only count the cost to do it
+// return cost to clear the tile, can be 0. If something is wrong -1
 {
-	local test = false;
-	if (cTileTools.IsBuildable(tile))	return true;
-	local testmode = AITestMode();
-	test = AITile.DemolishTile(tile);
-	testmode = null;
-	return test;
-}
-
-function cTileTools::IsAreaRemovable(area)
-// return true/false is all tiles could be remove in area AIList
-{
-	local worklist = AIList();
-	worklist.AddList(area); // protect area list values
-	cTileTools.YexoValuate(worklist, cTileTools.IsRemovable);
-	worklist.RemoveValue(1);
-	return (worklist.IsEmpty());
-}
-
-function cTileTools::ClearArea(area, safe = true)
-// Clean out an area to allow building on it
-{
-	foreach (tile, _ in area)	cTileTools.DemolishTile(tile, safe);
-}
-
-function cTileTools::IsAreaBuildable(area)
-// return true if owner can destroy to build the area
-{
-	if (!cTileTools.IsAreaRemovable(area))	return false;
-	local owncheck=AIList();
-	owncheck.AddList(area);
-	owncheck.Valuate(AITile.IsBuildable);
-	owncheck.KeepValue(0); // keep only non useable tiles
-	if (owncheck.Count() > 5)	return false;
-	return true;
+	local test = null;
+	local cost = AIAccounting();
+	if (only_cost)	test = AITestMode();
+	local success = false;
+	switch (mode)
+		{
+		case	0:
+			if (!AITile.IsBuildable(tile))	return -1;
+			success = cTileTools.DemolishTile(tile, safe_clear);
+			break;
+		case	1:
+			if (!cTileTools.IsBuildable(tile))	return -1;
+			success = cTileTools.DemolishTile(tile, safe_clear);
+			break;
+		case	2:
+			success = cTileTools.DemolishTile(tile, safe_clear);
+			break;
+		default: return -1;
+		}
+	if (success)	return cost.GetCosts();
+return -1;
 }
 
 // This function comes from AdmiralAI, version 22, written by Yexo

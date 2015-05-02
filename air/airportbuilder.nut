@@ -49,7 +49,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		station.s_MoneyUpgrade = station.s_MoneyUpgrade / 2; // we decrease it, in case we overestimate the cost
 		return false;
 		}
-	local airporttype=INSTANCE.main.builder.GetAirportType();
+	local airporttype = cBuilder.GetAirportType();
 	townrating=AITown.GetRating(townid,AICompany.COMPANY_SELF);
 	noiselevel=AITown.GetAllowedNoise(townid);
 	local ourloc=0;
@@ -92,7 +92,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 			cCarrier.FreeDepotOfVehicle(station.s_Depot); // try remove aircraft from airport
 			}
 		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);
-	result = INSTANCE.main.builder.BuildAirStation(start, firstroute.UID);
+	result = cBuilder.BuildAirStation(start, firstroute.UID);
 	if (result == -1)	cBuilder.OpenAirport(station.s_ID);
 			else	cBuilder.OpenAirport(result);
 	cCarrier.VehicleHandleTrafficAtStation(station.s_ID,false);
@@ -132,13 +132,13 @@ function cBuilder::AirportMaker(tile, airporttype)
 	local h = AIAirport.GetAirportHeight(airporttype);
 	local tiles = AITileList();
 	tiles.AddRectangle(tile, tile+AIMap.GetTileIndex(w-1,h-1));
-	tiles.Valuate(AITile.IsWaterTile);
+	tiles.Valuate(cTileTools.IsRiverTile);
 	tiles.KeepValue(1);
-	foreach (tile, _ in tiles)	{ AITile.DemolishTile(tile); }
+	foreach (tile, _ in tiles)	{ cTileTools.DemolishTile(tile, false); }
 	if (!cTileTools.SeduceTown(AITile.GetClosestTown(tile)))
 		{
 		DInfo("Town doesn't like us...",1);
-		cTileTools.terraformCost.AddItem(999995,1); // tell rating is poor
+		cTerraform.terraformCost.AddItem(999995,1); // tell rating is poor
 		}
 	DInfo("Cost to build an airport = "+(AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger(),2);
 	cBanker.RaiseFundsBy((AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger());
@@ -154,8 +154,8 @@ function cBuilder::BuildAirStation(start, routeID=null)
 {
 	local road=false;
 	if (routeID == null)	{ if (INSTANCE.main.builder.building_route != -1)	road=INSTANCE.main.route; }
-				else	road=cRoute.Load(routeID);
-	if (road == false)	return -1;
+					else	road = cRoute.Load(routeID);
+	if (!road)	return -1;
 	local townname="none";
 	local helipadonly=false;
 	cError.ClearError(); // make sure we clear previous failure
@@ -242,11 +242,13 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				return -1;
 				}
 		worktilelist.Clear();
+		DInfo("Working tiles: "+tilelist.Count());
 		foreach (tile, dummy in tilelist)
 			{
-			local newTile=cTerraform.IsBuildableRectange(tile, air_x, air_y, ignoreList);
-			if (newTile != -1)	worktilelist.AddItem(newTile,666);
+			local newTile = cTerraform.IsRectangleBuildable(tile, air_x, air_y, 0, true);
+			if (newTile)	worktilelist.AddItem(tile, 666);
 			}
+		DInfo("Good tiles list: "+worktilelist.Count());
 		tilelist.Clear();
 		tilelist.AddList(worktilelist);
 		tilelist.Valuate(AIAirport.GetNearestTown, airporttype);
@@ -271,7 +273,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		foreach (tile, dummy in tilelist)
 			{
 			local newTile=-1;
-			if (cTileTools.IsAreaFlat(tile, air_x, air_y))	newTile=tile;
+			if (cTerraform.IsRectangleFlat(tile, air_x, air_y))	newTile=tile;
 			if (Sameplace)	newTile = tile;
 			if (newTile != -1)
 				{
@@ -292,9 +294,9 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				success=cBuilder.AirportMaker(newTile, airporttype);
 				if (!success && cError.IsCriticalError())	break;
 				if (success)	{ newStation=newTile; break; }
-						else	if (cTileTools.terraformCost.HasItem(999995))
+						else	if (cTerraform.terraformCost.HasItem(999995))
 								{
-								cTileTools.terraformCost.RemoveItem(999995);
+								cTerraform.terraformCost.RemoveItem(999995);
 								needTime=true;
 								break;
 								}
@@ -324,10 +326,10 @@ function cBuilder::BuildAirStation(start, routeID=null)
 							if (!needTime)
 								{
 								newStation=cBuilder.AirportBestPlace_BuildFromSolve(solver, air_x, air_y, airporttype);
-								if (cTileTools.terraformCost.HasItem(999999))
+								if (cTerraform.terraformCost.HasItem(999999))
 									{
-									needMoney=cTileTools.terraformCost.GetValue(999999);
-									cTileTools.terraformCost.RemoveItem(999999);
+									needMoney=cTerraform.terraformCost.GetValue(999999);
+									cTerraform.terraformCost.RemoveItem(999999);
 									}
 								}
 							}
@@ -443,7 +445,7 @@ function cBuilder::AirportBestPlace_EvaluateHill(workTileList, width, height)
 		templist.AddRectangle(tileFrom, tileTo);
 		cDebug.showLogic(templist);
 		cDebug.PutSign(tileFrom,"F"); cDebug.PutSign(tileTo,"T");
-		local solve=cTileTools.TerraformHeightSolver(templist);
+		local solve = cTerraform.TerraformHeightSolver(templist);
 		cDebug.ClearSigns();
 		solve.RemoveValue(0); // discard no solve
 		local bf, bt, bs, bp=null;
@@ -509,21 +511,21 @@ function cBuilder::AirportBestPlace_BuildFromSolve(allsolve, width, height, airp
 		if (!cBanker.CanBuyThat(abs(realprize)))
 			{
 			DInfo("Skipping that solve. We won't have enough money to succeed",1);
-			cTileTools.terraformCost.AddItem(999999,abs(prize));
+			cTerraform.terraformCost.AddItem(999999,abs(prize));
 			cError.ClearError(); // make sure we tell it's just temporary
 			return -1; // no need to continue, list is range from cheaper to higher prize, if you can't buy cheaper already...
 			}
 		else	{
 			cBanker.RaiseFundsBigTime();
-			local money=cTileTools.TerraformDoAction(templist, solution, updown, false);
+			local money = cTerraform.TerraformDoAction(templist, solution, updown, false);
 			if (money != -1)
 				{
 				DInfo("Trying to build an airport at "+cMisc.Locate(tileFrom),1);
-				local success=INSTANCE.main.builder.AirportMaker(tileFrom, airporttype);
+				local success = cBuilder.AirportMaker(tileFrom, airporttype);
 				if (success)	return tileFrom;
-						else	if (cTileTools.terraformCost.HasItem(999995))
+						else	if (cTerraform.terraformCost.HasItem(999995))
 								{
-								cTileTools.terraformCost.RemoveItem(999995);
+								cTerraform.terraformCost.RemoveItem(999995);
 								return -1;
 								}
 				}

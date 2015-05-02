@@ -13,7 +13,7 @@
  *
 **/
 
-require("class/version.nut");
+require("misc/version.nut");
 
  class DictatorAI extends AIInfo
  {

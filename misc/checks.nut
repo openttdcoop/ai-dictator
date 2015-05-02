@@ -56,8 +56,8 @@ function cBuilder::HalfYearChecks()
 		local totair=maillist.Count()+passlist.Count();
 		DInfo("Aircraft network have "+totair+" aircrafts running on "+cCarrier.VirtualAirRoute.len()+" airports",0);
 		}
-	INSTANCE.main.builder.CheckRouteStationStatus();
-	if (INSTANCE.TwelveMonth == 2)	INSTANCE.main.builder.YearlyChecks();
+	cBuilder.CheckRouteStationStatus();
+	if (INSTANCE.TwelveMonth == 2)	cBuilder.YearlyChecks();
 }
 
 function cBuilder::RouteIsDamage(idx)
@@ -439,7 +439,7 @@ function cBuilder::BridgeUpgrader()
 				{
 				local nbridge=AIBridge.GetName(speederBridge);
 				local nspeed=AIBridge.GetMaxSpeed(speederBridge);
-				INSTANCE.main.bank.RaiseFundsBy(AIBridge.GetPrice(speederBridge,thatbridge.length));
+				cBanker.RaiseFundsBy(AIBridge.GetPrice(speederBridge,thatbridge.length));
 				if (AIBridge.BuildBridge(btype, speederBridge, thatbridge.firstside, thatbridge.otherside))
 					{
 					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0);

@@ -63,7 +63,7 @@ function cBuilder::BuildWaterStation(start)
 	local tilelist = AIList();
 	if (start)
             {
-            dir = INSTANCE.main.builder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
+            dir = cBuilder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
             tilelist = cTileTools.GetTilesAroundPlace(INSTANCE.main.route.SourceProcess.Location, 3 * radius); // 3x for town, 2x industry in cProcess
             print("working on "+INSTANCE.main.route.SourceProcess.Name);
             if (INSTANCE.main.route.SourceProcess.IsTown)
@@ -95,7 +95,7 @@ function cBuilder::BuildWaterStation(start)
             otherplace=INSTANCE.main.route.TargetProcess.Location;
             }
 	else	{
-            dir = INSTANCE.main.builder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.TargetProcess.Location);
+            dir = cBuilder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.TargetProcess.Location);
             tilelist = cTileTools.GetTilesAroundPlace(INSTANCE.main.route.TargetProcess.Location, 3 * radius); // 3x for town, 2x industry in cProcess
                         print("working on "+INSTANCE.main.route.TargetProcess.Name);
                         if (tilelist.IsEmpty()) { print("odd no tiles"); }

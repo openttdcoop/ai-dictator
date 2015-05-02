@@ -17,227 +17,95 @@ class cTerraform
 static	terraformCost = AIList();
 }
 
-function cTerraform::IsAreaFlat(startTile, width, height)
-// from nocab terraform.nut as Terraform::IsFlat
-// http://www.tt-forums.net/viewtopic.php?f=65&t=43259&sid=9335e2ce38b4bd5e3d4df99cf23d30d7
+function cTerraform::IsAreaFlat(area)
+// Check the tile list in area if all tiles are flat
 {
-	local mapSizeX = AIMap.GetMapSizeX();
-	local goalHeight = AITile.GetMinHeight(startTile);
+	local n = AIList();
+	n.AddList(area);
+	n.Valuate(AITile.GetSlope);
+	n.KeepValue(AITile.SLOPE_FLAT);
+	return (area.Count() == n.Count());
+}
 
-	// Check if the terrain isn't already flat.
-	for (local i = 0; i < width; i++)
-		for (local j = 0; j < height; j++)
-			if (AITile.GetMinHeight(startTile + i + j * mapSizeX) != goalHeight ||
-				AITile.GetSlope(startTile + i + j * mapSizeX) != AITile.SLOPE_FLAT)
-				return false;
+function cTerraform::IsAreaBuildable(area, max_remove, safe)
+// return true if area is buildable or if we need to remove max_remove to make the area buildable
+{
+	local owncheck = AIList();
+	owncheck.AddList(area);
+	owncheck.Valuate(cTileTools.IsBuildable);
+	owncheck.KeepValue(0); // keep only non useable tiles
+	if (owncheck.Count() > max_remove)	return false;
 	return true;
 }
 
-function cTerraform::IsBuildableRectangleFlat(tilelist, width, height, ignoreList=AIList())
-// a wrapper to AITile.IsBuildableRectangle that also answer to "Are all tiles flat"
+function cTerraform::IsAreaBuildableAndFlat(area, max_remove, safe)
+// return true if area is flat and buildable or if we need to remove max_remove to make the area flat and buildable
 {
-	local check = AITile.IsBuildableRectangle(tile, width, height);
-	if (!check)	return false;
-	return cTileTools.IsAreaFlat(tile, width, height);
+	if (!cTerraform.IsAreaFlat(area))	return false;
+	return cTerraform.IsAreaBuildable(area, max_remove, safe);
 }
 
-/** @brief Answer if the area is buildable using our own buildable state
+function cTerraform::IsAreaClear(area, safe_clear, mode, only_cost)
+// Clean out an area to allow building on it
+// safe_clear : if true we get some protection from cTileTools.DemolishTile
+// only_cost : if true, we won't clear the area, but return only the costs to do it
+// return the costs to clear or taken to handle the area, -1 if something cannot be clear
+{
+	local cost = 0;
+	foreach (tile, _ in area)
+			{
+			local tile_cost = cTileTools.IsTileClear(tile, safe_clear, mode, only_cost);
+			if (tile_cost == -1)	return -1;
+			cost += tile_cost;
+			}
+	return cost;
+}
+
+function cTerraform::CheckRectangleForConstruction(tile, width, height, safe, allow_terraform)
+/** @brief This check the rectangle area to see if we will be able to build on it, answering costs need to do it
  *
- * @param tile_list list of tiles to check
- * @param ignore_list list of tiles to not check
- * @return -1 if buildable with terraforming, 0 if not buildable, 1 if buildable as-is
+ * @param tile The tile position to start
+ * @param width the width of the rectangle
+ * @param height the height of the rectangle
+ * @param allow_terraform are we able to terraform the area?
+ * @return The costs need to do it, -1 if it's not doable. If you agree with the result use cTerraform.ShapeArea() to do it
  *
  */
-function cTerraform::IsBuildableArea(tile, width, height, ignoreList = AIList())
 {
+	local area = cTileTools.GetRectangle(tile, width, height);
+	print("GetRectangle="+area.Count());
+	if (area.IsEmpty())	return -1;
+	// check if we will really be able to clear everything, <safe> might disallow that
+	local cost_clear = cTerraform.IsAreaClear(area, safe, 2, true);
+	if (cost_clear == -1)	return -1;
+	if (safe && cTerraform.IsAreaClear(area, false, 2, true) != cost_clear)	return -1;
+	if (!allow_terraform || !INSTANCE.terraform)	return cost_clear;
+	local borders = cTileTools.GetRectangleBorders(tile, width, height);
+	if (borders.IsEmpty())	return cost_clear;
+	cDebug.ClearSigns();
+	cDebug.showLogic(borders);
+	AIController.Break();
 }
 
-/*
-function cTerraform::IsBuildableRectangle(tile, width, height, ignoreList=AIList())
-// This check if the rectangle area is buildable in any directions from that point
-// Like the IsBuildableRectangle, but not limit to upper left point
-// tile : tile to search a solve for
-// width & height : dimensions
-// ignoreList: AIList() with tiles we should ignore (report them as if they were IsBuildable even something is there)
-// return tile point where to put the objet or -1 if nothing is buildable there
+function cTerraform::IsRectangleFlat(tile, width, height)
+// Check a rectangle is flat
 {
-	local returntile=-1;
-	local tilelist=AITileList();
-	local secondtile=0;
-	local before=0;
-	local after=0;
-	//DInfo("Width: "+width+" height: "+height,1,"IsBuildableRectangle");
-	width-=1;
-	height-=1;
-	if (width < 0) width=0;
-	if (height < 0) height=0;
-	// tile is @ topleft of the rectangle
-	// secondtile is @ lowerright
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(width,height);
-	returntile=tile;
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-	after=tilelist.Count();
-	if (after==before)
-		{
-		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"1");
-		//cDebug.PutSign(returntile,"X");
-		return returntile;
-		}
-	// tile is @ topright of the rectangle
-	// secondtile is @ lowerleft
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(width,0-height);
-	returntile=tile+AIMap.GetTileIndex(0,0-height);
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-	after=tilelist.Count();
-	if (after==before)
-		{
-		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"2");
-		//cDebug.PutSign(returntile,"X");
-		return returntile;
-		}
-	// tile is @ lowerleft of the rectangle
-	// secondtile is @ upperright
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(0-width,height);
-	returntile=tile+AIMap.GetTileIndex(0-width,0);
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-	after=tilelist.Count();
-	if (after==before)
-		{
-		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"3");
-		//cDebug.PutSign(returntile,"X");
-		return returntile;
-		}
-	// tile is @ lowerright of the rectangle
-	// secondtile is @ upperleft
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(0-width,0-height);
-	returntile=secondtile;
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-	after=tilelist.Count();
-	if (after==before)
-		{
-		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"4");
-		//cDebug.PutSign(returntile,"X");
-		return returntile;
-		}
-	return -1;
+	local t = cTileTools.GetRectangle(tile, width, height);
+	return cTerraform.IsAreaFlat(t);
 }
-*/
 
-function cTerraform::IsFlatBuildableAreaExist(tile, width, height, ignoreList=AIList())
-// This check if the rectangle area is buildable and flat in any directions from that point
-// Like the IsBuildableRectangle, but not limit to upper left point
-// tile : tile to search a solve for
-// width & height : dimensions
-// ignoreList: AIList() with tiles we should ignore (report them as if they were IsBuildable even something is there)
-// return tile point where to put the objet or -1 if nothing is buildable there
+function cTerraform::IsRectangleBuildable(tile, width, height, max_remove, safe)
+// return true if the rectangle is buildable
 {
-	local returntile=-1;
-	local tilelist=AITileList();
-	local secondtile=0;
-	local before=0;
-	local after=0;
-	//DInfo("Width: "+width+" height: "+height,1,"IsBuildableRectangle");
-	width-=1;
-	height-=1;
-	if (width < 0) width=0;
-	if (height < 0) height=0;
-	// tile is @ topleft of the rectangle
-	// secondtile is @ lowerright
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(width,height);
-	returntile=tile;
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-		//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"1");
-	after=tilelist.Count();
-	if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
-	// tile is @ topright of the rectangle
-	// secondtile is @ lowerleft
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(width,0-height);
-	returntile=tile+AIMap.GetTileIndex(0,0-height);
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"2");
-	after=tilelist.Count();
-	if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
-	// tile is @ lowerleft of the rectangle
-	// secondtile is @ upperright
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(0-width,height);
-	returntile=tile+AIMap.GetTileIndex(0-width,0);
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"3");
-	after=tilelist.Count();
-	if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
-	// tile is @ lowerright of the rectangle
-	// secondtile is @ upperleft
-	tilelist.Clear();
-	secondtile=tile+AIMap.GetTileIndex(0-width,0-height);
-	returntile=secondtile;
-	tilelist.AddRectangle(tile,secondtile);
-	tilelist.Valuate(cTileTools.IsBuildable);
-	before=tilelist.Count();
-	foreach (itile, idummy in ignoreList)
-		{
-		if (tilelist.HasItem(itile))	tilelist.SetValue(itile,1);
-		}
-	tilelist.KeepValue(1);
-	after=tilelist.Count();
-	//if (INSTANCE.debug)	foreach (tile, dummy in tilelist)	cDebug.PutSign(tile,"4");
-	if (after==before && cTileTools.IsAreaFlat(returntile, width+1, height+1))	return returntile;
-	return -1;
+	local t = cTileTools.GetRectangle(tile, width, height);
+	return cTerraform.IsAreaBuildable(t, max_remove, safe);
+}
+
+function cTerraform::IsRectangleBuildableAndFlat(tile, width, height, max_remove, safe)
+// return true if the rectangle is buildable and flat
+{
+	local n = cTileTools.GetRectangle(tile, width, height);
+	return cTerraform.IsAreaBuildableAndFlat(n, max_remove, safe);
 }
 
 function cTerraform::ShapeTile(tile, wantedHeight, evaluateOnly)
@@ -302,22 +170,6 @@ function cTerraform::ShapeTile(tile, wantedHeight, evaluateOnly)
 	return generror;
 }
 
-function cTerraform::CheckLandForConstruction(tile, width, height, ignoreList=AIList())
-// Check the tiles area for construction, look if tiles are clear, and flatten the land if need
-// return -1 on failure, on success the tile where to drop a construction (upper left tile)
-{
-	cDebug.PutSign(tile,"?");
-	local newTile=cTerraform.IsBuildableRectangle(tile, width, height, ignoreList);
-	if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
-	if (cTerraform.IsBuildableRectangeFlat(newTile, width, height))	return newTile;
-	local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
-	INSTANCE.main.bank.RaiseFundsBigTime();
-	cTileTools.TerraformLevelTiles(newTile, tileTo);
-	INSTANCE.NeedDelay(20);
-	if (cTerraform.IsBuildableRectangeFlat(newTile, width, height))		return newTile;
-	return -1;
-}
-
 function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
 // terraform from tileFrom to tileTo
 // return true if success
@@ -326,7 +178,7 @@ function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
 	if (AITile.IsWaterTile(tileFrom))	{ print("raising fromtile "+AITile.RaiseTile(tileFrom, AITile.SLOPE_N + AITile.SLOPE_S)); }
 	tlist.AddRectangle(tileFrom, tileTo);
 	if (tlist.IsEmpty())	DInfo("No tiles to work with !",4);
-	local Solve=cTileTools.TerraformHeightSolver(tlist);
+	local Solve = cTerraform.TerraformHeightSolver(tlist);
 	Solve.RemoveValue(0); // discard failures
 	local bestOrder=AIList();
 	bestOrder.AddList(Solve);
@@ -346,12 +198,12 @@ function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
 			if (!cBanker.CanBuyThat(prize))
 				{
 				DInfo("Stopping action. We won't have enought money to succeed",4);
-				cTileTools.terraformCost.AddItem(999999,prize);
+				cTerraform.terraformCost.AddItem(999999,prize);
 				break;
 				}
 			cBanker.RaiseFundsBigTime();
-			if (direction < 0)	money=cTileTools.TerraformDoAction(tlist, solution, true, false);
-						else	money=cTileTools.TerraformDoAction(tlist, solution, false, false);
+			if (direction < 0)	money = cTerraform.TerraformDoAction(tlist, solution, true, false);
+						else	money = cTerraform.TerraformDoAction(tlist, solution, false, false);
 			if (money != -1)
 				{
 				DInfo("Success, we spent "+money+" credits for the operation",4);
@@ -384,7 +236,7 @@ function cTerraform::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 	local error=false;
 	foreach (tile, max in tTile)
 		{
-		error=cTileTools.ShapeTile(tile, wantedHeight, true);
+		error=cTerraform.ShapeTile(tile, wantedHeight, true);
 		if (error)	break;
 		}
 	testrun=null;
@@ -397,7 +249,7 @@ function cTerraform::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 		{
 		foreach (tile, max in tTile)
 			{
-			error=cTileTools.ShapeTile(tile, wantedHeight, false);
+			error=cTerraform.ShapeTile(tile, wantedHeight, false);
 			if (error) break;
 			}
 		}
@@ -476,7 +328,7 @@ function cTerraform::TerraformHeightSolver(tlist)
 			}
 		local money=0;
 		local error=false;
-		money=cTileTools.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);
+		money = cTerraform.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);
 		if (money != -1)
 				{
 				DInfo("Solve found, "+money+" credits need to reach level "+currentHeight,4);

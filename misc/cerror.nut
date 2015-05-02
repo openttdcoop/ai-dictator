@@ -118,22 +118,18 @@ function cError::ForceAction(...)
 		error = AIError.GetLastError();
 		if (error != AIError.ERR_VEHICLE_IN_THE_WAY)	{ return result; }
 		DWarn("ForceAction delayed : tile="+tile+" params="+output+" @"+cMisc.Locate(tile),1);
-//		if (!move)
-			//{
-			//move = true;
-			if (tile != null && AIMap.IsValidTile(tile))
+		if (tile != null && AIMap.IsValidTile(tile))
 				{
 				local veh = AIVehicleList();
 				veh.Valuate(AIVehicle.GetLocation);
 				veh.KeepValue(tile);
 				foreach (v, _ in veh)	{
 										local kind = DepotAction.WAITING+30;
-										if (cStation.IsDepot(tile))	{ kind = DepotAction.SELL; INSTANCE.main.carrier.VehicleIsWaitingInDepot(); }
+										if (cStation.IsDepot(tile))	{ kind = DepotAction.SELL; cCarrier.VehicleIsWaitingInDepot(); }
 										cCarrier.VehicleSendToDepot(v, kind);
 										AIController.Sleep(74); // give it a day to move
 										}
-				//}
-			}
+				}
 		AIController.Sleep(30);
 		}
 	return result;

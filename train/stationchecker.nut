@@ -53,10 +53,10 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 	if (platopenclose)
 			{
 			areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
-			local canDestroy=cTileTools.IsAreaBuildable(areaclean);
+			local canDestroy = cTerraform.IsAreaBuildable(areaclean, 5);
 			cDebug.showLogic(areaclean); // deb
 			if (canDestroy)	{ cTileTools.ClearArea(areaclean); }
-			cTileTools.TerraformLevelTiles(plat_main, displace+(backwardTileOf*(station_depth-1)));
+			cTerraform.TerraformLevelTiles(plat_main, displace+(backwardTileOf*(station_depth-1)));
 			success = cBuilder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_main,true)+pside, direction, 1, [stationObj.s_ID]);
 			cDebug.PutSign(cStationRail.GetPlatformIndex(plat_main,true)+pside,"+");
 			if (success)	{ foreach (tile, dummy in areaclean)	stationObj.StationClaimTile(tile, stationObj.s_ID); }
@@ -72,8 +72,8 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 			local areaclean=AITileList();
 			areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
 			cDebug.showLogic(areaclean);
-			if (cTileTools.IsAreaBuildable(areaclean))	{ cTileTools.ClearArea(areaclean); }
-			cTileTools.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
+			if (cTerraform.IsAreaBuildable(areaclean, 5))	{ cTileTools.ClearArea(areaclean); }
+			cTerraform.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
 			success = cBuilder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, 1, [stationObj.s_ID]);
 			cDebug.PutSign(cStationRail.GetPlatformIndex(plat_alt,true)+pside,"+");
 			if (success)	{ foreach (tile, dummy in areaclean)	stationObj.StationClaimTile(tile, stationObj.s_ID); }
@@ -112,7 +112,7 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 	towncheck.AddRectangle(workTile, workTile+rightTileOf+(5*forwardTileOf));
 	testcheck.AddList(towncheck);
 	local success=false;
-	if (cTileTools.IsAreaBuildable(towncheck))
+	if (cTerraform.IsAreaBuildable(towncheck, 5))
 			{
 			testcheck.AddList(towncheck);
 			testcheck.Valuate(AITile.IsStationTile); // protect station here
@@ -191,7 +191,7 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 	if (!AITile.IsBuildable(workTile))	{ return false; } // because we must have a tile in front of the station buildable for the signal
 	do  {
 		temptile=workTile+(j*forwardTileOf);
-		cTileTools.TerraformLevelTiles(position,temptile);
+		cTerraform.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				{
 				cTileTools.DemolishTile(temptile);
@@ -310,7 +310,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 	do  {
 		local temptile=fromtile+(j*forwardTileOf);
 		//for (local kb = 0; kb < 6; kb++)	{ cMisc.Locate(j+(kb*forwardTileOf)); cTileTools.DemolishTile(j+(kb*forwardTileOf)); }
-		cTileTools.TerraformLevelTiles(position,temptile);
+		cTerraform.TerraformLevelTiles(position,temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				{
 				success = cTrack.DropRailHere(rail, temptile, stationObj.s_ID, useEntry);
@@ -321,7 +321,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 				{
 				cDebug.PutSign(temptile+(1*forwardTileOf),"R1");
 				cDebug.PutSign(temptile+(2*forwardTileOf),"R2");
-				cTileTools.TerraformLevelTiles(position,temptile+(3*forwardTileOf));
+				cTerraform.TerraformLevelTiles(position,temptile+(3*forwardTileOf));
 				if (cTileTools.CanUseTile(temptile+(1*forwardTileOf), stationObj.s_ID))
 						{
 						success = cTrack.DropRailHere(rail, temptile+(1*forwardTileOf), stationObj.s_ID, useEntry);
@@ -585,7 +585,7 @@ function cBuilder::RailStationPhaseBuildDepot(stationObj, useEntry)
 					DInfo("Building station depot",1);
 					for (local h=0; h < depotlocations.len(); h++)
 							{
-							cTileTools.TerraformLevelTiles(crossing,depotlocations[h]);
+							cTerraform.TerraformLevelTiles(crossing,depotlocations[h]);
 							cDebug.PutSign(depotlocations[h],"d");
 							if (cTileTools.CanUseTile(depotlocations[h],stationObj.s_ID))
 									{

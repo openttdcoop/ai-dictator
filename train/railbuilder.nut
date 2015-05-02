@@ -23,7 +23,7 @@ function cBuilder::EvalDistanceProduction(tilelist, to_tile)
 		local distance = AIMap.DistanceManhattan(tile, to_tile);
 		local res = ((tilelist.GetValue(tile) + 1000) - distance).tointeger();
 		//res = tilelist.GetValue(tile);
-		res = AITile.GetOwner(tile);
+		//res = AITile.GetOwner(tile);
         n_list.AddItem(tile, res);
         }
 	n_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
@@ -51,14 +51,14 @@ function cBuilder::BuildTrainStation(start)
 	local platnum = 1;
 	if (start)
 			{
-			dir = INSTANCE.main.builder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
+			dir = cBuilder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
 			print("dir source="+cBuilder.DirectionToString(dir));
 			if (INSTANCE.main.route.SourceProcess.IsTown)
 					{
                     otherplace=INSTANCE.main.route.TargetProcess.Location; sourceplace=INSTANCE.main.route.SourceProcess.Location;
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
                     tilelist.Valuate(AITile.IsBuildable);
-                    //tilelist.KeepValue(1);
+                    tilelist.KeepValue(1);
 					tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(0);
                     istown=true;
@@ -78,7 +78,7 @@ function cBuilder::BuildTrainStation(start)
 			}
 	else
 			{
-			dir = INSTANCE.main.builder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
+			dir = cBuilder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
 			print("dir target="+cBuilder.DirectionToString(dir));
 			if (INSTANCE.main.route.TargetProcess.IsTown)
 					{
@@ -105,13 +105,6 @@ function cBuilder::BuildTrainStation(start)
 					}
 			}
 	tilelist = cBuilder.EvalDistanceProduction(tilelist, otherplace);
-//	tilelist.Valuate(cBuilder.DistanceProductionValuator, otherplace, );
- //   tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
-/*	foreach (tile, _ in tilelist)
-			{
-			if (cTerraform.IsBuildableRectangeFlat(tile, 2, 5))	cDebug.PutSign(tile, "1");
-													else		cDebug.PutSign(tile, "0"); }
-													AIController.Break("bildabl"); */
     foreach (tile, _ in tilelist)	cDebug.PutSign(tile, _);//cDebug.showLogic(tilelist);
     AIController.Break("stop");
     if (istown)	platnum = 2;
@@ -178,8 +171,8 @@ function cBuilder::BuildTrainStation(start)
 						case	0:
 						case	1:
 						print("mode0");
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.IsBuildableRectangeFlat(tile, platnum, ssize); } // platnum = width
-																else	{ checkit = cTerraform.IsBuildableRectangeFlat(tile, ssize, platnum); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0, true); } // platnum = width
+																else	{ checkit = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0, true); }
 							if (checkit)	cDebug.PutSign(tile, "1");
 									else	cDebug.PutSign(tile, "0");
 							if (checkit)	checkit = tile;
@@ -194,8 +187,8 @@ function cBuilder::BuildTrainStation(start)
 									else	checkit = -1;
 							break;
 						case	4:
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.CheckLandForConstruction(tile, platnum, ssize); }
-																else	{ checkit = cTerraform.CheckLandForConstruction(tile, ssize, platnum); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, true); }
+																else	{ checkit = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, true); }
 							break;
 						}
 				print("Station could be built at "+cMisc.Locate(checkit));
@@ -367,7 +360,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, stationID, primary, useEntry)
                             local slope_add = slope_a + slope_c;
 							if (slope_c != AITile.SLOPE_FLAT && slope_a != AITile.SLOPE_FLAT && ((slope_add == AITile.SLOPE_NW || slope_add == AITile.SLOPE_NW || slope_add == AITile.SLOPE_SE || slope_add == AITile.SLOPE_NE) || (AITile.IsSteepSlope(prev) && AITile.IsSteepSlope(targetTile)) || ((slope_c ^ slope_a) == 15 && (slope_c == AITile.SLOPE_NW || slope_c == AITile.SLOPE_SW || slope_c == AITile.SLOPE_SE || slope_c == AITile.SLOPE_NE))))
 								{ // kill small climb/down we could avoid
-								cTileTools.TerraformLevelTiles(prevprev, targetTile);
+								cTerraform.TerraformLevelTiles(prevprev, targetTile);
 								}*/
 							if (!AIRail.BuildRail(prevprev, prev, targetTile))
 									{
@@ -756,7 +749,7 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 	local sweeper=AIList();
 	local error=false;
 	cDebug.PutSign(goal,"g");
-	cTileTools.TerraformLevelTiles(frontTile+backwardTileOf, goal);
+	cTerraform.TerraformLevelTiles(frontTile+backwardTileOf, goal);
 	local i=frontTile;
 	local signaldone=false;
 	while (i != goal)

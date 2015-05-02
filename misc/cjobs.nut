@@ -99,7 +99,7 @@ function cJobs::CheckLimitedStatus()
 // Check & set the limited status, at early stage we limit the distance to accept a job.
 	{
 	local oldmax=distanceLimits[1];
-	local testLimitChange= GetTransportDistance(RouteType.RAIL, false, INSTANCE.main.bank.unleash_road); // get max distance a train could do
+	local testLimitChange= cJobs.GetTransportDistance(RouteType.RAIL, false, INSTANCE.main.bank.unleash_road); // get max distance a train could do
 	if (oldmax != distanceLimits[1])
 			{
 			DInfo("Distance limit status change to "+INSTANCE.main.bank.unleash_road,4);
@@ -263,14 +263,14 @@ function cJobs::QuickRefresh()
 // refresh datas on first 5 doable top jobs
 	{
 	local smallList=AIList();
-	INSTANCE.main.jobs.UpdateDoableJobs();
+	cJobs.UpdateDoableJobs();
 	smallList.AddList(cJobs.jobIndexer);
 	local now = AIDate.GetCurrentDate();
 	now = now - 30;
 	smallList.RemoveList(cRoute.RouteIndexer); // remove jobs already in use
 	smallList.KeepBelowValue(now);
 	smallList.KeepTop(10); // refresh 10 random jobs that need a refresh
-	foreach (smallID, dvalue in smallList)	{ INSTANCE.main.jobs.RefreshValue(smallID, true); }
+	foreach (smallID, dvalue in smallList)	{ cJobs.RefreshValue(smallID, true); }
 	smallList.Clear();
 	smallList.AddList(cJobs.jobDoable);
 	smallList.Sort(AIList.SORT_BY_VALUE, false);
@@ -356,7 +356,7 @@ function cJobs::EstimateCost()
 				if (engine != -1)	{ engineprice=cEngine.GetPrice(engine); }
                             else	{ engineprice=500000; }
 				money+=engineprice*2;
-				money+=2*(AIAirport.GetPrice(INSTANCE.main.builder.GetAirportType()));
+				money+=2*(AIAirport.GetPrice(cBuilder.GetAirportType()));
 				daystransit=6;
 				break;
 			}
@@ -449,7 +449,7 @@ function cJobs::JobIsNotDoable(uid)
 function cJobs::UpdateDoableJobs()
 // Update the doable status of the job indexer
 	{
-	INSTANCE.main.jobs.CheckLimitedStatus();
+	cJobs.CheckLimitedStatus();
 	DInfo("Analysing the task pool",0);
 	local parentListID=AIList();
 	INSTANCE.main.jobs.jobDoable.Clear();
@@ -488,7 +488,7 @@ function cJobs::UpdateDoableJobs()
 		if (doable)
 			// not doable if max distance is limited and lower the job distance
 				{
-				local curmax = INSTANCE.main.jobs.GetTransportDistance(myjob.roadType, false, !INSTANCE.main.bank.unleash_road);
+				local curmax = cJobs.GetTransportDistance(myjob.roadType, false, !INSTANCE.main.bank.unleash_road);
 				if (curmax < myjob.distance)	{ doable=false; }
 				}
 		// not doable if any parent is already in use
@@ -625,7 +625,7 @@ function cJobs::CreateNewJob(srcUID, dstID, cargo_id, road_type, _distance)
 	newjob.cargoID = cargo_id;
 	newjob.GetUID();
 	newjob.Save();
-	INSTANCE.main.jobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount... must be call after GetUID
+	cJobs.RefreshValue(newjob.UID,true); // update ranking, cargo amount... must be call after GetUID
     return true;
 	}
 

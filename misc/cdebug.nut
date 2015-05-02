@@ -44,7 +44,7 @@ function cDebug::showLogic(item)
 		cDebug.PutSign(i,dummy);
 		}
 	print("logic at "+cMisc.Locate(item.Begin()));
-	AIController.Sleep(40);
+	AIController.Sleep(60);
 	cDebug.ClearSigns();
 }
 

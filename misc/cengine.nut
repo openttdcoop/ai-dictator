@@ -60,7 +60,7 @@ function cEngine::RabbitSet(vehicleID)
 	local eng = cEngine.Load(engineID);
 	if (eng.is_known == -2)	{
                             eng.is_known = vehicleID;
-                            INSTANCE.DInfo("Using "+AIVehicle.GetName(vehicleID)+" as test vehicle for "+cEngine.GetEngineName(engineID),1);
+                            INSTANCE.DInfo("Using "+cCarrier.GetVehicleName(vehicleID)+" as test vehicle for "+cEngine.GetEngineName(engineID),1);
                             }
 	}
 

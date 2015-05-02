@@ -324,7 +324,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 					if (!depottile.IsEmpty())
 							{
 							foreach (depotloc, dummy in depottile)
-							if (INSTANCE.main.builder.RoadRunner(vehloc, depotloc, AIVehicle.VT_ROAD))
+							if (cBuilder.RoadRunner(vehloc, depotloc, AIVehicle.VT_ROAD))
 									{ homedepot=depotloc; DInfo("Sending "+cCarrier.GetVehicleName(veh)+" to a backup depot we found near it",1); break; }
 							}
 					else
