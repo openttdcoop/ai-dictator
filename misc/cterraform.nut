@@ -33,14 +33,26 @@ function cTerraform::IsAreaFlat(startTile, width, height)
 	return true;
 }
 
-function cTerraform::IsBuildableRectangleFlat(tile, width, height, ignoreList=AIList())
+function cTerraform::IsBuildableRectangleFlat(tilelist, width, height, ignoreList=AIList())
 // a wrapper to AITile.IsBuildableRectangle that also answer to "Are all tiles flat"
 {
-	local check=AITile.IsBuildableRectangle(tile, width, height);
+	local check = AITile.IsBuildableRectangle(tile, width, height);
 	if (!check)	return false;
 	return cTileTools.IsAreaFlat(tile, width, height);
 }
 
+/** @brief Answer if the area is buildable using our own buildable state
+ *
+ * @param tile_list list of tiles to check
+ * @param ignore_list list of tiles to not check
+ * @return -1 if buildable with terraforming, 0 if not buildable, 1 if buildable as-is
+ *
+ */
+function cTerraform::IsBuildableArea(tile, width, height, ignoreList = AIList())
+{
+}
+
+/*
 function cTerraform::IsBuildableRectangle(tile, width, height, ignoreList=AIList())
 // This check if the rectangle area is buildable in any directions from that point
 // Like the IsBuildableRectangle, but not limit to upper left point
@@ -141,6 +153,7 @@ function cTerraform::IsBuildableRectangle(tile, width, height, ignoreList=AIList
 		}
 	return -1;
 }
+*/
 
 function cTerraform::IsFlatBuildableAreaExist(tile, width, height, ignoreList=AIList())
 // This check if the rectangle area is buildable and flat in any directions from that point
@@ -227,7 +240,7 @@ function cTerraform::IsFlatBuildableAreaExist(tile, width, height, ignoreList=AI
 	return -1;
 }
 
-function cTerrafrom::ShapeTile(tile, wantedHeight, evaluateOnly)
+function cTerraform::ShapeTile(tile, wantedHeight, evaluateOnly)
 // Flatten the tile at wanted height level
 // tile: tile to shape
 // wantedHeight: height to flatten land to
@@ -294,14 +307,14 @@ function cTerraform::CheckLandForConstruction(tile, width, height, ignoreList=AI
 // return -1 on failure, on success the tile where to drop a construction (upper left tile)
 {
 	cDebug.PutSign(tile,"?");
-	local newTile=cTileTools.IsBuildableRectangle(tile, width, height, ignoreList);
+	local newTile=cTerraform.IsBuildableRectangle(tile, width, height, ignoreList);
 	if (newTile == -1)	return newTile; // area not clear give up, the terraforming will fail too
-	if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))	return newTile;
+	if (cTerraform.IsBuildableRectangeFlat(newTile, width, height))	return newTile;
 	local tileTo=newTile+AIMap.GetTileIndex(width-1,height-1);
 	INSTANCE.main.bank.RaiseFundsBigTime();
 	cTileTools.TerraformLevelTiles(newTile, tileTo);
 	INSTANCE.NeedDelay(20);
-	if (cTileTools.IsBuildableRectangleFlat(newTile, width, height))		return newTile;
+	if (cTerraform.IsBuildableRectangeFlat(newTile, width, height))		return newTile;
 	return -1;
 }
 

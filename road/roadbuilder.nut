@@ -248,7 +248,7 @@ function cBuilder::BuildRoadStation(start)
 			{
 			foreach (tile, dummy in tilelist)
 				{
-				if (cTileTools.CheckLandForConstruction(tile, 1, 3))
+				if (cTerraform.CheckLandForConstruction(tile, 1, 3))
 						{
 						if (!stationbuild)
 							{

@@ -23,6 +23,7 @@ function cBuilder::EvalDistanceProduction(tilelist, to_tile)
 		local distance = AIMap.DistanceManhattan(tile, to_tile);
 		local res = ((tilelist.GetValue(tile) + 1000) - distance).tointeger();
 		//res = tilelist.GetValue(tile);
+		res = AITile.GetOwner(tile);
         n_list.AddItem(tile, res);
         }
 	n_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
@@ -57,7 +58,7 @@ function cBuilder::BuildTrainStation(start)
                     otherplace=INSTANCE.main.route.TargetProcess.Location; sourceplace=INSTANCE.main.route.SourceProcess.Location;
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
                     tilelist.Valuate(AITile.IsBuildable);
-                    tilelist.KeepValue(1);
+                    //tilelist.KeepValue(1);
 					tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(0);
                     istown=true;
@@ -108,7 +109,7 @@ function cBuilder::BuildTrainStation(start)
  //   tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 /*	foreach (tile, _ in tilelist)
 			{
-			if (cTileTools.IsBuildableRectangleFlat(tile, 2, 5))	cDebug.PutSign(tile, "1");
+			if (cTerraform.IsBuildableRectangeFlat(tile, 2, 5))	cDebug.PutSign(tile, "1");
 													else		cDebug.PutSign(tile, "0"); }
 													AIController.Break("bildabl"); */
     foreach (tile, _ in tilelist)	cDebug.PutSign(tile, _);//cDebug.showLogic(tilelist);
@@ -177,8 +178,8 @@ function cBuilder::BuildTrainStation(start)
 						case	0:
 						case	1:
 						print("mode0");
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTileTools.IsBuildableRectangleFlat(tile, platnum, ssize); } // platnum = width
-																else	{ checkit = cTileTools.IsBuildableRectangleFlat(tile, ssize, platnum); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.IsBuildableRectangeFlat(tile, platnum, ssize); } // platnum = width
+																else	{ checkit = cTerraform.IsBuildableRectangeFlat(tile, ssize, platnum); }
 							if (checkit)	cDebug.PutSign(tile, "1");
 									else	cDebug.PutSign(tile, "0");
 							if (checkit)	checkit = tile;
@@ -193,8 +194,8 @@ function cBuilder::BuildTrainStation(start)
 									else	checkit = -1;
 							break;
 						case	4:
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTileTools.CheckLandForConstruction(tile, platnum, ssize); }
-																else	{ checkit = cTileTools.CheckLandForConstruction(tile, ssize, platnum); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.CheckLandForConstruction(tile, platnum, ssize); }
+																else	{ checkit = cTerraform.CheckLandForConstruction(tile, ssize, platnum); }
 							break;
 						}
 				print("Station could be built at "+cMisc.Locate(checkit));

@@ -332,7 +332,7 @@ function DictatorAI::DInfo(putMsg, debugValue=0, func = "Unknown")
 // just output AILog message depending on debug level
 	{
 	local debugState = DictatorAI.GetSetting("debug");
-	if (debugState > 0)	{ func += "-> "; }
+	if (debugState > 0)	{ func += "> "; }
                 else	{ func=""; }
 	if (debugValue <= debugState )
 			{
@@ -345,7 +345,7 @@ function DictatorAI::DError(putMsg, debugValue=1, func = "Unknown")
 	{
 	local debugState = DictatorAI.GetSetting("debug");
 	debugValue = 1; // force error message to always appears when debug is on
-	func+="-> ";
+	func+="> ";
 	if (debugValue <= debugState )
 			{
 			AILog.Error(func+putMsg+" Error:"+AIError.GetLastErrorString());
@@ -356,7 +356,7 @@ function DictatorAI::DWarn(putMsg, debugValue=1, func = "Unknown")
 // just output AILog message depending on debug level
 	{
 	local debugState = DictatorAI.GetSetting("debug");
-	if (debugState > 0)	{ func += "-> "; }
+	if (debugState > 0)	{ func += "> "; }
                 else	{ func=""; }
 	if (debugValue <= debugState )
 			{

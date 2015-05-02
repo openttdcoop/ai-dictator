@@ -39,8 +39,8 @@ function cTileTools::GetTileStationOwner(tile)
 function cTileTools::CanUseTile(tile, owner)
 // Answer if we can use that tile
 {
-	local coulduse=true;
-	local ot=cTileTools.GetTileStationOwner(tile);
+	local coulduse = true;
+	local ot = cTileTools.GetTileStationOwner(tile);
 	if (ot == owner)	return true;
 	if (ot == -1)	return true;
 	return false;
@@ -66,20 +66,6 @@ function cTileTools::BlackListTile(tile, stationID = -255)
 function cTileTools::UnBlackListTile(tile)
 {
 	if (cTileTools.IsTilesBlackList(tile))	{ cTileTools.TilesBlackList.RemoveItem(tile); }
-}
-
-function cTileTools::IsRiverTile(tile)
-// pfff, finally a solve to detect river
-{
-	if (!AITile.IsWaterTile(tile))	return false;
-	if (AITile.IsCoastTile(tile))	return false; // just assume a river cost tile is a water tile
-	if (AIMarine.IsDockTile(tile))	return false;
-	if (AIMarine.IsWaterDepotTile(tile))	return false;
-	if (AIMarine.IsBuoyTile(tile))	return false;
-	if (AIMarine.IsCanalTile(tile))	return false;
-	if (AIMarine.IsLockTile(tile))	return false;
-	if (AITile.GetMinHeight(tile) > 0)	return true; // no need to check its maxheight, coasttile already answer it
-	return false;
 }
 
 function cTileTools::PurgeBlackListTiles(alist, creation=false)
@@ -118,20 +104,29 @@ function cTileTools::FindStationTiles(tile)
 function cTileTools::StationIsWithinTownInfluence(stationid, townid)
 // A tweak for AIStation.IsWithinTownInfluence in openttd < 1.1.2
 {
-	local stationtile=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
+	local stationtile = cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
 	foreach (tile, dummy in stationtile)	{ if (AITile.IsWithinTownInfluence(tile, townid) || AITile.GetTownAuthority(tile) == townid) return true; }
 	return false;
 }
 
-function cTileTools::DemolishTile(tile)
+function cTileTools::DemolishTile(tile, safe = true)
 // same as AITile.DemolishTile but retry after a little wait, protect rails, tunnel and bridge
+// if safe is false we use AITile.DemolishTile
 {
-	if (AITile.IsStationTile(tile))	return false; // must check if we have a real way to destroy station if need
-	if (AIRail.IsRailDepotTile(tile))	{ return cTrack.StationKillRailDepot(tile); }
-	if (AIRoad.IsRoadDepotTile(tile) || AIMarine.IsWaterDepotTile(tile))	{ return cTrack.DestroyDepot(tile); }
-	if (AIRail.IsRailTile(tile))	return false;
-	if (AIBridge.IsBridgeTile(tile) && cBridge.IsRailBridge(tile))	return false;
-	if (AITunnel.IsTunnelTile(tile))	return false;
+	// protect destruction done by magic buldozer, but not if it's some road
+	local own = AITile.GetOwner(tile);
+	if (own == -1 || AICompany.IsMine(own))	own = true;
+									else	own = false;
+	if (!own && !AITile.HasTransportType(tile, AITile.TRANSPORT_ROAD))	return false;
+	if (safe)
+		{
+		if (AITile.IsStationTile(tile))	return false;
+		if (AIRail.IsRailDepotTile(tile))	{ return cTrack.StationKillRailDepot(tile); }
+		if (AIRoad.IsRoadDepotTile(tile) || AIMarine.IsWaterDepotTile(tile))	{ return cTrack.DestroyDepot(tile); }
+		if (AIRail.IsRailTile(tile))	return false;
+		if (AIBridge.IsBridgeTile(tile) && cBridge.IsRailBridge(tile))	return false;
+		if (AITunnel.IsTunnelTile(tile))	return false;
+		}
 	local res = cError.ForceAction(AITile.DemolishTile, tile);
 	return res;
 }
@@ -160,15 +155,29 @@ function cTileTools::GetTilesAroundPlace(place,maxsize)
 	return tiles;
 }
 
-function cTileTools::IsBuildable(tile)
-// function to check a water tile is buildable, handle non water with AITIle.IsBuildable()
+function cTileTools::IsRiverTile(tile)
+// pfff, finally a solve to detect river
 {
+	if (!AITile.IsWaterTile(tile))	return false;
+	if (AITile.IsCoastTile(tile))	return false; // just assume a river cost tile is a water tile
 	if (AIMarine.IsDockTile(tile))	return false;
 	if (AIMarine.IsWaterDepotTile(tile))	return false;
 	if (AIMarine.IsBuoyTile(tile))	return false;
 	if (AIMarine.IsCanalTile(tile))	return false;
 	if (AIMarine.IsLockTile(tile))	return false;
-	if (!AITile.IsWaterTile(tile))	{ return AITile.IsBuildable(tile); }
+	if (AITile.GetMinHeight(tile) > 0)	return true; // no need to check its maxheight, coasttile already answer it
+	return false;
+}
+
+function cTileTools::IsBuildable(tile)
+// function to check if a tile is buildable, assuming a water tile is buildable
+{
+	if (!AITile.IsWaterTile(tile))	return AITile.IsBuildable(tile);
+	if (AIMarine.IsDockTile(tile))	return false;
+	if (AIMarine.IsWaterDepotTile(tile))	return false;
+	if (AIMarine.IsBuoyTile(tile))	return false;
+	if (AIMarine.IsCanalTile(tile))	return false;
+	if (AIMarine.IsLockTile(tile))	return false;
 	if (cTileTools.IsRiverTile(tile))	return true; // even without terraform, we could demolish the tile.
 	return INSTANCE.terraform; // if no terraform is allow, water tile cannot be use
 }
@@ -240,28 +249,28 @@ function cTileTools::SeduceTown(townID)
 function cTileTools::IsRemovable(tile)
 // return true/false if the tile could be remove
 {
-	local test=false;
+	local test = false;
 	if (cTileTools.IsBuildable(tile))	return true;
-	local testmode=AITestMode();
-	test=cTileTools.DemolishTile(tile);
-	testmode=null;
+	local testmode = AITestMode();
+	test = AITile.DemolishTile(tile);
+	testmode = null;
 	return test;
 }
 
 function cTileTools::IsAreaRemovable(area)
 // return true/false is all tiles could be remove in area AIList
 {
-	local worklist=AIList();
+	local worklist = AIList();
 	worklist.AddList(area); // protect area list values
 	cTileTools.YexoValuate(worklist, cTileTools.IsRemovable);
 	worklist.RemoveValue(1);
 	return (worklist.IsEmpty());
 }
 
-function cTileTools::ClearArea(area)
+function cTileTools::ClearArea(area, safe = true)
 // Clean out an area to allow building on it
 {
-	foreach (tile, _ in area)	cTileTools.DemolishTile(tile);
+	foreach (tile, _ in area)	cTileTools.DemolishTile(tile, safe);
 }
 
 function cTileTools::IsAreaBuildable(area)

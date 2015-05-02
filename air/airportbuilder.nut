@@ -244,7 +244,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 		worktilelist.Clear();
 		foreach (tile, dummy in tilelist)
 			{
-			local newTile=cTileTools.IsBuildableRectangle(tile, air_x, air_y, ignoreList);
+			local newTile=cTerraform.IsBuildableRectange(tile, air_x, air_y, ignoreList);
 			if (newTile != -1)	worktilelist.AddItem(newTile,666);
 			}
 		tilelist.Clear();
