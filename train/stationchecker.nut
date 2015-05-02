@@ -50,7 +50,6 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 	local	success = false;
 	local displace=plat_main+pside;
 	local areaclean = AITileList();
-	local uid = stationObj.GEt
 	if (platopenclose)
 			{
 			areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
