@@ -181,9 +181,8 @@ function cBuilder::BuildTrainStation(start)
 										local z = null;
 										if (station_direction == AIRail.RAILTRACK_NW_SE)	z = cTileTools.GetRectangle(tile, platnum, ssize);
 																					else	z = cTileTools.GetRectangle(tile, ssize, platnum);
-										z.Valuate(cTileTools.IsBuildable);
-										cDebug.showLogic(z);
 										checkit = -1;
+										cTerraform.IsAreaClear(z, true, false);
 										if (cTerraform.TerraformLevelTiles(z, null))	checkit = tile;
 										print("terraform say "+checkit);
 										}
@@ -740,10 +739,13 @@ function cBuilder::PlatformConnectors(platform, useEntry)
 			goal=AIMap.GetTileIndex(AIMap.GetTileX(crossing),AIMap.GetTileY(frontTile));
 			}
 	local rail=railFront;
-	local sweeper=AIList();
+	local sweeper = null;
 	local error=false;
 	cDebug.PutSign(goal,"g");
-	cTerraform.TerraformLevelTiles(frontTile+backwardTileOf, goal);
+	sweeper = cTileTools.GetRectangle(frontTile+backwardTileOf, goal, null);
+	cTerraform.IsAreaClear(sweeper, true, false);
+	cTerraform.TerraformLevelTiles(sweeper, null);
+	sweeper = AIList();
 	local i=frontTile;
 	local signaldone=false;
 	while (i != goal)

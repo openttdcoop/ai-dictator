@@ -115,7 +115,6 @@ function cBuilder::BuildRoadStation(start)
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
 					tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(0);
-					//checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
 					istown = true;
 					if (!cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID))
 							{
@@ -128,7 +127,6 @@ function cBuilder::BuildRoadStation(start)
 					tilelist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
 					tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(0);
-					//checklist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
 					istown=false;
 					}
 			sourceplace = INSTANCE.main.route.SourceProcess.Location;
@@ -142,7 +140,6 @@ function cBuilder::BuildRoadStation(start)
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
 					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(7);
-					//checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
 					istown=true;
 					if (!cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID))
 							{
@@ -155,7 +152,6 @@ function cBuilder::BuildRoadStation(start)
 					tilelist = AITileList_IndustryAccepting(INSTANCE.main.route.TargetProcess.ID, rad);
 					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(7);
-					//checklist = AITileList_IndustryAccepting(INSTANCE.main.route.TargetProcess.ID, rad);
 					istown = false;
 					}
 			sourceplace = INSTANCE.main.route.TargetProcess.Location;
@@ -173,43 +169,6 @@ function cBuilder::BuildRoadStation(start)
 			}
 	else	DInfo("Sticking station & depot to the road",2);
 	checklist.AddList(tilelist); // re-put tiles in it in case we fail building later
-	if (isneartown)
-			{
-			// first, removing most of the unbuildable cases
-			tilelist.Valuate(AITile.GetSlope);
-			tilelist.KeepValue(AITile.SLOPE_FLAT); // only flat tile filtering
-			tilelist.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
-			tilelist.KeepAboveValue(0);
-			//tilelist.Valuate(AIRoad.IsRoadTile);
-			//tilelist.KeepValue(0);
-			//tilelist.Valuate(cTileTools.IsBuildable);
-			/*if (!istown && !start)	// not a town, and not start = only industry as destination
-					{
-					tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-					tilelist.Sort(AIList.SORT_BY_VALUE,true); // little distance first
-					}
-			else	  // town or (industry at start)
-					{
-					if (!istown)
-							{
-							tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
-							}
-					else
-							{
-							tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
-							tilelist.KeepAboveValue(7);
-							}
-					tilelist.Sort(AIList.SORT_BY_VALUE, false);
-					}*/
-			}
-	else
-			{
-			/*if (!istown)
-					{
-					tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-					}
-			tilelist.Sort(AIList.SORT_BY_VALUE,true);*/
-			}
 	DInfo("Tilelist set to "+tilelist.Count(),2);
 	local depotbuild = false;
 	local stationbuild = false;
@@ -217,9 +176,13 @@ function cBuilder::BuildRoadStation(start)
 	local statile = -1;
 	local stafront = -1;
 	local staid = -1;
-
 	if (isneartown)
 			{
+			// first, removing most of the unbuildable cases
+			tilelist.Valuate(AITile.GetSlope);
+			tilelist.KeepValue(AITile.SLOPE_FLAT); // only flat tile filtering
+			tilelist.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
+			tilelist.KeepAboveValue(0);
 			foreach (tile, dummy in tilelist)
 				{
 				statile = cBuilder.BuildAndStickToRoad(tile, stationtype, AIStation.STATION_NEW);
@@ -229,27 +192,17 @@ function cBuilder::BuildRoadStation(start)
 						else	DInfo("Fail to build a station stick to a road",3);
 			}
 	if (statile == -1)	{ isneartown = false; tilelist.Clear(); tilelist.AddList(checklist); }
-		/*	{
-			// We fail to build the station, but might be because we force build station close to roads
-			isneartown=false;
-			tilelist.AddList(checklist); // restore the list of original tiles
-			tilelist.Valuate(AITile.IsBuildable);
-			tilelist.KeepValue(1);
-			tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-			tilelist.Sort(AIList.SORT_BY_VALUE, true);
-			}       */
 	local s_front = cDirection.GetForwardRelativeFromDirection(dir);
 	if (!isneartown)
 			{
 			foreach (tile, dummy in tilelist)
 				{
-//                if (!cTileTools.IsBuildable(tile))	continue;
-				//if (cTerraform.IsRectangleBuildableAndFlat(tile, 2, 2, 2, true))
 				local cost = cTerraform.CheckRectangleForConstruction(tile, 1, 2, true, INSTANCE.terraform);
 				if (cost != -1 && cBanker.CanBuyThat(cost))
 						{
                         cBanker.RaiseFundsBy(cost);
                         local templist = cTileTools.GetRectangle(tile, 1, 2);
+                        cTerraform.IsAreaClear(templist, true, false);
                         cTerraform.TerraformLevelTiles(templist, null);
 						if (!stationbuild)
 							{
@@ -559,10 +512,10 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 	local success=false;
 	local upgradepos=[];
 	local facing=cDirection.GetDirection(sta_pos, sta_front);
-	local p_left = cTileTools.GetPosRelativeFromDirection(0, facing);
-	local p_right = cTileTools.GetPosRelativeFromDirection(1, facing);
-	local p_forward = cTileTools.GetPosRelativeFromDirection(2, facing);
-	local p_backward = cTileTools.GetPosRelativeFromDirection(3, facing);
+	local p_left = cDirection.GetPosRelativeFromDirection(0, facing);
+	local p_right = cDirection.GetPosRelativeFromDirection(1, facing);
+	local p_forward = cDirection.GetPosRelativeFromDirection(2, facing);
+	local p_backward = cDirection.GetPosRelativeFromDirection(3, facing);
 	cDebug.PutSign(sta_pos+p_left,"L");
 	cDebug.PutSign(sta_pos+p_right,"R");
 	cDebug.PutSign(sta_pos+p_backward,"B");

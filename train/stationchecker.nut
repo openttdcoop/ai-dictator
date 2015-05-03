@@ -52,8 +52,8 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 	local areaclean = AITileList();
 	if (platopenclose)
 			{
-			areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
-			local canDestroy = cTerraform.IsAreaBuildable(areaclean, 5, true);
+			areaclean = cTileTools.GetRectangle(displace, displace+(backwardTileOf*(station_depth-1)), null);
+			local canDestroy = cTerraform.IsAreaBuildable(areaclean, 4, true);
 			cDebug.showLogic(areaclean); // deb
 			if (canDestroy)	cTerraform.IsAreaClear(areaclean, true, false);
 			cTerraform.TerraformLevelTiles(plat_main, displace+(backwardTileOf*(station_depth-1)));
@@ -69,10 +69,9 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 			pside=station_right;
 			if (useEntry)	{ pside=station_left; }
 			displace=plat_alt+pside;
-			local areaclean=AITileList();
-			areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
+			areaclean = cTileTools.GetRectangle(displace, displace+(backwardTileOf*(station_depth-1)), null);
 			cDebug.showLogic(areaclean);
-			if (cTerraform.IsAreaBuildable(areaclean, 5, true))	cTerraform.IsAreaClear(areaclean, true, false);
+			if (cTerraform.IsAreaBuildable(areaclean, 4, true))	cTerraform.IsAreaClear(areaclean, true, false);
 			cTerraform.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
 			success = cBuilder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, 1, [stationObj.s_ID]);
 			cDebug.PutSign(cStationRail.GetPlatformIndex(plat_alt,true)+pside,"+");
@@ -109,7 +108,7 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 	local towncheck=AITileList();
 	local testcheck=AITileList();
 	local workTile = stationObj.GetRailStationFrontTile(useEntry, stationObj.GetLocation());
-	towncheck.AddRectangle(workTile, workTile+rightTileOf+(5*forwardTileOf));
+	towncheck = cTileTools.GetRectangle(workTile, workTile+rightTileOf+(5*forwardTileOf), null);
 	testcheck.AddList(towncheck);
 	local success=false;
 	cTerraform.TerraformLevelTiles(towncheck, null); // Terraform the front if we can
@@ -188,8 +187,7 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 	local se_crossing = -1;
 	local sx_crossing = -1;
 	local position = stationObj.GetLocation();
-	cTileTools.DemolishTile(workTile);
-	if (!AITile.IsBuildable(workTile))	{ return false; } // because we must have a tile in front of the station buildable for the signal
+	if (cTileTools.IsTileClear(workTile, true, false) == -1)	{ return false; } // because we must have a tile in front of the station buildable for the signal
 	do  {
 		temptile=workTile+(j*forwardTileOf);
 		cTerraform.TerraformLevelTiles(position,temptile);
@@ -311,7 +309,9 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 	do  {
 		local temptile=fromtile+(j*forwardTileOf);
 		//for (local kb = 0; kb < 6; kb++)	{ cMisc.Locate(j+(kb*forwardTileOf)); cTileTools.DemolishTile(j+(kb*forwardTileOf)); }
-		cTerraform.TerraformLevelTiles(position,temptile);
+		local cleaner = cTileTools.GetRectangle(position, temptile);
+		cTerraform.IsAreaClear(cleaner, true, false);
+		cTerraform.TerraformLevelTiles(position, temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))
 				{
 				success = cTrack.DropRailHere(rail, temptile, stationObj.s_ID, useEntry);
@@ -322,7 +322,9 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 				{
 				cDebug.PutSign(temptile+(1*forwardTileOf),"R1");
 				cDebug.PutSign(temptile+(2*forwardTileOf),"R2");
-				cTerraform.TerraformLevelTiles(position,temptile+(3*forwardTileOf));
+				local cleaner = cTileTools.GetRectangle(position, temptile + (3 * forwardTileOf), null);
+				cTerraform.IsAreaClear(cleaner, true, false);
+				cTerraform.TerraformLevelTiles(position, temptile + (3 * forwardTileOf));
 				if (cTileTools.CanUseTile(temptile+(1*forwardTileOf), stationObj.s_ID))
 						{
 						success = cTrack.DropRailHere(rail, temptile+(1*forwardTileOf), stationObj.s_ID, useEntry);
@@ -591,7 +593,7 @@ function cBuilder::RailStationPhaseBuildDepot(stationObj, useEntry)
 							if (cTileTools.CanUseTile(depotlocations[h],stationObj.s_ID))
 									{
 									cTileTools.DemolishTile(depotlocations[h]);
-									removedepot=AIRail.BuildRailDepot(depotlocations[h], depotfront[h]);
+									removedepot = AIRail.BuildRailDepot(depotlocations[h], depotfront[h]);
 									}
 							local depot_Front=AIRail.GetRailDepotFrontTile(depotlocations[h]);
 							if (AIMap.IsValidTile(depot_Front))	{ success=cBuilder.RailConnectorSolver(depotlocations[h],depot_Front,true); }

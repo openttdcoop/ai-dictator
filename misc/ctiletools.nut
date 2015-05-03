@@ -109,13 +109,21 @@ function cTileTools::GetTilesAroundPlace(place,maxsize)
 
 function cTileTools::GetRectangle(tile, width, height)
 // A wrapper to get back an AITileList with the tiles from the rectangle in it
+// tile the starting tile
+// width the width or the ending tile if height == null
+// height the height or null
 // If the rectangle is out of map we return an empty AITileList
 {
-	width --;
-	height--;
-	if (width < 0 || height < 0)	return AITileList();
 	if (!AIMap.IsValidTile(tile))	return AITileList();
-	local tile_to = tile + AIMap.GetTileIndex(width, height);
+	if (width < 0)	return AITileList();
+	local tile_to = width;
+	if (height != null)
+			{
+			if (height < 0)	return AITileList();
+			width--;
+			height--;
+			tile_to = tile + AIMap.GetTileIndex(width, height);
+			}
 	if (!AIMap.IsValidTile(tile_to))	return AITileList();
 	local t = AITileList();
     t.AddRectangle(tile, tile_to);
@@ -295,7 +303,7 @@ function cTileTools::IsTileClear(tile, safe_clear, get_cost_only)
 	local cost = AIAccounting();
 	if (get_cost_only)	test = AITestMode();
 	local success = true;
-    if (get_cost_only || !cTileTools.IsBuildable(tile))	success = cTileTools.DemolishTile(tile);
+    if (get_cost_only || !cTileTools.IsBuildable(tile))	success = cTileTools.DemolishTile(tile, safe_clear);
 	if (success)	return cost.GetCosts();
 return -1;
 }

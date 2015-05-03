@@ -183,8 +183,8 @@ function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
 	if (cMisc.IsAIList(tileFrom))	tlist.AddList(tileFrom);
                             else	tlist.AddRectangle(tileFrom, tileTo);
 	if (tlist.IsEmpty())	{ DInfo("No tiles to work with !",4); return false; }
-    if (cTerraform.IsAreaClear(tlist, true, false) == -1)	{ DInfo("Cannot clear area to terraform it, height will be fixed by objects",4); }
-    foreach (tile, _ in tlist)	if (AITile.IsWaterTile(tile))	{ print("raising water level "+AITile.RaiseTile(tile, AITile.SLOPE_N + AITile.SLOPE_S)); }
+    foreach (tile, _ in tlist) // raising water level tiles
+    	if (AITile.IsWaterTile(tile))	{ cTileTools.DemolishTile(tile, false); AITile.RaiseTile(tile, AITile.SLOPE_N + AITile.SLOPE_S + AITile.SLOPE_W); }
 	local Solve = cTerraform.TerraformHeightSolver(tlist);
 	Solve.RemoveValue(0); // discard failures
 	local bestOrder=AIList();
