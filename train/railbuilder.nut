@@ -122,7 +122,6 @@ function cBuilder::BuildTrainStation(start)
 			}
 	tilelist = cBuilder.EvalDistanceProduction(tilelist, sourceplace, otherplace);
     foreach (tile, _ in tilelist)	cDebug.PutSign(tile, _);//cDebug.showLogic(tilelist);
-    AIController.Break("stop");
     if (istown)	platnum = 2;
 		else    {
 				if (!start)	platnum = INSTANCE.main.route.SourceStation.s_Size;
@@ -651,7 +650,6 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, platnum, newGR
 		}
 	local distance = AIMap.DistanceManhattan(AIIndustry.GetLocation(src_id), AIIndustry.GetLocation(dst_id));
 	if (!AIRail.BuildNewGRFRailStation(tilepos, direction, platnum, INSTANCE.main.carrier.train_length, link, cargo, src_type, dst_type, distance, newGRF[4]))
-//	if (!AIRail.BuildRailStation(tilepos, direction, platnum, INSTANCE.main.carrier.train_length, link))
 			{
 			DInfo("Rail station couldn't be built, link="+link+" cost="+money,1);
 			cDebug.PutSign(tilepos,"!");
