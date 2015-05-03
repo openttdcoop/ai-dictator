@@ -111,6 +111,9 @@ function cTileTools::GetRectangle(tile, width, height)
 // A wrapper to get back an AITileList with the tiles from the rectangle in it
 // If the rectangle is out of map we return an empty AITileList
 {
+	width --;
+	height--;
+	if (width <= 0 || height <=0)	return AITileList();
 	if (!AIMap.IsValidTile(tile))	return AITileList();
 	local tile_to = tile + AIMap.GetTileIndex(width, height);
 	if (!AIMap.IsValidTile(tile_to))	return AITileList();
@@ -123,6 +126,9 @@ function cTileTools::GetRectangleBorders(tile, width, height)
 // Return the tiles that surround a rectangle, the rectangle itself must be valid, borders may not
 // We will return an AITileList with tiles from the valid borders found or an empty list if the rectangle wasn't itself good
 {
+	width --;
+	height--;
+	if (width <= 0 || height <=0)	return AITileList();
 	local rect = cTileTools.GetRectangle(tile, width, height);
 	if (rect.IsEmpty())	return AITileList();
     local b_tile = tile + AIMap.GetTileIndex(0, -1);
@@ -175,9 +181,7 @@ function cTileTools::DemolishTile(tile, safe = true)
 {
 	// protect destruction done by magic buldozer, but not if it's some road
 	local own = AITile.GetOwner(tile);
-	if (own == -1 || AICompany.IsMine(own))	own = true;
-									else	own = false;
-	if (!own && !AITile.HasTransportType(tile, AITile.TRANSPORT_ROAD))	return false;
+	if (own != -1 && !AICompany.IsMine(own))	return false;
 	if (safe)
 		{
 		if (AITile.IsStationTile(tile))	return false;
@@ -277,34 +281,21 @@ function cTileTools::SeduceTown(townID)
 	return (AITown.GetRating(townID, weare) >= AITown.TOWN_RATING_POOR);
 }
 
-function cTileTools::IsTileClear(tile, safe_clear, mode, only_cost)
+function cTileTools::IsTileClear(tile, safe_clear, get_cost_only)
 // return the cost to clear a tile
 // safe_clear is pass to cTileTools.DemolishTile
 // mode :	0 - Clear only tile but not tile with something on it
 //			1 - Clear only tile with something on it (rivers and water are considered something)
 //			2 - Clear the tile, with or without something on it
-// only_cost if true we will not clear it for real, but only count the cost to do it
+// get_cost_only if true we will not clear anything, but count costs to clear everything
+// get_cost_only if false we will clear ONLY what is not buildable, but we will not clear what is not clear but buildable.
 // return cost to clear the tile, can be 0. If something is wrong -1
 {
 	local test = null;
 	local cost = AIAccounting();
-	if (only_cost)	test = AITestMode();
-	local success = false;
-	switch (mode)
-		{
-		case	0:
-			if (!AITile.IsBuildable(tile))	return -1;
-			success = cTileTools.DemolishTile(tile, safe_clear);
-			break;
-		case	1:
-			if (!cTileTools.IsBuildable(tile))	return -1;
-			success = cTileTools.DemolishTile(tile, safe_clear);
-			break;
-		case	2:
-			success = cTileTools.DemolishTile(tile, safe_clear);
-			break;
-		default: return -1;
-		}
+	if (get_cost_only)	test = AITestMode();
+	local success = true;
+    if (get_cost_only || !cTileTools.IsBuildable(tile))	success = cTileTools.DemolishTile(tile);
 	if (success)	return cost.GetCosts();
 return -1;
 }

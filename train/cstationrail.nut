@@ -131,8 +131,8 @@ function cStationRail::GetRailStationMiscInfo(stationID=null)
 	thatstation.s_Train[TrainType.END_POINT]= exitpos;
 	thatstation.s_Train[TrainType.DIRECTION]= direction;
 	thatstation.s_Train[TrainType.DEPTH]= stalength;
-	thatstation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 	thatstation.DefinePlatform();
+	thatstation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 	cDebug.ClearSigns();
 }
 

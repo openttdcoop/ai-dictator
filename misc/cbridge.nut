@@ -66,7 +66,7 @@ function cBridge::Save()
 	this.otherside=AIBridge.GetOtherBridgeEnd(this.firstside);
 	if (this.bridgeUID in cBridge.bridgedatabase)	{ return; }
 	this.length=AIMap.DistanceManhattan(this.firstside, this.otherside) +1;
-	local dir=cBuilder.GetDirection(this.firstside, this.otherside);
+	local dir=cDirection.GetDirection(this.firstside, this.otherside);
 	if (dir == 0 || dir == 1)	{ this.direction = AIRail.RAILTRACK_NW_SE; }
 	else	{ this.direction = AIRail.RAILTRACK_NE_SW; }
 	this.owner=AICompany.ResolveCompanyID(AITile.GetOwner(this.firstside));

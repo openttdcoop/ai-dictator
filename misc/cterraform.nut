@@ -45,7 +45,7 @@ function cTerraform::IsAreaBuildableAndFlat(area, max_remove, safe)
 	return cTerraform.IsAreaBuildable(area, max_remove, safe);
 }
 
-function cTerraform::IsAreaClear(area, safe_clear, mode, only_cost)
+function cTerraform::IsAreaClear(area, safe_clear, get_cost_only)
 // Clean out an area to allow building on it
 // safe_clear : if true we get some protection from cTileTools.DemolishTile
 // only_cost : if true, we won't clear the area, but return only the costs to do it
@@ -54,10 +54,11 @@ function cTerraform::IsAreaClear(area, safe_clear, mode, only_cost)
 	local cost = 0;
 	foreach (tile, _ in area)
 			{
-			local tile_cost = cTileTools.IsTileClear(tile, safe_clear, mode, only_cost);
+			local tile_cost = cTileTools.IsTileClear(tile, safe_clear, get_cost_only);
 			if (tile_cost == -1)	return -1;
 			cost += tile_cost;
 			}
+	DInfo("Money to clear area: "+cost,3);
 	return cost;
 }
 
@@ -73,18 +74,22 @@ function cTerraform::CheckRectangleForConstruction(tile, width, height, safe, al
  */
 {
 	local area = cTileTools.GetRectangle(tile, width, height);
+	cDebug.ClearSigns();
 	print("GetRectangle="+area.Count());
+	cDebug.showLogic(area);
 	if (area.IsEmpty())	return -1;
 	// check if we will really be able to clear everything, <safe> might disallow that
-	local cost_clear = cTerraform.IsAreaClear(area, safe, 2, true);
+	local cost_clear = cTerraform.IsAreaClear(area, safe, true);
 	if (cost_clear == -1)	return -1;
-	if (safe && cTerraform.IsAreaClear(area, false, 2, true) != cost_clear)	return -1;
 	if (!allow_terraform || !INSTANCE.terraform)	return cost_clear;
 	local borders = cTileTools.GetRectangleBorders(tile, width, height);
 	if (borders.IsEmpty())	return cost_clear;
-	cDebug.ClearSigns();
-	cDebug.showLogic(borders);
-	AIController.Break();
+	local terra_solve = cTerraform.TerraformHeightSolver(area);
+	terra_solve.RemoveValue(0);
+	if (terra_solve.IsEmpty())	return cost_clear;
+	terra_solve.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+	cost_clear += abs(terra_solve.GetValue(terra_solve.Begin()));
+    return cost_clear;
 }
 
 function cTerraform::IsRectangleFlat(tile, width, height)
@@ -171,13 +176,15 @@ function cTerraform::ShapeTile(tile, wantedHeight, evaluateOnly)
 }
 
 function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
-// terraform from tileFrom to tileTo
+// terraform from tileFrom to tileTo ; if tileFrom is an array, we terraform the array list in tileFrom
 // return true if success
 {
-	local tlist=AITileList();
-	if (AITile.IsWaterTile(tileFrom))	{ print("raising fromtile "+AITile.RaiseTile(tileFrom, AITile.SLOPE_N + AITile.SLOPE_S)); }
-	tlist.AddRectangle(tileFrom, tileTo);
-	if (tlist.IsEmpty())	DInfo("No tiles to work with !",4);
+	local tlist = AITileList();
+	if (cMisc.IsAIList(tileFrom))	tlist.AddList(tileFrom);
+                            else	tlist.AddRectangle(tileFrom, tileTo);
+	if (tlist.IsEmpty())	{ DInfo("No tiles to work with !",4); return false; }
+    if (cTerraform.IsAreaClear(tlist, true, false) == -1)	{ DInfo("Cannot clear area to terraform it, height will be fixed by objects",4); }
+    foreach (tile, _ in tlist)	if (AITile.IsWaterTile(tile))	{ print("raising water level "+AITile.RaiseTile(tile, AITile.SLOPE_N + AITile.SLOPE_S)); }
 	local Solve = cTerraform.TerraformHeightSolver(tlist);
 	Solve.RemoveValue(0); // discard failures
 	local bestOrder=AIList();

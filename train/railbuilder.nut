@@ -13,18 +13,39 @@
  *
 **/
 
-function cBuilder::EvalDistanceProduction(tilelist, to_tile)
-// this set a new AIList with a ratio distance/value of the given tilelist list
-// to_tile the aim goal to check the distance
+function cBuilder::EvalDistanceProduction(tilelist, srcplace, dstplace)
+// This set a new AIList with a ratio distance/value of the given tilelist list
+// The list should be the tiles to check, and their value already set to something of value ;  like AITile.GetCargoProduction
 {
 	local n_list = AIList();
+	local origin_dir = cDirection.GetDirection(srcplace, dstplace);
 	foreach (tile, value in tilelist)
 		{
-		local distance = AIMap.DistanceManhattan(tile, to_tile);
-		local res = ((tilelist.GetValue(tile) + 1000) - distance).tointeger();
-		//res = tilelist.GetValue(tile);
-		//res = AITile.GetOwner(tile);
-        n_list.AddItem(tile, res);
+		local distance = cDirection.GetDistanceChebyshevToTile(tile, dstplace);
+		local points = 300 + (value * 1.2); // a bonus by prod
+		points -= distance; // a malus by distance
+        local cur_dir = cDirection.GetDirection(srcplace, tile);
+        switch (origin_dir)
+			{
+			case	DIR_NE:
+					if (cur_dir == DIR_NE)	points *= 2;	// 2x bonus going the right direction
+					if (cur_dir == DIR_SW)	points *= 0.5;	// 2x malus going opposite direction
+					break;
+			case	DIR_NW:
+					if (cur_dir == DIR_NW)	points *= 2;
+					if (cur_dir == DIR_SE)	points *= 0.5;
+					break;
+			case	DIR_SE:
+					if (cur_dir == DIR_SE)	points *= 2;
+					if (cur_dir == DIR_NW)	points *= 0.5;
+					break;
+			case	DIR_SW:
+					if (cur_dir == DIR_SW)	points *= 2;
+					if (cur_dir == DIR_NE)	points *= 0.5;
+					break;
+			}
+		points = points.tointeger();
+        n_list.AddItem(tile, points);
         }
 	n_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
 	return n_list;
@@ -47,12 +68,12 @@ function cBuilder::BuildTrainStation(start)
 	local istown=false;
 	local srcpoint=null;
 	local sourceplace=null;
-	local statile=null;
 	local platnum = 1;
+	local checkit = -1;
 	if (start)
 			{
-			dir = cBuilder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
-			print("dir source="+cBuilder.DirectionToString(dir));
+			dir = cDirection.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
+			print("dir source="+cDirection.DirectionToString(dir));
 			if (INSTANCE.main.route.SourceProcess.IsTown)
 					{
                     otherplace=INSTANCE.main.route.TargetProcess.Location; sourceplace=INSTANCE.main.route.SourceProcess.Location;
@@ -72,14 +93,12 @@ function cBuilder::BuildTrainStation(start)
 					tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(0);
                     istown=false;
-//                    tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
-//                    tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 					}
 			}
 	else
 			{
-			dir = cBuilder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
-			print("dir target="+cBuilder.DirectionToString(dir));
+			dir = cDirection.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
+			print("dir target="+cDirection.DirectionToString(dir));
 			if (INSTANCE.main.route.TargetProcess.IsTown)
 					{
                     otherplace=INSTANCE.main.route.SourceProcess.Location; sourceplace=INSTANCE.main.route.TargetProcess.Location;
@@ -88,7 +107,6 @@ function cBuilder::BuildTrainStation(start)
                     tilelist.KeepValue(1);
 					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(8);
-//                    tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
                     istown=true;
 					}
 			else
@@ -99,12 +117,10 @@ function cBuilder::BuildTrainStation(start)
                     tilelist.KeepValue(1);
 					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
 					tilelist.KeepAboveValue(8);
-                    //tilelist.Valuate(AIMap.DistanceSquare, otherplace);
-                    //tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 					istown=false;
 					}
 			}
-	tilelist = cBuilder.EvalDistanceProduction(tilelist, otherplace);
+	tilelist = cBuilder.EvalDistanceProduction(tilelist, sourceplace, otherplace);
     foreach (tile, _ in tilelist)	cDebug.PutSign(tile, _);//cDebug.showLogic(tilelist);
     AIController.Break("stop");
     if (istown)	platnum = 2;
@@ -113,86 +129,68 @@ function cBuilder::BuildTrainStation(start)
 					else	platnum = (AIIndustry.GetLastMonthProduction(INSTANCE.main.route.SourceProcess.ID,INSTANCE.main.route.CargoID) / 25) >= INSTANCE.main.carrier.train_length ? 2 : 1;
 				}
 	local success = false;
-	local buildmode=4;
+	local buildmode = 0;
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
 	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger()),2);
 	INSTANCE.main.bank.RaiseFundsBy(cost*4);
-	local ssize= 6 + INSTANCE.main.carrier.train_length;
-	/* 4 build mode:
-	- try find a place with stationsize+11 tiles flatten and buildable
-	- try again but with the other direction
-	- try find a place with stationsize+11 tiles maybe not flat and buildable
-	- try again but with the other direction
-	- try find a place with stationsize+11 tiles maybe not flat and buildable even on water
+	local ssize= INSTANCE.main.carrier.train_length;
+	/* 2 build mode:
+	- try find a place with cheap (a place that can hold it without terraforming)
+	- try again with terraforming enable
 	*/
+	local direction = AIRail.RAILTRACK_NE_SW;
+	local alt_direction = AIRail.RAILTRACK_NW_SE;
+	local station_direction = direction;
+	if (dir == DIR_NW || dir == DIR_SE)	{ alt_direction = direction; direction = AIRail.RAILTRACK_NW_SE; }
 	do
 			{
 			foreach (tile, _ in tilelist)
 				{
-				local direction = dir;
-				cDebug.PutSign(tile, buildmode);
-				//if (start)	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location); }
-				//	else	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.TargetProcess.Location); }
-//				if (start)	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.SourceProcess.Location); }
-	//				else	{ dir = cBuilder.GetDirection(tile, INSTANCE.main.route.TargetProcess.Location); }
-					print("dir = "+cBuilder.DirectionToString(dir));
-				switch (dir)
-						{
-						case DIR_NW: //0 south
-							//if (istown)	{ dir=AIRail.RAILTRACK_NW_SE; }
-							//else	{ dir=AIRail.RAILTRACK_NE_SW; }
-							direction = AIRail.RAILTRACK_NW_SE;
-							break;
-						case DIR_SE: //1 north
-							//if (istown)	{ dir=AIRail.RAILTRACK_NW_SE; }
-							//else	{ dir=AIRail.RAILTRACK_NE_SW; }
-							direction = AIRail.RAILTRACK_NW_SE;
-							break;
-						case DIR_SW: //3 est/droite
-							//if (istown)	{ dir=AIRail.RAILTRACK_NE_SW; }
-							//else	{ dir=AIRail.RAILTRACK_NW_SE; }
-							direction = AIRail.RAILTRACK_NE_SW;
-							break;
-						case DIR_NE: //2 west/gauche
-							//if (istown)	{ dir=AIRail.RAILTRACK_NE_SW; }
-							//else	{ dir=AIRail.RAILTRACK_NW_SE; }
-							direction = AIRail.RAILTRACK_NE_SW;
-							break;
-						}
-				if (buildmode == 1 || buildmode == 3)
-					{
-					if (direction == AIRail.RAILTRACK_NE_SW)	direction = AIRail.RAILTRACK_NW_SE;
-														else	direction = AIRail.RAILTRACK_NE_SW;
-                    }
-				local checkit = -1;
-				print("buildmode = "+buildmode);
+				print("buildmode = "+buildmode+" direction = "+cDirection.DirectionToString(dir));
+				local result = null;
 				switch (buildmode)
 						{
 						case	0:
+							// platnum is the width when NW_SE
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0, true); }
+																else	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0, true); }
+							station_direction = direction;
+							if (!result)
+								{ // try to swap direction
+								if (alt_direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0, true); }
+																		else	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0, true); }
+								station_direction = alt_direction;
+								}
+							if (result)	checkit = tile;
+								else	checkit = -1;
+							break;
 						case	1:
-						print("mode0");
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0, true); } // platnum = width
-																else	{ checkit = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0, true); }
-							if (checkit)	cDebug.PutSign(tile, "1");
-									else	cDebug.PutSign(tile, "0");
-							if (checkit)	checkit = tile;
-									else	checkit = -1;
-							break;
-						case	2:
-						case	3:
-						print("mode1");
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = AITile.IsBuildableRectangle(tile, platnum, ssize); }
-																else	{ checkit = AITile.IsBuildableRectangle(tile, ssize, platnum); }
-							if (checkit)	checkit = tile;
-									else	checkit = -1;
-							break;
-						case	4:
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ checkit = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, true); }
-																else	{ checkit = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, true); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, true); }
+																else	{ result = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, true); }
+							station_direction = direction;
+							if (result == -1)
+								{
+								if (alt_direction == AIRail.RAILTRACK_NW_SE)
+											{ result = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, true); }
+									else	{ result = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, true); }
+								station_direction = alt_direction;
+								}
+                            print("money to terraform: "+result);
+							if (result != -1 && cBanker.CanBuyThat(result))
+										{
+										local z = null;
+										if (station_direction == AIRail.RAILTRACK_NW_SE)	z = cTileTools.GetRectangle(tile, platnum, ssize);
+																					else	z = cTileTools.GetRectangle(tile, ssize, platnum);
+										z.Valuate(cTileTools.IsBuildable);
+										cDebug.showLogic(z);
+										checkit = -1;
+										if (cTerraform.TerraformLevelTiles(z, null))	checkit = tile;
+										print("terraform say "+checkit);
+										}
+								else	checkit = -1;
 							break;
 						}
 				print("Station could be built at "+cMisc.Locate(checkit));
-                AIController.Break("Station");
 				if (checkit != -1)
 						{
 						local newGRF = [];
@@ -201,17 +199,14 @@ function cBuilder::BuildTrainStation(start)
 						newGRF.push(INSTANCE.main.route.SourceProcess.UID);
 						newGRF.push(INSTANCE.main.route.TargetProcess.UID);
 						newGRF.push(start);
-						success = cBuilder.CreateAndBuildTrainStation(tile, direction, platnum, newGRF);
-						AIController.Break("station");
+						success = cBuilder.CreateAndBuildTrainStation(checkit, station_direction, platnum, newGRF);
 						if (!success && cError.IsCriticalError())	{ break; }
-						statile = tile;
-						print("statile return "+statile);
 						break;
 						}
 				}
 			buildmode++;
 			}
-	while (buildmode < 5 && !success);
+	while (buildmode < 2 && !success);
 	if (!success)
 			{
 			DInfo("Can't find a good place to build the train station ! "+tilelist.Count(),1);
@@ -219,8 +214,8 @@ function cBuilder::BuildTrainStation(start)
 			return false;
 			}
 	// here, so we success to build one
-	local staID = AIStation.GetStationID(statile);
-	print("staID ="+staID+" statile="+statile+" start="+start);
+	local staID = AIStation.GetStationID(checkit);
+	print("staID ="+staID+" statile="+checkit+" start="+start);
 	if (start)	{ INSTANCE.main.route.SourceStation = staID; }
 		else	{ INSTANCE.main.route.TargetStation = staID; }
 	INSTANCE.main.route.CreateNewStation(start);
@@ -556,13 +551,13 @@ function cBuilder::CreateStationsConnection(fromObj, toObj)
 					srcUseEntry=(bestWay[1]==1);
 					dstUseEntry=(bestWay[3]==1);
 					DInfo("srcUseEntry="+srcUseEntry+" dstUseEntry="+dstUseEntry,2);
-					if (!srcresult)	{ srcresult=INSTANCE.main.builder.RailStationGrow(fromObj, srcUseEntry, true); }
+					if (!srcresult)	{ srcresult = cBuilder.RailStationGrow(fromObj, srcUseEntry, true); }
 					if (!srcresult)
 							{
 							DWarn("RailStationGrow report failure",1);
 							if (cError.IsError())	{ return false; }
 							}
-					if (!dstresult)	{ dstresult=INSTANCE.main.builder.RailStationGrow(toObj, dstUseEntry, false); }
+					if (!dstresult)	{ dstresult = cBuilder.RailStationGrow(toObj, dstUseEntry, false); }
 					if (!dstresult)
 							{
 							DWarn("RailStationGrow report failure",1);
@@ -824,7 +819,7 @@ function cBuilder::AreRailTilesConnected(tilefrom, tileto, stricttype=true)
 	local	SW = 2;
 	local	NW = 4;
 	local	SE = 8;
-	local direction=cBuilder.GetDirection(tilefrom, tileto);
+	local direction=cDirection.GetDirection(tilefrom, tileto);
 	local tilefrom_mask=cBuilder.GetRailBitMask(AIRail.GetRailTracks(tilefrom));
 	local tileto_mask=cBuilder.GetRailBitMask(AIRail.GetRailTracks(tileto));
 	local tilefrom_need, tileto_need=0;
@@ -854,7 +849,7 @@ function cBuilder::AreRailTilesConnected(tilefrom, tileto, stricttype=true)
 			{
 			local endat=null;
 			endat=cBridge.IsBridgeTile(tileto) ? AIBridge.GetOtherBridgeEnd(tileto) : AITunnel.GetOtherTunnelEnd(tileto);
-			local jumpdir=cBuilder.GetDirection(tileto, endat);
+			local jumpdir=cDirection.GetDirection(tileto, endat);
 			if (jumpdir == direction) // if the bridge/tunnel goes the same direction, then consider it a plain rail
 					{
 					tileto_mask=tileto_need;
@@ -864,7 +859,7 @@ function cBuilder::AreRailTilesConnected(tilefrom, tileto, stricttype=true)
 			{
 			local endat=null;
 			endat=cBridge.IsBridgeTile(tilefrom) ? AIBridge.GetOtherBridgeEnd(tilefrom) : AITunnel.GetOtherTunnelEnd(tilefrom);
-			local jumpdir=cBuilder.GetDirection(endat, tilefrom); // reverse direction to find the proper one
+			local jumpdir=cDirection.GetDirection(endat, tilefrom); // reverse direction to find the proper one
 			if (jumpdir == direction) // if the bridge/tunnel goes the same direction, then consider it a plain rail
 					{
 					tilefrom_mask=tilefrom_need;
@@ -886,21 +881,21 @@ function cBuilder::GetRailTracks(tile)
 			if (AIRail.IsRailDepotTile(tile))
 					{
 					test=AIRail.GetRailDepotFrontTile(tile);
-					testdir=cBuilder.GetDirection(tile, test);
+					testdir=cDirection.GetDirection(tile, test);
 					DInfo("Rail depot found",2);
 					trackinfo= (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 					}
 			if (AITunnel.IsTunnelTile(tile))
 					{
 					test=AITunnel.GetOtherTunnelEnd(tile);
-					testdir=cBuilder.GetDirection(tile, test);
+					testdir=cDirection.GetDirection(tile, test);
 					DInfo("Tunnel found",2);
 					trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 					}
 			if (cBridge.IsBridgeTile(tile))
 					{
 					test=AIBridge.GetOtherBridgeEnd(tile);
-					testdir=cBuilder.GetDirection(tile, test);
+					testdir=cDirection.GetDirection(tile, test);
 					DInfo("Bridge found",2);
 					trackinfo = (testdir == 0 || testdir == 1) ? AIRail.RAILTRACK_NW_SE : AIRail.RAILTRACK_NE_SW;
 					}
@@ -977,9 +972,9 @@ function cBuilder::RailConnectorSolver(tile_link, tile_target, everything=true)
             if (filter.HasItem(seek_index*dest_index))  { continue; }
                                                 else    { filter.AddItem(seek_index*dest_index,0); }
             mask_voisin = cBuilder.GetRailBitMask(cBuilder.GetRailTracks(dest));
-            seek_search = directionmap.GetValue(cBuilder.GetDirection(tile_target, tile_seek));
+            seek_search = directionmap.GetValue(cDirection.GetDirection(tile_target, tile_seek));
 			// we ask direction target->seek to find what point tile_seek need set, so SW-SE = SW
-            local dest_search = directionmap.GetValue(cBuilder.GetDirection(tile_target, dest));
+            local dest_search = directionmap.GetValue(cDirection.GetDirection(tile_target, dest));
 			if ( (dest_search & mask_voisin) == dest_search && (seek_search & mask_seek) == seek_search )
 					{
                   	addtrack.push(dest_search + seek_search);
@@ -1019,7 +1014,7 @@ function cBuilder::SignalBuilder(source, target)
 		{
 		if (AIRail.GetSignalType(source, source+voisin) == AIRail.SIGNALTYPE_PBS)
 				{
-				sourcedir=cBuilder.GetDirection(source+voisin, source);
+				sourcedir=cDirection.GetDirection(source+voisin, source);
 				DInfo("Found source signal at "+source+" facing "+sourcedir+" voisin="+(source+voisin),2);
 				sourcecheck=source+voisin; // to feed pathfinder with a tile without the signal on it
 				cDebug.PutSign(sourcecheck,"s");
@@ -1030,7 +1025,7 @@ function cBuilder::SignalBuilder(source, target)
 		{
 		if (AIRail.GetSignalType(target, target+voisin) == AIRail.SIGNALTYPE_PBS)
 				{
-				targetdir=cBuilder.GetDirection(target+voisin, target);
+				targetdir=cDirection.GetDirection(target+voisin, target);
 				DInfo("Found target signal at "+target+" facing "+targetdir+" voisin="+(target+voisin),2);
 				targetcheck=target+voisin;
 				cDebug.PutSign(targetcheck,"t");

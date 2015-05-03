@@ -30,7 +30,7 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 	local direction = stationObj.GetRailStationDirection();
 	local station_left = null;
 	local station_right = null;
-	local station_right = cBuilder.GetDirection(cStationRail.GetPlatformIndex(topRightPlatform, false), cStationRail.GetPlatformIndex(topRightPlatform, true));
+	local station_right = cDirection.GetDirection(cStationRail.GetPlatformIndex(topRightPlatform, false), cStationRail.GetPlatformIndex(topRightPlatform, true));
 	local station_left=cDirection.GetLeftRelativeFromDirection(station_right);
 	station_right=cDirection.GetRightRelativeFromDirection(station_right);
 	cDebug.PutSign(station_left+idxLeftPlatform,"LS");
@@ -53,9 +53,9 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 	if (platopenclose)
 			{
 			areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
-			local canDestroy = cTerraform.IsAreaBuildable(areaclean, 5);
+			local canDestroy = cTerraform.IsAreaBuildable(areaclean, 5, true);
 			cDebug.showLogic(areaclean); // deb
-			if (canDestroy)	{ cTileTools.ClearArea(areaclean); }
+			if (canDestroy)	cTerraform.IsAreaClear(areaclean, true, false);
 			cTerraform.TerraformLevelTiles(plat_main, displace+(backwardTileOf*(station_depth-1)));
 			success = cBuilder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_main,true)+pside, direction, 1, [stationObj.s_ID]);
 			cDebug.PutSign(cStationRail.GetPlatformIndex(plat_main,true)+pside,"+");
@@ -72,7 +72,7 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 			local areaclean=AITileList();
 			areaclean.AddRectangle(displace,displace+(backwardTileOf*(station_depth-1)));
 			cDebug.showLogic(areaclean);
-			if (cTerraform.IsAreaBuildable(areaclean, 5))	{ cTileTools.ClearArea(areaclean); }
+			if (cTerraform.IsAreaBuildable(areaclean, 5, true))	cTerraform.IsAreaClear(areaclean, true, false);
 			cTerraform.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
 			success = cBuilder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, 1, [stationObj.s_ID]);
 			cDebug.PutSign(cStationRail.GetPlatformIndex(plat_alt,true)+pside,"+");
@@ -112,7 +112,8 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 	towncheck.AddRectangle(workTile, workTile+rightTileOf+(5*forwardTileOf));
 	testcheck.AddList(towncheck);
 	local success=false;
-	if (cTerraform.IsAreaBuildable(towncheck, 5))
+	cTerraform.TerraformLevelTiles(towncheck, null); // Terraform the front if we can
+	if (cTerraform.IsAreaBuildable(towncheck, 5, true))
 			{
 			testcheck.AddList(towncheck);
 			testcheck.Valuate(AITile.IsStationTile); // protect station here
@@ -430,7 +431,7 @@ function cBuilder::RailStationPathfindAltTrack(roadObj)
 			roadObj.SourceStation.SetAlternateLineBuilt();
 			roadObj.TargetStation.SetAlternateLineBuilt();
 			cPathfinder.CloseTask([srclink,srcpos],[dstlink,dstpos]);
-			cBuilder.RailConnectorSolver(dstpos, dstpos+cDirection.GetForwardRelativeFromDirection(cBuilder.GetDirection(dstlink, dstpos)), true);
+			cBuilder.RailConnectorSolver(dstpos, dstpos+cDirection.GetForwardRelativeFromDirection(cDirection.GetDirection(dstlink, dstpos)), true);
 			roadObj.RouteClaimsTiles();
 			}
 	return true;

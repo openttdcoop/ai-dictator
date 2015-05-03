@@ -74,30 +74,6 @@ function cBuilder::ValidateLocation(location, direction, width, depth)
 	return true;
 }
 
-function cBuilder::GetDirection(tilefrom, tileto)
-// SimpleAI code
-{
-	local distx = AIMap.GetTileX(tileto) - AIMap.GetTileX(tilefrom);
-	local disty = AIMap.GetTileY(tileto) - AIMap.GetTileY(tilefrom);
-	local ret = 0;
-	if (abs(distx) > abs(disty)) {
-		ret = 2;
-		disty = distx;
-	}
-	if (disty > 0) {ret = ret + 1}
-	return ret;
-}
-
-function cBuilder::DirectionToString(dir1)
-// true if direction oppose each other
-{
-	if (dir1 == DIR_SE)	return "DIR_SE("+DIR_SE+")";
-	if (dir1 == DIR_NW)	return "DIR_NW("+DIR_NW+")";
-	if (dir1 == DIR_NE)	return "DIR_NE("+DIR_NE+")";
-	if (dir1 == DIR_SW)	return "DIR_SW("+DIR_SW+")";
-	return "(invalid direction:"+dir1+")";
-}
-
 function cBuilder::BuildStation(start)
 // Build start station, reroute to the correct station builder depending on the road type to build
 {
@@ -462,6 +438,9 @@ function cBuilder::TryBuildThatRoute()
 		INSTANCE.main.route.RouteBuildGroup();
 		INSTANCE.main.route.Route_GroupNameSave();
 		DInfo("Route construction complete ! "+INSTANCE.main.route.Name,0);
+//		if (INSTANCE.main.route.
+//				thatstation.s_MaxSize = thatstation.s_Size;
+
 		print("cargoID ="+cCargo.GetCargoLabel(INSTANCE.main.route.CargoID));
 		local srcprod=INSTANCE.main.route.SourceStation.IsCargoProduce(INSTANCE.main.route.CargoID);
 		local srcacc=INSTANCE.main.route.SourceStation.IsCargoAccept(INSTANCE.main.route.CargoID);

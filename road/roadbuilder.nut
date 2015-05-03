@@ -108,7 +108,7 @@ function cBuilder::BuildRoadStation(start)
 	local dir, tilelist, checklist, otherplace, istown, isneartown=null;
 	if (start)
 			{
-			dir = cBuilder.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
+			dir = cDirection.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
 			if (INSTANCE.main.route.SourceProcess.IsTown)
 					{
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
@@ -131,7 +131,7 @@ function cBuilder::BuildRoadStation(start)
 			}
 	else
 			{
-			dir = cBuilder.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
+			dir = cDirection.GetDirection(INSTANCE.main.route.TargetProcess.Location, INSTANCE.main.route.SourceProcess.Location);
 			if (INSTANCE.main.route.TargetProcess.IsTown)
 					{
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
@@ -248,7 +248,7 @@ function cBuilder::BuildRoadStation(start)
 			{
 			foreach (tile, dummy in tilelist)
 				{
-				if (cTerraform.CheckLandForConstruction(tile, 1, 3))
+				if (cTerraform.CheckRectangleForConstruction2(tile, 1, 3, true, true))
 						{
 						if (!stationbuild)
 							{
@@ -266,7 +266,7 @@ function cBuilder::BuildRoadStation(start)
 	print("station at "+cMisc.Locate(statile)+" ID="+AIStation.GetStationID(statile));
 	local newStation = INSTANCE.main.route.CreateNewStation(start);
 	if (newStation == null)	{ return false; }
-	local stadir = cBuilder.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
+	local stadir = cDirection.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
 	local tileFrom= statile + cDirection.GetRightRelativeFromDirection(stadir);
 	local tileTo= statile + cDirection.GetLeftRelativeFromDirection(stadir);
 	cTerraform.TerraformLevelTiles(tileFrom, tileTo); // try levels mainstation and its neighbourg
@@ -562,7 +562,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 	local new_dep_pos=-1;
 	local success=false;
 	local upgradepos=[];
-	local facing=cBuilder.GetDirection(sta_pos, sta_front);
+	local facing=cDirection.GetDirection(sta_pos, sta_front);
 	local p_left = cTileTools.GetPosRelativeFromDirection(0, facing);
 	local p_right = cTileTools.GetPosRelativeFromDirection(1, facing);
 	local p_forward = cTileTools.GetPosRelativeFromDirection(2, facing);

@@ -145,9 +145,9 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 	local RT = (AIRail.IsRailTile(start) && AIRail.IsRailTile(end));
 	if (!RT)	{ return -1; }
 	RT = AIRail.GetRailType(start);
-	local direction = cBuilder.GetDirection(start, end);
+	local direction = cDirection.GetDirection(start, end);
     local track = cTrack.GetRailFromDirection(direction);
-    local startdir = cBuilder.GetDirection(source[1], source[0]);
+    local startdir = cDirection.GetDirection(source[1], source[0]);
     local s_x = AIMap.GetTileX(start);
     local s_y = AIMap.GetTileY(start);
     local e_x = AIMap.GetTileX(end);

@@ -20,6 +20,30 @@ class cDirection extends cClass
 			}
 }
 
+function cDirection::DirectionToString(dir1)
+// return a string with direction
+{
+	if (dir1 == DIR_SE)	return "DIR_SE("+DIR_SE+")";
+	if (dir1 == DIR_NW)	return "DIR_NW("+DIR_NW+")";
+	if (dir1 == DIR_NE)	return "DIR_NE("+DIR_NE+")";
+	if (dir1 == DIR_SW)	return "DIR_SW("+DIR_SW+")";
+	return "(invalid direction:"+dir1+")";
+}
+
+function cDirection::GetDirection(tilefrom, tileto)
+// SimpleAI code
+{
+	local distx = AIMap.GetTileX(tileto) - AIMap.GetTileX(tilefrom);
+	local disty = AIMap.GetTileY(tileto) - AIMap.GetTileY(tilefrom);
+	local ret = 0;
+	if (abs(distx) > abs(disty)) {
+		ret = 2;
+		disty = distx;
+	}
+	if (disty > 0) {ret = ret + 1}
+	return ret;
+}
+
 function cDirection::GetPosRelativeFromDirection(dirswitch, direction)
 // Get the relative tile from "dirswitch" relative to "direction"
 // dirswitch: 0- left, 1-right, 2-forward, 3=backward
