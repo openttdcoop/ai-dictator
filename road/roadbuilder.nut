@@ -92,28 +92,31 @@ function cBuilder::BuildRoadStation(start)
 // @param start true to build at source, false at destination
 // @return true or false
 	{
-	cBanker.RaiseFundsBigTime();
 	local stationtype = null;
 	local rad=null;
 	if (AICargo.GetTownEffect(INSTANCE.main.route.CargoID) == AICargo.TE_PASSENGERS)
 			{
-			rad= AIStation.GetCoverageRadius(AIStation.STATION_BUS_STOP);
+			rad = AIStation.GetCoverageRadius(AIStation.STATION_BUS_STOP);
 			stationtype = AIRoad.ROADVEHTYPE_BUS;
 			}
 	else
 			{
-			rad= AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
+			rad = AIStation.GetCoverageRadius(AIStation.STATION_TRUCK_STOP);
 			stationtype = AIRoad.ROADVEHTYPE_TRUCK;
 			}
-	local dir, tilelist, checklist, otherplace, istown, isneartown=null;
+	local dir, tilelist, otherplace, istown, isneartown, sourceplace;
+	local checklist = AITileList();
+	local isneartown = true; // true to try building station attach to existing road
 	if (start)
 			{
 			dir = cDirection.GetDirection(INSTANCE.main.route.SourceProcess.Location, INSTANCE.main.route.TargetProcess.Location);
 			if (INSTANCE.main.route.SourceProcess.IsTown)
 					{
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
-					checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
-					isneartown=true; istown=true;
+					tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
+					tilelist.KeepAboveValue(0);
+					//checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
+					istown = true;
 					if (!cTileTools.SeduceTown(INSTANCE.main.route.SourceProcess.ID))
 							{
 							DInfo("Our rating with "+AITown.GetName(INSTANCE.main.route.SourceProcess.ID)+" is too poor",1);
@@ -123,11 +126,13 @@ function cBuilder::BuildRoadStation(start)
 			else
 					{
 					tilelist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
-					checklist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
-					isneartown=true; // fake it's a town, it produce, it might be within a town (like a bank)
+					tilelist.Valuate(AITile.GetCargoProduction, INSTANCE.main.route.CargoID, 1, 1, rad);
+					tilelist.KeepAboveValue(0);
+					//checklist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
 					istown=false;
 					}
-			otherplace=INSTANCE.main.route.TargetProcess.Location;
+			sourceplace = INSTANCE.main.route.SourceProcess.Location;
+			otherplace = INSTANCE.main.route.TargetProcess.Location;
 			}
 	else
 			{
@@ -135,8 +140,10 @@ function cBuilder::BuildRoadStation(start)
 			if (INSTANCE.main.route.TargetProcess.IsTown)
 					{
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
-					checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
-					isneartown=true; istown=true;
+					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
+					tilelist.KeepAboveValue(7);
+					//checklist= cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
+					istown=true;
 					if (!cTileTools.SeduceTown(INSTANCE.main.route.TargetProcess.ID))
 							{
 							DInfo("Our rating with "+AITown.GetName(INSTANCE.main.route.TargetProcess.ID)+" is too poor",1);
@@ -146,45 +153,37 @@ function cBuilder::BuildRoadStation(start)
 			else
 					{
 					tilelist = AITileList_IndustryAccepting(INSTANCE.main.route.TargetProcess.ID, rad);
-					checklist = AITileList_IndustryAccepting(INSTANCE.main.route.TargetProcess.ID, rad);
-					isneartown=true; istown=false;
+					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
+					tilelist.KeepAboveValue(7);
+					//checklist = AITileList_IndustryAccepting(INSTANCE.main.route.TargetProcess.ID, rad);
+					istown = false;
 					}
-			otherplace=INSTANCE.main.route.SourceProcess.Location;
+			sourceplace = INSTANCE.main.route.TargetProcess.Location;
+			otherplace = INSTANCE.main.route.SourceProcess.Location;
 			}
+	tilelist = cBuilder.EvalDistanceProduction(tilelist, sourceplace, otherplace);
 	// let's see if we can stick to a road
-	tilelist.Sort(AIList.SORT_BY_VALUE, false); // highest values first
+	checklist.AddList(tilelist);
 	checklist.Valuate(AIRoad.IsRoadTile);
 	checklist.KeepValue(1);
 	if (checklist.IsEmpty())
 			{
 			DInfo("Cannot stick our station to a road, building classic",2);
-			isneartown=false;
+			isneartown = false;
 			}
-	else
-			{
-			DInfo("Sticking station & depot to the road",2);
-			}
+	else	DInfo("Sticking station & depot to the road",2);
 	checklist.AddList(tilelist); // re-put tiles in it in case we fail building later
 	if (isneartown)
 			{
 			// first, removing most of the unbuildable cases
-			tilelist.Valuate(AITile.IsWaterTile);
-			tilelist.KeepValue(0);
-			tilelist.Valuate(AITile.IsStationTile);
-			tilelist.KeepValue(0);
-			tilelist.Valuate(AIRail.IsRailTile);
-			tilelist.KeepValue(0);
-			tilelist.Valuate(AIRail.IsRailDepotTile);
-			tilelist.KeepValue(0);
-			tilelist.Valuate(AIRoad.IsRoadDepotTile);
-			tilelist.KeepValue(0);
 			tilelist.Valuate(AITile.GetSlope);
 			tilelist.KeepValue(AITile.SLOPE_FLAT); // only flat tile filtering
 			tilelist.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
 			tilelist.KeepAboveValue(0);
-			tilelist.Valuate(AIRoad.IsRoadTile);
-			tilelist.KeepValue(0);
-			if (!istown && !start)	// not a town, and not start = only industry as destination
+			//tilelist.Valuate(AIRoad.IsRoadTile);
+			//tilelist.KeepValue(0);
+			//tilelist.Valuate(cTileTools.IsBuildable);
+			/*if (!istown && !start)	// not a town, and not start = only industry as destination
 					{
 					tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
 					tilelist.Sort(AIList.SORT_BY_VALUE,true); // little distance first
@@ -201,20 +200,19 @@ function cBuilder::BuildRoadStation(start)
 							tilelist.KeepAboveValue(7);
 							}
 					tilelist.Sort(AIList.SORT_BY_VALUE, false);
-					}
+					}*/
 			}
 	else
 			{
-			if (!istown)
+			/*if (!istown)
 					{
 					tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
 					}
-			tilelist.Sort(AIList.SORT_BY_VALUE,true);
+			tilelist.Sort(AIList.SORT_BY_VALUE,true);*/
 			}
 	DInfo("Tilelist set to "+tilelist.Count(),2);
-	local success = false;
-	local depotbuild=false;
-	local stationbuild=false;
+	local depotbuild = false;
+	local stationbuild = false;
 	local deptile = -1;
 	local statile = -1;
 	local stafront = -1;
@@ -224,56 +222,54 @@ function cBuilder::BuildRoadStation(start)
 			{
 			foreach (tile, dummy in tilelist)
 				{
-				statile=cBuilder.BuildAndStickToRoad(tile, stationtype);
+				statile = cBuilder.BuildAndStickToRoad(tile, stationtype, AIStation.STATION_NEW);
 				if (statile >= 0)	{ stationbuild = true; break; }
 				}
-			if (stationbuild)
-					{
-					staid = AIStation.GetStationID(statile);
-					}
+			if (stationbuild)	staid = AIStation.GetStationID(statile);
+						else	DInfo("Fail to build a station stick to a road",3);
 			}
-	success = (stationbuild);
-	if (statile == -1 && !istown && isneartown)
-			{
-			// We fail to build the station, but it's because we force build station close to roads and there is no roads
+	if (statile == -1)	{ isneartown = false; tilelist.Clear(); tilelist.AddList(checklist); }
+		/*	{
+			// We fail to build the station, but might be because we force build station close to roads
 			isneartown=false;
 			tilelist.AddList(checklist); // restore the list of original tiles
 			tilelist.Valuate(AITile.IsBuildable);
 			tilelist.KeepValue(1);
 			tilelist.Valuate(AIMap.DistanceManhattan, otherplace);
 			tilelist.Sort(AIList.SORT_BY_VALUE, true);
-			}
+			}       */
 	local s_front = cDirection.GetForwardRelativeFromDirection(dir);
 	if (!isneartown)
 			{
 			foreach (tile, dummy in tilelist)
 				{
-				if (cTerraform.CheckRectangleForConstruction2(tile, 1, 3, true, true))
+//                if (!cTileTools.IsBuildable(tile))	continue;
+				//if (cTerraform.IsRectangleBuildableAndFlat(tile, 2, 2, 2, true))
+				local cost = cTerraform.CheckRectangleForConstruction(tile, 1, 2, true, INSTANCE.terraform);
+				if (cost != -1 && cBanker.CanBuyThat(cost))
 						{
+                        cBanker.RaiseFundsBy(cost);
+                        local templist = cTileTools.GetRectangle(tile, 1, 2);
+                        cTerraform.TerraformLevelTiles(templist, null);
 						if (!stationbuild)
 							{
 							statile = cBuilder.BuildRoadStationOrDepotAtTile(tile, tile+s_front, stationtype, AIStation.STATION_NEW);
 							stationbuild = (statile > 0);
-							if (stationbuild)	{ staid = AIStation.GetStationID(statile); success = true; }
+							if (stationbuild)	{ staid = AIStation.GetStationID(statile); break; }
 							}
-						if (success)	{ break; }
 						}
 				}
 			}
-
+	if (!stationbuild)	{ DInfo("We fail to build a road station",3); return false; }
 	if (start)	{ INSTANCE.main.route.SourceStation = staid; }
 		else	{ INSTANCE.main.route.TargetStation = staid; }
 	print("station at "+cMisc.Locate(statile)+" ID="+AIStation.GetStationID(statile));
 	local newStation = INSTANCE.main.route.CreateNewStation(start);
 	if (newStation == null)	{ return false; }
 	local stadir = cDirection.GetDirection(statile, AIRoad.GetRoadStationFrontTile(statile));
-	local tileFrom= statile + cDirection.GetRightRelativeFromDirection(stadir);
-	local tileTo= statile + cDirection.GetLeftRelativeFromDirection(stadir);
+	local tileFrom = statile + cDirection.GetRightRelativeFromDirection(stadir);
+	local tileTo= statile + cDirection.GetLeftRelativeFromDirection(stadir) + cDirection.GetForwardRelativeFromDirection(stadir);
 	cTerraform.TerraformLevelTiles(tileFrom, tileTo); // try levels mainstation and its neighbourg
-	tileTo=statile+cDirection.GetLeftRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir);
-	cTerraform.TerraformLevelTiles(tileFrom, tileTo); // try levels all tiles a station could use to grow
-	cTerraform.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir));
-	cTerraform.TerraformLevelTiles(tileFrom+cDirection.GetLeftRelativeFromDirection(stadir), tileTo+cDirection.GetRightRelativeFromDirection(stadir)+cDirection.GetForwardRelativeFromDirection(stadir));
 	return true;
 	}
 

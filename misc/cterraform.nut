@@ -82,8 +82,8 @@ function cTerraform::CheckRectangleForConstruction(tile, width, height, safe, al
 	local cost_clear = cTerraform.IsAreaClear(area, safe, true);
 	if (cost_clear == -1)	return -1;
 	if (!allow_terraform || !INSTANCE.terraform)	return cost_clear;
-	local borders = cTileTools.GetRectangleBorders(tile, width, height);
-	if (borders.IsEmpty())	return cost_clear;
+	//local borders = cTileTools.GetRectangleBorders(tile, width, height);
+	//if (borders.IsEmpty())	return cost_clear;
 	local terra_solve = cTerraform.TerraformHeightSolver(area);
 	terra_solve.RemoveValue(0);
 	if (terra_solve.IsEmpty())	return cost_clear;

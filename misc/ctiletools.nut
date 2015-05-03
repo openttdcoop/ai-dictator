@@ -113,7 +113,7 @@ function cTileTools::GetRectangle(tile, width, height)
 {
 	width --;
 	height--;
-	if (width <= 0 || height <=0)	return AITileList();
+	if (width < 0 || height < 0)	return AITileList();
 	if (!AIMap.IsValidTile(tile))	return AITileList();
 	local tile_to = tile + AIMap.GetTileIndex(width, height);
 	if (!AIMap.IsValidTile(tile_to))	return AITileList();
@@ -128,7 +128,7 @@ function cTileTools::GetRectangleBorders(tile, width, height)
 {
 	width --;
 	height--;
-	if (width <= 0 || height <=0)	return AITileList();
+	if (width < 0 || height < 0)	return AITileList();
 	local rect = cTileTools.GetRectangle(tile, width, height);
 	if (rect.IsEmpty())	return AITileList();
     local b_tile = tile + AIMap.GetTileIndex(0, -1);

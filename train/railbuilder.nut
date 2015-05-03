@@ -76,7 +76,6 @@ function cBuilder::BuildTrainStation(start)
 			print("dir source="+cDirection.DirectionToString(dir));
 			if (INSTANCE.main.route.SourceProcess.IsTown)
 					{
-                    otherplace=INSTANCE.main.route.TargetProcess.Location; sourceplace=INSTANCE.main.route.SourceProcess.Location;
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.SourceProcess.ID);
                     tilelist.Valuate(AITile.IsBuildable);
                     tilelist.KeepValue(1);
@@ -86,7 +85,6 @@ function cBuilder::BuildTrainStation(start)
 					}
 			else
 					{
-                    otherplace=INSTANCE.main.route.TargetProcess.Location; sourceplace=INSTANCE.main.route.SourceProcess.Location;
 					tilelist = AITileList_IndustryProducing(INSTANCE.main.route.SourceProcess.ID, rad);
 					tilelist.Valuate(AITile.IsBuildable);
                     tilelist.KeepValue(1);
@@ -94,6 +92,8 @@ function cBuilder::BuildTrainStation(start)
 					tilelist.KeepAboveValue(0);
                     istown=false;
 					}
+			sourceplace=INSTANCE.main.route.SourceProcess.Location;
+			otherplace=INSTANCE.main.route.TargetProcess.Location;
 			}
 	else
 			{
@@ -101,24 +101,25 @@ function cBuilder::BuildTrainStation(start)
 			print("dir target="+cDirection.DirectionToString(dir));
 			if (INSTANCE.main.route.TargetProcess.IsTown)
 					{
-                    otherplace=INSTANCE.main.route.SourceProcess.Location; sourceplace=INSTANCE.main.route.TargetProcess.Location;
 					tilelist = cTileTools.GetTilesAroundTown(INSTANCE.main.route.TargetProcess.ID);
                     tilelist.Valuate(AITile.IsBuildable);
                     tilelist.KeepValue(1);
 					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
-					tilelist.KeepAboveValue(8);
+					tilelist.KeepAboveValue(7);
                     istown=true;
 					}
 			else
 					{
-           			otherplace=INSTANCE.main.route.SourceProcess.Location; sourceplace=INSTANCE.main.route.TargetProcess.Location;
 					tilelist = AITileList_IndustryAccepting(INSTANCE.main.route.TargetProcess.ID, rad);
 					tilelist.Valuate(AITile.IsBuildable);
                     tilelist.KeepValue(1);
 					tilelist.Valuate(AITile.GetCargoAcceptance, INSTANCE.main.route.CargoID, 1, 1, rad);
-					tilelist.KeepAboveValue(8);
+					tilelist.KeepAboveValue(7);
 					istown=false;
 					}
+			sourceplace=INSTANCE.main.route.TargetProcess.Location;
+           	otherplace=INSTANCE.main.route.SourceProcess.Location;
+
 			}
 	tilelist = cBuilder.EvalDistanceProduction(tilelist, sourceplace, otherplace);
     foreach (tile, _ in tilelist)	cDebug.PutSign(tile, _);//cDebug.showLogic(tilelist);
@@ -130,8 +131,8 @@ function cBuilder::BuildTrainStation(start)
 	local success = false;
 	local buildmode = 0;
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
-	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger()),2);
-	INSTANCE.main.bank.RaiseFundsBy(cost*4);
+	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger())+" tlist="+tilelist.Count(),2);
+	INSTANCE.main.bank.RaiseFundsBy(cost*2);
 	local ssize= INSTANCE.main.carrier.train_length;
 	/* 2 build mode:
 	- try find a place with cheap (a place that can hold it without terraforming)
