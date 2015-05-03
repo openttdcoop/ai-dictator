@@ -53,7 +53,7 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 	if (platopenclose)
 			{
 			areaclean = cTileTools.GetRectangle(displace, displace+(backwardTileOf*(station_depth-1)), null);
-			local canDestroy = cTerraform.IsAreaBuildable(areaclean, 4, true);
+			local canDestroy = cTerraform.IsAreaBuildable(areaclean, 4);
 			cDebug.showLogic(areaclean); // deb
 			if (canDestroy)	cTerraform.IsAreaClear(areaclean, true, false);
 			cTerraform.TerraformLevelTiles(plat_main, displace+(backwardTileOf*(station_depth-1)));
@@ -71,7 +71,7 @@ function cBuilder::RailStationPhaseGrowing(stationObj, newStationSize, useEntry)
 			displace=plat_alt+pside;
 			areaclean = cTileTools.GetRectangle(displace, displace+(backwardTileOf*(station_depth-1)), null);
 			cDebug.showLogic(areaclean);
-			if (cTerraform.IsAreaBuildable(areaclean, 4, true))	cTerraform.IsAreaClear(areaclean, true, false);
+			if (cTerraform.IsAreaBuildable(areaclean, 4))	cTerraform.IsAreaClear(areaclean, true, false);
 			cTerraform.TerraformLevelTiles(plat_alt, displace+(backwardTileOf*(station_depth-1)));
 			success = cBuilder.CreateAndBuildTrainStation(cStationRail.GetPlatformIndex(plat_alt,true)+pside, direction, 1, [stationObj.s_ID]);
 			cDebug.PutSign(cStationRail.GetPlatformIndex(plat_alt,true)+pside,"+");
@@ -112,7 +112,7 @@ function cBuilder::RailStationPhaseDefineCrossing(stationObj, useEntry)
 	testcheck.AddList(towncheck);
 	local success=false;
 	cTerraform.TerraformLevelTiles(towncheck, null); // Terraform the front if we can
-	if (cTerraform.IsAreaBuildable(towncheck, 5, true))
+	if (cTerraform.IsAreaBuildable(towncheck, 5))
 			{
 			testcheck.AddList(towncheck);
 			testcheck.Valuate(AITile.IsStationTile); // protect station here

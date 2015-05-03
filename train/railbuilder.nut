@@ -152,27 +152,27 @@ function cBuilder::BuildTrainStation(start)
 						{
 						case	0:
 							// platnum is the width when NW_SE
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0, true); }
-																else	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0, true); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0); }
+																else	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0); }
 							station_direction = direction;
 							if (!result)
 								{ // try to swap direction
-								if (alt_direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0, true); }
-																		else	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0, true); }
+								if (alt_direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, platnum, ssize, 0); }
+																		else	{ result = cTerraform.IsRectangleBuildableAndFlat(tile, ssize, platnum, 0); }
 								station_direction = alt_direction;
 								}
 							if (result)	checkit = tile;
 								else	checkit = -1;
 							break;
 						case	1:
-							if (direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, true); }
-																else	{ result = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, true); }
+							if (direction == AIRail.RAILTRACK_NW_SE)	{ result = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, 3, true); }
+																else	{ result = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, 3, true); }
 							station_direction = direction;
 							if (result == -1)
 								{
 								if (alt_direction == AIRail.RAILTRACK_NW_SE)
-											{ result = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, true); }
-									else	{ result = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, true); }
+											{ result = cTerraform.CheckRectangleForConstruction(tile, platnum, ssize, true, 3, true); }
+									else	{ result = cTerraform.CheckRectangleForConstruction(tile, ssize, platnum, true, 3, true); }
 								station_direction = alt_direction;
 								}
                             print("money to terraform: "+result);

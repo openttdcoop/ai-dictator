@@ -187,11 +187,12 @@ function cTileTools::DemolishTile(tile, safe = true)
 // same as AITile.DemolishTile but retry after a little wait, protect rails, tunnel and bridge
 // if safe is false we use AITile.DemolishTile
 {
-	// protect destruction done by magic buldozer, but not if it's some road
+	// protect destruction done by magic buldozer
 	local own = AITile.GetOwner(tile);
 	if (own != -1 && !AICompany.IsMine(own))	return false;
 	if (safe)
 		{
+		if (AITile.IsWaterTile(tile) && !cTileTools.IsRiverTile(tile))	return true; // don't clear water
 		if (AITile.IsStationTile(tile))	return false;
 		if (AIRail.IsRailDepotTile(tile))	{ return cTrack.StationKillRailDepot(tile); }
 		if (AIRoad.IsRoadDepotTile(tile) || AIMarine.IsWaterDepotTile(tile))	{ return cTrack.DestroyDepot(tile); }
@@ -207,14 +208,14 @@ function cTileTools::IsRiverTile(tile)
 // pfff, finally a solve to detect river
 {
 	if (!AITile.IsWaterTile(tile))	return false;
+	if (AITile.GetMinHeight(tile) == 0)	return false; // river cannot be at water level
 	if (AITile.IsCoastTile(tile))	return false; // just assume a river cost tile is a water tile
 	if (AIMarine.IsDockTile(tile))	return false;
 	if (AIMarine.IsWaterDepotTile(tile))	return false;
 	if (AIMarine.IsBuoyTile(tile))	return false;
 	if (AIMarine.IsCanalTile(tile))	return false;
 	if (AIMarine.IsLockTile(tile))	return false;
-	if (AITile.GetMinHeight(tile) > 0)	return true; // no need to check its maxheight, coasttile already answer it
-	return false;
+	return true;
 }
 
 function cTileTools::IsBuildable(tile)
@@ -303,7 +304,9 @@ function cTileTools::IsTileClear(tile, safe_clear, get_cost_only)
 	local cost = AIAccounting();
 	if (get_cost_only)	test = AITestMode();
 	local success = true;
-    if (get_cost_only || !cTileTools.IsBuildable(tile))	success = cTileTools.DemolishTile(tile, safe_clear);
+	if (get_cost_only && !cTileTools.IsBuildable(tile))	success = cTileTools.DemolishTile(tile, safe_clear);
+	// when not testing, we don't use the little cTileTools.IsBuildable lier, so it force us to destroy water tile
+    if (!get_cost_only && !AITile.IsBuildable(tile))	success = cTileTools.DemolishTile(tile, safe_clear);
 	if (success)	return cost.GetCosts();
 return -1;
 }

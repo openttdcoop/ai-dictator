@@ -15,37 +15,43 @@
 class cTerraform
 {
 static	terraformCost = AIList();
+		constructor()
+			{
+			this.ClassName	= "cTerraform";
+			}
 }
 
-function cTerraform::IsAreaFlat(area)
+function cTerraform::IsAreaFlat(area, ignore_list = AIList())
 // Check the tile list in area if all tiles are flat
 {
 	local n = AIList();
 	n.AddList(area);
+	n.RemoveList(ignore_list);
 	n.Valuate(AITile.GetSlope);
-	n.KeepValue(AITile.SLOPE_FLAT);
-	return (area.Count() == n.Count());
+	n.RemoveValue(AITile.SLOPE_FLAT);
+	return (n.IsEmpty());
 }
 
-function cTerraform::IsAreaBuildable(area, max_remove, safe)
+function cTerraform::IsAreaBuildable(area, max_remove, ignore_list = AIList())
 // return true if area is buildable or if we need to remove max_remove to make the area buildable
 {
 	local owncheck = AIList();
 	owncheck.AddList(area);
+	owncheck.RemoveList(ignore_list);
 	owncheck.Valuate(cTileTools.IsBuildable);
-	owncheck.KeepValue(0); // keep only non useable tiles
+	owncheck.KeepValue(0);
 	if (owncheck.Count() > max_remove)	return false;
 	return true;
 }
 
-function cTerraform::IsAreaBuildableAndFlat(area, max_remove, safe)
+function cTerraform::IsAreaBuildableAndFlat(area, max_remove, ignore_list = AIList())
 // return true if area is flat and buildable or if we need to remove max_remove to make the area flat and buildable
 {
-	if (!cTerraform.IsAreaFlat(area))	return false;
-	return cTerraform.IsAreaBuildable(area, max_remove, safe);
+	if (!cTerraform.IsAreaFlat(area, ignore_list))	return false;
+	return cTerraform.IsAreaBuildable(area, max_remove, ignore_list);
 }
 
-function cTerraform::IsAreaClear(area, safe_clear, get_cost_only)
+function cTerraform::IsAreaClear(area, safe_clear, get_cost_only, ignore_list = AIList())
 // Clean out an area to allow building on it
 // safe_clear : if true we get some protection from cTileTools.DemolishTile
 // only_cost : if true, we won't clear the area, but return only the costs to do it
@@ -54,6 +60,7 @@ function cTerraform::IsAreaClear(area, safe_clear, get_cost_only)
 	local cost = 0;
 	foreach (tile, _ in area)
 			{
+			if (ignore_list.HasItem(tile))	continue;
 			local tile_cost = cTileTools.IsTileClear(tile, safe_clear, get_cost_only);
 			if (tile_cost == -1)	return -1;
 			cost += tile_cost;
@@ -62,34 +69,40 @@ function cTerraform::IsAreaClear(area, safe_clear, get_cost_only)
 	return cost;
 }
 
-function cTerraform::CheckRectangleForConstruction(tile, width, height, safe, allow_terraform)
-/** @brief This check the rectangle area to see if we will be able to build on it, answering costs need to do it
+function cTerraform::CheckAreaForConstruction(area, safe, max_remove, allow_terraform, ignore_list = AIList())
+/** @brief Check area to see if we will be able to build on it, answering costs need to do it
  *
- * @param tile The tile position to start
- * @param width the width of the rectangle
- * @param height the height of the rectangle
- * @param allow_terraform are we able to terraform the area?
- * @return The costs need to do it, -1 if it's not doable. If you agree with the result use cTerraform.ShapeArea() to do it
+ * @param area The area tile list to check
+ * @param safe Given parameter to safe keep us with cTileTools.DemolishTile
+ * @param max_remove maximum destruction we will allow else, we consider it not doable
+ * @param allow_terraform true if we are able to terraform the area (might still not be able because of AI settings)
+ * @param ignore_list an ailist with tiles we should ignore (or force to be seen buildable)
+ * @return The costs need to do it, -1 if it's not doable.
  *
  */
 {
-	local area = cTileTools.GetRectangle(tile, width, height);
-	cDebug.ClearSigns();
-	print("GetRectangle="+area.Count());
-	cDebug.showLogic(area);
-	if (area.IsEmpty())	return -1;
+	local area_work = AIList();
+	area_work.AddList(area);
+	if (area_work.IsEmpty())	return -1;
+	if (!cTerraform.IsAreaBuildable(area_work, max_remove, ignore_list))	return -1;
 	// check if we will really be able to clear everything, <safe> might disallow that
-	local cost_clear = cTerraform.IsAreaClear(area, safe, true);
+	local cost_clear = cTerraform.IsAreaClear(area_work, safe, true, ignore_list);
 	if (cost_clear == -1)	return -1;
 	if (!allow_terraform || !INSTANCE.terraform)	return cost_clear;
-	//local borders = cTileTools.GetRectangleBorders(tile, width, height);
-	//if (borders.IsEmpty())	return cost_clear;
-	local terra_solve = cTerraform.TerraformHeightSolver(area);
+	area_work.RemoveList(ignore_list);
+	local terra_solve = cTerraform.TerraformHeightSolver(area_work);
 	terra_solve.RemoveValue(0);
 	if (terra_solve.IsEmpty())	return cost_clear;
 	terra_solve.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 	cost_clear += abs(terra_solve.GetValue(terra_solve.Begin()));
     return cost_clear;
+}
+
+function cTerraform::CheckRectangleForConstruction(tile, width, height, safe, max_remove, allow_terraform, ignore_list = AIList())
+// Rectangle functions are wrapper that use GetRectangle to build the area and then just call the Area functions
+{
+	local t = cTileTools.GetRectangle(tile, width, height);
+	return cTerraform.CheckAreaForConstruction(t, safe, max_remove, allow_terraform, ignore_list);
 }
 
 function cTerraform::IsRectangleFlat(tile, width, height)
@@ -99,18 +112,18 @@ function cTerraform::IsRectangleFlat(tile, width, height)
 	return cTerraform.IsAreaFlat(t);
 }
 
-function cTerraform::IsRectangleBuildable(tile, width, height, max_remove, safe)
+function cTerraform::IsRectangleBuildable(tile, width, height, max_remove, ignore_list = AIList())
 // return true if the rectangle is buildable
 {
 	local t = cTileTools.GetRectangle(tile, width, height);
-	return cTerraform.IsAreaBuildable(t, max_remove, safe);
+	return cTerraform.IsAreaBuildable(t, max_remove, ignore_list);
 }
 
-function cTerraform::IsRectangleBuildableAndFlat(tile, width, height, max_remove, safe)
+function cTerraform::IsRectangleBuildableAndFlat(tile, width, height, max_remove, ignore_list = AIList())
 // return true if the rectangle is buildable and flat
 {
 	local n = cTileTools.GetRectangle(tile, width, height);
-	return cTerraform.IsAreaBuildableAndFlat(n, max_remove, safe);
+	return cTerraform.IsAreaBuildableAndFlat(n, max_remove, ignore_list);
 }
 
 function cTerraform::ShapeTile(tile, wantedHeight, evaluateOnly)
@@ -184,7 +197,11 @@ function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
                             else	tlist.AddRectangle(tileFrom, tileTo);
 	if (tlist.IsEmpty())	{ DInfo("No tiles to work with !",4); return false; }
     foreach (tile, _ in tlist) // raising water level tiles
-    	if (AITile.IsWaterTile(tile))	{ cTileTools.DemolishTile(tile, false); AITile.RaiseTile(tile, AITile.SLOPE_N + AITile.SLOPE_S + AITile.SLOPE_W); }
+    	if (AITile.IsWaterTile(tile))
+				{
+				if (cTileTools.IsRiverTile((tile))	AITile.DemolishTile(tile);
+											else	AITile.RaiseTile(tile, AITile.SLOPE_N + AITile.SLOPE_S + AITile.SLOPE_W);
+				}
 	local Solve = cTerraform.TerraformHeightSolver(tlist);
 	Solve.RemoveValue(0); // discard failures
 	local bestOrder=AIList();
@@ -241,7 +258,7 @@ function cTerraform::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 	local costs=AIAccounting();
 	local testrun=AITestMode();
 	local error=false;
-	foreach (tile, max in tTile)
+	foreach (tile, _ in tTile)
 		{
 		error=cTerraform.ShapeTile(tile, wantedHeight, true);
 		if (error)	break;
@@ -254,7 +271,7 @@ function cTerraform::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 	costs.ResetCosts();
 	if (!error)
 		{
-		foreach (tile, max in tTile)
+		foreach (tile, _ in tTile)
 			{
 			error=cTerraform.ShapeTile(tile, wantedHeight, false);
 			if (error) break;
@@ -274,7 +291,7 @@ function cTerraform::TerraformDoAction(tlist, wantedHeight, UpOrDown, evaluate=f
 function cTerraform::TerraformHeightSolver(tlist)
 // Look at tiles in tlist and try to find the height that cost us the less to flatten them all at same height
 // tlist: the tile list to check
-// return : tilelist table with item=height
+// return : tilelist table with item=height level
 //		value = 0 when failure
 //		value > 0 should success if raising tiles, it's also money we need to do it
 //		value < 0 should success if lowering tiles, it's also the negative value of money need to do it
@@ -282,11 +299,12 @@ function cTerraform::TerraformHeightSolver(tlist)
 {
 	if (tlist.IsEmpty())
 		{
-		DInfo("doesn't find any tiles to work on!",4);
+		DInfo("TerraformHeightSolver doesn't find any tiles to work on!",4);
 		return AIList();
 		}
-	local maxH=tlist;
-	local minH=AITileList();
+	local maxH = AIList();
+	maxH.AddList(tlist);
+	local minH = AITileList();
 	local moneySpend=0;
 	local moneyNeed=0;
 	minH.AddList(maxH);
@@ -294,11 +312,11 @@ function cTerraform::TerraformHeightSolver(tlist)
 	minH.Valuate(AITile.GetMinHeight);
 	local cellHCount=AIList();
 	local cellLCount=AIList();
-	foreach (tile, max in maxH)
+	foreach (tile, _ in maxH)
 		{
 		// this loop count each tile lower height and higher height on each tiles
-		cellHCount = cMisc.MostItemInList(cellHCount,maxH.GetValue(tile)); // could use "max" var instead, but clearer as-is
-		cellLCount = cMisc.MostItemInList(cellLCount,minH.GetValue(tile));
+		cellHCount = cMisc.MostItemInList(cellHCount,max(1, maxH.GetValue(tile))); // max(1, value) so we never try water level height
+		cellLCount = cMisc.MostItemInList(cellLCount,max(1, minH.GetValue(tile)));
 		}
 	cellHCount.Sort(AIList.SORT_BY_VALUE,false);
 	cellLCount.Sort(AIList.SORT_BY_VALUE,false);
@@ -308,7 +326,6 @@ function cTerraform::TerraformHeightSolver(tlist)
 	local l_firstitem=1000;
 	local Solve=AIList();
 	local terratrys=0;
-	DInfo("Terraform: "+cMisc.Locate(tlist.Begin()),3);
 	do	{
 		h_firstitem=cellHCount.Begin();
 		l_firstitem=cellLCount.Begin();
@@ -319,7 +336,7 @@ function cTerraform::TerraformHeightSolver(tlist)
 				cellLCount.RemoveItem(l_firstitem);
 				DInfo("Trying lowering tiles level to "+currentHeight,4);
 				}
-		else		{
+		else	{
 				HeightIsLow=false;
 				currentHeight=h_firstitem;
 				cellHCount.RemoveItem(h_firstitem);
@@ -327,12 +344,6 @@ function cTerraform::TerraformHeightSolver(tlist)
 				}
 		// Now we have determine what low or high height we need to reach by priority (most tiles first, with a pref to lower height)
 		terratrys++;
-		if (currentHeight == 0) // not serious to build at that level
-			{
-			DInfo("Water level detect !",4);
-			Solve.AddItem(0,0);
-			continue;
-			}
 		local money=0;
 		local error=false;
 		money = cTerraform.TerraformDoAction(maxH, currentHeight, HeightIsLow, true);

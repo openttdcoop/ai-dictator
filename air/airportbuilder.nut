@@ -182,45 +182,61 @@ function cBuilder::BuildAirStation(start, routeID=null)
 	local needTime=false;
 	local needMoney=0;
 	local solverlist=AITileList();
-	local townID=null;
+	local townID, srcplace, dstplace;
 	if (start)
 		{
 		if (road.SourceProcess.IsTown)
-			{
-			tilelist= cTileTools.GetTilesAroundTown(road.SourceProcess.ID);
-			helipadonly=false;
-			townname=road.SourceProcess.Name;
-			townnoise=AITown.GetAllowedNoise(road.SourceProcess.ID);
-			oldAirport = (typeof(road.SourceStation) == "instance") ? road.SourceStation : null;
-			townID=road.SourceProcess.ID;
-			}
+				{
+				tilelist = cTileTools.GetTilesAroundTown(road.SourceProcess.ID);
+				tilelist.Valuate(cTileTools.IsBuildable);
+				tilelist.KeepValue(1);
+				tilelist.Valuate(cTileTools.IsTilesBlackList);
+				tilelist.KeepValue(0);
+				helipadonly = false;
+				townname = road.SourceProcess.Name;
+				townnoise = AITown.GetAllowedNoise(road.SourceProcess.ID);
+				oldAirport = (typeof(road.SourceStation) == "instance") ? road.SourceStation : null;
+				townID = road.SourceProcess.ID;
+				srcplace = road.SourceProcess.Location;
+				}
 		else	{
-			// no coverage need, we know exactly where we go
-			helipadonly=true;
-			heliloc=road.SourceProcess.Location;
-			}
+				// no coverage need, we know exactly where we go
+				helipadonly = true;
+				heliloc = road.SourceProcess.Location;
+
+				}
+		srcplace = road.SourceProcess.Location;
+		dstplace = road.TargetProcess.Location;
 		}
-	else	{
+	else
+		{
+		srcplace = road.TargetProcess.Location;
+		dstplace = road.SourceProcess.Location;
 		if (road.TargetProcess.IsTown)
-			{
-			tilelist= cTileTools.GetTilesAroundTown(road.TargetProcess.ID);
-			townname= road.TargetProcess.Name;
-			townnoise=AITown.GetAllowedNoise(road.TargetProcess.ID);
-			helipadonly=false;
-			oldAirport = (typeof(road.TargetStation) == "instance") ? road.TargetStation : null;
-			townID=road.TargetProcess.ID;
-			}
+				{
+				tilelist= cTileTools.GetTilesAroundTown(road.TargetProcess.ID);
+				tilelist.Valuate(cTileTools.IsBuildable);
+				tilelist.KeepValue(1);
+				tilelist.Valuate(cTileTools.IsTilesBlackList);
+				tilelist.KeepValue(0);
+				townname= road.TargetProcess.Name;
+				townnoise=AITown.GetAllowedNoise(road.TargetProcess.ID);
+				helipadonly=false;
+				oldAirport = (typeof(road.TargetStation) == "instance") ? road.TargetStation : null;
+				townID=road.TargetProcess.ID;
+				}
 		else	return -1;
 			// we should never have a platform as destination station !!!
 		}
 	if (oldAirport != null)
 		{
-		airportUpgrade=true;
-		oldAirport_Width=AIAirport.GetAirportWidth(oldAirport.s_SubType);
-		oldAirport_Height=AIAirport.GetAirportHeight(oldAirport.s_SubType);
+		airportUpgrade = true;
+		oldAirport_Width = AIAirport.GetAirportWidth(oldAirport.s_SubType);
+		oldAirport_Height = AIAirport.GetAirportHeight(oldAirport.s_SubType);
 		if (air_x == oldAirport_Width && air_y == oldAirport_Height)	Sameplace=true;
-		ignoreList=cTileTools.FindStationTiles(oldAirport.s_Location);
-		oldAirport_Noise=AIAirport.GetNoiseLevelIncrease(oldAirport.s_Location, oldAirport.s_SubType);
+		ignoreList = cTileTools.FindStationTiles(oldAirport.s_Location);
+        tilelist.AddList(ignoreList); // the list will be ignore, so accept as buildable, but we must readd them as they were removed previously
+		oldAirport_Noise = AIAirport.GetNoiseLevelIncrease(oldAirport.s_Location, oldAirport.s_SubType);
 		cDebug.showLogic(ignoreList);
 		DInfo("Found an old airport in town "+oldAirport.s_Name+": we will upgrade it",1);
 		if (!AIAirport.IsValidAirportType(oldAirport.s_SubType))	DWarn("Old airport type is no more buildable, this is highly dangerous !!!",0);
@@ -228,9 +244,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 	if (!helipadonly)
 		{
 		DInfo("Looking for a place to build an airport at "+townname,0);
-		tilelist.Valuate(cTileTools.IsBuildable);
-		tilelist.RemoveValue(0);
-		local worktilelist=AIList();
+		local worktilelist = AIList();
 		worktilelist.AddList(tilelist);
 		worktilelist.Valuate(AIAirport.GetNoiseLevelIncrease,airporttype);
 		worktilelist.RemoveAboveValue((townnoise + oldAirport_Noise));
@@ -241,60 +255,60 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				cError.RaiseError();
 				return -1;
 				}
-		worktilelist.Clear();
-		DInfo("Working tiles: "+tilelist.Count());
-		foreach (tile, dummy in tilelist)
-			{
-			local newTile = cTerraform.IsRectangleBuildable(tile, air_x, air_y, 0, true);
-			if (newTile)	worktilelist.AddItem(tile, 666);
-			}
-		DInfo("Good tiles list: "+worktilelist.Count());
-		tilelist.Clear();
-		tilelist.AddList(worktilelist);
-		tilelist.Valuate(AIAirport.GetNearestTown, airporttype);
-		tilelist.KeepValue(townID);
-		tilelist.Valuate(cTileTools.IsTilesBlackList);
-		tilelist.KeepValue(0);
-		if (tilelist.IsEmpty())
+		local ap_cost = (AIAirport.GetPrice(airporttype)*cBanker.GetInflationRate()).tointeger();
+        if (!Sameplace)
 				{
-				DInfo("There's no buildable space at "+townname+" where i could put an airport of "+air_x+"x"+air_y,0);
-				cError.RaiseError();
-				return -1;
+				tilelist.Clear();
+				worktilelist.Valuate(AITile.GetCargoAcceptance, cCargo.GetPassengerCargo(), air_x, air_y, rad);
+				worktilelist.KeepAboveValue(7);
+				DInfo("Working tiles: "+worktilelist.Count());
+				local remove_list = AIList();
+				foreach (tile, dummy in worktilelist)
+					{
+					local check = cTerraform.CheckRectangleForConstruction(tile, air_x, air_y, true, 2, true, ignoreList);
+					if (check != -1)	{ check += ap_cost;	tilelist.AddItem(tile, check); }
+								else	remove_list.AddItem(tile, 0);
+					}
+				DInfo("Good tiles list: "+tilelist.Count());
+				cDebug.showLogic(tilelist);
+				if (tilelist.IsEmpty())
+						{
+						DInfo("There's no buildable space at "+townname+" where i could put an airport of "+air_x+"x"+air_y,0);
+						cError.RaiseError();
+						return -1;
+						}
+				worktilelist.RemoveList(remove_list);
+				worktilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
 				}
-		tilelist.Valuate(AITile.GetCargoAcceptance, cargoID, air_x, air_y, rad);
-		tilelist.RemoveBelowValue(8);
-		tilelist.Sort(AIList.SORT_BY_VALUE, false);
-		solverlist.AddList(tilelist);
-		tilelist.Valuate(AITile.IsWaterTile);
-		tilelist.RemoveValue(1);
-		tilelist.Valuate(AITile.GetCargoAcceptance, cargoID, air_x, air_y, rad);
-		tilelist.RemoveBelowValue(8);
-		if (Sameplace)	{ tilelist.Clear(); tilelist.AddItem(oldAirport.s_Location,0); }
-		foreach (tile, dummy in tilelist)
+		else	{ worktilelist.Clear(); worktilelist.AddItem(oldAirport.s_Location, 0); } // only keep the old airport location
+		foreach (tile, acc in worktilelist)
 			{
-			local newTile=-1;
-			if (cTerraform.IsRectangleFlat(tile, air_x, air_y))	newTile=tile;
-			if (Sameplace)	newTile = tile;
+			local newTile = -1;
+			local cost = tilelist.GetValue(tile);
+			if (!cBanker.CanBuyThat(cost))	{ DInfo("No enought money to build at "+cMisc.Locate(tile)+" cost: "+cost,2); needMoney = cost; continue; }
+			local range = cTileTools.GetRectangle(tile, air_x, air_y);
+			cTerraform.TerraformLevelTiles(range, null);
+			if (cTerraform.IsAreaBuildableAndFlat(range, 0, ignoreList))	newTile = tile;
 			if (newTile != -1)
 				{
-				DInfo("Found a flat area to try at "+newTile,1);
+				DInfo("Found an area to try at "+newTile,1);
 				cDebug.PutSign(newTile,"*");
 				for (local tt=0; tt < 50; tt++)
 						{
 						if (airportUpgrade && !oldAirport_Remove)
 								{
 								cCarrier.FreeDepotOfVehicle(oldAirport.s_Depot);
-								oldAirport_Remove=AIAirport.RemoveAirport(oldAirport.s_Location);
+								oldAirport_Remove = AIAirport.RemoveAirport(oldAirport.s_Location);
 								DInfo("Removing old airport : "+oldAirport.s_Name,1);
 								if (oldAirport_Remove)	{ break; }
 								}
 						else	break;
 						}
-				if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; break; }
-				success=cBuilder.AirportMaker(newTile, airporttype);
+				if (airportUpgrade && !oldAirport_Remove)	{ needTime = true; break; }
+				success = cBuilder.AirportMaker(newTile, airporttype);
 				if (!success && cError.IsCriticalError())	break;
-				if (success)	{ newStation=newTile; break; }
-						else	if (cTerraform.terraformCost.HasItem(999995))
+				if (success)	{ newStation = newTile; break; }
+						else	if (cTerraform.terraformCost.HasItem(999995)) // AirportMaker store 999995 when our rating is too poor
 								{
 								cTerraform.terraformCost.RemoveItem(999995);
 								needTime=true;
@@ -303,44 +317,11 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				local pause = cLooper();
 				}
 			}
-		if (!success && !needTime)
-			{
-			// Switch back to simple list of tile, solver work less hard to find a solve
-			DInfo("Analyzing the surrounding of "+townname,0);
-			local solver=cBuilder.AirportBestPlace_EvaluateHill(solverlist, air_x, air_y);
-			if (solver.len() == 0)	{ DWarn("Nothing to do, we can't find any solve to build the airport",1); }
-						else	{
-							for (local tt=0; tt < 50; tt++)
-								{
-								if (cError.IsError())	break;
-								if (airportUpgrade && !oldAirport_Remove)
-									{
-									cCarrier.FreeDepotOfVehicle(oldAirport.s_Depot);
-									oldAirport_Remove=AIAirport.RemoveAirport(oldAirport.s_Location);
-									DInfo("Removing old airport : "+oldAirport.s_Name,1);
-									if (oldAirport_Remove)	break;
-									}
-								else	break;
-								}
-							if (airportUpgrade && !oldAirport_Remove)	{ needTime=true; }
-							if (!needTime)
-								{
-								newStation=cBuilder.AirportBestPlace_BuildFromSolve(solver, air_x, air_y, airporttype);
-								if (cTerraform.terraformCost.HasItem(999999))
-									{
-									needMoney=cTerraform.terraformCost.GetValue(999999);
-									cTerraform.terraformCost.RemoveItem(999999);
-									}
-								}
-							}
-			}
 		}
-	success= (newStation != -1 && !needTime);
+
+	success = (newStation != -1);
 	if (helipadonly)	success=true;
-	if (needMoney > 0 && oldAirport != null)
-		{
-		oldAirport.s_MoneyUpgrade = needMoney;
-		}
+	if (needMoney > 0 && oldAirport != null)	{ oldAirport.s_MoneyUpgrade = needMoney; }
 	if (!success)
 		{
 		DWarn("Failure to build an airport at "+townname,0);
@@ -365,39 +346,34 @@ function cBuilder::BuildAirStation(start, routeID=null)
 	if (success)
 		{
 		if (!helipadonly)
-			{
-			DInfo("Airport #"+AIStation.GetStationID(newStation)+"-"+AIStation.GetName(AIStation.GetStationID(newStation))+" built at "+townname,0);
-			local fakeroute = cRoute();
-			fakeroute.SourceStation = AIStation.GetStationID(newStation);
-			newStation = fakeroute.CreateNewStation(true);
-			if (oldAirport_Remove)
 				{
-				foreach (ownerUID, _ in oldAirport.s_Owner)	cRoute.RouteChangeStation(ownerUID, oldAirport, newStation);
-				cCarrier.VehicleHandleTrafficAtStation(newStation.s_ID, false); // rebuild orders
-				}
-			else	{
-				if (start)
-					{
-					road.SourceStation = newStation;
-					}
+				DInfo("Airport #"+AIStation.GetStationID(newStation)+"-"+AIStation.GetName(AIStation.GetStationID(newStation))+" built at "+townname,0);
+				local fakeroute = cRoute();
+				fakeroute.SourceStation = AIStation.GetStationID(newStation);
+				newStation = fakeroute.CreateNewStation(true);
+				if (oldAirport_Remove)
+						{
+						foreach (ownerUID, _ in oldAirport.s_Owner)	cRoute.RouteChangeStation(ownerUID, oldAirport, newStation);
+						cCarrier.VehicleHandleTrafficAtStation(newStation.s_ID, false); // rebuild orders
+						}
 				else	{
-					road.TargetStation = newStation;
-					}
+						if (start)	road.SourceStation = newStation;
+							else	road.TargetStation = newStation;
+						}
+				return newStation.s_ID;
 				}
-			return newStation.s_ID;
-			}
 		else	{ // platform
-			road.SourceStation = AIStation.GetStationID(heliloc);
-			road.VehicleType = RouteType.CHOPPER;
-			road.SourceStation = road.CreateNewStation(start);
-			if (!cMisc.ValidInstance(road.SourceStation))	return -1;
-			road.SourceStation.s_SubType = -2;
-			road.SourceStation.s_Depot = -1;
-			road.SourceStation.s_Location = heliloc;
-			return road.SourceStation.s_ID;
-			}
+				road.SourceStation = AIStation.GetStationID(heliloc);
+				road.VehicleType = RouteType.CHOPPER;
+				road.SourceStation = road.CreateNewStation(start);
+				if (!cMisc.ValidInstance(road.SourceStation))	return -1;
+				road.SourceStation.s_SubType = -2;
+				road.SourceStation.s_Depot = -1;
+				road.SourceStation.s_Location = heliloc;
+				return road.SourceStation.s_ID;
+				}
 		}
-	if (!needTime && !needMoney)	cError.RaiseError();
+	if (!needTime && needMoney = 0)	cError.RaiseError();
 	return -1;
 }
 

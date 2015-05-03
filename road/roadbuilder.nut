@@ -197,7 +197,7 @@ function cBuilder::BuildRoadStation(start)
 			{
 			foreach (tile, dummy in tilelist)
 				{
-				local cost = cTerraform.CheckRectangleForConstruction(tile, 1, 2, true, INSTANCE.terraform);
+				local cost = cTerraform.CheckRectangleForConstruction(tile, 1, 2, true, 2, true);
 				if (cost != -1 && cBanker.CanBuyThat(cost))
 						{
                         cBanker.RaiseFundsBy(cost);
