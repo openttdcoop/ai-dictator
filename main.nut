@@ -116,6 +116,7 @@ function DictatorAI::Start()
 	{
 	cEngineLib.SetAPIErrorHandling(false);
 	AICompany.SetAutoRenewStatus(false);
+	cEngineLib.SetMoneyCallBack(DictatorAI.MoneyCallBack);
 	this.CheckCurrentSettings();
 	main.Init();
 	main.DInfo("DicatorAI started.",0);
@@ -195,7 +196,6 @@ function DictatorAI::Start()
 function DictatorAI::Stop()
 	{
 	DInfo("DictatorAI is stopped",0);
-	ClearSigns();
 	}
 
 function DictatorAI::NeedDelay(delay=30)
@@ -363,3 +363,9 @@ function DictatorAI::DWarn(putMsg, debugValue=1, func = "Unknown")
 			AILog.Warning(func+putMsg);
 			}
 	}
+
+function DictatorAI::MoneyCallBack(money)
+{
+	cBanker.RaiseFundsTo(money);
+}
+

@@ -536,7 +536,7 @@ foreach (vehicle, dummy in tlist)
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 		}
 	local enginecheck = cEngine.IsRabbitSet(vehicle);
-	if (topengine != -1 && enginecheck)	topengine=-1; // stop upgrade
+	if (topengine != -1 && enginecheck)	topengine = -1; // stop upgrade
 	if (topengine != -1)
 		{
 		// reserving money for the upgrade
@@ -544,9 +544,9 @@ foreach (vehicle, dummy in tlist)
 		if (!cBanker.CanBuyThat(INSTANCE.main.carrier.vehicle_cash + price))	continue; // no way, we lack funds for it
 		INSTANCE.main.carrier.vehicle_cash += price;
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
-		cEngine.RabbitSet(vehicle);
+		cEngine.RabbitSet(vehicle, topengine);
 		cCarrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
-		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
+		cCarrier.CheckOneEngine(topengine);
 		}
 	local pause = cLooper();
 	}

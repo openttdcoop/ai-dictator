@@ -25,7 +25,7 @@ function cCarrier::ChooseRailCouple(cargo, rtype = -1, depot = -1, forengine = -
 	object.engine_type = AIVehicle.VT_RAIL;
 	object.engine_roadtype = rtype;
 	object.engine_id = forengine;
-	cBanker.RaiseFundsBigTime();
+	//cBanker.RaiseFundsBigTime();
 	local veh = cEngineLib.GetBestEngine(object, cCarrier.VehicleFilterTrain);
 	if (veh[0] != -1)
 			{

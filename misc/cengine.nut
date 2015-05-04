@@ -16,12 +16,11 @@
 class cEngine extends cEngineLib
 {
 static	BestEngineList=AIList();	// list of best engine for a couple engine/cargos, item=EUID, value=best engineID
+static	rabbit = AIList();			// We keep there list of engine we need to test before upgrade
 
-    rabbit = null;
 	constructor()
 		{
 		::cEngineLib.constructor();
-		this.rabbit = -1; // the rabbit is a vehicle with engine that is going to depot for upgrade, blocking others upgrade
 		}
 }
 
@@ -41,39 +40,36 @@ function cEngine::GetRailTrackName(tr)
 	return name;
 }
 
-function cEngine::IsRabbitSet(vehicleID)
+function cEngine::IsRabbitSet(engine_id)
 // return true if we have a test vehicle already set
-	{
-	local engineID = AIVehicle.GetEngineType(vehicleID);
-	local eng = cEngine.Load(engineID);
-    if (eng == null)    return;
-	if (!AIVehicle.IsValidVehicle(eng.is_known))	{ eng.is_known = -2; }
-	return (eng.is_known > -1);
-	}
+{
+	if (!cEngine.rabbit.HasItem(engine_id))	return false;
+	local check = cEngine.rabbit.GetValue(engine_id);
+	if (check >= 0 && !AIVehicle.IsValidVehicle(check))	{ cEngine.rabbit.SetValue(engine_id, -2); return false; }
+	return (check >= 0);
+}
 
-function cEngine::RabbitSet(vehicleID)
-// Set the status of the engine as a rabbit vehicle is on its way for testing
-	{
-	if (vehicleID == null)	{ return ; }
-	local engineID=AIVehicle.GetEngineType(vehicleID);
-	if (engineID == null)	{ return ; }
-	local eng = cEngine.Load(engineID);
-	if (eng.is_known == -2)	{
-                            eng.is_known = vehicleID;
-                            INSTANCE.DInfo("Using "+cCarrier.GetVehicleName(vehicleID)+" as test vehicle for "+cEngine.GetEngineName(engineID),1);
-                            }
-	}
+function cEngine::RabbitSet(vehicle_id, engine_id)
+// Set the status of the engine as a rabbit vehicle on its way for testing
+{
+	local check = -2;
+	if (cEngine.rabbit.HasItem(engine_id))	check = cEngine.rabbit.GetValue(engine_id);
+									else    cEngine.rabbit.AddItem(engine_id, -2);
+	if (check == -2)
+		{
+		cEngine.rabbit.SetValue(engine_id, vehicle_id);
+		DInfo("Using "+cCarrier.GetVehicleName(vehicle_id)+" as rabbit to test "+cEngine.GetEngineName(engine_id),2);
+		}
+}
 
-function cEngine::RabbitUnset(vehicleID)
-// Unset the status of the rabbit vehicle, only useful if the rabbit vehicle never reach a depot (crash)
-	{
-	if (vehicleID == null || !AIVehicle.IsValidVehicle(vehicleID)) return ;
-	local engineID = AIVehicle.GetEngineType(vehicleID);
-	if (!AIEngine.IsValidEngine(engineID))	return ;
-    local eng=cEngine.Load(engineID);
-    if (eng == null)	return;
-	if (eng.is_known >= 0)	eng.is_known = -2;
-	}
+function cEngine::RabbitUnset(vehicle_id)
+// Unset the status of the rabbit vehicle
+{
+	foreach (eng, veh in cEngine.rabbit)
+		{
+		if (vehicle_id == veh)	{ cEngine.rabbit.SetValue(eng, -1); return; }
+		}
+}
 
 function cEngine::CanPullCargo(engineID, cargoID)
 // try to really answer if an engine can be use to pull a wagon of a cargo type

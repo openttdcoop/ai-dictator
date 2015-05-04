@@ -234,6 +234,19 @@ function cCarrier::GetEngineWagonEfficiency(engine, cargoID)
 	return idx;
 }
 
+function cCarrier::CheckOneEngine(vehicleID)
+// look at vehicle engine and add all vehicle of the same type to check (for upgrade purpose)
+{
+	if (!AIVehicle.IsValidVehicle(vehicleID))	return;
+	local all_vehicle = AIVehicleList();
+	local eng = AIVehicle.GetEngineType(vehicleID);
+	all_vehicle.RemoveItem(vehicleID);
+	all_vehicle.Valuate(AIVehicle.GetEngineType);
+	foreach (veh, v_eng in all_vehicle)
+		{
+		if (v_eng == eng)	cCarrier.MaintenancePool.push(veh);
+		}
+}
 
 function cCarrier::CheckOneVehicleOrGroup(vehID, doGroup)
 // Add a vehicle to the maintenance pool

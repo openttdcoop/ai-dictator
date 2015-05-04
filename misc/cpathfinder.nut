@@ -156,7 +156,6 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 	local m_x = AIMap.GetTileX(mid);
     local m_y = AIMap.GetTileY(mid);
     local correct = mid;
-    AISign.BuildSign(mid, "M");
     if (close_source)
 		switch (startdir)
 			{
@@ -174,7 +173,6 @@ function cPathfinder::BuildShortPoints(source, target, close_source)
 				break;
 			}
 	correct = AIMap.GetTileIndex(m_x, m_y);
-	AISign.BuildSign(correct, "C");
 	if (AIMap.DistanceManhattan(correct, start) > 9) mid = correct; // use correct point if it doesn't fall to close start point only
 	local fwd = cDirection.GetForwardRelativeFromDirection(direction);
     local seek_area = AITileList();
@@ -533,7 +531,6 @@ function cPathfinder::AddSubTask(mainUID)
 	local roottask = cPathfinder.GetPathfinderObject(mainUID);
 	if (roottask == null)   return;
 	local distance = AITile.GetDistanceManhattanToTile(roottask.source[1], roottask.target[1]);
-	print("distance = "+distance)
 	if (distance <= 40)	return; // no split, distance is short
 	point = cPathfinder.BuildShortPoints(roottask.source, roottask.target, true);
 	if (point == -1)	return;
