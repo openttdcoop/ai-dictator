@@ -309,7 +309,7 @@ function cBuilder::RailStationPhaseBuildEntrance(stationObj, useEntry, tmptaker,
 	do  {
 		local temptile=fromtile+(j*forwardTileOf);
 		//for (local kb = 0; kb < 6; kb++)	{ cMisc.Locate(j+(kb*forwardTileOf)); cTileTools.DemolishTile(j+(kb*forwardTileOf)); }
-		local cleaner = cTileTools.GetRectangle(position, temptile);
+		local cleaner = cTileTools.GetRectangle(position, temptile, null);
 		cTerraform.IsAreaClear(cleaner, true, false);
 		cTerraform.TerraformLevelTiles(position, temptile);
 		if (cTileTools.CanUseTile(temptile,stationObj.s_ID))

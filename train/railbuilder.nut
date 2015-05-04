@@ -637,17 +637,19 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, platnum, newGR
 	local src_type = AIIndustryType.INDUSTRYTYPE_UNKNOWN;
 	local dst_type = AIIndustryType.INDUSTRYTYPE_UNKNOWN;
 	if (src_id > 10000)
-		{
-		src_istown = true;
-		src_id -= 10000;
-		src_type = AIIndustryType.INDUSTRYTYPE_TOWN;
-		}
+				{
+				src_istown = true;
+				src_id -= 10000;
+				src_type = AIIndustryType.INDUSTRYTYPE_TOWN;
+				}
+		else	dst_type = AIIndustry.GetIndustryType(src_id);
 	if (dst_id > 10000)
-		{
-		dst_istown = true;
-		dst_id -= 10000;
-		dst_type = AIIndustryType.INDUSTRYTYPE_TOWN;
-		}
+				{
+				dst_istown = true;
+				dst_id -= 10000;
+				dst_type = AIIndustryType.INDUSTRYTYPE_TOWN;
+				}
+		else	dst_type = AIIndustry.GetIndustryType(dst_id);
 	local distance = AIMap.DistanceManhattan(AIIndustry.GetLocation(src_id), AIIndustry.GetLocation(dst_id));
 	if (!AIRail.BuildNewGRFRailStation(tilepos, direction, platnum, INSTANCE.main.carrier.train_length, link, cargo, src_type, dst_type, distance, newGRF[4]))
 			{

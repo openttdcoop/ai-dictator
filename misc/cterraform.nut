@@ -199,7 +199,7 @@ function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
     foreach (tile, _ in tlist) // raising water level tiles
     	if (AITile.IsWaterTile(tile))
 				{
-				if (cTileTools.IsRiverTile((tile))	AITile.DemolishTile(tile);
+				if (cTileTools.IsRiverTile(tile))	AITile.DemolishTile(tile);
 											else	AITile.RaiseTile(tile, AITile.SLOPE_N + AITile.SLOPE_S + AITile.SLOPE_W);
 				}
 	local Solve = cTerraform.TerraformHeightSolver(tlist);
