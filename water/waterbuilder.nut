@@ -56,7 +56,7 @@ function cBuilder::BuildWaterStation(start)
 // @param start true to build at source, false at destination
 // @return true or false
 {
-	INSTANCE.main.bank.RaiseFundsBigTime();
+	cBanker.RaiseFundsBigTime();
 	local stationtype = null;
 	local radius = AIStation.GetCoverageRadius(AIStation.STATION_DOCK);
 	local dir, otherplace =null;

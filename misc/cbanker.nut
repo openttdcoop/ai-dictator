@@ -61,10 +61,11 @@ function cBanker::RaiseFundsTo(money)
 function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
-	local max=(AICompany.GetMaxLoanAmount()).tointeger()-AICompany.GetLoanAmount();
+	local m = (AICompany.GetMaxLoanAmount()).tointeger()-AICompany.GetLoanAmount();
 	// if we have more than what we can loan, just don't loan to not waste our cash in loan penalty, it should be enough
+	print("RaiseFundsBigTime account="+AICompany.GetBankBalance(AICompany.COMPANY_SELF) + " maxloan="+AICompany.GetMaxLoanAmount());
 	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > AICompany.GetMaxLoanAmount())	return true;
-	return cBanker.RaiseFundsBy(max);
+	return cBanker.RaiseFundsBy(m);
 }
 
 function cBanker::CanBuyThat(money)
@@ -76,15 +77,6 @@ function cBanker::CanBuyThat(money)
 	if (cash + loan < cash)	return true; // overflow
 	if (cash + loan >= money)	return true;
 	return false;
-}
-
-function cBanker::GetMaxMoneyAmount()
-// return the max amount of cash we could raise
-{
-	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
-	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	if (cash+loan < cash)	return cash; //overflow
-	return cash+loan;
 }
 
 function cBanker::SaveMoney()

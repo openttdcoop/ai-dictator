@@ -292,20 +292,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 	if (uid == null)	{ print("cannot find routeid"); return -1; }
 	local road = cRoute.Load(uid);
 	if (!road)	{ print("bad road"); return -1; }
-//	local testengy = cCarrier.ChooseRailCouple(road.CargoID, -1, -1, -1);
-//	print("current type: "+cEngine.GetRailTrackName(road.RailType));
-//	print("fastest railtype: "+cEngine.GetRailTrackName(cEngineLib.RailTypeGetFastestType()));
-//	print("fastest for this engine: "+cEngine.GetRailTrackName(cEngineLib.RailTypeGetFastestType(AIVehicle.GetEngineType(vehicle))));
-//	local new_railtype = cEngineLib.RailTypeGetFastestType(AIVehicle.GetEngineType(vehicle));
-/*	if (testengy[0] == -1)	{ print("an error with enginelib"); }
-					else	{
-							new_railtype = testengy[2];
-							print("fastest by chooserailcouple: "+cEngine.GetRailTrackName(testengy[2]));
-							}*/
 	if (new_railtype == -1)	new_railtype = road.RailType;
-//	if (new_railtype == -1 || new_railtype == road.RailType)
-  //          { print("no new railtype roadType: "+road.RailType+" new_railtype: "+new_railtype); return -1; }
-   // else    {
 	if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	{ print("No rail upgrade while pathfinder is working"); return -1; }
 	print("BREAKRAIL "+cEngine.GetRailTrackName(road.RailType)+" will be replace with "+cEngine.GetRailTrackName(new_railtype));
 	//		}

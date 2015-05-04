@@ -50,8 +50,6 @@ function cCarrier::CreateRoadVehicle(roadidx)
             homedepot = cRoute.GetDepot(roadidx);
             if (!cStation.IsDepot(homedepot))   { return false; }
             }
-	local price=cEngine.GetPrice(engineID, road.CargoID);
-	cBanker.RaiseFundsBy(price);
 	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, road.CargoID);
 	if (vehID != -1)
 			{
