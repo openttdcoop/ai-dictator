@@ -311,8 +311,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 			}
 	cDebug.ClearSigns();
 	// check the road itself from source to destination
-	msg=space+"Connection from source station to target station : "
-		foreach (stile, sfront in repair.SourceStation.s_Tiles)
+	foreach (stile, sfront in repair.SourceStation.s_Tiles)
 		{
 		foreach (dtile, dfront in repair.TargetStation.s_Tiles)
 			{
@@ -810,15 +809,16 @@ function cBuilder::BuildRoadROAD(head1, head2, stationID, primarylane)
 			{
 			// As we are the new callback for building road with primarylane == false, we must call ourselves the cBuilder.BuildPath_ROAD to build the road
 			result = cBuilder.BuildPath_ROAD(head1, head2, stationID, primarylane);
+			print("result = "+result);
 			//result = cPathfinder.GetStatus(head1, head2, stationID, false, null);
-			if (result == -2)	{ cPathfinder.CloseTask(head1, head2); cError.RaiseError(); return false; }
-			if (result == 2)	{ cPathfinder.CloseTask(head1, head2); return true; }
+			if (result == -2)	{ cPathfinder.CloseTask(head1, head2); cError.RaiseError(); return -2; }
+			if (result == 0)	{ cPathfinder.CloseTask(head1, head2); return 0; }
 			trys++;
 			// If result == 1 pathfinder is trying to build the route but if it stays at 1 it is because we lack money
 			// We couldn't wait it forever to get money it may never get
 			cPathfinder.AdvanceAllTasks();
 			}
-	return false;
+	return -1;
 	}
 
 function cBuilder::BuildPath_ROAD(src, dst, stationID, primarylane)
@@ -827,6 +827,7 @@ function cBuilder::BuildPath_ROAD(src, dst, stationID, primarylane)
 	local status = cPathfinder.GetStatus(src, dst, stationID, primarylane, null);
 	local mytask = cPathfinder.GetPathfinderObject(cPathfinder.GetUID(src, dst));
 	if (mytask == null)	return -2;
+	if (status == 0)	return -1; // it is still searching...
 	if (status == 2) // success
 		{
 		DInfo("Pathfinder task "+mytask.UID+" succeed !",1);

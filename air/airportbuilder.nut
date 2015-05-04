@@ -285,7 +285,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 			{
 			local newTile = -1;
 			local cost = tilelist.GetValue(tile);
-			if (!cBanker.CanBuyThat(cost))	{ DInfo("No enought money to build at "+cMisc.Locate(tile)+" cost: "+cost,2); needMoney = cost; continue; }
+			if (!cBanker.CanBuyThat(cost))	{ DInfo("No enough money to build at "+cMisc.Locate(tile)+" cost: "+cost,2); needMoney = cost; continue; }
 			local range = cTileTools.GetRectangle(tile, air_x, air_y);
 			cTerraform.TerraformLevelTiles(range, null);
 			if (cTerraform.IsAreaBuildableAndFlat(range, 0, ignoreList))	newTile = tile;

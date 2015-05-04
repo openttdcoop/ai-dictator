@@ -222,9 +222,6 @@ function RailFollower::FindRailOwner()
 						cCarrier.VehicleOrdersReset(trains);
 						cCarrier.VehicleSendToDepot(trains, DepotAction.LINEUPGRADE);
 						}
-//					road.RailType = -1; // force bad railtype of route to force the upgrade
-//					road.SourceStation.s_SubType = -1;
-//					road.TargetStation.s_SubType = -1;
 					}
 		local killit = false;
 		if (bad)	killit = true;
@@ -275,11 +272,12 @@ function RailFollower::FindRailOwner()
 function RailFollower::TryUpgradeLine(vehicle)
 // We will always upgrade the line, even if we will not change the railtype in order to catch if some rails aren't of the same type
 // return 0 if we cannot, -1 if we fail, 1 if we success
+// the only difference for us is that return 0 will continue trying upgrade another line, while -1 will block other upgrade line checks
 {
-	print("upgrade line for "+cCarrier.GetVehicleName(vehicle));
+	//print("upgrade line for "+cCarrier.GetVehicleName(vehicle));
 	// first: see what cargo it carry
 	local wagonproto = cEngineLib.VehicleGetRandomWagon(vehicle);
-	if (wagonproto == -1)	{ print("bad proto"); return -1; }
+	if (wagonproto == -1)	{ print("bad proto"); return 0; }
 	local wagon_type = AIVehicle.GetWagonEngineType(vehicle, wagonproto);
 	local cargo = cEngine.GetCargoType(wagon_type);
 	// second: look what engine it use
@@ -289,16 +287,18 @@ function RailFollower::TryUpgradeLine(vehicle)
 
 	local upgrade_cost = 0;
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
-	if (uid == null)	{ print("cannot find routeid"); return -1; }
+	if (uid == null)	return -1;
 	local road = cRoute.Load(uid);
-	if (!road)	{ print("bad road"); return -1; }
+	if (!road)	return -1;
+	local date = AIDate.GetCurrentDate();
 	if (new_railtype == -1)	new_railtype = road.RailType;
-	if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	{ print("No rail upgrade while pathfinder is working"); return -1; }
-	print("BREAKRAIL "+cEngine.GetRailTrackName(road.RailType)+" will be replace with "+cEngine.GetRailTrackName(new_railtype));
-	//		}
+    if (road.DateHealthCheck != 0 && date - road.DateHealthCheck < 90)	{ DInfo("We try convert this route not long time ago.", 2); return 0; }
+    road.DateHealthCheck = 0; // mark it so we could again upgrade
+	if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	{ DInfo("No rail upgrade while pathfinder is working",2); return 0; }
+	DInfo(cEngine.GetRailTrackName(road.RailType)+" will be replace with "+cEngine.GetRailTrackName(new_railtype));
 	upgrade_cost = road.SourceStation.s_MoneyUpgrade;
-	DInfo("Cost to upgrade rails : "+upgrade_cost);
-	if (!cBanker.CanBuyThat(upgrade_cost))	{ return 0; }
+	DInfo("Cost to upgrade rails : "+upgrade_cost,2);
+	if (!cBanker.CanBuyThat(upgrade_cost))	{ return -1; } // don't try upgrade other if we are already short on money
 	local temp = AIList();
 	local all_owners = AIList();
 	local all_vehicle = AIList();
@@ -322,9 +322,15 @@ function RailFollower::TryUpgradeLine(vehicle)
 		local veh = AIVehicleList_Group(r.GroupID);
 		foreach (v, _ in veh)   { all_vehicle.AddItem(v, r.UID); veh_cost += cEngine.GetPrice(AIVehicle.GetEngineType(v)); }
 		}
+	if (!cTrack.CheckCrossingRoad(all_rails, new_railtype))
+			{
+			DInfo("Cannot convert to "+cEngine.GetRailTrackName(new_railtype)+" because of crossing",2);
+			road.DateHealthCheck = date; // mark it so it don't retry before some time
+			return 0;
+			}
 	if (upgrade_cost == 0)
 		{
-		DInfo("Number of affected rails : "+all_rails.Count());
+		DInfo("Number of affected rails : "+all_rails.Count(),2);
 		cDebug.showLogic(all_rails);
 		local raw_basic_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_TRACK) * all_rails.Count();
 		local raw_sig_cost = AIRail.GetBuildCost(new_railtype, AIRail.BT_SIGNAL) * (all_rails.Count() / 2);
@@ -401,13 +407,11 @@ function RailFollower::TryUpgradeLine(vehicle)
 		uid.SourceStation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 		uid.TargetStation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 		}
-	INSTANCE.buildDelay = 1;
 	DInfo("We have upgrade route "+road.Name+" to use railtype "+cEngine.GetRailTrackName(new_railtype),0);
     do
         {
         local uid = wagon_lost.pop();
         local num = wagon_lost.pop();
-        print("uid = "+uid+" num="+num);
         cCarrier.ForceAddTrain(uid, num);
         }  while (wagon_lost.len() > 0);
 	return 1;

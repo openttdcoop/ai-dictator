@@ -513,7 +513,7 @@ foreach (vehicle, dummy in tlist)
 		local nRT = cEngine.IsRailAtTop(vehicle);
 		if (nRT == -1)	{ line_upgrade = false; continue; }
         local ret = RailFollower.TryUpgradeLine(vehicle);
-        if (ret == 0)   { line_upgrade = false; continue; }
+        if (ret == 0)   { continue; }
         if (ret == 1)   { continue; }
 		}
 	tx=AIVehicle.GetAgeLeft(vehicle);
@@ -535,7 +535,7 @@ foreach (vehicle, dummy in tlist)
 		//cBuilder.RouteIsDamage(idx);
 		cCarrier.CheckOneVehicleOrGroup(vehicle, true);
 		}
-	local enginecheck = cEngine.IsRabbitSet(vehicle);
+	local enginecheck = cEngine.IsRabbitSet(topengine);
 	if (topengine != -1 && enginecheck)	topengine = -1; // stop upgrade
 	if (topengine != -1)
 		{

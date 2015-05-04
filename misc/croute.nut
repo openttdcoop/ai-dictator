@@ -63,7 +63,7 @@ class cRoute extends cClass
 			GroupID	        	= null;		// *
 			CargoID	        	= null;
 			DateVehicleDelete   = 0;
-			DateHealthCheck 	= 0;
+			DateHealthCheck 	= null;
 			Source_RailEntry	= null;
 			Target_RailEntry	= null;
 			Primary_RailLink	= false;

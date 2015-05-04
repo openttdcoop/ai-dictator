@@ -248,6 +248,37 @@ function cTrack::StationKillRailDepot(tile, stationID = -1)
 	cStation.StationReleaseTile(tile, stationID);
 	}
 
+function cTrack::CheckCrossingRoad(tracklist, newtracktype)
+// Check the railtrack list to see if we will have problem with crossing road tile, fixing it if we can
+// return true if it's ok, false if we will get in trouble
+{
+	local tile_list = AIList();
+	tile_list.AddList(tracklist);
+	tile_list.Valuate(AITile.HasTransportType, AITile.TRANSPORT_ROAD);
+	tile_list.KeepValue(1);
+	if (tile_list.IsEmpty())	return true;
+	// while we found crossing, they might not all bug us
+	tile_list.Valuate(AIRail.GetRailType);
+	tile_list.RemoveValue(newtracktype);
+    local test_list = AIList();
+    test_list.AddList(tile_list);
+    local test_mode = AITestMode();
+    foreach (tile, _ in test_list)
+		{
+		local test = AITestMode();
+		if (AIRail.ConvertRailType(tile, tile, newtracktype))	tile_list.RemoveItem(tile);
+		}
+	test_mode = null;
+	if (tile_list.IsEmpty())	return true;
+	local voisin = [AITile.GetTileIndex(1, 0), AITile.GetTileIndex(0, -1), AITile.GetTileIndex(-1, 0), AITile.GetTileIndex(0, 1)];
+	foreach (tile, _ in tile_list)
+		// if we at least remove enough of the road it will not be seen by HasTransportType anymore, and rail convertion works on non full road
+		foreach (voisins in voisin)	AIRoad.RemoveRoad(tile, tile+voisins); // try to remove them
+	tile_list.Valuate(AITile.HasTransportType, AITile.TRANSPORT_ROAD);
+	tile_list.KeepValue(1);
+	return tile_list.IsEmpty();
+}
+
 function cTrack::ConvertRailType(tile, newrt)
 // return 1 ok, -1 not ok, 0 not ok but can retry
 	{
@@ -260,6 +291,7 @@ function cTrack::ConvertRailType(tile, newrt)
 		local error = AIError.GetLastError();
 		if (error == AIError.ERR_NONE)	{ return 1; }
 		if (error == AIError.ERR_NOT_ENOUGH_CASH)	{ return 0; }
+		if (error == AIError.ERR_RAILTYPE_DISALLOWS_CROSSING)	{ return 0; }
 		DError("ConvertRailType fail with error="+error,1);
 		return -1;
 		}
