@@ -49,6 +49,7 @@ function cCarrier::CreateWaterVehicle(routeidx)
             homedepot = cRoute.GetDepot(routeidx);
             if (!cStation.IsDepot(homedepot))   return false;
             }
+	local price = cEngine.GetPrice(engineID);
 	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, road.CargoID);
 	if (vehID != -1)
 			{

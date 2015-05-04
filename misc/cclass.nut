@@ -94,24 +94,22 @@ function cMain::CheckAccount()
 	local ourLoan = AICompany.GetLoanAmount();
 	local maxLoan = AICompany.GetMaxLoanAmount();
 	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	local mintobuild = bank.mincash;
+	local mintobuild = INSTANCE.main.bank.mincash;
 	if (INSTANCE.main.carrier.vehicle_cash < 0) { INSTANCE.main.carrier.vehicle_cash = 0; }
-	if (ourLoan == 0 && cash >= 3*mintobuild)	{ bank.unleash_road=true; }
-	if (!cBanker.CanBuyThat(mintobuild))	{ DInfo("Low on cash, disabling build : "+mintobuild,1); bank.canBuild=false; }
-									else    { cBanker.RaiseFundsTo(10000); bank.canBuild = true; }
-//	if (ourLoan +(4*AICompany.GetLoanInterval()) < maxLoan)	{ bank.canBuild=true; }
-	if (maxLoan > 2000000 && ourLoan > 0 && route.RouteIndexer.Count() > 6)
-			{ DInfo("Trying to repay loan",1); bank.canBuild=false; } // wait to repay loan
-	local veh=AIVehicleList();
-	if (INSTANCE.buildDelay > 0)	{ DInfo("Builds delayed: "+INSTANCE.buildDelay,1); bank.canBuild=false; }
-	if (INSTANCE.main.carrier.vehicle_cash >0 && !cBanker.CanBuyThat(INSTANCE.main.carrier.vehicle_cash))   { DInfo("Delaying build: we save money for upgrade",1); bank.canBuild=false; }
-	local veh=AIVehicleList();
-	if (veh.IsEmpty() && cRoute.database.len()==2)
-			{
+	if (ourLoan == 0 && cash >= 3*mintobuild)	{ INSTANCE.main.bank.unleash_road=true; }
+	if (!cBanker.GetMoney(mintobuild))	{ DInfo("Low on cash, disabling build : "+mintobuild,1); INSTANCE.main.bank.canBuild=false; }
+								else    INSTANCE.main.bank.canBuild = true;
+/*	if (maxLoan > 2000000 && ourLoan > 0 && route.RouteIndexer.Count() > 6)
+			{ DInfo("Trying to repay loan",1); INSTANCE.main.bank.canBuild=false; } // wait to repay loan*/
+	local veh = AIVehicleList();
+	if (INSTANCE.buildDelay > 0)	{ DInfo("Builds delayed: "+INSTANCE.buildDelay,1); INSTANCE.main.bank.canBuild=false; }
+	if (!cBanker.CanBuyThat(INSTANCE.main.carrier.vehicle_cash+mintobuild))   { DInfo("Delaying build: we save money for upgrade",1); INSTANCE.main.bank.canBuild=false; }
+	if (cRoute.database.len() == 2 && AIVehicleList().IsEmpty())
+			{ // we have 0 vehicles force a build
 			DInfo("Forcing build: We have 0 vehicle running !");
-			bank.canBuild=true;
-			if (cJobs.rawJobs.IsEmpty())	{ DInfo("Hard times going on, unleashing routes"); bank.unleash_road=true; }
-			} // we have 0 vehicles force a build
+			INSTANCE.main.bank.canBuild=true;
+			if (cJobs.rawJobs.IsEmpty())	{ DInfo("Hard times going on, unleashing routes"); INSTANCE.main.bank.unleash_road=true; }
+			}
 /*	local dgroute=0;
 	foreach (route in cRoute.database)
 		{
@@ -125,5 +123,5 @@ function cMain::CheckAccount()
 		*/
 //	else print("DEBUG route state : "+dgroute);
 		//AIController.Break("route size="+cRoute.database.len());
-	DWarn("canBuild="+bank.canBuild+" unleash="+bank.unleash_road+" building_main.route."+builder.building_route+" warTreasure="+carrier.warTreasure+" vehicle_cash="+carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+carrier.vehicle_wishlist.Count()+" mintobuild="+mintobuild,1);
+	DWarn("canBuild="+INSTANCE.main.bank.canBuild+" unleash="+INSTANCE.main.bank.unleash_road+" building_main.route."+INSTANCE.main.builder.building_route+" warTreasure="+INSTANCE.main.carrier.warTreasure+" vehicle_cash="+INSTANCE.main.carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+INSTANCE.main.carrier.vehicle_wishlist.Count()+" mintobuild="+mintobuild,1);
 	}

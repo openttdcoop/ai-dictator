@@ -30,27 +30,22 @@ class cBanker extends cClass
 		}
 	}
 
-
-function cBanker::GetLoanValue(money)
-// return amount to loan to have enough money
+function cBanker::SetMinimumCashToBuild()
 {
-	local i=0;
-	local loanStep=AICompany.GetLoanInterval();
-	while (money > 0) { i++; money-=loanStep; }
-	i--;
-	return (i*loanStep);
+	local minc = (AICompany.GetLoanInterval() * 4 * cBanker.GetInflationRate()).tointeger();
+	INSTANCE.main.bank.mincash = minc;
 }
 
 function cBanker::RaiseFundsTo(money)
 // Raise money to that level if possible, if we have already the amount do nothing, else raise to max we could reach
 {
-	local toloan = (AICompany.GetLoanAmount() + money).tointeger();
-	money = money.tointeger();
-	local curr=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	local success=true;
-	if (curr > money)	success=true;
-				else	success=AICompany.SetMinimumLoanAmount(toloan);
-	if (!success)	{ // can't get what we need, raising to what we could do so
+    money = money.tointeger();
+	local curr = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	if (curr >= 2147483647 || curr >= money)	return true;
+	local toloan = AICompany.GetLoanAmount() + money;
+	local success = AICompany.SetMinimumLoanAmount(toloan);
+	if (!success)
+				{ // can't get what we need, raising to what we could do so
 				DInfo("Cannot raise money to "+money+". Raising money to max we can",2);
 				toloan = AICompany.GetMaxLoanAmount();
 				success = AICompany.SetMinimumLoanAmount(toloan);
@@ -61,50 +56,42 @@ function cBanker::RaiseFundsTo(money)
 function cBanker::RaiseFundsBigTime()
 // Raise our cash with big money, called when i'm going to spent a lot
 {
-	local m = (AICompany.GetMaxLoanAmount()).tointeger()-AICompany.GetLoanAmount();
-	// if we have more than what we can loan, just don't loan to not waste our cash in loan penalty, it should be enough
-	print("RaiseFundsBigTime account="+AICompany.GetBankBalance(AICompany.COMPANY_SELF) + " maxloan="+AICompany.GetMaxLoanAmount());
-	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > AICompany.GetMaxLoanAmount())	return true;
-	return cBanker.RaiseFundsBy(m);
+	local loan_max = AICompany.GetMaxLoanAmount();
+	// if we have more than what we can loan, just don't loan to not waste our cash in loan penalties
+	if (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > loan_max)	return true;
+	local m = loan_max - AICompany.GetLoanAmount();
+	return cBanker.GetMoney(m);
 }
 
 function cBanker::CanBuyThat(money)
 // return true if we can spend money
 {
-	local loan=AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
-	local cash=AICompany.GetBankBalance(AICompany.COMPANY_SELF);
+	local loan = AICompany.GetMaxLoanAmount()-AICompany.GetLoanAmount();
+	local cash = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
 	if (cash >= money)	return true;
 	if (cash + loan < cash)	return true; // overflow
 	if (cash + loan >= money)	return true;
 	return false;
 }
 
-function cBanker::SaveMoney()
-// lower loan max to save money
-{
-	local weare=AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-	local balance=AICompany.GetBankBalance(weare);
-	DInfo("Saving our money",1);
-	local canrepay=cBanker.GetLoanValue(balance);
-	local newLoan=AICompany.GetLoanAmount()-canrepay;
-	if (newLoan <=0) newLoan=0;
-	AICompany.SetMinimumLoanAmount(newLoan);
-}
-
-function cBanker::RaiseFundsBy(money)
-// Raise account by money amount.
+function cBanker::GetMoney(money)
+// Try get money amount
 {
 	local curr = AICompany.GetBankBalance(AICompany.COMPANY_SELF);
-	if (curr < 0) curr=0;
+	if (curr >= money || curr >= 2147483647)	return true;
 	local needed = money + curr;
+	if (needed < curr)	return true;
 	return (cBanker.RaiseFundsTo(needed));
 }
 
 function cBanker::PayLoan()
 {
-	local money = 0 - (AICompany.GetBankBalance(AICompany.COMPANY_SELF) - AICompany.GetLoanAmount()) + AICompany.GetLoanInterval();
-	if (money > 0)	{	if (AICompany.SetMinimumLoanAmount(money)) return true; else return false; }
-			else	{	if (AICompany.SetMinimumLoanAmount(0)) return true; else return false;	}
+	local loan = AICompany.GetLoanAmount();
+	if (loan == 0)	return;
+	local money = 0 - (AICompany.GetBankBalance(AICompany.COMPANY_SELF) - loan) + AICompany.GetLoanInterval();
+	loan = min(AICompany.GetMaxLoanAmount(), max(0, money));
+	DInfo("Changing loan to "+loan,2);
+	return AICompany.SetMinimumLoanAmount(money);
 }
 
 function cBanker::CashFlow()
@@ -116,10 +103,4 @@ function cBanker::CashFlow()
 function cBanker::GetInflationRate()
 {
 	return (AICompany.GetMaxLoanAmount() / AIGameSettings.GetValue("difficulty.max_loan").tofloat());
-}
-
-function cBanker::SetMinimumCashToBuild()
-{
-	local minc = (AICompany.GetLoanInterval() * 4 * cBanker.GetInflationRate()).tointeger();
-	INSTANCE.main.bank.mincash = minc;
 }

@@ -439,7 +439,7 @@ function cBuilder::BridgeUpgrader()
 				{
 				local nbridge=AIBridge.GetName(speederBridge);
 				local nspeed=AIBridge.GetMaxSpeed(speederBridge);
-				cBanker.RaiseFundsBy(AIBridge.GetPrice(speederBridge,thatbridge.length));
+				cBanker.GetMoney(AIBridge.GetPrice(speederBridge,thatbridge.length));
 				if (AIBridge.BuildBridge(btype, speederBridge, thatbridge.firstside, thatbridge.otherside))
 					{
 					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0);

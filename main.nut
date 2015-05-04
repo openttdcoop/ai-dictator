@@ -120,9 +120,9 @@ function DictatorAI::Start()
 	this.CheckCurrentSettings();
 	main.Init();
 	main.DInfo("DicatorAI started.",0);
+	cBanker.PayLoan();
 	if (loadedgame)
 			{
-			main.bank.SaveMoney();
 			cRoute.DiscoverWorldTiles();
 			cLoader.LoadingGame();
 			main.jobs.PopulateJobs();
@@ -137,7 +137,6 @@ function DictatorAI::Start()
 			}
 	else
 			{
-			main.bank.SaveMoney();
 			cMisc.SetPresident();
 			main.jobs.PopulateJobs();
 			main.jobs.RawJobHandling();
@@ -147,8 +146,8 @@ function DictatorAI::Start()
 			{
 			this.CheckCurrentSettings();
 			DWarn("Running the AI in debug mode slowdown the AI and can do random issues !!!",1);
-			main.bank.CashFlow();
-			main.CheckAccount();
+			cBanker.CashFlow();
+			cMain.CheckAccount();
 			local dmg = AIList();
 			dmg.AddList(cRoute.RouteDamage);
 			dmg.KeepValue(RouteStatus.DEAD);
@@ -180,15 +179,15 @@ function DictatorAI::Start()
 									}
 							}
 					}
-			main.bank.CashFlow();
-			main.event.HandleEvents();
-			main.jobs.DeleteIndustry();
+			cBanker.CashFlow();
+			cEvents.HandleEvents();
+			cJobs.DeleteIndustry();
 			cPathfinder.AdvanceAllTasks();
-			main.builder.WeeklyChecks();
-			main.builder.MonthlyChecks();
-			main.jobs.RawJobHandling();
+			cBuilder.WeeklyChecks();
+			cBuilder.MonthlyChecks();
+			cJobs.RawJobHandling();
 			cPathfinder.AdvanceAllTasks();
-			AIController.Sleep(1);
+			AIController.Sleep(74);
 			cDebug.ClearSigns();
 			}
 	}
@@ -366,6 +365,6 @@ function DictatorAI::DWarn(putMsg, debugValue=1, func = "Unknown")
 
 function DictatorAI::MoneyCallBack(money)
 {
-	cBanker.RaiseFundsTo(money);
+	cBanker.GetMoney(money);
 }
 

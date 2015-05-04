@@ -98,9 +98,9 @@ function cJobs::ReuseTownSet(townID)
 function cJobs::CheckLimitedStatus()
 // Check & set the limited status, at early stage we limit the distance to accept a job.
 	{
-	local oldmax=distanceLimits[1];
+	local oldmax=cJobs.distanceLimits[1];
 	local testLimitChange= cJobs.GetTransportDistance(RouteType.RAIL, false, INSTANCE.main.bank.unleash_road); // get max distance a train could do
-	if (oldmax != distanceLimits[1])
+	if (oldmax != cJobs.distanceLimits[1])
 			{
 			DInfo("Distance limit status change to "+INSTANCE.main.bank.unleash_road,4);
 			}
@@ -374,11 +374,11 @@ function cJobs::GetTransportDistance(transport_type, get_min, limited)
 	local big=0;
 	local target=transport_type * 3;
 	local toret=0;
-	for (local i=0; i < TRANSPORT_DISTANCE.len(); i++)
+	for (local i=0; i < cJobs.TRANSPORT_DISTANCE.len(); i++)
 			{
-			local min=TRANSPORT_DISTANCE[i];
-			local lim=TRANSPORT_DISTANCE[i+1];
-			local max=TRANSPORT_DISTANCE[i+2];
+			local min = cJobs.TRANSPORT_DISTANCE[i];
+			local lim = cJobs.TRANSPORT_DISTANCE[i+1];
+			local max = cJobs.TRANSPORT_DISTANCE[i+2];
 			if (target == i)
 					{
 					if (get_min)	{ toret=min; }
@@ -388,8 +388,8 @@ function cJobs::GetTransportDistance(transport_type, get_min, limited)
 			if (lim > big)	{ big=lim; }
 			i+=2; // next iter
 			}
-	distanceLimits[0]=small;
-	distanceLimits[1]=big;
+	cJobs.distanceLimits[0]=small;
+	cJobs.distanceLimits[1]=big;
 	return toret;
 	}
 
@@ -588,12 +588,12 @@ function cJobs::GetJobTarget(src_id, cargo_id, src_istown, srcloc)
 			retList.Valuate(AITown.GetPopulation);
 			retList.Sort(AIList.SORT_BY_VALUE,false);
 			retList.Valuate(AITown.GetDistanceManhattanToTile, srcloc);
-			retList.KeepBetweenValue(distanceLimits[0], rmax);
+			retList.KeepBetweenValue(cJobs.distanceLimits[0], rmax);
 			}
 	else    {
 			retList=AIIndustryList_CargoAccepting(cargo_id);
 			retList.Valuate(AIIndustry.GetDistanceManhattanToTile, srcloc);
-			retList.KeepBetweenValue(distanceLimits[0], rmax);
+			retList.KeepBetweenValue(cJobs.distanceLimits[0], rmax);
 			}
 	return retList;
 	}
@@ -645,7 +645,7 @@ function cJobs::AddNewIndustryOrTown(industryID, istown)
 		local pause = cLooper();
 		foreach (destination, distance in targetList)
 			{
-			local transportList=GetTransportList(distance);	// find possible ways to transport that
+			local transportList=cJobs.GetTransportList(distance);	// find possible ways to transport that
 			local pause = cLooper();
 			foreach (transtype, dummy2 in transportList)
 				{

@@ -376,14 +376,12 @@ function cPathfinder::AdvanceTask(UID)
 				// give it a last chance to handle the failure
 				if (pftask.useEntry == null)	pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane);
                                         else	pftask.rail_build(pftask.source, pftask.target, pftask.stationID, pftask.PrimaryLane, pftask.useEntry);
-				//cPathfinder.CloseTask(pftask.source, pftask.target);
 				return;
 			case	-3:
 				cPathfinder.CloseTask(pftask.source, pftask.target);
 				return;
 			case	1:
-				if (!cBanker.CanBuyThat(10000))	 return;
-				cBanker.RaiseFundsBy(30000);
+				if (!cBanker.CanBuyThat(30000))	 return;
 				DInfo(spacer+pftask.UID+" has end search",1);
 				// only start building if root task is ok to build
 				if (root_task.status != 1)	return;
@@ -391,6 +389,7 @@ function cPathfinder::AdvanceTask(UID)
 				if (pftask.child.len() > 1)	return;
    				DInfo(spacer+pftask.UID+" is building the path",1);
 				local result = 0;
+				cBanker.GetMoney(30000);
 				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane); }
                                         else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.stationID, pftask.PrimaryLane, pftask.useEntry); }
 				if (result == -1)	return; // retry later
@@ -406,8 +405,6 @@ function cPathfinder::AdvanceTask(UID)
 				local result = 0;
 				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane); }
 										else	{ result = pftask.rail_build(pftask.source, pftask.target, pftask.stationID, pftask.PrimaryLane, pftask.useEntry); }
-				// even if we succeed, if the function tell us we fail, set us as fail
-				//cPathfinder.CloseTask(pftask.source, pftask.target);
 				return;
 			}
 	local check = false;

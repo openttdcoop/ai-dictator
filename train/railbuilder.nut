@@ -132,7 +132,7 @@ function cBuilder::BuildTrainStation(start)
 	local buildmode = 0;
 	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
 	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger())+" tlist="+tilelist.Count(),2);
-	INSTANCE.main.bank.RaiseFundsBy(cost*2);
+	cBanker.GetMoney(cost*2);
 	local ssize= INSTANCE.main.carrier.train_length;
 	/* 2 build mode:
 	- try find a place with cheap (a place that can hold it without terraforming)
@@ -614,7 +614,7 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, platnum, newGR
 	if (AITown.IsValidTown(c) && AITown.GetRating(c, AICompany.COMPANY_SELF) < AITown.TOWN_RATING_POOR)	{ cTileTools.SeduceTown(c); }
 	local money = (INSTANCE.main.carrier.train_length*AIRail.GetBuildCost(AIRail.GetCurrentRailType(), AIRail.BT_STATION)*cBanker.GetInflationRate()).tointeger();
 	if (!cBanker.CanBuyThat(money))	{ DInfo("We lack money to buy the station",1); }
-	cBanker.RaiseFundsBy(money);
+	cBanker.GetMoney(money);
 	if (link != AIStation.STATION_NEW && AIStation.IsValidStation(link))
 				{
 				local rt = AIRail.GetRailType(AIStation.GetLocation(link));

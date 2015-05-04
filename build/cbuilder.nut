@@ -474,5 +474,6 @@ function cBuilder::TryBuildThatRoute()
 		cError.ClearError();
 		return false;
 		}
+	cRoute.DutyOnRoute();
 	return success;
 }

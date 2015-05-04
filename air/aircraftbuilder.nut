@@ -54,6 +54,7 @@ function cCarrier::CreateAirVehicle(routeidx)
             homedepot = cRoute.GetDepot(routeidx);
             if (!cStation.IsDepot(homedepot))    return false;
             }
+	local price = cEngine.GetPrice(engineID);
 	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, -1); // force no refit
 	if (vehID != -1)
 			{

@@ -200,7 +200,7 @@ function cBuilder::BuildRoadStation(start)
 				local cost = cTerraform.CheckRectangleForConstruction(tile, 1, 2, true, 2, true);
 				if (cost != -1 && cBanker.CanBuyThat(cost))
 						{
-                        cBanker.RaiseFundsBy(cost);
+                        cBanker.GetMoney(cost);
                         local templist = cTileTools.GetRectangle(tile, 1, 2);
                         cTerraform.IsAreaClear(templist, true, false);
                         cTerraform.TerraformLevelTiles(templist, null);
