@@ -265,7 +265,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				local remove_list = AIList();
 				foreach (tile, dummy in worktilelist)
 					{
-					local check = cTerraform.CheckRectangleForConstruction(tile, air_x, air_y, true, 2, true, ignoreList);
+					local check = cTerraform.CheckRectangleForConstruction(tile, air_x, air_y, true, 0, true, ignoreList);
 					if (check != -1)	{ check += ap_cost;	tilelist.AddItem(tile, check); }
 								else	remove_list.AddItem(tile, 0);
 					}

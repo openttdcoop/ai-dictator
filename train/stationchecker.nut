@@ -726,7 +726,8 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	if (!road)	{ primary = false; }
 	if (needIN || needOUT > 0)
 			{
-			cBuilder.RailStationPhaseBuildEntrance(thatstation, useEntry, taker, road);
+			if (!cBuilder.RailStationPhaseBuildEntrance(thatstation, useEntry, taker, road))	{ cError.RaiseError(); return false; }
+
 			se_IN=thatstation.GetRailStationIN(true);
 			se_OUT=thatstation.GetRailStationOUT(true);
 			sx_IN=thatstation.GetRailStationIN(false);

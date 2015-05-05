@@ -366,11 +366,12 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];
+	foreach (owner, _ in all_owners)	wagon_lost.push(cCarrier.GetTrainBalancingStats(owner));
 	foreach (veh, uid in all_vehicle)
             {
-            local z = cEngineLib.VehicleGetNumberOfWagons(veh);
+/*            local z = cEngineLib.VehicleGetNumberOfWagons(veh);
             wagon_lost.push(z);
-            wagon_lost.push(uid);
+            wagon_lost.push(uid);*/
             if (veh != safekeeper)  {
                                     cCarrier.VehicleSell(veh, false);
                                     if (cCarrier.ToDepotList.HasItem(veh))  cCarrier.ToDepotList.RemoveItem(veh);
@@ -408,12 +409,22 @@ function RailFollower::TryUpgradeLine(vehicle)
 		uid.TargetStation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 		}
 	DInfo("We have upgrade route "+road.Name+" to use railtype "+cEngine.GetRailTrackName(new_railtype),0);
-    do
+	foreach (store in wagon_lost)
+		{
+		for (local i = 0; i < store.len(); i++)
+			{
+			local tuid = store[i];
+			local tstats = store[i+1];
+			cCarrier.ForceAddTrain(tuid, tstats);
+			i++;
+			}
+		}
+   /* do
         {
         local uid = wagon_lost.pop();
         local num = wagon_lost.pop();
         cCarrier.ForceAddTrain(uid, num);
-        }  while (wagon_lost.len() > 0);
+        }  while (wagon_lost.len() > 0);*/
 	return 1;
 }
 

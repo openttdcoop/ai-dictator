@@ -67,7 +67,7 @@ function cEngine::RabbitUnset(vehicle_id)
 {
 	foreach (eng, veh in cEngine.rabbit)
 		{
-		if (vehicle_id == veh)	{ cEngine.rabbit.SetValue(eng, -1); return; }
+		if (vehicle_id == veh)	{ cEngine.rabbit.SetValue(eng, -1); cCarrier.CheckOneEngine(veh); return; }
 		}
 }
 

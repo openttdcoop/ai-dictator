@@ -314,6 +314,7 @@ function cPathfinder::PropagateChangeToParent(id)
 		if (ptask_child == null)	return;
 		if (ptask_child.status == -2)	state = -2; // viral failure
         if (state == -2)	ptask_child.status = -2;
+        if (state == 3)	continue;
 		if (ptask_child.status != state)	return;
 		}
     ptask.status = state;
@@ -355,11 +356,12 @@ function cPathfinder::AdvanceTask(UID)
 		DInfo(spacer+"Pathfinder is autoclosing task "+pftask.UID,1);
 		cPathfinder.CloseTask(pftask.source[0], pftask.target[1]);
 		}
-	if (pftask.status == 0 && pftask.child.len() > 1)	{ DInfo(spacer+"is waiting children to finish",1); return; }
 	local root_id = cPathfinder.GetRootTask(UID);
 	local root_task = null;
 	if (root_id != -1)	root_task = cPathfinder.GetPathfinderObject(root_id);
 	if (root_task == null)	{ cPathfinder.CloseTaskAndChildren(UID); return; }
+	if (pftask.status == 0 && pftask.child.len() > 1)	{ DInfo(spacer+"is waiting children to finish",1); return; }
+	if (pftask.status == 3)	{ DInfo(spacer+" is done.",1); return; }
 	switch (pftask.status)
 			{
 			case	-1:
@@ -401,6 +403,7 @@ function cPathfinder::AdvanceTask(UID)
 				DInfo(spacer+pftask.UID+" has end building",1);
 				// Only root task can run this
                 if (root_task.UID != pftask.UID)	return;
+											else	{ pftask.status = 3; return; }
 				// recalling function to handle the work is finish
 				local result = 0;
 				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane); }

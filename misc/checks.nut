@@ -402,14 +402,14 @@ function cBuilder::BridgeUpgrader()
 // Upgrade bridge we own and if it's need
 	{
 	local RoadBridgeList=AIList();
-	RoadBridgeList.AddList(cBridge.BridgeList);
-	RoadBridgeList.Valuate(cBridge.GetMaxSpeed);
 	local RailBridgeList=AIList();
-	RailBridgeList.AddList(RoadBridgeList);
+	RoadBridgeList.AddList(cBridge.BridgeList);
 	RoadBridgeList.Valuate(cBridge.IsRoadBridge);
+	RailBridgeList.AddList(RoadBridgeList);
 	RoadBridgeList.KeepValue(1);
-	RailBridgeList.Valuate(cBridge.IsRailBridge);
-	RailBridgeList.KeepValue(1);
+	RailBridgeList.KeepValue(0);
+	RoadBridgeList.Valuate(cBridge.GetMaxSpeed);
+	RailBridgeList.Valuate(cBridge.GetMaxSpeed);
 	local numRail=RailBridgeList.Count();
 	local numRoad=RoadBridgeList.Count();
 	RoadBridgeList.KeepBelowValue(INSTANCE.main.carrier.speed_MaxRoad); // Keep only too slow bridges
@@ -429,7 +429,7 @@ function cBuilder::BridgeUpgrader()
 		foreach (bridgeUID, speed in workBridge)
 			{
 			local thatbridge=cBridge.Load(bridgeUID);
-			if (thatbridge.owner != -1 && thatbridge.owner != weare)	continue;
+			if (thatbridge == null || (thatbridge.owner != -1 && thatbridge.owner != weare))	continue;
 			// only upgrade our or town bridge
 			if (thatbridge.owner == -1 && !everyone)	continue;
 			// don't upgrade all bridges in one time, we're kind but we're not l'abbé Pierre!
@@ -446,8 +446,8 @@ function cBuilder::BridgeUpgrader()
 					if (thatbridge.owner != weare)	everyone = false;
 					updateCount++;
 					}
+				if (updateCount == 3 && !twice)	break;
 				}
-            if (updateCount == 4)  { break; }
 			}
 		twice=!twice;
 		} while (twice);

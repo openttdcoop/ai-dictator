@@ -100,7 +100,7 @@ while (AIEventController.IsEventWaiting())
 			event = AIEventVehicleUnprofitable.Convert(event);
 			local vehicle = event.GetVehicleID();
 			if (!AIVehicle.IsValidVehicle(vehicle)) break;
-			DInfo(cCarrier.GetVehicleName(vehicle) + " is not profitable, sending it to depot",0);
+			DInfo(cCarrier.GetVehicleName(vehicle) + " is not profitable",0);
 			cBuilder.RouteIsDamage(cCarrier.VehicleFindRouteIndex(vehicle));
 			cRoute.CheckRouteProfit(cCarrier.VehicleFindRouteIndex(vehicle));
 		break;

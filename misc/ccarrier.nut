@@ -465,7 +465,7 @@ function cCarrier::IsTrainRouteBusy(uid = -1)
                         if (grp != uid) continue;
                         }
 		local real = cCarrier.VehicleSendToDepot_GetReason(reason);
-		if (real == DepotAction.LINEUPGRADE || real == DepotAction.SIGNALUPGRADE)	return true;
+		if (real == DepotAction.LINEUPGRADE || real == DepotAction.SIGNALUPGRADE || real == DepotAction.BALANCE)	return true;
 		}
 	return false;
 }
@@ -546,7 +546,6 @@ foreach (vehicle, dummy in tlist)
 		DInfo("-> Vehicle "+name+" can be upgrade with a better version, sending it to depot",0);
 		cEngine.RabbitSet(vehicle, topengine);
 		cCarrier.VehicleSendToDepot(vehicle, DepotAction.UPGRADE);
-		cCarrier.CheckOneEngine(topengine);
 		}
 	local pause = cLooper();
 	}
@@ -791,4 +790,3 @@ function cCarrier::StopVehicle(vehID)
 		}
 	return false;
 }
-

@@ -39,6 +39,7 @@ enum DepotAction
 	REPLACE=2,			// to replace a vehicle, well this should also upgrade it
 	CRAZY=3,			// to get a big amount of money
 	REMOVEROUTE=4,		// to remove a route
+	BALANCE=5,			// to balance trains
 	ADDWAGON=500		// to add a train or wagons to a route
     LINEUPGRADE=1000,	// to upgrade a train route (passing the StationID with it), passing using DepotAction.LINEUPGRADE+StationID
 	SIGNALUPGRADE=5000,	// when a station need build signal on rails (passing the StationID with it)

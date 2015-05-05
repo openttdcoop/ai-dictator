@@ -285,7 +285,7 @@ function cTileTools::SeduceTown(townID)
 		if (!keeploop)	DInfo("Result ="+keeploop,2);
 		::AIController.Sleep(10);
 		} while (keeploop);
-	// bad bribe will put us at POOR on failure, goog to keep bribing until we fail then
+	// bad bribe will put us at POOR on failure, good to keep bribing until we fail then
 	if (!cTileTools.PlantsTreeAtTown(townID))	DInfo("Cannot seduce "+town_name+" anymore with tree.",1);
 	return (AITown.GetRating(townID, weare) >= AITown.TOWN_RATING_POOR);
 }

@@ -28,6 +28,7 @@ function cCarrier::ChooseRailCouple(cargo, rtype = -1, depot = -1, forengine = -
 	local veh = cEngineLib.GetBestEngine(object, cCarrier.VehicleFilterTrain);
 	if (veh[0] != -1)
 			{
+            cEngine.CheckMaxSpeed(veh[0]);
 			DInfo("selected train couple : "+cEngine.GetEngineName(veh[0])+" to pull "+cEngine.GetEngineName(veh[1])+" for "+cCargo.GetCargoLabel(cargo)+" using railtype "+cEngine.GetRailTrackName(veh[2]),1);
 			}
 	else
@@ -227,6 +228,8 @@ function cCarrier::AddWagon(uid, wagonNeed)
                             // and pathfinder gives us the condition to retry upgrading the station
                             // So if pathfinder isn't yet working, we have no way to check the station health if no train enter it
                             if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	return false;
+                            cRoute.CanAddTrainToStation(uid); // don't care the result, we try upgrade stations again to reach pathfinding call
+                            return false;
 							}
 					canorder.Valuate(AIVehicle.GetNumWagons);
 					canorder.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
@@ -283,13 +286,13 @@ function cCarrier::AddWagon(uid, wagonNeed)
 					}
 			if (AIVehicle.IsValidVehicle(tID) && !giveup)
 					{
-					print(AIVehicle.GetName(tID)+" here for "+wagonNeed+" wagons, he have "+cEngineLib.VehicleGetNumberOfWagons(tID));
+					DInfo(AIVehicle.GetName(tID)+" here for "+wagonNeed+" wagons, he have "+cEngineLib.VehicleGetNumberOfWagons(tID),1);
 					// now we can add wagons to it
 					local beforesize = cEngineLib.VehicleGetNumberOfWagons(tID);
 					depotID=AIVehicle.GetLocation(tID);
 					local freightlimit=cCargo.IsFreight(road.CargoID);
 					if (road.MoreTrain == 3 || numTrains > 1 || beforesize+wagonNeed < 5)
-                            { local res=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); print("add wagons"); road.MoreTrain = 3; }
+                            { local res=cCarrier.AddNewTrain(uid, tID, wagonNeed, depotID, stationLen); road.MoreTrain = 3; }
 					else
 							{
 							print("forcing new train");
@@ -346,3 +349,34 @@ function cCarrier::AddWagon(uid, wagonNeed)
 	road.RouteUpdateVehicle();
 	return !giveup;
 	}
+
+function cCarrier::GetTrainBalancingStats(uid)
+// return an array with number of wagon to build / train
+{
+//	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
+//	if (uid == null)	return;
+	if (!cRoute.GroupIndexer.HasItem(uid))	return;
+	local groupID = cRoute.GroupIndexer.GetValue(uid);
+	local num_train = AIVehicleList_Group(groupID);
+	local num_wagon = 0;
+	local profit = 0;
+	local loosemoney = false;
+	local balance = [];
+	foreach (veh, _ in num_train)
+			{
+			num_wagon += cEngineLib.VehicleGetNumberOfWagons(veh);
+			local money = AIVehicle.GetProfitThisYear(veh);
+			if (money <  0)	loosemoney = true;
+			profit += money;
+			}
+	if (loosemoney)	numwagon -= num_train.Count(); // one is not making money, so we remove 1 wagon on all trains
+    local average = num_wagon / num_train.Count();
+    if (profit < 0 && average > 1)	{ num_wagon = num_train.Count() * 2; average = 2; } // if we cannot do money, we short all trains to 2 wagons
+	foreach (veh, _ in num_train)
+		{
+		balance.push(uid);
+		if (average < num_wagon)	balance.push(average);
+							else	balance.push(num_wagon);
+		}
+	return balance;
+}

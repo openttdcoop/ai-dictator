@@ -16,8 +16,8 @@
 class cRoute extends cClass
 	{
 		static	database = {};
-		static	RouteIndexer = AIList();	// list all UID of routes we are handling
-		static	GroupIndexer = AIList();	// map a group->UID, item=group, value=UID
+		static	RouteIndexer = AIList();	// list all UID of routes we are handling, item=UID, value=GroupID
+		static	GroupIndexer = AIList();	// map a group->UID, item=GroupID, value=UID
 		static	RouteDamage = AIList(); 	// list of routes that need repairs
 		static	VirtualAirGroup = [-1,-1,0];// [0]=networkpassenger groupID, [1]=networkmail groupID [2]=total capacity of aircrafts in network
 
@@ -63,7 +63,7 @@ class cRoute extends cClass
 			GroupID	        	= null;		// *
 			CargoID	        	= null;
 			DateVehicleDelete   = 0;
-			DateHealthCheck 	= null;
+			DateHealthCheck 	= 0;
 			Source_RailEntry	= null;
 			Target_RailEntry	= null;
 			Primary_RailLink	= false;
@@ -185,7 +185,7 @@ function cRoute::RouteSave()
                                 {
                                 DInfo("Adding route "+this.Name+" to the route database",2);
                                 database[this.UID] <- this;
-                                RouteIndexer.AddItem(this.UID, 1);
+                                RouteIndexer.AddItem(this.UID, -1);
                                 }
 	}
 
@@ -528,9 +528,7 @@ function cRoute::RouteRebuildIndex()
 	cRoute.RouteIndexer.Clear();
 	foreach (item in cRoute.database)
 		{
-		cRoute.RouteIndexer.AddItem(item.UID, 1);
-		if (item.GroupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(item.GroupID, item.UID);
-								else	if (item.GroupID != null)	cRoute.GroupIndexer.AddItem(item.GroupID, item.UID);
+		if (item.GroupID != null)	{ cRoute.RouteIndexer.AddItem(item.UID, -1); cRoute.GroupIndexer.AddItem(item.GroupID, item.UID); }
 		}
 	}
 
