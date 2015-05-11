@@ -154,6 +154,7 @@ function cTrain::IsEmpty(vehID)
 function cTrain::CanModifyTrain(vehID)
 // return true if we can call that vehicle to modify it, else false
 	{
+	return true; //FIXME: keep or remove that
 	local train=cTrain.Load(vehID);
 	local now=AIDate.GetCurrentDate();
 	return (now-train.lastdepotvisit>60);
@@ -165,4 +166,19 @@ function cTrain::SetDepotVisit(vehID)
 	local train=cTrain.Load(vehID);
 	train.lastdepotvisit=AIDate.GetCurrentDate();
 	}
+
+function cTrain::IsTrainStuckAtSignal(vehID)
+{
+	if (!AIVehicle.IsValidVehicle(vehID))	return false;
+	if (AIVehicle.GetVehicleType(vehID) != AIVehicle.VT_RAIL)	return false;
+	if (AIVehicle.GetState(vehID) != AIVehicle.VS_RUNNING)	return false;
+	if (AIVehicle.GetCurrentSpeed(vehID) != 0)	return false;
+	local voisin = [AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(0, -1), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, 1)];
+	local position = AIVehicle.GetLocation(vehID);
+	local firenext = false;
+    foreach (voisins in voisin)	if (AIRail.GetSignalType(position, position + voisins) != AIRail.SIGNALTYPE_NONE)	{ firenext = true; break; }
+    if (!firenext)	foreach (voisins in voisin)	if (AIRail.GetSignalType(position + voisins, position) != AIRail.SIGNALTYPE_NONE)	{ firenext = true; break; }
+    return firenext;
+}
+
 

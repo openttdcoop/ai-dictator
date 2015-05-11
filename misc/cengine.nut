@@ -107,17 +107,6 @@ function cEngine::GetEngineByCache(engineType, cargoID)
 			return engine;
 		case	AIVehicle.VT_RAIL:
 			local engine = cCarrier.ChooseRailCouple(cargoID, -1);
-/*			if (engine[0] != -1)
-				{
-				cEngine.SetBestEngine(EUID, engine[0]);
-				print("EUID="+EUID);
-				// Also set best engine for the railtrack found
-				local id = cEngine.GetEUID(2000 + engine[2], cargoID);
-				print("id ="+id);
-				cEngine.SetBestEngine(id, engine[0]);
-				}*/
-			if (cJobs.WagonType.HasItem(cargoID))	cJobs.WagonType.RemoveItem(cargoID);
-			cJobs.WagonType.AddItem(cargoID, engine[1]);
 			return engine[0];
 		case	AIVehicle.VT_AIR:
 			local engine = cCarrier.GetAirVehicle(null, cargoID);
@@ -173,7 +162,7 @@ function cEngine::IsEngineAtTop(engineID, cargoID, set_engine)
 	if (engineID == topengine)	return -1;
 					else	{
 							INSTANCE.DInfo("Engine "+cEngine.GetEngineName(engineID)+" can be upgrade for engine "+cEngine.GetEngineName(topengine),2);
-							foreach (euid, engine in cEngine.BestEngineList)	print("EUID= "+euid+" engine ="+cEngine.GetName(engine));
+							//foreach (euid, engine in cEngine.BestEngineList)	print("EUID= "+euid+" engine ="+cEngine.GetName(engine));
 							return topengine;
 							}
 	}
@@ -183,9 +172,16 @@ function cEngine::IsRailAtTop(vehID)
 // return -1 if the vehicle doesn't need upgrade
 // return the better RailTrack type if one exist
 {
+	local uid = cCarrier.VehicleFindRouteIndex(vehID);
+	if (uid == null)	return -1;
+	local road = cRoute.LoadRoute(uid);
+	if (!road)	return -1;
 	local current_rt = cEngineLib.VehicleGetRailTypeUse(vehID);
 	if (current_rt == AIRail.RAILTYPE_INVALID)	return -1;
-	local best_rt = cEngineLib.RailTypeGetFastestType();
+	local best_rt = cEngineLib.RailTypeGetFastestTypeForCargo(road.CargoID, !DictatorAI.GetSetting("use_nicetrain"));
+print("current rt ="+current_rt+" "+cEngine.GetRailTrackName(current_rt));
+print("newly   rt ="+best_rt+" "+cEngine.GetRailTrackName(best_rt));
+if (best_rt == null)	crashme();
 	if (current_rt != best_rt)	return best_rt;
 	return -1;
 }
@@ -198,7 +194,7 @@ function cEngine::IsVehicleAtTop(vehID)
 	if (!AIVehicle.IsValidVehicle(vehID))	{ INSTANCE.DError("Not a valid vehicle",2); return -1; }
 	local idx = cCarrier.VehicleFindRouteIndex(vehID);
 	if (idx == null)	{ INSTANCE.DError("Fail to find the route used by this vehicle: "+cCarrier.GetVehicleName(vehID),2); return -1; }
-	local road = cRoute.Load(idx);
+	local road = cRoute.LoadRoute(idx);
 	if (!road)	return -1;
 	local cargoID = road.CargoID;
 	local vehType = AIVehicle.GetVehicleType(vehID);

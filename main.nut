@@ -39,8 +39,8 @@ enum DepotAction
 	REPLACE=2,			// to replace a vehicle, well this should also upgrade it
 	CRAZY=3,			// to get a big amount of money
 	REMOVEROUTE=4,		// to remove a route
-	BALANCE=5,			// to balance trains
-	ADDWAGON=500		// to add a train or wagons to a route
+	ADDWAGON=500,		// to add wagons
+	REMOVEWAGON=700,	// to remove wagons
     LINEUPGRADE=1000,	// to upgrade a train route (passing the StationID with it), passing using DepotAction.LINEUPGRADE+StationID
 	SIGNALUPGRADE=5000,	// when a station need build signal on rails (passing the StationID with it)
 	WAITING=9000,		// it's a state send a vehicle to depot and wait x iterations of vehicle in depot check (passing x with it)
@@ -115,7 +115,7 @@ class DictatorAI extends AIController
 
 function DictatorAI::Start()
 	{
-	cEngineLib.SetAPIErrorHandling(false);
+	cEngineLib.SetAPIErrorHandling(true);
 	AICompany.SetAutoRenewStatus(false);
 	cEngineLib.SetMoneyCallBack(DictatorAI.MoneyCallBack);
 	this.CheckCurrentSettings();

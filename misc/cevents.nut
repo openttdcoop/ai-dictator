@@ -70,13 +70,13 @@ while (AIEventController.IsEventWaiting())
 				{
 				DInfo("New engine available for preview: " + event.GetName(),0);
 				}
-			cCarrier.CheckOneVehicleOfGroup(true);
+			cCarrier.CheckOneVehicleOfGroup(false);
 		break;
 		case AIEvent.ET_ENGINE_AVAILABLE:
 			event = AIEventEngineAvailable.Convert(event);
 			local engine = event.GetEngineID();
 			DInfo("New engine available: " + cEngine.GetEngineName(engine),0);
-			cCarrier.CheckOneVehicleOfGroup(true);
+			cCarrier.CheckOneVehicleOfGroup(false);
 		break;
 		case AIEvent.ET_VEHICLE_CRASHED:
 			local vehicle = null;

@@ -22,7 +22,7 @@ function cCarrier::GetAirVehicle(routeidx, cargo = -1, modele = AircraftType.EFF
 	object.engine_type = AIVehicle.VT_AIR;
 	if (cargo == -1)
 		{
-		local road = cRoute.Load(routeidx);
+		local road = cRoute.LoadRoute(routeidx);
 		if (!road)	return -1;
 		if (road.VehicleType == RouteType.AIRNET || road.VehicleType == RouteType.AIRNETMAIL)	modele=AircraftType.BEST; // top speed/capacity for network
 		if (road.SourceStation.s_SubType == AIAirport.AT_SMALL || road.TargetStation.s_SubType == AIAirport.AT_SMALL)	modele=20; // small
@@ -39,7 +39,7 @@ function cCarrier::CreateAirVehicle(routeidx)
 // Build an aircraft
 {
 	if (!INSTANCE.use_air)	return false;
-	local road = cRoute.Load(routeidx);
+	local road = cRoute.LoadRoute(routeidx);
 	if (!road)	return false;
 	local engineID = cCarrier.GetAirVehicle(routeidx);
 	if (engineID == -1)	{ DWarn("Cannot find any aircraft to transport that cargo "+cCargo.GetCargoLabel(road.CargoID),1); return false; }
@@ -54,7 +54,7 @@ function cCarrier::CreateAirVehicle(routeidx)
             homedepot = cRoute.GetDepot(routeidx);
             if (!cStation.IsDepot(homedepot))    return false;
             }
-	local price = cEngine.GetPrice(engineID);
+	local price = AIEngine.GetPrice(engineID);
 	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, -1); // force no refit
 	if (vehID != -1)
 			{
@@ -68,13 +68,9 @@ function cCarrier::CreateAirVehicle(routeidx)
 			}
 	// no refit on aircrafts, we endup with only passengers aircraft, and ones that should do mail will stay different
 	// as their engine is the fastest always
-	local firstorderflag = null;
-	local secondorderflag = null;
-	secondorderflag = AIOrder.OF_NONE;
-	AIOrder.AppendOrder(vehID, srcplace, secondorderflag);
-	AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
 	AIGroup.MoveVehicle(road.GroupID, vehID);
-	if (altplace)	cCarrier.VehicleOrderSkipCurrent(vehID);
+	cCarrier.VehicleSetOrders(vehID);
+	if (altplace)	cEngineLib.VehicleOrderSkipCurrent(vehID);
 	if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle: "+cCarrier.GetVehicleName(vehID),2); cCarrier.VehicleSell(vehID, false); return false;}
 	road.VehicleCount++;
 	return true;

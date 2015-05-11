@@ -311,11 +311,11 @@ function cPathfinder::PropagateChangeToParent(id)
 	for (local i = 1; i < ptask.child.len(); i++)
 		{
 		local ptask_child = cPathfinder.GetPathfinderObject(ptask.child[i]);
-		if (ptask_child == null)	return;
+		if (ptask_child == null)	continue;
 		if (ptask_child.status == -2)	state = -2; // viral failure
         if (state == -2)	ptask_child.status = -2;
-        if (state == 3)	continue;
-		if (ptask_child.status != state)	return;
+        if (ptask_child.status == 3)	continue; // ignore it
+		if (state > ptask_child.status && state != -2)	return;
 		}
     ptask.status = state;
     DInfo("task #"+ptask.UID+" status change to "+ptask.status,2);
@@ -386,7 +386,7 @@ function cPathfinder::AdvanceTask(UID)
 				if (!cBanker.CanBuyThat(30000))	 return;
 				DInfo(spacer+pftask.UID+" has end search",1);
 				// only start building if root task is ok to build
-				if (root_task.status != 1)	return;
+				if (root_task.status != 1)	{ cPathfinder.PropagateChangeToParent(pftask.UID); return; }
                 // but don't build anything if you have a child yourself
 				if (pftask.child.len() > 1)	return;
    				DInfo(spacer+pftask.UID+" is building the path",1);
@@ -402,8 +402,7 @@ function cPathfinder::AdvanceTask(UID)
 			case	2:
 				DInfo(spacer+pftask.UID+" has end building",1);
 				// Only root task can run this
-                if (root_task.UID != pftask.UID)	return;
-											else	{ pftask.status = 3; return; }
+                if (root_task.UID != pftask.UID)	{ pftask.status = 2; return; }
 				// recalling function to handle the work is finish
 				local result = 0;
 				if (pftask.useEntry == null)	{ result = pftask.road_build(pftask.source[0], pftask.target[1], pftask.stationID, pftask.PrimaryLane); }

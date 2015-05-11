@@ -49,6 +49,7 @@ function cBuilder::HalfYearChecks()
 	INSTANCE.SixMonth=0;
 	INSTANCE.TwelveMonth++;
 	DInfo("Half year checks run...",1);
+	cCargo.SetCargoFavorite();
 	if (cCarrier.VirtualAirRoute.len() > 1)
 		{
 		local maillist=AIVehicleList_Group(cRoute.GetVirtualAirMailGroup());
@@ -63,7 +64,7 @@ function cBuilder::HalfYearChecks()
 function cBuilder::RouteIsDamage(idx)
 // Set the route idx as damage
 {
-	local road=cRoute.Load(idx);
+	local road=cRoute.LoadRoute(idx);
 	if (!road) return;
 	if (road.VehicleType != AIVehicle.VT_ROAD)	return;
 	if (road.Status != RouteStatus.WORKING)	return;
@@ -103,9 +104,8 @@ function cBuilder::RouteNeedRepair()
 	INSTANCE.main.route.RouteDamage.RemoveValue(-1);
 	if (deletethatone != -1)
 		{
-		local trys=cRoute.GetRouteObject(deletethatone);
-		if (trys != null && trys instanceof cRoute)
-                            {
+		local trys = cRoute.LoadRoute(deletethatone);
+		if (trys != false)	{
 							DInfo("RouteNeedRepair mark "+trys.UID+" undoable",1);
 							trys.RouteIsNotDoable();
 							}
@@ -136,7 +136,7 @@ function cBuilder::CheckRouteStationStatus(onlythisone=null)
 		foreach (uid, odummy in stobj.s_Owner)
 			{
 			local pause2 = cLooper();
-			local road=cRoute.Load(uid);
+			local road=cRoute.LoadRoute(uid);
 			if (!road)	continue;
 			if (road.Status != RouteStatus.WORKING)	continue; // avoid non finish routes
 			local cargoID=road.CargoID;
@@ -444,7 +444,7 @@ function cBuilder::BridgeUpgrader()
 					{
 					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0);
 					if (thatbridge.owner != weare)	everyone = false;
-					updateCount++;
+					if (!twice)	updateCount++;
 					}
 				if (updateCount == 3 && !twice)	break;
 				}

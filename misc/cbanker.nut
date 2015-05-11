@@ -90,8 +90,7 @@ function cBanker::PayLoan()
 	if (loan == 0)	return;
 	local money = 0 - (AICompany.GetBankBalance(AICompany.COMPANY_SELF) - loan) + AICompany.GetLoanInterval();
 	loan = min(AICompany.GetMaxLoanAmount(), max(0, money));
-	DInfo("Changing loan to "+loan,2);
-	return AICompany.SetMinimumLoanAmount(money);
+	return AICompany.SetMinimumLoanAmount(loan);
 }
 
 function cBanker::CashFlow()

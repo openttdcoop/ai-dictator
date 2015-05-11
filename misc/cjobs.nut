@@ -27,7 +27,6 @@ static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to
 static	TRANSPORT_DISTANCE=[60,150,250, 40,80,150, 40,100,130, 80,200,300]; // 130 max before water report dest_too_far
 static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
 static	badJobs=AIList();		// List of jobs we weren't able to do
-static	WagonType=AIList();		// engine wagon to use for cargo : item=cargo, value= wagon engine id
 static	rawJobs=AIList();		// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling
 static	deadIndustry = AIList();// List all industries that are dead and so jobs using them need to be removed
 
@@ -233,7 +232,7 @@ function cJobs::RefreshValue(jobID, updateCost=false)
 	if (badind)
 			{
 			DInfo("Removing bad industry from the job pool: "+myjob.UID,3);
-			local deadroute=cRoute.Load(myjob.UID);
+			local deadroute=cRoute.LoadRoute(myjob.UID);
 			if (!deadroute)	{ return; }
 			DInfo("RefreshValue mark "+deadroute.UID+" undoable",1);
 			deadroute.RouteIsNotDoable();
@@ -309,7 +308,7 @@ function cJobs::EstimateCost()
 			case	RouteType.ROAD:
 				// 2 vehicle + 2 stations + 2 depot + 4 destuction + 4 road for entry and length*road
 				engine=cEngine.GetEngineByCache(RouteType.ROAD, this.cargoID);
-				if (engine != -1)   { engineprice=cEngine.GetPrice(engine); }
+				if (engine != -1)   { engineprice=AIEngine.GetPrice(engine); }
                             else    { engineprice=100000; }
 				money+=engineprice;
 				money+=2*(AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_TRUCK_STOP));
@@ -324,7 +323,7 @@ function cJobs::EstimateCost()
 				engine=cEngine.GetEngineByCache(RouteType.RAIL, this.cargoID);
 				if (engine != -1)
 						{
-						engineprice+=cEngine.GetPrice(engine);
+						engineprice+=AIEngine.GetPrice(engine);
 						rtype=cEngineLib.RailTypeGetFastestType(engine);
 						if (rtype==-1)	{ rtype=null; }
 						}
@@ -343,7 +342,7 @@ function cJobs::EstimateCost()
 			case	RouteType.WATER:
 				// 2 vehicle + 2 stations + 2 depot
 				engine = cEngine.GetEngineByCache(RouteType.WATER, this.cargoID);
-				if (engine != null)	{ engineprice=cEngine.GetPrice(engine); }
+				if (engine != null)	{ engineprice=AIEngine.GetPrice(engine); }
                             else	{ engineprice=500000; }
 				money+=engineprice*2;
 				money+=2*(AIMarine.GetBuildCost(AIMarine.BT_DOCK));
@@ -353,7 +352,7 @@ function cJobs::EstimateCost()
 			case	RouteType.AIR:
 				// 2 vehicle + 2 airports
 				engine=cEngine.GetEngineByCache(RouteType.AIR, RouteType.AIR);
-				if (engine != -1)	{ engineprice=cEngine.GetPrice(engine); }
+				if (engine != -1)	{ engineprice=AIEngine.GetPrice(engine); }
                             else	{ engineprice=500000; }
 				money+=engineprice*2;
 				money+=2*(AIAirport.GetPrice(cBuilder.GetAirportType()));

@@ -19,14 +19,14 @@ function cRoute::RouteUpdateAirPath()
 	if (cCarrier.VirtualAirRoute.len() < 2)	{ return; }
 	local oneAirportID=AIStation.GetStationID(cCarrier.VirtualAirRoute[0]);
 	local twoAirportID=AIStation.GetStationID(cCarrier.VirtualAirRoute[1]);
-	local network = cRoute.Load(0);
+	local network = cRoute.LoadRoute(0);
 	network.SourceStation = cStation.Load(oneAirportID);
 	network.TargetStation = cStation.Load(twoAirportID);
 	if (cMisc.ValidInstance(network.SourceStation) && cMisc.ValidInstance(network.TargetStation))	{ network.Status = RouteStatus.WORKING; }
 																							else	{ network.Status = RouteStatus.DAMAGE; }
 	network.SourceProcess = cProcess.Load(cProcess.GetUID(cStation.VirtualAirports.GetValue(oneAirportID), true));
 	network.TargetProcess = cProcess.Load(cProcess.GetUID(cStation.VirtualAirports.GetValue(twoAirportID), true));
-	local mailnet = cRoute.Load(1);
+	local mailnet = cRoute.LoadRoute(1);
 	mailnet.SourceStation = network.SourceStation;
 	mailnet.TargetStation = network.TargetStation;
 	mailnet.SourceProcess = network.SourceProcess;
@@ -37,7 +37,7 @@ function cRoute::RouteUpdateAirPath()
 function cRoute::VirtualAirNetworkUpdate()
 // update our list of airports that are in the air network
 	{
-	local virtroad=cRoute.Load(0); // 0 is always the passenger one
+	local virtroad=cRoute.LoadRoute(0); // 0 is always the passenger one
 	if (!virtroad)	{ return; }
 	virtroad.Distance=0;
 	local towns=AITownList();
@@ -152,7 +152,7 @@ function cRoute::DutyOnAirNetwork()
 // handle the traffic for the aircraft network
 	{
 	if (INSTANCE.main.carrier.VirtualAirRoute.len()<2) { return; }
-	local virtroad=cRoute.Load(0);
+	local virtroad=cRoute.LoadRoute(0);
 	if (!virtroad)	{ return; }
 	if (virtroad.Status != 100)	{ return; }
 	local vehlist=AIList();
@@ -264,7 +264,7 @@ function cRoute::DutyOnRoute()
 		{
 		local pause = cLooper();
 		firstveh=false;
-		road = cRoute.Load(uid);
+		road = cRoute.LoadRoute(uid);
 		if (!road)	{ continue; }
 		if (road.Status != RouteStatus.WORKING)	{ continue; }
 		if (road.VehicleType == RouteType.AIRNET || road.VehicleType == RouteType.AIRNETMAIL)	{ continue; }

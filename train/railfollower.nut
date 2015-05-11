@@ -107,6 +107,7 @@ function RailFollower::FindRailOwner()
 {
 	cRoute.RouteDamage.Valuate(AITile.HasTransportType, AITile.TRANSPORT_RAIL);
 	cRoute.RouteDamage.KeepValue(1);
+	foreach (tile, _ in cRoute.RouteDamage)	cBridge.IsBridgeTile(tile);
 	local rail_routes = AIGroupList();
 	rail_routes.Valuate(AIGroup.GetVehicleType);
 	rail_routes.KeepValue(AIVehicle.VT_RAIL);
@@ -119,7 +120,7 @@ function RailFollower::FindRailOwner()
 	foreach (uid in uid_list)
 		{
 		cDebug.ClearSigns();
-		local road = cRoute.Load(uid);
+		local road = cRoute.LoadRoute(uid);
 		if (!road)	continue;
 		// first re-assign trains state to each station (taker, droppper, using entry/exit)
 		local train_list = AIVehicleList_Group(road.GroupID);
@@ -129,9 +130,11 @@ function RailFollower::FindRailOwner()
 		train_list.Valuate(AIVehicle.GetState);
 		foreach (trains, state in train_list)
 			{
+			print("addtrain "+AIVehicle.GetName(trains));
 			cRoute.AddTrain(uid, trains);
             // We restart all trains here
 			if (state == AIVehicle.VS_IN_DEPOT || state == AIVehicle.VS_STOPPED)	cCarrier.StartVehicle(trains);
+			cCarrier.HandleTrainStuck(trains);
 			}
 		DInfo("Finding rails for route "+road.Name);
 		if (!road.Primary_RailLink)	{ DInfo("FindRailOwner mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
@@ -282,17 +285,17 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local cargo = cEngine.GetCargoType(wagon_type);
 	// second: look what engine it use
 	local loco_engine = AIVehicle.GetEngineType(vehicle);
-	// last: now we can see if it would be better to change engine to another one with a new railtype
-	local new_railtype = cEngine.IsRailAtTop(vehicle);
-
 	local upgrade_cost = 0;
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle);
 	if (uid == null)	return -1;
-	local road = cRoute.Load(uid);
+	local road = cRoute.LoadRoute(uid);
 	if (!road)	return -1;
-	local date = AIDate.GetCurrentDate();
+	local new_railtype = cEngine.IsRailAtTop(vehicle);
 	if (new_railtype == -1)	new_railtype = road.RailType;
-    if (road.DateHealthCheck != 0 && date - road.DateHealthCheck < 90)	{ DInfo("We try convert this route not long time ago.", 2); return 0; }
+	print("Convert to new_railtype "+cEngine.GetRailTrackName(new_railtype));
+
+	local date = AIDate.GetCurrentDate();
+    if (road.DateHealthCheck != 0 && date - road.DateHealthCheck < 90)	{ DInfo("We try convert this route not long time ago.", 1); return 0; }
     road.DateHealthCheck = 0; // mark it so we could again upgrade
 	if (cPathfinder.CheckPathfinderTaskIsRunning([road.SourceStation.s_ID, road.TargetStation.s_ID]))	{ DInfo("No rail upgrade while pathfinder is working",2); return 0; }
 	DInfo(cEngine.GetRailTrackName(road.RailType)+" will be replace with "+cEngine.GetRailTrackName(new_railtype));
@@ -309,7 +312,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local veh_cost = 0;
 	foreach (o_uid, _ in temp)
 		{
-		local r = cRoute.Load(o_uid);
+		local r = cRoute.LoadRoute(o_uid);
 		if (!r)	continue;
 		if (r.Status != RouteStatus.WORKING)	continue; // keep only good ones
 		savetable[r.UID] <- r;
@@ -320,11 +323,11 @@ function RailFollower::TryUpgradeLine(vehicle)
 		all_rails.AddList(r.SourceStation.s_TilesOther);
 		all_rails.AddList(r.TargetStation.s_TilesOther);
 		local veh = AIVehicleList_Group(r.GroupID);
-		foreach (v, _ in veh)   { all_vehicle.AddItem(v, r.UID); veh_cost += cEngine.GetPrice(AIVehicle.GetEngineType(v)); }
+		foreach (v, _ in veh)   { all_vehicle.AddItem(v, r.UID); veh_cost += AIEngine.GetPrice(AIVehicle.GetEngineType(v)); }
 		}
 	if (!cTrack.CheckCrossingRoad(all_rails, new_railtype))
 			{
-			DInfo("Cannot convert to "+cEngine.GetRailTrackName(new_railtype)+" because of crossing",2);
+			DInfo("Cannot convert to "+cEngine.GetRailTrackName(new_railtype)+" because of crossing",1);
 			road.DateHealthCheck = date; // mark it so it don't retry before some time
 			return 0;
 			}
@@ -344,8 +347,10 @@ function RailFollower::TryUpgradeLine(vehicle)
 
 	// Ok, let's call trains...
 	temp = true;
+	local groups_list = AIList();
 	foreach (veh, _ in all_vehicle)
 		{
+		groups_list.AddItem(AIVehicle.GetGroupID(veh),0);
 		local state = AIVehicle.GetState(veh);
 		if (state != AIVehicle.VS_IN_DEPOT)
 			{
@@ -366,7 +371,8 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local safekeeper = all_vehicle.Begin();
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];
-	foreach (owner, _ in all_owners)	wagon_lost.push(cCarrier.GetTrainBalancingStats(owner));
+	foreach (groups, _ in groups_list)	wagon_lost.push(cCarrier.GetTrainBalancingStats(groups, 0, false));
+	AIController.Break("stop");
 	foreach (veh, uid in all_vehicle)
             {
 /*            local z = cEngineLib.VehicleGetNumberOfWagons(veh);
@@ -409,14 +415,18 @@ function RailFollower::TryUpgradeLine(vehicle)
 		uid.TargetStation.s_MaxSize = INSTANCE.main.carrier.rail_max;
 		}
 	DInfo("We have upgrade route "+road.Name+" to use railtype "+cEngine.GetRailTrackName(new_railtype),0);
+    print("wagon_lost="+wagon_lost.len());
 	foreach (store in wagon_lost)
 		{
+		foreach (item, value in store)	print("item="+item+" value="+value);
+		print("sotre="+store.len()+" "+typeof("store"));
 		for (local i = 0; i < store.len(); i++)
 			{
 			local tuid = store[i];
-			local tstats = store[i+1];
+			local dummy = store[i+1];
+			local tstats = store[i+2];
 			cCarrier.ForceAddTrain(tuid, tstats);
-			i++;
+			i += 2;
 			}
 		}
    /* do
@@ -425,6 +435,7 @@ function RailFollower::TryUpgradeLine(vehicle)
         local num = wagon_lost.pop();
         cCarrier.ForceAddTrain(uid, num);
         }  while (wagon_lost.len() > 0);*/
+    cBuilder.BridgeUpgrader();
 	return 1;
 }
 

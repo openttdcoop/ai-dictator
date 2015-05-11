@@ -477,7 +477,7 @@ function cStationRail::RailStationGetRunnerTarget(runnerID)
 {
 	local thatstation=cStation.Load(runnerID);
 	if (!thatstation || thatstation.s_Owner.Count()==0)	return -1;
-	local mainOwner=cRoute.Load(thatstation.s_Owner.Begin());
+	local mainOwner=cRoute.LoadRoute(thatstation.s_Owner.Begin());
 	if (!mainOwner)	return -1;
 	local primary=(mainOwner.SourceStation.s_ID == runnerID);
 	if (primary)

@@ -76,20 +76,17 @@ class cRoute extends cClass
 		function GetRouteObject(UID)
 			{
 			if (UID in cRoute.database)	{ return cRoute.database[UID]; }
-                                else	{ cRoute.RouteRebuildIndex();   return null; }
+                                else	{ return null; }
 			}
 
 	}
 
-function cRoute::Load(uid)
+function cRoute::LoadRoute(uid, force = false)
 // Get a route object
 	{
-	local thatroute=cRoute.GetRouteObject(uid);
-	if (typeof(thatroute) != "instance")	{ return false; }
-	if (thatroute instanceof cRoute)	{}
-                                else	{ return false; }
+	local thatroute = cRoute.GetRouteObject(uid);
 	if (thatroute == null)	{ DWarn("Invalid routeID : "+uid+". Cannot get object",1); return false; }
-	if (thatroute.Status == RouteStatus.WORKING && thatroute.UID > 1) // in theory a working one
+	if (!force && thatroute.Status == RouteStatus.WORKING && thatroute.UID > 1) // in theory a working one
 			{
 			local damage = false;
 			if (!cMisc.ValidInstance(thatroute.SourceStation))	{ damage=true; }
@@ -110,7 +107,7 @@ function cRoute::Load(uid)
 	if (thatroute.Status == RouteStatus.DEAD)	// callback the end of destruction
 			{
 			cRoute.InRemoveList(thatroute.UID);
-			return false;
+			if (!force)	return false;
 			}
 	return thatroute;
 	}
@@ -142,7 +139,7 @@ function cRoute::RouteTypeToString(that_type)
 
 function cRoute::GetRouteName(uid)
 	{
-	local road = cRoute.Load(uid);
+	local road = cRoute.LoadRoute(uid);
 	if (!road)	{ return "Invalid Route "+uid; }
 	return road.Name;
 	}
@@ -302,7 +299,7 @@ function cRoute::RouteSetDistance()
 function cRoute::RouteChangeStation(uid, o_Object, n_Object)
 // Route swap its old station with the new nStationObject
 	{
-	local road = cRoute.Load(uid);
+	local road = cRoute.LoadRoute(uid);
 	if (!road)	{ return; }
 	if (road.UID < 2) { return; } // don't alter virtuals, let them reclaim it later
 	if (road.Status != RouteStatus.WORKING)	{ return; }
@@ -334,7 +331,7 @@ function cRoute::RouteClaimsTiles(uid = null)
 {
 	local road;
 	if (uid == null)	road = this;
-				else	road = cRoute.Load(uid);
+				else	road = cRoute.LoadRoute(uid);
 	if (!road)	return;
 	if (road.UID < 2)	return;
 	if (road.StationType != AIStation.STATION_TRAIN)	return;
@@ -364,7 +361,7 @@ function cRoute::RouteClaimsTiles(uid = null)
 function cRoute::CheckRouteProfit(uid)
 // Check if a route is profitable and remove it if not
 {
-	local road = cRoute.GetRouteObject(uid);
+	local road = cRoute.LoadRoute(uid);
 	if (!road)	return;
 	local vehlist = AIVehicleList_Group(road.GroupID);
 	if (vehlist.IsEmpty())	return;
@@ -374,21 +371,30 @@ function cRoute::CheckRouteProfit(uid)
 	vehlist.Valuate(AIVehicle.GetProfitLastYear);
 	vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
 	local totvalue = 0;
-	foreach (veh, profit in vehlist)
+	if (uid > 1)  // don't test network
 		{
-		totvalue += profit;
-		if (totvalue > 100000)	break; // we don't really need to check its real amount
+		foreach (veh, profit in vehlist)
+			{
+			totvalue += profit + AIVehicle.GetProfitThisYear(veh);
+			if (totvalue > 100000)	break; // we don't really need to check its real amount
+			}
+		if (totvalue < 0 && oldest > (365 * 3))
+				{
+				DInfo("CheckRouteProfit mark "+road.UID+" undoable -> oldest: "+oldest+" totvalue="+totvalue,1);
+				road.RouteIsNotDoable();
+				return;
+				}
 		}
-	if (totvalue < 0 && oldest > (365 * 3))	{ DInfo("CheckRouteProfit mark "+road.UID+" undoable -> oldest: "+oldest+" totvalue="+totvalue,1); road.RouteIsNotDoable(); return; }
 	// even making some money, we get call because some vehicle aren't
     local badveh = AIList();
     badveh.AddList(vehlist);
-    badveh.KeepBelowValue(0);
     foreach (veh, profit in badveh)
 		{
+		if (profit > 0)	break; // no need futher tests, other are positive too then
 		if (vehlist.Count() < 3)	return; // Keep at least 2 vehicle in the group, even they aren't making money
         if (AIVehicle.GetAge(veh) > 365)	{ cCarrier.VehicleSendToDepot(veh, DepotAction.SELL); vehlist.RemoveItem(veh); }
         }
+	if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(), true); // check the whole group for trouble
 }
 
 function cRoute::RouteAirportCheck(uid=null)
@@ -396,7 +402,7 @@ function cRoute::RouteAirportCheck(uid=null)
 	{
 	local road=false;
 	if (uid == null)	road=this;
-			else	road=cRoute.Load(uid);
+			else	road=cRoute.LoadRoute(uid);
 	if (!road || road.VehicleType < RouteType.AIR)	return;
 	local oldtype = road.VehicleType;
 	road.VehicleType = RouteType.AIR;
@@ -481,8 +487,8 @@ function cRoute::RouteBuildGroup()
 	if (!AIGroup.IsValidGroup(gid))	{ DError("Cannot create the group, this is serious error, please report it!",0); return; }
 	this.GroupID = gid;
 	cRoute.SetRouteGroupName(this.GroupID, this.SourceProcess.ID, this.TargetProcess.ID, this.SourceProcess.IsTown, this.TargetProcess.IsTown, this.CargoID, false, this.SourceStation.s_ID, this.TargetStation.s_ID);
-	if (this.GroupID in cRoute.GroupIndexer)	cRoute.GroupIndexer.SetValue(this.GroupID, this.UID);
-							else	cRoute.GroupIndexer.AddItem(this.GroupID, this.UID);
+	if (cRoute.GroupIndexer.HasItem(this.GroupID))	cRoute.GroupIndexer.RemoveItem(this.GroupID);
+	cRoute.GroupIndexer.AddItem(this.GroupID, this.UID);
 	}
 
 function cRoute::CreateNewRoute(UID)
@@ -526,18 +532,21 @@ function cRoute::RouteRebuildIndex()
 // Rebuild our routes index from our datase
 	{
 	cRoute.RouteIndexer.Clear();
+	cRoute.GroupIndexer.AddItem(cRoute.GetVirtualAirPassengerGroup(),0);
+	cRoute.GroupIndexer.AddItem(cRoute.GetVirtualAirMailGroup(),1);
 	foreach (item in cRoute.database)
 		{
-		if (item.GroupID != null)	{ cRoute.RouteIndexer.AddItem(item.UID, -1); cRoute.GroupIndexer.AddItem(item.GroupID, item.UID); }
+		cRoute.RouteIndexer.AddItem(item.UID, -1);
+		if (item.GroupID != null)	cRoute.GroupIndexer.AddItem(item.GroupID, item.UID);
 		}
+		print("route indexer: "+cRoute.RouteIndexer.Count()+" base: "+cRoute.database.len());
+		print("group indexer: "+cRoute.GroupIndexer.Count()+ "group: "+AIGroupList().Count());
 	}
 
 function cRoute::InRemoveList(uid)
 // Add a route to route damage with dead status so it will get clear
 {
-	local road = cRoute.GetRouteObject(uid);
 	if (cRoute.RouteDamage.HasItem(uid))	cRoute.RouteDamage.RemoveItem(uid);
-	if (road == null)	{ return; }
 	cRoute.RouteDamage.AddItem(uid, RouteStatus.DEAD);
 }
 
@@ -554,8 +563,8 @@ function cRoute::RouteIsNotDoable()
 function cRoute::RouteRailGetPathfindingLine(uid, mainline)
 // return [] of pathfinding value of mainline or alternate line
 {
-	local road = cRoute.GetRouteObject(uid); // can't use Load() to not get caught by the patrol
-	if (typeof(road) != "instance")	return -1;
+	local road = cRoute.LoadRoute(uid, true);
+	if (!road)	return -1;
 	if (typeof(road.SourceStation) != "instance")	return -1;
 	if (typeof(road.TargetStation) != "instance")	return -1;
 	local path = [];
@@ -583,8 +592,8 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 // This is the last step of marking a route undoable
 	{
 	if (uid < 2)	return; // don't touch virtuals
-	local route = cRoute.GetRouteObject(uid); // the Load function will return false has route is mark DEAD
-	if (route != null)
+	local route = cRoute.LoadRoute(uid, true);
+	if (route != false)
 		{
 		local vehlist = AIList();
 		if (route.GroupID != null && AIGroup.IsValidGroup(route.GroupID))
@@ -596,7 +605,7 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 			vehlist = AIVehicleList_Group(route.GroupID);
 			foreach (veh, _ in vehlist)
 				{
-				if (!AIOrder.IsGotoDepotOrder(veh, AIOrder.ResolveOrderPosition(veh, AIOrder.ORDER_CURRENT)))
+				if (!cEngineLib.VehicleIsGoingToDepot(veh))
 					{
 					cCarrier.ToDepotList.RemoveItem(veh);
 					cCarrier.VehicleOrdersReset(veh);
@@ -668,7 +677,7 @@ function cRoute::GetDepot(uid, source=0)
 // per default return any valid depot we could found, if source=1 or 2 return an error if the query depot doesn't exist
 // return -1 on errors
 	{
-	local road=cRoute.Load(uid);
+	local road=cRoute.LoadRoute(uid);
 	if (!road)	return -1;
 	local sdepot=-1;
 	local tdepot=-1;
@@ -719,9 +728,9 @@ function cRoute::AddTrain(uid, vehID)
 // uid : the route UID
 // vehID: the train ID to add
 	{
-	local road=cRoute.GetRouteObject(uid);
 	if (!AIVehicle.IsValidVehicle(vehID))	{ DError("Invalid vehicleID: "+vehID,2); return -1; }
-	if (!road)	{ DError("Invalid uid : "+uid,2); return -1; }
+	local road = cRoute.LoadRoute(uid);
+	if (!road)	return -1;
 	cTrain.TrainSetStation(vehID, road.SourceStation.s_ID, true, road.Source_RailEntry, true); // train load at station
 	cTrain.TrainSetStation(vehID, road.TargetStation.s_ID, false, road.Target_RailEntry, road.Twoway); // if twoway train load at station, else it will only drop
 	// hmmm, choices: a two way route == 2 taker that are also dropper train
@@ -737,12 +746,17 @@ function cRoute::CanAddTrainToStation(uid)
 // return false when the station cannot handle it
 	{
 	if (!INSTANCE.use_train)	return false;
-	local road=cRoute.GetRouteObject(uid);
-	if (!road)	{ DError("Invalid uid : "+uid,2); return -1; }
+	local road = cRoute.LoadRoute(uid);
+	if (!road)	return -1;
 	local canAdd=true;
 	DInfo("src="+road.Source_RailEntry+" 2way="+road.Twoway+" tgt="+road.Target_RailEntry,1);
 	canAdd=cBuilder.RailStationGrow(road.SourceStation.s_ID, road.Source_RailEntry, true);
-	if (canAdd)	canAdd=cBuilder.RailStationGrow(road.TargetStation.s_ID, road.Target_RailEntry, false);
+	// we always allow any amount of train on destination station if the station is just use as dropoff
+	if (canAdd)
+		{
+		canAdd = cBuilder.RailStationGrow(road.TargetStation.s_ID, road.Target_RailEntry, false);
+		if (!road.Twoway)	canAdd = true;
+		}
 	return canAdd;
 	}
 

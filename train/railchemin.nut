@@ -17,10 +17,9 @@ function cRoute::DutyOnRailsRoute(uid)
 // this is where we handle rails route, that are too specials for common handling
 {
 	local firstveh = false;
-	local road = cRoute.Load(uid);
+	local road = cRoute.LoadRoute(uid);
 	if (!road || road.Status != RouteStatus.WORKING)	return;
 	local maxveh=0;
-	INSTANCE.main.carrier.highcostTrain=0;
 	local cargoid=road.CargoID;
 	local railtype=road.SourceStation.s_SubType;
 	local depot = cRoute.GetDepot(uid);
@@ -33,7 +32,6 @@ function cRoute::DutyOnRailsRoute(uid)
 	DInfo("After station update",2);
 	local vehneed=0;
 	if (road.VehicleCount == 0)	{ firstveh=true; }
-	local vehonroute = cCarrier.GetWagonsInGroup(road.GroupID);
 	local cargowait=0;
 	local capacity=0;
 	local dual=road.SourceProcess.IsTown; // we need to check both side if source is town we're on a dual route (pass or mail)
@@ -62,10 +60,10 @@ function cRoute::DutyOnRailsRoute(uid)
 	if (capacity==0)	capacity++; // avoid /0
 	local remain = cargowait - capacity;
 	if (remain < 0)	vehneed=0;
-			else	vehneed = (cargowait / capacity)+1;
+			else	vehneed = (cargowait / capacity);
 	if (vehneed == 0 && firstveh)	{ vehneed = 3; } // a never used wagon that need refit will report 255 capacity
 	if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
 	DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.VehicleCount+" firstveh="+firstveh,2);
-	if (vehneed > 0 && !cCarrier.IsTrainRouteBusy(uid)) cCarrier.AddWagon(uid,vehneed);
+	if (vehneed > 0) cCarrier.RouteNeedVehicle(road.GroupID, vehneed);
 }
 

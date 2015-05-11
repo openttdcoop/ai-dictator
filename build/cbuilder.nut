@@ -462,9 +462,9 @@ function cBuilder::TryBuildThatRoute()
 			INSTANCE.main.route.Twoway=false;
 			}
 		INSTANCE.main.route.RouteClaimsTiles();
-		INSTANCE.main.builder.building_route=-1; // Allow us to work on a new route now
 		if (INSTANCE.safeStart >0 && INSTANCE.main.route.VehicleType == RouteType.ROAD)	INSTANCE.safeStart--;
-		INSTANCE.main.route.DutyOnRoute();
+		cCarrier.RouteNeedVehicle(INSTANCE.main.route.GroupID, 2);
+		INSTANCE.main.builder.building_route = -1; // Allow us to work on a new route now
 		}
 	if (INSTANCE.main.route.Status == RouteStatus.DEAD)
 		{
@@ -474,6 +474,6 @@ function cBuilder::TryBuildThatRoute()
 		cError.ClearError();
 		return false;
 		}
-	cRoute.DutyOnRoute();
+	//cRoute.DutyOnRoute();
 	return success;
 }

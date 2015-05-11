@@ -227,7 +227,7 @@ function cBuilder::GetDockFrontTile(tile)
 
 function cBuilder::RepairWaterRoute(idx)
 {
-    local road = cRoute.Load(idx);
+    local road = cRoute.LoadRoute(idx);
     if (!road)  { return false; }
     cBanker.RaiseFundsBigTime();
     if (!AIMarine.IsWaterDepotTile(road.SourceStation.s_Depot))

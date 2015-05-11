@@ -651,9 +651,6 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	local trainExitTotal = trainExitDropper + trainExitTaker;
 	local allTaker = trainExitTaker + trainEntryTaker;
 	local allDropper = trainExitDropper + trainEntryDropper;
-	local dbvehc = AIVehicleList();
-	if (allTaker + allDropper > dbvehc.Count()+1)	{ AIController.Break("BUG: "+dbvehc.Count()+" too many vehicle"); }
-	print("veh use: "+dbvehc.Count());
 	local needTaker = allTaker;
 	local needDropper = allDropper;
 	if (allTaker > 1) { needTaker = allTaker; }
@@ -675,7 +672,7 @@ function cBuilder::RailStationGrow(staID, useEntry, taker)
 	else
 			{
 			local uidowner=thatstation.s_Train[TrainType.OWNER];
-			road=cRoute.Load(uidowner);
+			road=cRoute.LoadRoute(uidowner);
 			if (!road)	{ DInfo("The route owner ID "+uidowner+" is invalid",1); }
 				else	{ DInfo("Station main owner "+uidowner,1); }
 			}

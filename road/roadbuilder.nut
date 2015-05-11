@@ -157,7 +157,6 @@ function cBuilder::BuildRoadStation(start)
 			sourceplace = INSTANCE.main.route.TargetProcess.Location;
 			otherplace = INSTANCE.main.route.SourceProcess.Location;
 			}
-	tilelist = cBuilder.EvalDistanceProduction(tilelist, sourceplace, otherplace);
 	// let's see if we can stick to a road
 	checklist.AddList(tilelist);
 	checklist.Valuate(AIRoad.IsRoadTile);
@@ -178,11 +177,19 @@ function cBuilder::BuildRoadStation(start)
 	local staid = -1;
 	if (isneartown)
 			{
+			local tmplist = AIList();
+			tmplist.AddList(tilelist);
 			// first, removing most of the unbuildable cases
-			tilelist.Valuate(AITile.GetSlope);
-			tilelist.KeepValue(AITile.SLOPE_FLAT); // only flat tile filtering
-			tilelist.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
-			tilelist.KeepAboveValue(0);
+			tmplist.Valuate(AITile.GetSlope);
+			tmplist.KeepValue(AITile.SLOPE_FLAT); // only flat tile filtering
+			tmplist.Valuate(AIRoad.GetNeighbourRoadCount); // now only keep places stick to a road
+			tmplist.KeepAboveValue(0);
+			tmplist.Valuate(AIRoad.IsRoadTile);
+			tmplist.KeepValue(0);
+			tilelist.Clear();
+			foreach (item, value in tmplist)	tilelist.AddItem(item, checklist.GetValue(item));
+			tilelist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
+			//cDebug.showLogic(tilelist);
 			foreach (tile, dummy in tilelist)
 				{
 				statile = cBuilder.BuildAndStickToRoad(tile, stationtype, AIStation.STATION_NEW);
@@ -192,6 +199,7 @@ function cBuilder::BuildRoadStation(start)
 						else	DInfo("Fail to build a station stick to a road",3);
 			}
 	if (statile == -1)	{ isneartown = false; tilelist.Clear(); tilelist.AddList(checklist); }
+	tilelist = cBuilder.EvalDistanceProduction(tilelist, sourceplace, otherplace);
 	local s_front = cDirection.GetForwardRelativeFromDirection(dir);
 	if (!isneartown)
 			{
@@ -240,7 +248,7 @@ function cBuilder::CheckRoadHealth(routeUID)
 // we check a route for trouble & try to solve them
 // return true if no problems were found
 	{
-	local repair=cRoute.Load(routeUID);
+	local repair=cRoute.LoadRoute(routeUID);
 	if (!repair)	{ DInfo("Cannot load that route for a repair, switching to current route.",1); repair=INSTANCE.main.route; }
 	if (typeof(repair.SourceStation) != "instance" || typeof(repair.TargetStation) != "instance")
 			{ DInfo("Cannot repair that route as stations aren't setup.",1); return false; }
@@ -483,7 +491,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 // @param start true to upgrade source station, false for destination station
 // @return true or false
 	{
-	local road=cRoute.Load(roadidx);
+	local road=cRoute.LoadRoute(roadidx);
 	if (!road)	{ return false; }
 	if (road.Status != RouteStatus.WORKING)	{ return false; }
 	cBanker.RaiseFundsBigTime();

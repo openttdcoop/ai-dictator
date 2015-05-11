@@ -22,7 +22,7 @@ function cCarrier::GetRoadVehicle(routeidx, cargoID = -1)
 	object.engine_roadtype = AIRoad.ROADTYPE_ROAD;
 	if (cargoID == -1)
 		{
-		local road=cRoute.Load(routeidx);
+		local road=cRoute.LoadRoute(routeidx);
 		if (!road)	return -1;
 		object.cargo_id = road.CargoID;
 		object.depot = cRoute.GetDepot(routeidx);
@@ -36,7 +36,7 @@ function cCarrier::CreateRoadVehicle(roadidx)
 // return true/false
 {
 	if (!INSTANCE.use_road)	return false;
-	local road=cRoute.Load(roadidx);
+	local road=cRoute.LoadRoute(roadidx);
 	if (!road)	return false;
 	local engineID = cCarrier.GetRoadVehicle(roadidx);
 	if (engineID == -1)	{ DWarn("Cannot find any road vehicle to transport that cargo "+cCargo.GetCargoLabel(road.CargoID),1); return false; }
@@ -50,7 +50,7 @@ function cCarrier::CreateRoadVehicle(roadidx)
             homedepot = cRoute.GetDepot(roadidx);
             if (!cStation.IsDepot(homedepot))   { return false; }
             }
-	local price=cEngine.GetPrice(engineID, road.CargoID);
+	local price=AIEngine.GetPrice(engineID);
 	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, road.CargoID);
 	if (vehID != -1)
 			{
@@ -61,26 +61,9 @@ function cCarrier::CreateRoadVehicle(roadidx)
 			DError("Cannot create the road vehicle "+cEngine.GetEngineName(engineID)+" Cargo="+cCargo.GetCargoLabel(road.CargoID)+" depot="+cMisc.Locate(homedepot),2);
 			return false;
 			}
-	local firstorderflag = AIOrder.OF_NON_STOP_INTERMEDIATE + AIOrder.OF_FULL_LOAD_ANY;
-	local secondorderflag = AIOrder.OF_NON_STOP_INTERMEDIATE;
-	if (road.Twoway)	{ firstorderflag = secondorderflag; }
-                else    { secondorderflag += AIOrder.OF_NO_LOAD; }
 	AIGroup.MoveVehicle(road.GroupID, vehID);
-	if (!AIOrder.AppendOrder(vehID, srcplace, firstorderflag))
-		{ // detect weirdness, like IsArticulated bug, maybe remove it as openttd fix it, but keeping it for newGRF trouble
-		DInfo("Vehicle "+cCarrier.GetVehicleName(vehID)+" refuse order !",1);
-		local checkstation = AIStation.GetStationID(srcplace);
-		local checkengine = AIVehicle.GetEngineType(vehID);
-		local checktype = AIEngine.GetVehicleType(checkengine);
-		if (AIStation.IsValidStation(checkstation) && (AIStation.HasStationType(checkstation, AIStation.STATION_BUS_STOP) || AIStation.HasStationType(checkstation, AIStation.STATION_TRUCK_STOP)))
-			{
-			cEngine.BlacklistEngine(checkengine);
-			cCarrier.VehicleSell(vehID, false);
-			}
-		return false;
-		}
-	AIOrder.AppendOrder(vehID, dstplace, secondorderflag);
-	if (altplace)	{ cCarrier.VehicleOrderSkipCurrent(vehID); }
+	cCarrier.VehicleSetOrders(vehID);
+	if (altplace)	{ cEngineLib.VehicleOrderSkipCurrent(vehID); }
 	road.VehicleCount++;
 	if (!cCarrier.StartVehicle(vehID)) { DError("Cannot start the vehicle:",2); cCarrier.VehicleSell(vehID, false); return false; }
 	cEngine.CheckMaxSpeed(engineID);

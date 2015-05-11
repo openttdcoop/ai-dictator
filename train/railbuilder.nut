@@ -130,7 +130,7 @@ function cBuilder::BuildTrainStation(start)
 				}
 	local success = false;
 	local buildmode = 0;
-	local cost=5*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
+	local cost=10*AIRail.GetBuildCost(AIRail.GetCurrentRailType(),AIRail.BT_STATION);
 	DInfo("Rail station cost: "+cost+" byinflat"+(cost*cBanker.GetInflationRate().tointeger())+" tlist="+tilelist.Count(),2);
 	cBanker.GetMoney(cost*2);
 	local ssize= INSTANCE.main.carrier.train_length;
@@ -251,7 +251,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, stationID, primary, useEntry)
 	local uid_obj = null;
 	if (!staobj)	{ cError.RaiseError(); return -3; }
 	if (!primary)	{
-					uid_obj = cRoute.Load(staobj.s_Train[TrainType.OWNER]);
+					uid_obj = cRoute.LoadRoute(staobj.s_Train[TrainType.OWNER]);
 					if (!uid_obj)	{ return -3; }
 					}
     local Destroy = (status == -2);
@@ -611,7 +611,7 @@ function cBuilder::CreateAndBuildTrainStation(tilepos, direction, platnum, newGR
 				cTrack.SetRailType(rt);
 				local sta_obj = cStation.Load(link);
 				if (!sta_obj)	return false;
-				local route_obj = cRoute.Load(sta_obj.s_Train[TrainType.OWNER]);
+				local route_obj = cRoute.LoadRoute(sta_obj.s_Train[TrainType.OWNER]);
 				if (!route_obj)	return false;
 				newGRF.push(route_obj.CargoID);
 				newGRF.push(route_obj.SourceProcess.UID);

@@ -23,7 +23,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		{
 		foreach (owner, _ in station.s_Owner)
 			{
-			firstroute = cRoute.Load(owner);
+			firstroute = cRoute.LoadRoute(owner);
 			if (firstroute != false && firstroute.Status == RouteStatus.WORKING)	break;
 			}
 		}
@@ -70,9 +70,9 @@ function cBuilder::AirportNeedUpgrade(stationid)
 	station.s_UpgradeTry --;
 	foreach (ownID, dummy in station.s_Owner)
 		{
-		local dummyObj=cRoute.Load(ownID);
+		local dummyObj=cRoute.LoadRoute(ownID);
 		if (!dummyObj)	continue;
-		cCarrier.VehicleBuildOrders(dummyObj.GroupID,true);
+		cCarrier.RebuildGroupOrders(dummyObj.GroupID, true);
 		}
 	cCarrier.AirNetworkOrdersHandler(); // or maybe it's one from our network that need orders
 	local counter=0;
@@ -154,7 +154,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 {
 	local road=false;
 	if (routeID == null)	{ if (INSTANCE.main.builder.building_route != -1)	road=INSTANCE.main.route; }
-					else	road = cRoute.Load(routeID);
+					else	road = cRoute.LoadRoute(routeID);
 	if (!road)	return -1;
 	local townname="none";
 	local helipadonly=false;
@@ -334,7 +334,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 						foreach (ownerUID, _ in oldAirport.s_Owner)
 							{
 							oldAirport.OwnerReleaseStation(ownerUID);
-							local deadowner=cRoute.Load(ownerUID);
+							local deadowner=cRoute.LoadRoute(ownerUID);
 							if (deadowner != false)	{ DInfo("BuildAirStation mark "+deadowner.UID+" undoable",1); deadowner.RouteIsNotDoable(); }
 							}
 						// and get ride of the old (now dead) station

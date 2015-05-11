@@ -250,6 +250,7 @@ function cLoader::Load169()
 			}
 		}
 	DInfo("Found "+iter+" routes.",0);
+	cRoute.RouteRebuildIndex();
 	DInfo("Restoring trains",0);
 	local all_trains=SixMonth;
 	iter=0;
@@ -268,8 +269,6 @@ function cLoader::Load169()
 		iter++;
 		}
 	DInfo("Found "+iter+" trains.",0);
-	cRoute.RouteRebuildIndex();
-
 }
 
 function cLoader::LoadSaveGame()
@@ -286,6 +285,7 @@ function cLoader::LoadSaveGame()
 		temp_route.GroupID = group;
 		temp_route.VehicleType = AIGroup.GetVehicleType(group);
 		local gname = AIGroup.GetName(temp_route.GroupID);
+		DInfo("Processing route : "+gname,1);
 		local info = cMisc.SplitStars(gname);
 		if (info.len() != 7)	{ DInfo("Invalid route info length "+info.len()+" for "+gname,1); continue; }
 		temp_route.CargoID = info[1].tointeger();
@@ -360,13 +360,14 @@ function cLoader::LoadSaveGame()
 		num_route_ok++;
 		}
 	DInfo("Found "+num_route_ok+" routes");
+	cRoute.RouteRebuildIndex();
 	DInfo("Restoring "+main.bank.unleash_road.len()+" stations");
 		{
 		for (local i=0; i < main.bank.unleash_road.len(); i++)
 			{
 			local sta = cStation.Load(main.bank.unleash_road[i]);
 			local valid = (sta != false);
-			if (!valid)	{ i++; AISign.BuildSign(main.bank.unleash_road[i], "D"); continue; }
+			if (!valid)	{ i++; continue; }
 
 			local depot = main.bank.unleash_road[i+1]; i++;
 			sta.s_Depot = depot;
@@ -387,7 +388,6 @@ function cLoader::LoadSaveGame()
 				}
 			}
 		}
-	cRoute.RouteRebuildIndex();
 	RailFollower.FindRailOwner();
 }
 
@@ -406,7 +406,8 @@ function cLoader::LoadingGame()
 	foreach (veh, dummy in planelist)	AIGroup.MoveVehicle(cRoute.VirtualAirGroup[1],veh);
 	AIGroup.DeleteGroup(INSTANCE.main.bank.mincash);
 	AIGroup.DeleteGroup(TwelveMonth);
-	local trlist=AIVehicleList();
+	cEngineLib.LearnEngineFromVehicle(-1, AIVehicle.VT_INVALID);
+	//local trlist=AIVehicleList();
 	//try
 	//{
 	if (INSTANCE.main.carrier.vehicle_cash < 170)	cLoader.Load169();

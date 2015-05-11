@@ -80,7 +80,7 @@ function cTrack::RoadCleaner(targetTile, stationID = -1)
 	if (many.IsEmpty())	{ return true; }
 	if (!DictatorAI.GetSetting("keep_road"))	{ return false; }
 	local success = true;
-	local voisin=[AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0)]; // SE, NW, SW, NE
+	local voisin = [AIMap.GetTileIndex(0,1), AIMap.GetTileIndex(0,-1), AIMap.GetTileIndex(1,0), AIMap.GetTileIndex(-1,0)]; // SE, NW, SW, NE
 	foreach (tile, dummy in many)
 		{
 		local looper = cLooper();
@@ -270,7 +270,7 @@ function cTrack::CheckCrossingRoad(tracklist, newtracktype)
 		}
 	test_mode = null;
 	if (tile_list.IsEmpty())	return true;
-	local voisin = [AITile.GetTileIndex(1, 0), AITile.GetTileIndex(0, -1), AITile.GetTileIndex(-1, 0), AITile.GetTileIndex(0, 1)];
+	local voisin = [AIMap.GetTileIndex(1, 0), AIMap.GetTileIndex(0, -1), AIMap.GetTileIndex(-1, 0), AIMap.GetTileIndex(0, 1)];
 	foreach (tile, _ in tile_list)
 		// if we at least remove enough of the road it will not be seen by HasTransportType anymore, and rail convertion works on non full road
 		foreach (voisins in voisin)	AIRoad.RemoveRoad(tile, tile+voisins); // try to remove them
@@ -291,8 +291,11 @@ function cTrack::ConvertRailType(tile, newrt)
 		local error = AIError.GetLastError();
 		if (error == AIError.ERR_NONE)	{ return 1; }
 		if (error == AIError.ERR_NOT_ENOUGH_CASH)	{ return 0; }
-		if (error == AIError.ERR_RAILTYPE_DISALLOWS_CROSSING)	{ return 0; }
+		if (error == AIRail.ERR_RAILTYPE_DISALLOWS_CROSSING)	{ return 0; }
 		DError("ConvertRailType fail with error="+error,1);
+		AISign.BuildSign(tile, "EE");
+	print("pre: tile="+AIMap.IsValidTile(tile)+" rail="+AIRail.IsRailTypeAvailable(newrt)+" "+cEngine.GetRailTrackName(newrt));
+		AIController.Break("error : "+AIRail.ConvertRailType(tile, tile, newrt)+AIError.GetLastErrorString());
 		return -1;
 		}
 	return 1;

@@ -28,7 +28,7 @@ foreach (cargo, dummy in cargotype)
 function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 // check if we can add another vehicle at the start/end station of that route
 {
-	local chem=cRoute.Load(roadidx);
+	local chem=cRoute.LoadRoute(roadidx);
 	if (!chem) return 0;
 	chem.RouteUpdateVehicle();
 	local thatstation=null;
@@ -148,7 +148,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 function cCarrier::GetVehicle(routeidx)
 // return the vehicle we will pickup if we build a vehicle for that route
 {
-	local road=cRoute.Load(routeidx);
+	local road=cRoute.LoadRoute(routeidx);
 	if (!road)	return null;
 	switch (road.VehicleType)
 		{
@@ -171,7 +171,7 @@ function cCarrier::GetEngineEfficiency(engine, cargoID)
 // engine = enginetype to check
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
 {
-local price=cEngine.GetPrice(engine, cargoID);
+local price = AIEngine.GetPrice(engine);
 local capacity=cEngine.GetCapacity(engine, cargoID);
 local lifetime=AIEngine.GetMaxAge(engine);
 local runningcost=AIEngine.GetRunningCost(engine);
@@ -188,7 +188,7 @@ function cCarrier::GetEngineRawEfficiency(engine, cargoID, fast)
 // if fast=true try to get the fastest engine even if capacity is a bit lower than another
 // return an index, the smallest = the better of ratio cargo/runningcost+cost of engine
 {
-local price=cEngine.GetPrice(engine, cargoID);
+local price=AIEngine.GetPrice(engine);
 local capacity=cEngine.GetCapacity(engine, cargoID);
 local speed=AIEngine.GetMaxSpeed(engine);
 local lifetime=AIEngine.GetMaxAge(engine);
@@ -206,7 +206,7 @@ function cCarrier::GetEngineLocoEfficiency(engine, cargoID, cheap)
 // if cheap=true return the best ratio the loco have for the best ratio prize/efficiency, if false just the best engine without any costs influence
 // return an index, the smallest = the better
 {
-	local price=cEngineLib.GetPrice(engine, cargoID);
+	local price=AIEngine.GetPrice(engine);
 	local power=AIEngine.GetPower(engine);
 	local speed=AIEngine.GetMaxSpeed(engine);
 	local lifetime=AIEngine.GetMaxAge(engine);
@@ -254,10 +254,10 @@ function cCarrier::CheckOneVehicleOrGroup(vehID, doGroup)
 // doGroup: if true, we will add all the vehicles that belong to the vehicleID group
 {
 	if (!AIVehicle.IsValidVehicle(vehID))	return false;
-	local vehList=AIList();
-	local vehGroup=AIVehicle.GetGroupID(vehID);
+	local vehList = AIList();
+	local vehGroup = AIVehicle.GetGroupID(vehID);
 	if (doGroup)	vehList.AddList(AIVehicleList_Group(vehGroup));
-	if (vehList.IsEmpty())	vehList.AddItem(vehID,0);
+	vehList.AddItem(vehID,0);
 	foreach (vehicle, dummy in vehList)
 		cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
 }
@@ -266,14 +266,16 @@ function cCarrier::CheckOneVehicleOfGroup(doGroup)
 // Add one vehicle of each vehicle groups we own to maintenance check
 // doGroup: true to also do the whole group add, this mean all vehicles we own
 {
-	local allgroup=AIGroupList();
+	local allgroup = AIGroupList();
 	foreach (groupID, dummy in allgroup)
 		{
-		local vehlist=AIVehicleList_Group(groupID);
-		vehlist.Valuate(AIVehicle.GetAge);
-		vehlist.Sort(AIList.SORT_BY_VALUE,false);
-		if (!vehlist.IsEmpty())	cCarrier.CheckOneVehicleOrGroup(vehlist.Begin(),doGroup);
-		local pause = cLooper();
+		local vehlist = AIVehicleList_Group(groupID);
+		if (!doGroup)	{
+						vehlist.Valuate(AIVehicle.GetAge);
+						vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
+						vehlist.KeepTop(1);
+						}
+		foreach (veh, _ in vehlist)	cCarrier.MaintenancePool.push(veh);
 		}
 }
 
@@ -376,21 +378,43 @@ function cCarrier::VehicleFilterAir(vehlist, object)
 
 function cCarrier::VehicleFilterTrain(vehlist, object)
 {
+	//print("before list "+vehlist.Count());
+//    if (!INSTANCE.main.bank.unleash_road)	{ vehlist.Valuate(cBanker.CanBuyThat); vehlist.KeepValue(1); }
+print("trainfilter: engine="+object.engine_id+" cargo="+cCargo.GetCargoLabel(object.cargo_id)+" rt="+object.engine_roadtype+" bypass="+object.bypass+" ename="+cEngineLib.EngineToName(object.engine_id));
 	cEngineLib.EngineFilter(vehlist, object.cargo_id, object.engine_roadtype, object.engine_id, object.bypass);
+	//print("after filter "+vehlist.Count()+" cargo="+object.cargo_id+" rt="+object.engine_roadtype+" engine="+cEngine.GetEngineName(object.engine_id)+" bypass="+object.bypass);
 	if (AIEngine.IsWagon(vehlist.Begin()))
 			{
 			vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
-			vehlist.Sort(AIList.SORT_BY_VALUE, false);
+			vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+            local i = 0;
+            foreach(item, value in vehlist)
+					{
+					print("trainfilter: wagon = "+AIEngine.GetName(item)+" value="+value);
+					i++;
+					if (i == 2) break;
+					}
 			}
 	else	{
+          //  print("list size: "+vehlist.Count());
+            if (vehlist.IsEmpty())	return;
 			vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
-			vehlist.Sort(AIList.SORT_BY_VALUE, true);
+			vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+			cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, 1);
+			cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, object.engine_roadtype + 10);
+           // if (!INSTANCE.main.bank.unleash_road)	{ vehlist.Valuate(AIEngine.GetPrice); /*vehlist.KeepBelowValue(AICompany.GetBankBalance(AICompany.COMPANY_SELF));*/ print("vehlist after moeny="+vehlist.Count()); }
+		//	vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
+			//vehlist.Sort(AIList.SORT_BY_VALUE, true);
 			if (!vehlist.IsEmpty())
 				{
-				if (object.depot == -1)	cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, 1);
-				vehlist.Valuate(cCarrier.GetEngineLocoEfficiency, object.cargo_id, !INSTANCE.main.bank.unleash_road);
-				vehlist.Sort(AIList.SORT_BY_VALUE, true);
-				cEngine.IsEngineAtTop(vehlist.Begin(), object.cargo_id, object.engine_roadtype + 10);
+               // print("FILTER: first: "+vehlist.Begin()+" "+AIEngine.GetName(vehlist.Begin())+" cost: "+AIEngine.GetPrice(vehlist.Begin())+" score: "+vehlist.GetValue(vehlist.Begin()));
+               local i = 0;
+               foreach(item, value in vehlist)
+						{
+						print("trainfilter: train = "+AIEngine.GetName(item)+" value="+value);
+						i++;
+						if (i == 2) break;
+						}
 				}
 			}
 }
@@ -409,6 +433,7 @@ function cCarrier::PriorityGroup(gid)
     if (type == AIVehicle.VT_RAIL)  return 100;
     if (type == AIVehicle.VT_ROAD)  return 30;
     if (type == AIVehicle.VT_AIR)   return 60;
+    if (type == AIVehicle.VT_WATER)	return 50;
     return 0;
 }
 
@@ -417,18 +442,14 @@ function cCarrier::Lower_VehicleWish(gid, amount)
 {
     if (!INSTANCE.main.carrier.vehicle_wishlist.HasItem(gid))   return;
     local value = INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid);
-    local x = 0;
-    if (value > 1000)   { x = 1000; }
     value -= amount;
-    if (value <= x) { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); return; }
+    if (value <= 1000) { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); return; }
     INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, value);
 }
 
 function cCarrier::Process_VehicleWish()
 // buy vehicle need by routes
 {
-	INSTANCE.main.carrier.highcostAircraft = 0;
-    INSTANCE.main.carrier.highcostTrain = 0;
     local uid, engine, gtype;
     local cleanList = AIList();
     cleanList.AddList(INSTANCE.main.carrier.vehicle_wishlist);
@@ -447,7 +468,7 @@ function cCarrier::Process_VehicleWish()
         foreach (gid, amount in cleanList)
             {
             local uid = cRoute.GroupIndexer.GetValue(gid);
-            local r = cRoute.Load(uid);
+            local r = cRoute.LoadRoute(uid);
             if (!r)	{ continue; }
             DInfo(r.Name+" Need: "+INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid),1);
             }
@@ -457,7 +478,7 @@ function cCarrier::Process_VehicleWish()
     foreach (gid, _ in cleanList)
         {
         uid = cRoute.GroupIndexer.GetValue(gid);
-        local r = cRoute.Load(uid);
+        local r = cRoute.LoadRoute(uid);
         if (!r || r.Status != RouteStatus.WORKING || !AIGroup.IsValidGroup(gid))
 			{
 			INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid);
@@ -469,16 +490,17 @@ function cCarrier::Process_VehicleWish()
         if (amount == 0 || amount == 1000)    { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); continue; }
         if (engine == null || engine == -1) { continue; }
         if (typeof(engine) == "array")
-            {
-            if (engine[0] == -1)    { continue; }
-            engine = engine[1];
-            }
-        local price = cEngineLib.GetPrice(engine);
+				{
+				if (engine[0] == -1)	continue;
+				engine = engine[1];
+				}
+        local price = AIEngine.GetPrice(engine);
         local aircraft = false;
         if (amount < 1000)
 				{
                 INSTANCE.main.carrier.vehicle_cash += (price * amount);
-                INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, 1000 + amount);
+                amount += 1000;
+                INSTANCE.main.carrier.vehicle_wishlist.SetValue(gid, amount);
                 }
         local creation = null;
         switch  (gtype)
@@ -489,8 +511,8 @@ function cCarrier::Process_VehicleWish()
                 break;
                 case    AIVehicle.VT_RAIL:
                     if (cCarrier.IsTrainRouteBusy(uid)) { continue; }
-                    cCarrier.AddWagon(uid, (amount-1000));
-                    cCarrier.Lower_VehicleWish(gid, (amount-1000));
+                    cCarrier.AddWagon(uid, (amount - 1000));
+                    cCarrier.Lower_VehicleWish(gid, (amount - 1000));
                 continue;
                 case    AIVehicle.VT_ROAD:
                     creation = cCarrier.CreateRoadVehicle;
