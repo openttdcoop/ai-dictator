@@ -605,10 +605,10 @@ function cRoute::RouteUndoableFreeOfVehicle(uid)
 			vehlist = AIVehicleList_Group(route.GroupID);
 			foreach (veh, _ in vehlist)
 				{
-				if (!cEngineLib.VehicleIsGoingToDepot(veh))
+				if (!cEngineLib.VehicleIsGoingToStopInDepot(veh))
 					{
 					cCarrier.ToDepotList.RemoveItem(veh);
-					cCarrier.VehicleOrdersReset(veh);
+					cEngineLib.VehicleOrderClear(veh);
 					cCarrier.VehicleSendToDepot(veh, DepotAction.REMOVEROUTE);
 					}
 				}

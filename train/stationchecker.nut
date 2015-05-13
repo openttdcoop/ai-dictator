@@ -492,7 +492,7 @@ function cBuilder::RailStationPhaseSignalBuilder(road)
 	local dstDepot = cRoute.GetDepot(road.UID, 2);
 	foreach (vehicle, location in vehlist)
 		{
-        if (location == srcDepot || location == dstDepot)	{ cCarrier.TrainExitDepot(vehicle); }
+        if (location == srcDepot || location == dstDepot)	{ cCarrier.VehicleExitDepot(vehicle); }
 		}
 	return success;
 	}

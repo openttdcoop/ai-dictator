@@ -45,10 +45,11 @@ class cStation extends cClass
 {
 	static	stationdatabase = {};
 	static	VirtualAirports = AIList();	// stations in the air network as item, value=towns
+	static	depotlist = []; // saved
 	static	function GetStationObject(stationID)
-	{
-	return stationID in cStation.stationdatabase ? cStation.stationdatabase[stationID] : null;
-	}
+						{
+						return stationID in cStation.stationdatabase ? cStation.stationdatabase[stationID] : null;
+						}
 
 s_ID		    	= null;	// id of station
 s_Type		        = null;	// AIStation.StationType
@@ -103,7 +104,57 @@ constructor()
 	}
 }
 
-// public
+function cStation::Load(_stationID)
+// Get a station object
+	{
+	local thatstation = cStation.GetStationObject(_stationID);
+	if (thatstation == null)	{ DWarn("Invalid stationID : "+_stationID+" Cannot get object",1); return false; }
+	if (!AIStation.IsValidStation(thatstation.s_ID))
+			{
+			DWarn("Station #"+_stationID+" doesn't exist, but is still in base : ",1);
+			}
+	return thatstation;
+	}
+
+function cStation::SetStationDepot(stationID, depotloc)
+{
+	if (!AIStation.IsValidStation(stationID))	return false;
+	if (!cEngineLib.IsDepotTile(depotloc))	return false;
+	local depot = cStation.GetStationDepotIndex(stationID);
+	if (depot == -1)	{ cStation.depotlist.push(stationID); cStation.depotlist.push(depotloc); }
+				else	cStation.depotlist[depot] = depotloc;
+	local station = cStation.Load(stationID);
+	station.s_Depot = depot;
+}
+
+function cStation::GetDepot(stationID)
+{
+	local depot = cStation.DepotBase_GetDepotIndex(stationID);
+	if (depot != -1)	depot = cStation.depotlist[depot];
+	return depot;
+}
+
+function cStation::DepotBase_GetDepotIndex(stationID)
+{
+	for (local i = 0; i < cStation.depotlist; i++)
+		{
+		if (cStation.depotlist[i] == stationID)	return i+1;
+		i++;
+		}
+	return -1;
+}
+
+function cStation::DepotBase_ClearBadStation()
+{
+	local n = [];
+	for (local i = 0; i < cStation.depotlist.len(); i++)
+		{
+		if (AIStation.IsValidStation(cStation.depotlist[i]))	{ n.push(cStation.depotlist[i]; n.push(cStation.depotlist[i+1]); }
+		i++;
+		}
+	cStation.depotlist.clear();
+	cStation.depotlist.extend(n);
+}
 
 function cStation::GetStationName(_stationID)
 // Return station name
@@ -113,17 +164,6 @@ function cStation::GetStationName(_stationID)
 	return thatstation.s_Name;
 	}
 
-function cStation::Load(_stationID)
-// Get a station object
-	{
-	local thatstation=cStation.GetStationObject(_stationID);
-	if (thatstation == null)	{ DWarn("Invalid stationID : "+_stationID+" Cannot get object",1); return false; }
-	if (!AIStation.IsValidStation(thatstation.s_ID))
-			{
-			DWarn("Invalid station in base : "+thatstation.s_ID,1);
-			}
-	return thatstation;
-	}
 
 function cStation::Save()
 // Save the station in the database

@@ -130,7 +130,6 @@ function RailFollower::FindRailOwner()
 		train_list.Valuate(AIVehicle.GetState);
 		foreach (trains, state in train_list)
 			{
-			print("addtrain "+AIVehicle.GetName(trains));
 			cRoute.AddTrain(uid, trains);
             // We restart all trains here
 			if (state == AIVehicle.VS_IN_DEPOT || state == AIVehicle.VS_STOPPED)	cCarrier.StartVehicle(trains);
@@ -222,7 +221,7 @@ function RailFollower::FindRailOwner()
 					foreach (trains, _ in train_list)
 						{
 						// We must remove orders so they stop trying to reach a station they couldn't reach and goes to depot instead
-						cCarrier.VehicleOrdersReset(trains);
+						cEngineLib.VehicleOrderClear(trains);
 						cCarrier.VehicleSendToDepot(trains, DepotAction.LINEUPGRADE);
 						}
 					}
@@ -416,6 +415,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 		}
 	DInfo("We have upgrade route "+road.Name+" to use railtype "+cEngine.GetRailTrackName(new_railtype),0);
     print("wagon_lost="+wagon_lost.len());
+	cCarrier.Lower_VehicleWish(road.GroupID, -9000); // kill any try to add wagons after we upgrade
 	foreach (store in wagon_lost)
 		{
 		foreach (item, value in store)	print("item="+item+" value="+value);

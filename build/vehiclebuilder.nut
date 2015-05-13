@@ -511,8 +511,7 @@ function cCarrier::Process_VehicleWish()
                 break;
                 case    AIVehicle.VT_RAIL:
                     if (cCarrier.IsTrainRouteBusy(uid)) { continue; }
-                    cCarrier.AddWagon(uid, (amount - 1000));
-                    cCarrier.Lower_VehicleWish(gid, (amount - 1000));
+                    cCarrier.AddWagon(uid);
                 continue;
                 case    AIVehicle.VT_ROAD:
                     creation = cCarrier.CreateRoadVehicle;

@@ -50,7 +50,7 @@ function cCarrier::AirNetworkOrdersHandler()
 			if (numorders != cCarrier.VirtualAirRoute.len())
 					{
 					AIOrder.UnshareOrders(passrabbit);
-					cCarrier.VehicleOrdersReset(passrabbit);
+					cEngineLib.VehicleOrderClear(passrabbit);
 					numorders = 0;
 					for (local i=0; i < cCarrier.VirtualAirRoute.len(); i++)
 							{
@@ -89,7 +89,7 @@ function cCarrier::AirNetworkOrdersHandler()
 			if (numorders != cCarrier.VirtualAirRoute.len())
 					{
 					AIOrder.UnshareOrders(mailrabbit);
-					cCarrier.VehicleOrdersReset(mailrabbit);
+					cEngineLib.VehicleOrderClear(mailrabbit);
 					numorders = 0;
 					for (local i=0; i < cCarrier.VirtualAirRoute.len(); i++)
 							{
@@ -113,17 +113,6 @@ function cCarrier::AirNetworkOrdersHandler()
 			}
 	}
 
-function cCarrier::VehicleOrdersReset(veh)
-// Remove all orders for veh
-	{
-	AIOrder.UnshareOrders(veh); // network use share orders
-	while (AIOrder.GetOrderCount(veh) > 0)
-			{
-			if (!AIOrder.RemoveOrder(veh, AIOrder.ResolveOrderPosition(veh, 0)))
-					{ DError("Cannot remove orders ",2); break; }
-			}
-	}
-
 function cCarrier::RebuildGroupOrders(groupID, force)
 {
 	if (groupID == null)	return false;
@@ -137,14 +126,14 @@ function cCarrier::RebuildGroupOrders(groupID, force)
 function cCarrier::VehicleFindDestinationInOrders(vehicle, stationID)
 // browse vehicle orders and return index of order that target that stationID
 	{
-	local numorders=AIOrder.GetOrderCount(vehicle);
-	if (numorders==0) { return -1; }
+	local numorders = AIOrder.GetOrderCount(vehicle);
+	if (numorders == 0) { return -1; }
 	for (local j=0; j < numorders; j++)
 			{
-			local tiletarget=AIOrder.GetOrderDestination(vehicle,AIOrder.ResolveOrderPosition(vehicle, j));
-			if (!AITile.IsStationTile(tiletarget)) { continue; }
-			local targetID=AIStation.GetStationID(tiletarget);
-			if (targetID == stationID)	{ return j; }
+			local tiletarget = AIOrder.GetOrderDestination(vehicle,AIOrder.ResolveOrderPosition(vehicle, j));
+			if (!AITile.IsStationTile(tiletarget)) continue;
+			local targetID = AIStation.GetStationID(tiletarget);
+			if (targetID == stationID)	return j;
 			}
 	return -1;
 	}
@@ -177,7 +166,8 @@ function cCarrier::TrainSetDepotOrder(veh)
 	if (!road)
 			{
 			DError("Gonna be a hard time, i don't know who own that train "+cCarrier.GetVehicleName(veh),1);
-			if (AIVehicle.SendVehicleToDepot(veh))	{ cCarrier.ToDepotList.AddItem(veh, DepotAction.SELL); }
+			if (!cEngineLib.VehicleIsGoingToStopInDepot(veh))	AIVehicle.SendVehicleToDepot(veh);
+			if (cEngineLib.VehicleIsGoingToStopInDepot(veh))	cCarrier.ToDepotList.AddItem(veh, DepotAction.SELL);
 			return false;
 			}
 	local srcDepot = cRoute.GetDepot(idx, 1);
@@ -214,7 +204,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 			}
 	local prevDest=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 	AIOrder.UnshareOrders(veh);
-	cCarrier.VehicleOrdersReset(veh);
+	cEngineLib.VehicleOrderClear(veh);
 	if (homedepot == null || !cStation.IsDepot(homedepot))
 			{
 			local vehloc=AIVehicle.GetLocation(veh);
@@ -346,11 +336,11 @@ function cCarrier::VehicleSetOrders(vehicle_id)
 // This will build orders for the vehicle
 {
 	local uid = cCarrier.VehicleFindRouteIndex(vehicle_id);
-	if (uid == null)	{ DError("Cannot find the route that vehicle is on "+cCarrier.VehicleGetName(vehicle_id),1); return false; }
+	if (uid == null)	{ DError("Cannot find the route that vehicle is on "+cCarrier.GetVehicleName(vehicle_id),1); return false; }
 	local road = cRoute.LoadRoute(uid, true);
 	if (!road || road.GroupID == null || !AIGroup.IsValidGroup(road.GroupID))	return false;
-	cCarrier.VehicleOrdersReset(vehicle_id);
 	local srcplace, dstplace, oneorder, twoorder;
+	AIOrder.UnshareOrders(vehicle_id);
 	switch (road.VehicleType)
 			{
 			case AIVehicle.VT_ROAD:
@@ -396,10 +386,12 @@ function cCarrier::VehicleSetOrders(vehicle_id)
 				break;
 			}
 	if (srcplace == -1 || dstplace == -1) return false;
+	for (local j = AIOrder.GetOrderCount(vehicle_id); j >= 0; j--)	if (AIOrder.IsGotoDepotOrder(vehicle_id, j))	AIOrder.RemoveOrder(vehicle_id, j);
 	DInfo("Setting orders for "+cCarrier.GetVehicleName(vehicle_id)+" twoway="+road.Twoway,2);
-	if (!AIOrder.AppendOrder(vehicle_id, srcplace, oneorder))
-					{ DError("First order refuse : " + cMisc.Locate(srcplace),2); }
-	if (!AIOrder.AppendOrder(vehicle_id, dstplace, twoorder))
-					{ DError("Second order refuse : " + cMisc.Locate(dstplace),2); }
+	if (AIOrder.GetOrderCount(vehicle_id) != 2)	cEngineLib.VehicleOrderClear(vehicle_id);
+	if (AIOrder.GetOrderDestination(vehicle_id, 0) != srcplace)
+        if (!AIOrder.AppendOrder(vehicle_id, srcplace, oneorder))	DError("First order refuse : " + cMisc.Locate(srcplace),2);
+	if (AIOrder.GetOrderDestination(vehicle_id, 1) != dstplace)
+		if (!AIOrder.AppendOrder(vehicle_id, dstplace, twoorder))	DError("Second order refuse : " + cMisc.Locate(dstplace),2);
 	return true;
 }

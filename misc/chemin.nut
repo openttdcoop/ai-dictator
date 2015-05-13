@@ -137,7 +137,7 @@ function cRoute::VirtualAirNetworkUpdate()
 						if (vehnumber % 6 == 0)	{ thatnetwork=cRoute.GetVirtualAirMailGroup(); }
 										else	{ thatnetwork=cRoute.GetVirtualAirPassengerGroup(); }
 						AIGroup.MoveVehicle(thatnetwork, vehicle);
-						cCarrier.VehicleOrdersReset(vehicle); // reset order, force order change
+						cEngineLib.VehicleOrderClear(vehicle); // reset order, force order change
 						vehnumber++;
 						}
 					}

@@ -284,14 +284,27 @@ function cCarrier::VehicleSendToDepot_GetParam(reason)
 function cCarrier::VehicleSendToDepot(veh,reason)
 // send a vehicle to depot
 {
+print("got going to depot query!");
 	if (!AIVehicle.IsValidVehicle(veh))	return false;
 	if (cTrain.IsTrainStuckAtSignal(veh))	cCarrier.HandleTrainStuck(veh);
-	if (cEngineLib.VehicleIsGoingToDepot(veh))	return false;
+	//if (cEngineLib.VehicleIsGoingToStopInDepot(veh))	return false;
 	local real_reason = cCarrier.VehicleSendToDepot_GetReason(reason);
 	if (cCarrier.ToDepotList.HasItem(veh))
 		{
-		if (reason < DepotAction.LINEUPGRADE)	return false;
-							// ignore order if we already have one, but not ignoring LINEUPGRADE, SIGNALUPGRADE or WAITING to crush previous one
+		local no = false;
+		local r = cCarrier.ToDepotList.GetValue(veh);
+		local rr = cCarrier.VehicleSendToDepot_GetReason(r);
+		// noboy can crush REMOVEROUTE
+		if (rr == DepotAction.REMOVEROUTE)	no = true;
+		// only REMOVEROUTE can crush SIGNALUPGRADE
+		if (!no && rr == DepotAction.SIGNALUPGRADE && real_reason != DepotAction.REMOVEROUTE)	no = true;
+		// only REMOVEROUTE or SIGNALUPGRADE can crush LINEUPGRADE
+		if (!no && rr == DepotAction.LINEUPGRADE && (real_reason != DepotAction.REMOVEROUTE && real_reason != DepotAction.SIGNALUPGRADE))	no = true;
+		if (no)	{
+				DInfo("Refuse to change depot order for " + cCarrier.GetVehicleName(veh)+" because it have one that is more critic", 2);
+				return false;
+				}
+		cCarrier.ToDepotList.RemoveItem(veh);
 		}
 	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)
 				cCarrier.TrainSetDepotOrder(veh);
@@ -392,6 +405,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 	if (betterEngine == -1)
 		{
 		DWarn("That vehicle have its engine already at top",1);
+        betterEngine = AIVehicle.GetEngineType(vehID);
 		}
 	local homedepot=cRoute.GetDepot(idx);
 	if (homedepot==-1)	homedepot=AIVehicle.GetLocation(vehID);
@@ -434,6 +448,7 @@ function cCarrier::VehicleUpgradeEngine(vehID)
 function cCarrier::VehicleMaintenance_Orders(vehID)
 // try to repair orders for a vehicle, else send it to depot
 {
+	if (cEngineLib.VehicleIsGoingToStopInDepot(vehID))	return; // ignore it
 	local numorders=AIOrder.GetOrderCount(vehID);
 	local name=cCarrier.GetVehicleName(vehID);
 	for (local z=AIOrder.GetOrderCount(vehID)-1; z >=0; z--)
@@ -457,6 +472,11 @@ function cCarrier::VehicleMaintenance_Orders(vehID)
 		DInfo("-> Vehicle "+name+" still have too few orders, sending it to depot",0);
 		cCarrier.VehicleSendToDepot(vehID, DepotAction.SELL);
 		cCarrier.CheckOneVehicleOrGroup(vehID, true); // push all vehicles to get a check
+		if (cCarrier.ToDepotList.HasItem(vehID) && !cEngineLib.VehicleIsGoingToStopInDepot(vehID))
+				{
+				if (AIVehicle.GetVehicleType(vehID) == AIVehicle.VT_RAIL)	cCarrier.TrainSetDepotOrder(vehID);
+																	else	cCarrier.VehicleSetDepotOrder(vehID);
+				}
 		}
 }
 
@@ -601,13 +621,14 @@ function cCarrier::VehicleSell(veh, recordit)
 {
 	DInfo("Selling Vehicle "+cCarrier.GetVehicleName(veh),0);
 	local uid = cCarrier.VehicleFindRouteIndex(veh);
-	local road = cRoute.LoadRoute(uid);
+	local road = cRoute.LoadRoute(uid, true);
 	local vehvalue = AIVehicle.GetCurrentValue(veh);
 	local vehtype = AIVehicle.GetVehicleType(veh);
 	INSTANCE.main.carrier.vehicle_cash -= vehvalue;
 	if (INSTANCE.main.carrier.vehicle_cash < 0)	INSTANCE.main.carrier.vehicle_cash = 0;
 	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	cTrain.DeleteVehicle(veh);	// must be call before selling the vehicle
 	cEngine.RabbitUnset(veh);
+    cCarrier.ToDepotList.RemoveItem(veh);
 	AIVehicle.SellVehicle(veh);
 	if (!road) return;
 	road.RouteUpdateVehicle();
@@ -657,11 +678,10 @@ foreach (i, dummy in tlist)
 	local parameter=0;
 	local uid=0;
 	local name = cCarrier.GetVehicleName(i);
-	cCarrier.VehicleOrdersReset(i);
+	//cEngineLib.VehicleOrderClear(i);
 	if (cCarrier.ToDepotList.HasItem(i))
 			{
-			reason=cCarrier.ToDepotList.GetValue(i);
-			cCarrier.ToDepotList.RemoveItem(i);
+			reason = cCarrier.ToDepotList.GetValue(i);
 			parameter = cCarrier.VehicleSendToDepot_GetParam(reason);
 			reason = cCarrier.VehicleSendToDepot_GetReason(reason);
 			if (reason == DepotAction.ADDWAGON || reason == DepotAction.REMOVEWAGON)
@@ -680,6 +700,7 @@ foreach (i, dummy in tlist)
 							uid = cCarrier.VehicleFindRouteIndex(i);
 							if (uid == null)	invalid = true;
 								else	{
+								print("loading uid="+uid);
 										uid = cRoute.LoadRoute(uid);
 										if (!uid)	invalid=true;
 										}
@@ -694,7 +715,7 @@ foreach (i, dummy in tlist)
 			if (AIVehicle.GetVehicleType(i)==AIVehicle.VT_RAIL)
 						{
 						DInfo("I don't know the reason why "+name+" is at depot, restarting it",1);
-						cCarrier.TrainExitDepot(i);
+						cCarrier.VehicleExitDepot(i);
 						continue;
 						}
 				else	DInfo("I don't know the reason why "+name+" is at depot, selling it",1);
@@ -723,11 +744,11 @@ foreach (i, dummy in tlist)
 		break;
 		case	DepotAction.ADDWAGON:
 			DInfo("Vehicle "+name+" is waiting at depot to get "+parameter+" wagons",1);
-			cCarrier.AddWagon(uid, parameter, i);
+			cCarrier.AddWagon(uid);
 		break;
 		case	DepotAction.REMOVEWAGON:
 			DInfo("Vehicle "+name+" is waiting at depot to remove "+parameter+" wagons",1);
-			cCarrier.RemoveWagon(i, parameter);
+			cCarrier.AddWagon(uid);
 		break;
 		case	DepotAction.LINEUPGRADE:
 			cCarrier.ToDepotList.AddItem(i, DepotAction.LINEUPGRADE);
@@ -749,40 +770,46 @@ foreach (i, dummy in tlist)
 			DInfo("Vehicle "+name+" is waiting at depot for "+parameter+" times",1);
 			parameter--;
 			if (parameter <= 0)
-				{
-				DInfo("Vehicle "+name+" has wait enough, releasing it to the wild",1);
-				cCarrier.StartVehicle(i);
-				}
-			else	cCarrier.ToDepotList.AddItem(i, DepotAction.WAITING + parameter);
+					{
+					DInfo("Vehicle "+name+" has wait enough, releasing it to the wild",1);
+					cCarrier.VehicleExitDepot(i);
+					}
+			else	cCarrier.ToDepotList.SetValue(i, DepotAction.WAITING + parameter);
 		break;
 		case	DepotAction.SIGNALUPGRADE:
 			local vehlist = AIVehicleList_Station(parameter);
 			vehlist.Valuate(AIVehicle.GetState);
 			vehlist.RemoveValue(AIVehicle.VS_IN_DEPOT);
-			if (vehlist.IsEmpty())	{
+			if (vehlist.IsEmpty())
+							{
 							// don't care result, it's just to let the station build its signals
 							cBuilder.RailStationGrow(uid.TargetStation.s_ID, uid.Target_RailEntry, false);
 							// but we must add a non taker train, and do it to the target station to prevent station growing while making that
 							// as trains are currently stopped waiting for the signal to be made, it will cause hell if station try to grow and
 							// so cannot remove depot
 							}
-						else	{
-							DInfo("Waiting "+vehlist.Count()+" more vehicles to stop at depot",1);
-							cCarrier.ToDepotList.AddItem(i, DepotAction.WAITING+50); // making it wait to not get stuck forever
-							}
 		break;
 		}
 	}
 }
 
-function cCarrier::TrainExitDepot(vehID)
+function cCarrier::VehicleExitDepot(vehID)
 // release a train that was in depot, setting its order, starting it and moving it to the best station
 {
-	if (!AIVehicle.GetVehicleType(vehID) == AIVehicle.VT_RAIL || !AIVehicle.GetState(vehID) == AIVehicle.VS_IN_DEPOT) return;
-	local loaded=cCarrier.VehicleGetCargoLoad(vehID);
-	cCarrier.VehicleSetOrders(vehID);
-	if (loaded > 30)	AIOrder.SkipToOrder(vehID, 1);
-				else	AIOrder.SkipToOrder(vehID, 0);
+	local uid = cCarrier.VehicleFindRouteIndex(vehID);
+	local road = false;
+	local get_index = -1;
+	if (uid != null)	road = cRoute.LoadRoute(uid);
+	if (road != false)
+			{
+			local veh_loc = AIVehicle.GetLocation(vehID);
+			local destination = road.SourceStation.s_ID;
+			if (AIMap.DistanceManhattan(road.SourceStation.s_Location, veh_loc) > AIMap.DistanceManhattan(road.TargetStation.s_Location, veh_loc))	destination = road.TargetStation.s_ID;
+            cCarrier.VehicleSetOrders(vehID);
+            get_index = cCarrier.VehicleFindDestinationInOrders(vehID, destination);
+            if (get_index == -1)	get_index = 0;
+            AIOrder.SkipToOrder(vehID, get_index);
+            }
 	cCarrier.StartVehicle(vehID);
 	if (cCarrier.ToDepotList.HasItem(vehID))	cCarrier.ToDepotList.RemoveItem(vehID);
 }

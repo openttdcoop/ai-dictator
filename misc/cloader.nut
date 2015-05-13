@@ -424,7 +424,7 @@ function cLoader::LoadingGame()
 		DInfo("Restarting stopped trains",0);
 		foreach (veh, dummy in trlist)
 			{
-			cCarrier.TrainExitDepot(veh);
+			cCarrier.VehicleExitDepot(veh);
 			}
 		}  */
 	//} catch (z)

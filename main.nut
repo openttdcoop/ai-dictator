@@ -43,8 +43,7 @@ enum DepotAction
 	REMOVEWAGON=700,	// to remove wagons
     LINEUPGRADE=1000,	// to upgrade a train route (passing the StationID with it), passing using DepotAction.LINEUPGRADE+StationID
 	SIGNALUPGRADE=5000,	// when a station need build signal on rails (passing the StationID with it)
-	WAITING=9000,		// it's a state send a vehicle to depot and wait x iterations of vehicle in depot check (passing x with it)
-
+	WAITING=9000		// it's a state send a vehicle to depot and wait x iterations of vehicle in depot check (passing x with it)
 }
 
 enum RouteStatus
@@ -187,7 +186,7 @@ function DictatorAI::Start()
 			cBuilder.WeeklyChecks();
 			cBuilder.MonthlyChecks();
 			cJobs.RawJobHandling();
-			cPathfinder.AdvanceAllTasks();
+			//cPathfinder.AdvanceAllTasks();
 			AIController.Sleep(74);
 			cDebug.ClearSigns();
 			}
