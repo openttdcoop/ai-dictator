@@ -40,15 +40,15 @@ function cCarrier::CreateRoadVehicle(roadidx)
 	if (!road)	return false;
 	local engineID = cCarrier.GetRoadVehicle(roadidx);
 	if (engineID == -1)	{ DWarn("Cannot find any road vehicle to transport that cargo "+cCargo.GetCargoLabel(road.CargoID),1); return false; }
-	local homedepot = road.SourceStation.s_Depot;//cRoute.GetDepot(roadidx);
+	local homedepot = cStation.GetStationDepot(road.SourceStation.s_ID);
 	local srcplace = road.SourceStation.s_Location;
 	local dstplace = road.TargetStation.s_Location;
 	local altplace=(road.Twoway && road.VehicleCount > 0 && road.VehicleCount % 2 != 0);
-	if (altplace)   { homedepot = road.TargetStation.s_Depot; }
-	if (!cStation.IsDepot(homedepot))
+	if (altplace)   { homedepot = cStation.GetStationDepot(road.TargetStation.s_ID); }
+	if (!cEngineLib.IsDepotTile(homedepot))
             {
             homedepot = cRoute.GetDepot(roadidx);
-            if (!cStation.IsDepot(homedepot))   { return false; }
+            if (!cEngineLib.IsDepotTile(homedepot))   { return false; }
             }
 	local price=AIEngine.GetPrice(engineID);
 	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, road.CargoID);

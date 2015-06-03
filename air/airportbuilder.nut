@@ -89,7 +89,7 @@ function cBuilder::AirportNeedUpgrade(stationid)
 		if (!result)
 			{
 			AIController.Sleep(40);
-			cCarrier.FreeDepotOfVehicle(station.s_Depot); // try remove aircraft from airport
+			cCarrier.FreeDepotOfVehicle(cStation.GetStationDepot(station.s_ID)); // try remove aircraft from airport
 			}
 		} while (AICompany.GetBankBalance(AICompany.COMPANY_SELF) > 1000 && !result && counter < maxcount);
 	result = cBuilder.BuildAirStation(start, firstroute.UID);
@@ -297,7 +297,7 @@ function cBuilder::BuildAirStation(start, routeID=null)
 						{
 						if (airportUpgrade && !oldAirport_Remove)
 								{
-								cCarrier.FreeDepotOfVehicle(oldAirport.s_Depot);
+								cCarrier.FreeDepotOfVehicle(cStation.GetStationDepot(oldAirport.s_ID));
 								oldAirport_Remove = AIAirport.RemoveAirport(oldAirport.s_Location);
 								DInfo("Removing old airport : "+oldAirport.s_Name,1);
 								if (oldAirport_Remove)	{ break; }
@@ -368,7 +368,6 @@ function cBuilder::BuildAirStation(start, routeID=null)
 				road.SourceStation = road.CreateNewStation(start);
 				if (!cMisc.ValidInstance(road.SourceStation))	return -1;
 				road.SourceStation.s_SubType = -2;
-				road.SourceStation.s_Depot = -1;
 				road.SourceStation.s_Location = heliloc;
 				return road.SourceStation.s_ID;
 				}

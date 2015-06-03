@@ -155,26 +155,25 @@ function DictatorAI::Start()
 			if (main.SCP.IsAllow())	{ main.SCP.Check(); }
 			if (main.bank.canBuild)
 					{
-					if (main.builder.building_route == -1)	{ main.builder.building_route=main.jobs.GetNextJob(); }
+					if (main.builder.building_route == -1)	{ main.builder.building_route = main.jobs.GetNextJob(); }
 					if (main.builder.building_route != -1)
 							{
 							main.builder.DumpTopJobs(); // debug
-							local jobs_obj=cJobs.Load(main.builder.building_route);
-							main.route=cRoute.GetRouteObject(main.builder.building_route);
+							local jobs_obj = cJobs.Load(main.builder.building_route);
+							main.route = cRoute.GetRouteObject(main.builder.building_route);
 							if (main.route == null)
 									{
-									main.route=cRoute();
-									if (!jobs_obj)	{ main.builder.building_route=-1; }
-									else
-											{
-											main.route.CreateNewRoute(main.builder.building_route);
-											DInfo("Creating a new route : "+cRoute.GetRouteName(main.builder.building_route),0);
-											}
+									main.route = cRoute();
+									if (!jobs_obj)	{ main.builder.building_route = -1; }
+											else	{
+													main.route.CreateNewRoute(main.builder.building_route);
+													DInfo("Creating a new route : " + cRoute.GetRouteName(main.builder.building_route), 0);
+													}
 									}
-							else	{ DInfo("Construction of route "+cRoute.GetRouteName(main.builder.building_route)+" is at phase "+main.route.Status,1); }
+							else	{ DInfo("Construction of route " + cRoute.GetRouteName(main.builder.building_route) + " is at phase " + main.route.Status, 1); }
 							if (main.builder.building_route != -1)
 									{
-									main.builder.TryBuildThatRoute();
+									cBuilder.TryBuildThatRoute(main.route);
 									cMisc.checkHQ();
 									}
 							}
@@ -209,37 +208,23 @@ function DictatorAI::Save()
 	// save
 	local table =
 		{
-		stations = null,
+		depots = null,
 		virtualpass = null,
 		virtualmail = null,
 		}
-	local all_stations=[];
-	// stations
-	foreach(obj in cStation.stationdatabase)
-		{
-		if (!AIStation.IsValidStation(obj.s_ID))	{ continue; }
-		all_stations.push(obj.s_ID);
-		all_stations.push(obj.s_Depot);
-		if (obj instanceof cStationRail)
-				{
-				all_stations.push(obj.s_Train[0]); // STATIONBIT
-				all_stations.extend(obj.s_EntrySide);
-				all_stations.extend(obj.s_ExitSide);
-				}
-		}
-	table.stations=all_stations;
-	local netair=cRoute.VirtualAirGroup[0];
-	table.virtualpass=netair;
-	netair=cRoute.VirtualAirGroup[1];
-	table.virtualmail=netair;
-	DInfo("Saving game... "+cRoute.database.len()+" routes, "+cStation.stationdatabase.len()+" stations");
+	table.depots = cStation.depotlist;
+	local netair = cRoute.VirtualAirGroup[0];
+	table.virtualpass = netair;
+	netair = cRoute.VirtualAirGroup[1];
+	table.virtualmail = netair;
+	DInfo("Saving game... ", 0);
 	return table;
 	}
 
 function DictatorAI::Load(version, data)
 	{
-	DInfo("Loading a saved game with DictatorAI version "+version,0);
-	if ("stations" in data) { main.bank.unleash_road=data.stations; }
+	DInfo("Loading a saved game with DictatorAI version " + version, 0);
+	if ("depots" in data) { cStation.depotlist.extend(data.depots); }
 	if ("virtualmail" in data)	{ TwelveMonth=data.virtualmail; }
 	if ("virtualpass" in data)	{ main.bank.mincash=data.virtualpass; }
 	main.carrier.vehicle_cash = version;

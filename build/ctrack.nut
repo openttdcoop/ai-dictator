@@ -61,7 +61,7 @@ function cTrack::BuildTrack_Road(tilefrom, tileto, stationID = -1, full = false)
 	local tiles = AIList();
 	tiles.AddItem(tileto, 0);
 	tiles.AddItem(tilefrom, 0);
-	if (success && stationID != -1)	{ cStation.StationClaimTile(tiles, stationID, -1); }
+	if (success && stationID != -1)	{ cStation.StationClaimTile(tiles, stationID); }
 	return success;
 }
 
@@ -119,14 +119,14 @@ function cTrack::DestroyDepot(tile, stationID = -1)
  *
  */
 {
-	if (!cStation.IsDepot(tile))	{ return false; }
+	if (!cEngineLib.IsDepotTile(tile))	{ return false; }
 	if (!cCarrier.FreeDepotOfVehicle(tile))	{ return false; }
 	if (!cError.ForceAction(AITile.DemolishTile, tile))	{ return false; }
-	if (stationID != -1)	{ cStation.StationReleaseTile(tile, stationID); }
+	if (stationID != -1)	{ cStation.SetStationDepot(stationID, -1); cStation.StationReleaseTile(tile, stationID); }
 	return true;
 }
 
-function cTrack::DropRailHere(railneed, pos, stationID = -1, useEntry = -1)
+function cTrack::DropRailHere(railneed, pos, stationID = -1)
 /** @brief Add a railtrack at position
  *
  * @param railneed The rail track to build. If < 0 (railneed+1) the rail track to clear.
@@ -165,7 +165,7 @@ function cTrack::DropRailHere(railneed, pos, stationID = -1, useEntry = -1)
 						return false;
 					}
 			}
-	if (success && stationID != -1)	{ cStation.StationClaimTile(pos, stationID, useEntry); }
+	if (success && stationID != -1)	{ cStation.StationClaimTile(pos, stationID); }
 	return true;
 }
 
@@ -294,23 +294,162 @@ function cTrack::ConvertRailType(tile, newrt)
 		if (error == AIRail.ERR_RAILTYPE_DISALLOWS_CROSSING)	{ return 0; }
 		DError("ConvertRailType fail with error="+error,1);
 		AISign.BuildSign(tile, "EE");
-	print("pre: tile="+AIMap.IsValidTile(tile)+" rail="+AIRail.IsRailTypeAvailable(newrt)+" "+cEngine.GetRailTrackName(newrt));
-		AIController.Break("error : "+AIRail.ConvertRailType(tile, tile, newrt)+AIError.GetLastErrorString());
 		return -1;
 		}
 	return 1;
 	}
 
-function cTrack::GetRailFromDirection(direction)
+function cTrack::GetRailTrackFromDirection(railtrack, direction)
+// Change the railtrack to the railtrack need when direction is not SW->NE
 {
-	switch (direction)
+	if (direction == DIR_NE)	return railtrack; // we assume build were done with SW->NE direction
+	switch(direction)
 		{
-		case DIR_NE:
-		case DIR_SW:
-			return AIRail.RAILTRACK_NE_SW;
-		case DIR_SE:
-		case DIR_NW:
-			return AIRail.RAILTRACK_NW_SE;
+		case	DIR_SW: // NE -> SW
+			if (railtrack == AIRail.RAILTRACK_NE_SW)	return AIRail.RAILTRACK_NE_SW;
+			if (railtrack == AIRail.RAILTRACK_NW_SE)	return AIRail.RAILTRACK_NW_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_NE)	return AIRail.RAILTRACK_SW_SE; // upper left
+			if (railtrack == AIRail.RAILTRACK_SW_SE)	return AIRail.RAILTRACK_NW_NE; // right
+			if (railtrack == AIRail.RAILTRACK_NW_SW)	return AIRail.RAILTRACK_NE_SE; // left
+			if (railtrack == AIRail.RAILTRACK_NE_SE)	return AIRail.RAILTRACK_NW_SW; // upper right
+		break;
+		case	DIR_SE: // NW -> SE
+			if (railtrack == AIRail.RAILTRACK_NE_SW)	return AIRail.RAILTRACK_NW_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_SE)	return AIRail.RAILTRACK_NE_SW;
+			if (railtrack == AIRail.RAILTRACK_NW_NE)	return AIRail.RAILTRACK_NE_SE;
+			if (railtrack == AIRail.RAILTRACK_SW_SE)	return AIRail.RAILTRACK_NW_SW;
+			if (railtrack == AIRail.RAILTRACK_NW_SW)	return AIRail.RAILTRACK_NW_NE;
+			if (railtrack == AIRail.RAILTRACK_NE_SE)	return AIRail.RAILTRACK_SW_SE;
+
+		break;
+		case	DIR_NW: // SE -> NW
+			if (railtrack == AIRail.RAILTRACK_NE_SW)	return AIRail.RAILTRACK_NW_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_SE)	return AIRail.RAILTRACK_NE_SW;
+			if (railtrack == AIRail.RAILTRACK_NW_NE)	return AIRail.RAILTRACK_NW_SW;
+			if (railtrack == AIRail.RAILTRACK_SW_SE)	return AIRail.RAILTRACK_NE_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_SW)	return AIRail.RAILTRACK_SW_SE;
+			if (railtrack == AIRail.RAILTRACK_NE_SE)	return AIRail.RAILTRACK_NW_NE;
+		break;
 		}
-	return AIRail.RAILTRACK_INVALID;
+	return railtrack;
+}
+
+function cTrack::GetRailTrackFromStationDirection(railtrack, station_direction)
+// Again we assume the station direction is SW->NE
+{
+	if (station_direction == DIR_NE)	return railtrack;
+	switch(station_direction)
+		{
+		case	DIR_SW: // NE -> SW
+			if (railtrack == AIRail.RAILTRACK_NE_SW)	return AIRail.RAILTRACK_NE_SW;
+			if (railtrack == AIRail.RAILTRACK_NW_SE)	return AIRail.RAILTRACK_NW_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_NE)	return AIRail.RAILTRACK_NW_SW;
+			if (railtrack == AIRail.RAILTRACK_SW_SE)	return AIRail.RAILTRACK_NE_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_SW)	return AIRail.RAILTRACK_NW_NE;
+			if (railtrack == AIRail.RAILTRACK_NE_SE)	return AIRail.RAILTRACK_SW_SE;
+		break;
+		case	DIR_SE: // NW -> SE
+			if (railtrack == AIRail.RAILTRACK_NE_SW)	return AIRail.RAILTRACK_NW_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_SE)	return AIRail.RAILTRACK_NE_SW;
+			if (railtrack == AIRail.RAILTRACK_NW_NE)	return AIRail.RAILTRACK_SW_SE;
+			if (railtrack == AIRail.RAILTRACK_SW_SE)	return AIRail.RAILTRACK_NW_NE;
+			if (railtrack == AIRail.RAILTRACK_NW_SW)	return AIRail.RAILTRACK_NW_SW;
+			if (railtrack == AIRail.RAILTRACK_NE_SE)	return AIRail.RAILTRACK_NE_SE;
+		break;
+		case	DIR_NW: // SE -> NW
+			if (railtrack == AIRail.RAILTRACK_NE_SW)	return AIRail.RAILTRACK_NW_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_SE)	return AIRail.RAILTRACK_NE_SW;
+			if (railtrack == AIRail.RAILTRACK_NW_NE)	return AIRail.RAILTRACK_NW_SW;
+			if (railtrack == AIRail.RAILTRACK_SW_SE)	return AIRail.RAILTRACK_NE_SE;
+			if (railtrack == AIRail.RAILTRACK_NW_SW)	return AIRail.RAILTRACK_SW_SE;
+			if (railtrack == AIRail.RAILTRACK_NE_SE)	return AIRail.RAILTRACK_NW_NE;
+		break;
+		}
+	return railtrack;
+
+/*	if (direction == AIRail.RAILTRACK_NW_SE)
+			{
+			railFront=AIRail.RAILTRACK_NW_SE;
+			railCross=AIRail.RAILTRACK_NE_SW;
+			if (useEntry)	  // going NW->SE
+					{
+					railLeft=AIRail.RAILTRACK_SW_SE;
+					railRight=AIRail.RAILTRACK_NE_SE;
+					railUpLeft=AIRail.RAILTRACK_NW_SW;
+					railUpRight=AIRail.RAILTRACK_NW_NE;
+					}
+			else	  // going SE->NW
+					{
+					railLeft=AIRail.RAILTRACK_NW_NE;
+					railRight=AIRail.RAILTRACK_NW_SW;
+					railUpLeft=AIRail.RAILTRACK_NE_SE;
+					railUpRight=AIRail.RAILTRACK_SW_SE;
+					}
+			goal=AIMap.GetTileIndex(AIMap.GetTileX(frontTile),AIMap.GetTileY(crossing));
+			}
+	else	  // NE_SW
+			{
+			railFront=AIRail.RAILTRACK_NE_SW;
+			railCross=AIRail.RAILTRACK_NW_SE;
+			if (useEntry)	  // going NE->SW
+					{
+					railLeft=AIRail.RAILTRACK_NW_SW;
+					railRight=AIRail.RAILTRACK_SW_SE;
+					railUpLeft=AIRail.RAILTRACK_NW_NE;
+					railUpRight=AIRail.RAILTRACK_NE_SE;
+					}
+			else	  // going SW->NE
+					{
+					railLeft=AIRail.RAILTRACK_NE_SE;
+					railRight=AIRail.RAILTRACK_NW_NE;
+					railUpLeft=AIRail.RAILTRACK_SW_SE;
+					railUpRight=AIRail.RAILTRACK_NW_SW;
+					}
+			goal=AIMap.GetTileIndex(AIMap.GetTileX(crossing),AIMap.GetTileY(frontTile));
+			}   */
+}
+
+function cTrack::BuildRailAtTile(railneed, pos, create, stationID = -1)
+/** @brief Add a railtrack at position
+ *
+ * @param railneed The rail track to build.
+ * @param pos The tile to work at
+ * @param create true to create a track, false to remove it
+ * @param stationID the station to assign the track with
+ * @param useEntry The entry/exit of the stationID
+ * @return True on success
+ *
+ */
+{
+	local lasterr = -1;
+	if (!create)
+			{
+			if (!AIRail.IsRailTile(pos))	{ return true; }
+									else	{ return cError.ForceAction(AIRail.RemoveRailTrack, pos, railneed); }
+			}
+	local count = 100;
+	local success = AIRail.BuildRailTrack(pos, railneed);
+	while (!success && count > 0)
+			{
+			success = AIRail.BuildRailTrack(pos, railneed);
+			count--;
+			lasterr = AIError.GetLastError();
+			switch (lasterr)
+					{
+					case	AIError.ERR_AREA_NOT_CLEAR:
+						if (!cTileTools.DemolishTile(pos))	{ cError.RaiseError(); return false; }
+						break;
+					case	AIError.ERR_VEHICLE_IN_THE_WAY:
+							AIController.Sleep(10);
+						break;
+					case AIError.ERR_ALREADY_BUILT:
+						return true;
+					default:
+						DError("Cannot build rail track at " + cMisc.Locate(pos),1);
+						cError.RaiseError();
+						return false;
+					}
+			}
+	if (success && stationID != -1)	{ cStation.StationClaimTile(pos, stationID); }
+	return true;
 }

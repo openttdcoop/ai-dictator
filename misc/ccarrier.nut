@@ -281,13 +281,12 @@ function cCarrier::VehicleSendToDepot_GetParam(reason)
 	return -1;
 }
 
-function cCarrier::VehicleSendToDepot(veh,reason)
+function cCarrier::VehicleSendToDepot(veh, reason)
 // send a vehicle to depot
 {
 print("got going to depot query!");
 	if (!AIVehicle.IsValidVehicle(veh))	return false;
 	if (cTrain.IsTrainStuckAtSignal(veh))	cCarrier.HandleTrainStuck(veh);
-	//if (cEngineLib.VehicleIsGoingToStopInDepot(veh))	return false;
 	local real_reason = cCarrier.VehicleSendToDepot_GetReason(reason);
 	if (cCarrier.ToDepotList.HasItem(veh))
 		{
@@ -306,54 +305,52 @@ print("got going to depot query!");
 				}
 		cCarrier.ToDepotList.RemoveItem(veh);
 		}
-	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)
-				cCarrier.TrainSetDepotOrder(veh);
-		else	cCarrier.VehicleSetDepotOrder(veh);
-	local target=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
-	local dist=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
+	if (!cCarrier.VehicleHaveDepotOrders(veh))	cCarrier.VehicleSetDepotOrder(veh);
+	local target = AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
+	local dist = AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
 	AIController.Sleep(6);	// wait it to move a bit
-	local newtake=AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
+	local newtake = AITile.GetDistanceManhattanToTile(AIVehicle.GetLocation(veh), target);
 	if (AIVehicle.GetVehicleType(veh) != AIVehicle.VT_RAIL && newtake > dist)
 		{
-		DInfo("Reversing direction of "+cCarrier.GetVehicleName(veh),1);
+		DInfo("Reversing direction of " + cCarrier.GetVehicleName(veh), 1);
 		AIVehicle.ReverseVehicle(veh);
 		}
-	local rr="";
+	local rr = "";
 	local wagonnum = cCarrier.VehicleSendToDepot_GetParam(reason);
 	switch (real_reason)
 		{
 		case	DepotAction.SELL:
-			rr="to be sold.";
+			rr = "to be sold.";
 		break;
 		case	DepotAction.LINEUPGRADE:
-            rr="to change railtype";
+            rr = "to change railtype";
         break;
 		case	DepotAction.SIGNALUPGRADE:
-            rr="to upgrade signals";
+            rr = "to upgrade signals";
         break;
 		case	DepotAction.WAITING:
-			rr="to wait";
+			rr = "to wait";
 		break;
 		case	DepotAction.UPGRADE:
-			rr="to be upgrade.";
+			rr = "to be upgrade.";
 		break;
 		case	DepotAction.REPLACE:
-			rr="to be replace.";
+			rr = "to be replace.";
 		break;
 		case	DepotAction.CRAZY:
-			rr="for a crazy action.";
+			rr = "for a crazy action.";
 		break;
 		case	DepotAction.REMOVEROUTE:
-			rr="for removing a dead route.";
+			rr = "for removing a dead route.";
 		break;
 		case	DepotAction.ADDWAGON:
-			rr="to add "+wagonnum+" new wagons.";
+			rr = "to add " + wagonnum + " new wagons.";
 		break;
 		case	DepotAction.REMOVEWAGON:
-			rr="to remove "+wagonnum+" wagons.";
+			rr = "to remove " + wagonnum + " wagons.";
 		break;
 		}
-	DInfo("Vehicle "+ cCarrier.GetVehicleName(veh)+" is going to depot "+rr,0);
+	DInfo("Vehicle " + cCarrier.GetVehicleName(veh) + " is going to depot " + rr, 0);
 	cCarrier.ToDepotList.AddItem(veh,reason);
 }
 
@@ -619,20 +616,20 @@ function cCarrier::CrazySolder(moneytoget)
 function cCarrier::VehicleSell(veh, recordit)
 // sell the vehicle and update route info
 {
-	DInfo("Selling Vehicle "+cCarrier.GetVehicleName(veh),0);
+	DInfo("Selling Vehicle " + cCarrier.GetVehicleName(veh), 0);
 	local uid = cCarrier.VehicleFindRouteIndex(veh);
 	local road = cRoute.LoadRoute(uid, true);
 	local vehvalue = AIVehicle.GetCurrentValue(veh);
 	local vehtype = AIVehicle.GetVehicleType(veh);
 	INSTANCE.main.carrier.vehicle_cash -= vehvalue;
 	if (INSTANCE.main.carrier.vehicle_cash < 0)	INSTANCE.main.carrier.vehicle_cash = 0;
-	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	cTrain.DeleteVehicle(veh);	// must be call before selling the vehicle
+	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	cTrain.DeleteTrain(veh);	// must be call before selling the train
 	cEngine.RabbitUnset(veh);
     cCarrier.ToDepotList.RemoveItem(veh);
 	AIVehicle.SellVehicle(veh);
 	if (!road) return;
-	road.RouteUpdateVehicle();
-	if (recordit)	road.DateVehicleDelete=AIDate.GetCurrentDate();
+	cRoute.RouteUpdateVehicle(road);
+	if (recordit)	road.DateVehicleDelete = AIDate.GetCurrentDate();
 }
 
 function cCarrier::VehicleSendToDepotAndSell(uid)
@@ -647,7 +644,7 @@ function cCarrier::VehicleSendToDepotAndSell(uid)
 function cCarrier::FreeDepotOfVehicle(depotID)
 // this function remove any vehicle in depot
 {
-	if (!cStation.IsDepot(depotID))	{ return true; }
+	if (!cEngineLib.IsDepotTile(depotID))	{ return true; }
 	DInfo("Selling all vehicles at depot "+depotID+" to remove it.",2);
 	local vehlist = AIVehicleList();
 	vehlist.Valuate(AIVehicle.GetLocation);
@@ -800,16 +797,14 @@ function cCarrier::VehicleExitDepot(vehID)
 	local road = false;
 	local get_index = -1;
 	if (uid != null)	road = cRoute.LoadRoute(uid);
-	if (road != false)
-			{
-			local veh_loc = AIVehicle.GetLocation(vehID);
-			local destination = road.SourceStation.s_ID;
-			if (AIMap.DistanceManhattan(road.SourceStation.s_Location, veh_loc) > AIMap.DistanceManhattan(road.TargetStation.s_Location, veh_loc))	destination = road.TargetStation.s_ID;
-            cCarrier.VehicleSetOrders(vehID);
-            get_index = cCarrier.VehicleFindDestinationInOrders(vehID, destination);
-            if (get_index == -1)	get_index = 0;
-            AIOrder.SkipToOrder(vehID, get_index);
-            }
+	if (road == false)	cCarrier.VehicleSell(vehID); // we won't release something bad
+	cCarrier.VehicleSetOrders(vehID);
+	local veh_loc = AIVehicle.GetLocation(vehID);
+	local destination = road.SourceStation.s_ID;
+	if (AIMap.DistanceManhattan(road.SourceStation.s_Location, veh_loc) > AIMap.DistanceManhattan(road.TargetStation.s_Location, veh_loc))	destination = road.TargetStation.s_ID;
+	get_index = cCarrier.VehicleFindDestinationInOrders(vehID, destination);
+	if (get_index == -1)	get_index = 0;
+	AIOrder.SkipToOrder(vehID, get_index);
 	cCarrier.StartVehicle(vehID);
 	if (cCarrier.ToDepotList.HasItem(vehID))	cCarrier.ToDepotList.RemoveItem(vehID);
 }

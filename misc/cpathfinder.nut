@@ -61,6 +61,28 @@ class cPathfinder extends cClass
 			this.road_build	= cBuilder.BuildPath_ROAD;
 			this.rail_build = cBuilder.BuildPath_RAIL;
 			}
+
+			function CheckPathCondition();
+			function GetUID(src, tgt);
+			function FiveTileCheck(tile, tile_forward, func, value);
+            function NextToTrackBonus(tile, trackplace, direction) { deprecated(); }
+            function BuildShortPoints(source, target, close_source) { deprecated(); }
+            function CheckPathfinderTaskIsRunning(stations);
+			function GetStatus(source, target, stationID, primarylane, useEntry);
+            function AdvanceAllTasks();
+            function GetSolve(source, target);
+            function CloseTaskAndChildren(id);
+            function CloseTask(source, target);
+			function GetRootTask(uid);
+			function PropagateChangeToParent(id);
+			function AdvanceTask(UID);
+			function StationExist();
+			function GetSourceX(x);
+			function GetTargetX(x);
+			function InfoSign(msg);
+			function CreateNewTask(src, tgt, station, primarylane, entrance);
+			function AddSubTask(mainUID) { deprecated(); }
+            function CreateSubTask(mainUID, newSource, newTarget);
 	}
 
 function cPathfinder::CheckPathCondition()
@@ -81,6 +103,13 @@ function cPathfinder::CheckPathCondition()
 	return true;
 }
 
+function cPathfinder::Pairing(num1, num2)
+// http://en.wikipedia.org/wiki/Pairing_function
+// not that usable with 32bits integer limit, but still gives enough
+{
+	return (((num1 + num2) * (num1 + num2 + 1)) >> 1) + num2;
+}
+
 function cPathfinder::GetUID(src, tgt)
 // return UID of the task
 	{
@@ -91,7 +120,9 @@ function cPathfinder::GetUID(src, tgt)
 	if (ss != "array" || ts != "array")	{ DInfo("Bad pathfinder source ("+ss+") or target ("+ts+")",1); return null; }
 	if (src.len() != 2 || tgt.len() != 2)	{ DInfo("Bad pathfinder source ("+src.len()+") or target ("+tgt.len()+")",1); return null; }
 	if (!AIMap.IsValidTile(src[0]) || !AIMap.IsValidTile(tgt[1]))	{ return null; }
-	return src[0]+tgt[1];
+	local x = cPathfinder.Pairing(AIMap.GetTileX(src[0]), AIMap.GetTileX(tgt[1]));
+	local y = cPathfinder.Pairing(AIMap.GetTileY(src[0]), AIMap.GetTileY(tgt[1]));
+	return (x + y); // we don't care to revert it
 	}
 
 function cPathfinder::FiveTileCheck(tile, tile_forward, func, value)
@@ -137,94 +168,6 @@ function cPathfinder::NextToTrackBonus(tile, trackplace, direction)
 	return r;
 }
 
-function cPathfinder::BuildShortPoints(source, target, close_source)
-// Build a rail in between source/target distance, next to another rail if possible
-{
-	local start = source[1];
-	local end = target[1];
-	local RT = (AIRail.IsRailTile(start) && AIRail.IsRailTile(end));
-	if (!RT)	{ return -1; }
-	RT = AIRail.GetRailType(start);
-	local direction = cDirection.GetDirection(start, end);
-    local track = cTrack.GetRailFromDirection(direction);
-    local startdir = cDirection.GetDirection(source[1], source[0]);
-    local s_x = AIMap.GetTileX(start);
-    local s_y = AIMap.GetTileY(start);
-    local e_x = AIMap.GetTileX(end);
-    local e_y = AIMap.GetTileY(end);
-    local mid = AIMap.GetTileIndex( (s_x + e_x) / 2, (s_y + e_y) / 2); // mid position default, between half of both points
-	local m_x = AIMap.GetTileX(mid);
-    local m_y = AIMap.GetTileY(mid);
-    local correct = mid;
-    if (close_source)
-		switch (startdir)
-			{
-			case	DIR_SE:
-				if (m_y < s_y)	m_y = s_y;
-				break;
-			case	DIR_NW:
-				if (m_y > s_y)	m_y = s_y;
-				break;
-			case	DIR_NE:
-				if (m_x > s_x)	m_x = s_x;
-				break;
-			case	DIR_SW:
-				if (m_x < s_x)	m_x = s_x;
-				break;
-			}
-	correct = AIMap.GetTileIndex(m_x, m_y);
-	if (AIMap.DistanceManhattan(correct, start) > 9) mid = correct; // use correct point if it doesn't fall to close start point only
-	local fwd = cDirection.GetForwardRelativeFromDirection(direction);
-    local seek_area = AITileList();
-    seek_area.AddRectangle(mid + AIMap.GetTileIndex(5, 5), mid - AIMap.GetTileIndex(5,5));
-	local any_rail = null;
-	foreach (tile, _ in seek_area)
-		{ // lookout if we can find a rail we own
-		if (AIRail.IsRailTile(tile) && AICompany.IsMine(AITile.GetOwner(tile)))
-			{
-			any_rail = tile;
-			break;
-			}
-		}
-    seek_area.Valuate(cPathfinder.FiveTileCheck, fwd, AITile.IsBuildable, 1);
-    seek_area.KeepValue(1);
-	if (seek_area.IsEmpty())	return -1; // no place to build
-    seek_area.Valuate(cPathfinder.FiveTileCheck, fwd, AITile.GetSlope, AITile.SLOPE_FLAT);
-    local need_terraform = false;
-    foreach (tiles, flat in seek_area)
-		{
-		if (AITile.IsWaterTile(tiles))
-				{
-				need_terraform = true;
-				break;
-				}
-		if (flat != 1)	{ need_terraform = true; break; }
-		}
-	if (!INSTANCE.terraform && need_terraform)	return -1;
-	if (any_rail != null)	seek_area.Valuate(cPathfinder.NextToTrackBonus, any_rail, direction);
-					else	seek_area.Valuate(AIMap.DistanceManhattan, mid);
-	seek_area.Sort(AIList.SORT_BY_VALUE, true);
-	local mainTile = null;
-	local bckTile = null;
-    local fwdTile = null;
-	foreach (tile, distance in seek_area)
-		{
-		if (need_terraform)	{ cTerraform.TerraformLevelTiles(tile + fwd + fwd, tile - fwd - fwd); }
-		if (cPathfinder.FiveTileCheck(tile, fwd, AITile.GetSlope, AITile.SLOPE_FLAT) && cPathfinder.FiveTileCheck(tile, fwd, AITile.IsBuildable, 1))
-				{ mainTile = tile; break; }
-		}
-	if (mainTile == null)	return -1;
-	cTrack.DropRailHere(track, mainTile);
-    bckTile = mainTile - fwd;
-    fwdTile = mainTile + fwd;
-    local newpath = [];
-    newpath.push(source);
-    newpath.push([bckTile, mainTile]);
-    newpath.push([fwdTile, mainTile]);
-    newpath.push(target);
-	return newpath;
-}
-
 function cPathfinder::CheckPathfinderTaskIsRunning(stations)
 	{
 	if (typeof stations != "array")	{ DError("stations must be an array with source stationID and target stationID"); return false; }
@@ -240,8 +183,7 @@ function cPathfinder::GetStatus(source, target, stationID, primarylane, useEntry
 	{
 	local uid = cPathfinder.GetUID(source, target);
 	if (uid == null)	{ DError("Invalid pathfinder task : "+source[0]+" / "+source[1]+" / "+target[0]+" / "+target[1],1); return -1; }
-	if (uid in cPathfinder.database)	{ }
-                                else	{ cPathfinder.CreateNewTask(source, target, stationID, primarylane, useEntry, true); return 0; }
+	if (!(uid in cPathfinder.database))	{ cPathfinder.CreateNewTask(source, target, stationID, primarylane, useEntry); return 0; }
 	local pathstatus = cPathfinder.GetPathfinderObject(uid);
 	return pathstatus.status;
 	}
@@ -366,11 +308,11 @@ function cPathfinder::AdvanceTask(UID)
 			{
 			case	-1:
 				DInfo(spacer+" "+pftask.UID+" fail to pathfind",1);
-				if (pftask.UID == root_id)	{ DInfo(spacer+" ROOT task is dead...",1); pftask.status = -2; return; }
+//				if (pftask.UID == root_id)	{ DInfo(spacer+" ROOT task is dead...",1); pftask.status = -2; return; }
 				// kill all child from root task
 				for (local i = 1; i < root_task.child.len(); i++)	cPathfinder.CloseTaskAndChildren(root_task.child[i]);
 				root_task.child = [null];
-				root_task.status = 0;
+				root_task.status = -2;
 				return;
 			case	-2:
 				DInfo(spacer+"nothing more could be done, failure",1);
@@ -472,7 +414,7 @@ function cPathfinder::InfoSign(msg)
             else	{ this.signHandler=AISign.BuildSign(this.target[1],msg); }
 	}
 
-function cPathfinder::CreateNewTask(src, tgt, station, primarylane, entrance, split = false)
+function cPathfinder::CreateNewTask(src, tgt, station, primarylane, entrance)
 // Create a new pathfinding task
 	{
 	local pftask = cPathfinder();
@@ -490,34 +432,33 @@ function cPathfinder::CreateNewTask(src, tgt, station, primarylane, entrance, sp
 			// road
 			pftask.pathHandler= MyRoadPF();
 			pftask.pathHandler.cost.bridge_per_tile = 90;
-			pftask.pathHandler.cost.tunnel_per_tile = 90;
+			pftask.pathHandler.cost.tunnel_per_tile = 80;
 			pftask.pathHandler.cost.turn = 200;
-			pftask.pathHandler.cost.max_bridge_length=30;
-			pftask.pathHandler.cost.max_tunnel_length=30;
-			pftask.pathHandler.cost.tile=70;
-			pftask.pathHandler.cost.slope=120;
-			pftask.pathHandler._cost_level_crossing = 120;
+			pftask.pathHandler.cost.max_bridge_length = AIGameSettings.GetValue("max_bridge_length");
+			pftask.pathHandler.cost.max_tunnel_length = AIGameSettings.GetValue("max_tunnel_length");
+			pftask.pathHandler.cost.tile = 90;
+			pftask.pathHandler.cost.slope = 120;
+			pftask.pathHandler._cost_level_crossing = 150;
 			// we change the callback function when primarylane is false for road function
-			if (!primarylane)	pftask.road_build = cBuilder.BuildRoadROAD;
+			if (!primarylane)	pftask.road_build = cBuilder.BuildPath_ROAD_callback;
 			pftask.pathHandler.InitializePath([pftask.source[0]], [pftask.target[1]]);
 			}
 	else	  // rail
 			{
             pftask.pathHandler= MyRailPF();
-//			pftask.pathHandler.cost.bridge_per_tile = 50;//70
-//			pftask.pathHandler.cost.tunnel_per_tile = 50;//70
-//			pftask.pathHandler.cost.turn = 80;//200
-			pftask.pathHandler.cost.max_bridge_length=30;
-			pftask.pathHandler.cost.max_tunnel_length=30;
-			pftask.pathHandler.cost.tile=100;
-			pftask.pathHandler.cost.slope=110;//80
+/*			pftask.pathHandler.cost.bridge_per_tile = 70;//70
+			pftask.pathHandler.cost.tunnel_per_tile = 70;//70
+			pftask.pathHandler.cost.turn = 100;//200*/
+			pftask.pathHandler.cost.max_bridge_length = AIGameSettings.GetValue("max_bridge_length");
+			pftask.pathHandler.cost.max_tunnel_length = AIGameSettings.GetValue("max_tunnel_length");
+/*			pftask.pathHandler.cost.tile=100;
+			pftask.pathHandler.cost.slope=140;//80
 			pftask.pathHandler.cost.coast = 140;
-			pftask.pathHandler.cost.diagonal_tile=100;
+			pftask.pathHandler.cost.diagonal_tile=100;*/
 			pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 			}
-	DInfo("New pathfinder task : "+pftask.UID,1);
+	DInfo("New pathfinder task : "+pftask.UID+" from " + cMisc.Locate(pftask.source[0]) + " to " + cMisc.Locate(pftask.target[1]), 1);
 	cPathfinder.database[pftask.UID] <- pftask;
-	if (split && entrance != null)	cPathfinder.AddSubTask(pftask.UID);
 	}
 
 function cPathfinder::AddSubTask(mainUID)
@@ -569,10 +510,10 @@ function cPathfinder::CreateSubTask(mainUID, newSource, newTarget)
 	if (filsUID == mainUID || filsUID in cPathfinder.database)
 		{
 		DWarn("Trying to re-run same subtask again : "+filsUID,1);
-		parentTask.status = -2;
+		//parentTask.status = -2;
 		return;
 		}
-	local subTask = cPathfinder.CreateNewTask(newSource, newTarget, parentTask.stationID, parentTask.PrimaryLane, parentTask.useEntry, false);
+	local subTask = cPathfinder.CreateNewTask(newSource, newTarget, parentTask.stationID, parentTask.PrimaryLane, parentTask.useEntry);
 	fils = cPathfinder.GetPathfinderObject(cPathfinder.GetUID(newSource, newTarget));
 	if (filsUID != mainUID)	parentTask.child.push(fils.UID);
 	parentTask.status = 0;

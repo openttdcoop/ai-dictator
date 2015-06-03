@@ -18,6 +18,20 @@ class cDebug extends cClass
 	constructor()	{ this.ClassName="cDebug"; }
 }
 
+function cBuilder::DumpRoute(idx=null)
+{
+	if (!INSTANCE.debug)	return;
+	local road=null;
+	if (idx == null)	road=INSTANCE.main.route;
+			else	road=cRoute.LoadRoute(idx);
+	DInfo("Route "+road.Name+" VehicleType: "+cRoute.RouteTypeToString(road.VehicleType)+" status: "+road.Status+" Cargo:"+cCargo.GetCargoLabel(road.CargoID),2);
+	if (typeof(road.SourceStation) != "instance") return;
+	DInfo(road.SourceStation.s_Name+" Station type: "+road.SourceStation.s_Type+" subType: "+road.SourceStation.s_SubType+" produce "+road.SourceStation.s_CargoProduce.Count()+" cargos, accept "+road.SourceStation.s_CargoAccept.Count()+" cargos");
+
+	if (typeof(road.TargetStation) != "instance") return;
+	DInfo(road.TargetStation.s_Name+" Station type: "+road.TargetStation.s_Type+" subType: "+road.TargetStation.s_SubType+" produce "+road.TargetStation.s_CargoProduce.Count()+" cargos, accept "+road.TargetStation.s_CargoAccept.Count()+" cargos");
+}
+
 function cDebug::PutSign(place,msg)
 // put a sign at place
 {
@@ -46,20 +60,6 @@ function cDebug::showLogic(item)
 	print("logic at "+cMisc.Locate(item.Begin()));
 	AIController.Sleep(60);
 	cDebug.ClearSigns();
-}
-
-function cBuilder::DumpRoute(idx=null)
-{
-	if (!INSTANCE.debug)	return;
-	local road=null;
-	if (idx == null)	road=INSTANCE.main.route;
-			else	road=cRoute.LoadRoute(idx);
-	DInfo("Route "+road.Name+" VehicleType: "+cRoute.RouteTypeToString(road.VehicleType)+" status: "+road.Status+" Cargo:"+cCargo.GetCargoLabel(road.CargoID),2);
-	if (typeof(road.SourceStation) != "instance") return;
-	DInfo(road.SourceStation.s_Name+" Station type: "+road.SourceStation.s_Type+" subType: "+road.SourceStation.s_SubType+" produce "+road.SourceStation.s_CargoProduce.Count()+" cargos, accept "+road.SourceStation.s_CargoAccept.Count()+" cargos");
-
-	if (typeof(road.TargetStation) != "instance") return;
-	DInfo(road.TargetStation.s_Name+" Station type: "+road.TargetStation.s_Type+" subType: "+road.TargetStation.s_SubType+" produce "+road.TargetStation.s_CargoProduce.Count()+" cargos, accept "+road.TargetStation.s_CargoAccept.Count()+" cargos");
 }
 
 function cBuilder::DumpJobs(uid)

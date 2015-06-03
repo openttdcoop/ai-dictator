@@ -82,7 +82,7 @@ function cBuilder::BuildWaterStation(start)
                                 local newStation = INSTANCE.main.route.CreateNewStation(true);
                                 if (newStation == null) { return false; }
                                 newStation.s_SubType = -2;
-                                newStation.s_Depot = cBuilder.BuildWaterDepotAtTile(INSTANCE.main.route.SourceProcess.StationLocation, INSTANCE.main.route.TargetProcess.Location);
+                                cStation.SetStationDepot(newStation.s_ID, cBuilder.BuildWaterDepotAtTile(INSTANCE.main.route.SourceProcess.StationLocation, INSTANCE.main.route.TargetProcess.Location));
                                 return true;
                                 }
                         else    {
@@ -115,7 +115,7 @@ function cBuilder::BuildWaterStation(start)
                                 local newStation = INSTANCE.main.route.CreateNewStation(false);
                                 if (newStation == null) { return false; }
                                 newStation.s_SubType = -2;
-                                newStation.s_Depot = cBuilder.BuildWaterDepotAtTile(INSTANCE.main.route.TargetProcess.StationLocation, INSTANCE.main.route.SourceProcess.Location);
+                                cStation.SetStationDepot(newStation.s_ID, cBuilder.BuildWaterDepotAtTile(INSTANCE.main.route.TargetProcess.StationLocation, INSTANCE.main.route.SourceProcess.Location));
                                 return true;
                                 }
                         else    {
@@ -169,7 +169,7 @@ function cBuilder::BuildWaterStation(start)
         else    { INSTANCE.main.route.TargetStation = AIStation.GetStationID(sta_tile); }
     local newstation = INSTANCE.main.route.CreateNewStation(start);
     // now the depot
-    newstation.s_Depot = cBuilder.BuildWaterDepotAtTile(sta_tile, otherplace);
+    cStation.SetStationDepot(newstation.s_ID, cBuilder.BuildWaterDepotAtTile(sta_tile, otherplace));
     return true;
 }
 
@@ -230,15 +230,19 @@ function cBuilder::RepairWaterRoute(idx)
     local road = cRoute.LoadRoute(idx);
     if (!road)  { return false; }
     cBanker.RaiseFundsBigTime();
-    if (!AIMarine.IsWaterDepotTile(road.SourceStation.s_Depot))
+    local source_depot = cStation.GetStationDepot(road.SourceStation.s_ID);
+    local target_depot = cStation.GetStationDepot(road.TargetStation.s_ID);
+    if (!AIMarine.IsWaterDepotTile(source_depot))
         {
-        road.SourceStation.s_Depot = cBuilder.BuildWaterDepotAtTile(road.SourceStation.s_Location, road.TargetStation.s_Location);
+        source_depot = cBuilder.BuildWaterDepotAtTile(road.SourceStation.s_Location, road.TargetStation.s_Location);
+        cStation.SetStationDepot(road.SourceStation.s_ID, source_depot);
         }
-    if (!AIMarine.IsWaterDepotTile(road.TargetStation.s_Depot))
+    if (!AIMarine.IsWaterDepotTile(target_depot))
         {
-        road.TargetStation.s_Depot = cBuilder.BuildWaterDepotAtTile(road.TargetStation.s_Location, road.SourceStation.s_Location);
+        target_depot = cBuilder.BuildWaterDepotAtTile(road.TargetStation.s_Location, road.SourceStation.s_Location);
+        cStation.SetStationDepot(road.TargetStation.s_ID, target_depot);
         }
-    if (!AIMarine.IsWaterDepotTile(road.SourceStation.s_Depot) && !AIMarine.IsWaterDepotTile(road.TargetStation.s_Depot))
+    if (!AIMarine.IsWaterDepotTile(source_depot) && !AIMarine.IsWaterDepotTile(target_depot))
         {
         DInfo("RepairWaterRoute mark #"+idx+" undoable",1);
         road.RouteIsNotDoable();

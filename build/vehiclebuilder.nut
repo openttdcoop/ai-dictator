@@ -30,7 +30,7 @@ function cCarrier::CanAddNewVehicle(roadidx, start, max_allow)
 {
 	local chem=cRoute.LoadRoute(roadidx);
 	if (!chem) return 0;
-	chem.RouteUpdateVehicle();
+	cRoute.RouteUpdateVehicle(chem);
 	local thatstation=null;
 	//local thatentry=null;
 	local otherstation=null;
@@ -488,6 +488,7 @@ function cCarrier::Process_VehicleWish()
         engine = cCarrier.GetVehicle(uid);
         amount = INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid);
         if (amount == 0 || amount == 1000)    { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); continue; }
+        print("engine="+engine);
         if (engine == null || engine == -1) { continue; }
         if (typeof(engine) == "array")
 				{

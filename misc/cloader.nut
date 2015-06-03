@@ -155,7 +155,7 @@ function cLoader::Load169()
 			if (!cMisc.ValidInstance(sobj))	saveit=false;
 			}
 		else	saveit = false;
-		if (saveit)	sobj.s_Depot=all_stations[i+1];
+		if (saveit)	cStation.SetStationDepot(sobj.s_ID, all_stations[i+1]);
 		i+=1;
 		if (saveit && sobj instanceof cStationRail)
 			{
@@ -169,7 +169,6 @@ function cLoader::Load169()
 			i+=2;
 			temparray=[];
 			for (local z=0; z < counter; z++)	temparray.push(all_stations[i+z]);
-			//if (saveit)	sobj.s_TrainSpecs =cMisc.ArrayToList(temparray); // train plaforms, lost for now
 			i+=(counter-1);
 			}
 		}
@@ -274,10 +273,10 @@ function cLoader::Load169()
 function cLoader::LoadSaveGame()
 // Load current savegame version
 {
-	DInfo("Loading savegame version "+INSTANCE.main.carrier.vehicle_cash);
+	DInfo("Loading savegame version " + INSTANCE.main.carrier.vehicle_cash);
 	local num_route_ok = 0;
 	local groupList = AIGroupList();
-	DInfo("Found "+groupList.Count()+" possible routes");
+	DInfo("Found " + groupList.Count() + " possible routes");
 	foreach(group, _ in groupList)
 		{
 		local temp_route = cRoute();
@@ -359,35 +358,8 @@ function cLoader::LoadSaveGame()
 		DInfo("Validate... "+temp_route.Name,0);
 		num_route_ok++;
 		}
-	DInfo("Found "+num_route_ok+" routes");
+	DInfo("Found " + num_route_ok + " routes");
 	cRoute.RouteRebuildIndex();
-	DInfo("Restoring "+main.bank.unleash_road.len()+" stations");
-		{
-		for (local i=0; i < main.bank.unleash_road.len(); i++)
-			{
-			local sta = cStation.Load(main.bank.unleash_road[i]);
-			local valid = (sta != false);
-			if (!valid)	{ i++; continue; }
-
-			local depot = main.bank.unleash_road[i+1]; i++;
-			sta.s_Depot = depot;
-			if (sta instanceof cStationRail)
-				{
-				sta.s_Train[0] = main.bank.unleash_road[i+1];
-				i++;
-				for (local j=0; j < sta.s_EntrySide.len(); j++)
-					{
-					sta.s_EntrySide[j] = main.bank.unleash_road[i+1];
-					i++;
-					}
-				for (local j=0; j < sta.s_ExitSide.len(); j++)
-					{
-					sta.s_ExitSide[j] = main.bank.unleash_road[i+1];
-					i++;
-					}
-				}
-			}
-		}
 	RailFollower.FindRailOwner();
 }
 

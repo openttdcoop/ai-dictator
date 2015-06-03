@@ -24,7 +24,7 @@ static	database = {};
 static	jobIndexer = AIList();	// this list have all UID in the database, value = date of last refresh for that UID infos
 static	jobDoable = AIList();	// same as upper, but only doable ones, value = ranking
 static	distanceLimits = [0, 0];// store [min, max] distances we can do, share to every instance so we can discover if this change
-static	TRANSPORT_DISTANCE=[60,150,250, 40,80,150, 40,100,130, 80,200,300]; // 130 max before water report dest_too_far
+static	TRANSPORT_DISTANCE=[60,150,350, 40,80,150, 40,100,130, 80,200,300]; // 130 max before water report dest_too_far
 static	CostTopJobs = [0,0,0,0];// price of best job for rail, road, water & air
 static	badJobs=AIList();		// List of jobs we weren't able to do
 static	rawJobs=AIList();		// Primary jobs list, item (if industry=industryID, if town=townID+10000), value 0=done, >0=need handling

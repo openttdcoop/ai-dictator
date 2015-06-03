@@ -17,9 +17,9 @@ function cBuilder::DestroyStation(stationid)
 // Remove a station from uid route
 // Check no one else use it and the station is old enough before doing that
 {
-	local exist=true;
+	local exist = true;
 	if (stationid == null)	return false;
-	local temp=cStation.Load(stationid);
+	local temp = cStation.Load(stationid);
 	if (!AIStation.IsValidStation(stationid))
 		{
 		cStation.DeleteStation(stationid);
@@ -32,37 +32,42 @@ function cBuilder::DestroyStation(stationid)
 		wasnamed = temp.s_Name;
 		if (temp.s_Owner.Count() != 0)
 			{
-			DInfo("Can't remove station "+wasnamed+" ! Station is still used by "+temp.s_Owner.Count()+" routes",1);
+			DInfo("Can't remove station " + wasnamed + " ! Station is still used by " + temp.s_Owner.Count() + " routes", 1);
 			return false;
 			}
 		local now = AIDate.GetCurrentDate();
 		if (now - temp.s_DateBuilt < 30 && !AIController.GetSetting("infrastructure_maintenance"))
 			{
-			DInfo("Station "+wasnamed+" is not old enough. Keeping it for now.",1);
+			DInfo("Station " + wasnamed + " is not old enough. Keeping it for now.", 1);
 			return false;
 			}
 		}
-	DInfo("Destroying station "+wasnamed,0);
+	DInfo("Destroying station " + wasnamed, 0);
 	if (exist)
 		{
-		if (temp.s_SubType != -2) //don't try destroy virtual station tiles, some player play with magic buldozer cheat
+		if (temp.s_SubType != -2) // don't try destroy virtual station tiles, some player play with magic buldozer cheat
             {
-            foreach (tile, dummy in temp.s_Tiles)	{ cTileTools.UnBlackListTile(tile); }
-            foreach (tile, dummy in temp.s_TilesOther)	{ cTileTools.UnBlackListTile(tile); }
-            if (!temp.s_TilesOther.IsEmpty())
-                {
-                if (temp.s_Type == AIStation.STATION_TRAIN)	{ cTrack.RailCleaner(temp.s_TilesOther); }
-													else	{ cTrack.RoadCleaner(temp.s_TilesOther); }
-                }
+            local all_tiles = AIList();
+			all_tiles.AddList(cTileTools.TilesBlackList);
+			all_tiles.KeepValue(0- (100000 + temp.s_ID)); // add not claim but reserved tiles
+			all_tiles.AddList(temp.s_Tiles);
+			all_tiles.AddList(temp.s_TilesOther);
+            foreach (tile, dummy in all_tiles)	cTileTools.UnBlackListTile(tile); // release them
+            all_tiles.RemoveList(temp.s_Tiles);
+            all_tiles.Valuate(AITile.GetOwner);
+            all_tiles.KeepValue(AICompany.ResolveCompanyID(AICompany.COMPANY_SELF)); // Prevent (again) magic bulldozer destroying platform
+			if (temp.s_Type == AIStation.STATION_TRAIN)	cTrack.RailCleaner(all_tiles);
+												else	cTrack.RoadCleaner(all_tiles);
             }
-        if (!cTrack.DestroyDepot(temp.s_Depot))	{ DInfo("Fail to remove depot link to station "+wasnamed,1); }
-										else	{ DInfo("Removing depot link to station "+wasnamed,0); }
+        if (!cTrack.DestroyDepot(cStation.GetStationDepot(stationid)))	{ DInfo("Fail to remove depot link to station " + wasnamed, 1); }
+																else	{ DInfo("Removing depot link to station " + wasnamed, 0); }
 		if (!cStation.DeleteStation(stationid))	{ return false; }
 		if (temp.s_SubType == -2)   { return true; }
 		}
-	local tilelist=cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
+	local tilelist = cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
 	tilelist.Valuate(AITile.GetOwner);
 	tilelist.KeepValue(AICompany.ResolveCompanyID(AICompany.COMPANY_SELF)); // Prevent magic bulldozer destroying platform
-	foreach (tile, dummy in tilelist)	AITile.DemolishTile(tile); // still rough to do that, could do it nicer
+	foreach (tile, dummy in tilelist)	AITile.DemolishTile(tile);
+	cStation.DepotBase_ClearBadStation();
 	return true;
 }

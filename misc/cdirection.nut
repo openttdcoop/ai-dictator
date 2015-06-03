@@ -118,3 +118,45 @@ function cDirection::GetDistanceChebyshevToTile(tilefrom, tileto)
     local y2 = AIMap.GetTileY(tileto);
     return max(abs(x2 - x1), abs(y2 - y1));
     }
+
+function cDirection::GoingInTown(tile, direction)
+// return true if we are going inside a town, making a nightmare to build there (and rating hell)
+{
+	local t = AITile.GetClosestTown(tile);
+    local forward = cDirection.GetForwardRelativeFromDirection(direction);
+	local end = tile + (4 * forward);
+	local sdist = AITown.GetDistanceManhattanToTile(t, tile);
+	local edist = AITown.GetDistanceManhattanToTile(t, end);
+	if (sdist < 20 && sdist > edist) // we are going in this town
+				{
+				print("going near "+AITown.GetName(t));
+				local w = cTileTools.GetTilesAroundTown(t);
+				w.Valuate(AITile.GetCargoProduction, cCargo.GetPassengerCargo(), 1, 1, 1);
+				foreach (tiles, prod in w)	if (prod > 0 || AIRoad.IsRoadTile(tiles))	w.SetValue(tiles, -1);
+				w.KeepValue(-1); // this should keep roads & houses
+				local c = AIList();
+				for (local i = 0; i < 4; i++)	c.AddItem(tile + (i * forward), 0);
+				c.RemoveList(w);
+				if (c.Count() < 2)	{ DInfo("We are going in "+AITown.GetName(t)+" count="+c.Count(), 2); return true; }
+				}
+	return false;
+}
+
+function cDirection::GetDirectionFromStationDirection(tilefrom, tileto, station_direction)
+// get the direction we will go toward depending on the station direction
+{
+	local aim_dir = cDirection.GetDirection(tilefrom, tileto);
+	//print("tilefrom: X="+AIMap.GetTileX(tilefrom)+" y="+AIMap.GetTileY(tilefrom));
+	//print("tileto: X="+AIMap.GetTileX(tileto)+" y="+AIMap.GetTileY(tileto));
+	if (station_direction == AIRail.RAILTRACK_NE_SW)
+			{
+			if (aim_dir == DIR_NE || aim_dir == DIR_SW)	return aim_dir;
+            if (AIMap.GetTileX(tilefrom) > AIMap.GetTileX(tileto))	return DIR_NE;
+															else	return DIR_SW;
+			}
+	else	{
+			if (aim_dir == DIR_NW || aim_dir == DIR_SE)	return aim_dir;
+            if (AIMap.GetTileY(tilefrom) > AIMap.GetTileY(tileto))	return DIR_NW;
+															else	return DIR_SE;
+			}
+}

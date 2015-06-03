@@ -125,7 +125,7 @@ function cError::ForceAction(...)
 				veh.KeepValue(tile);
 				foreach (v, _ in veh)	{
 										local kind = DepotAction.WAITING+30;
-										if (cStation.IsDepot(tile))	{ kind = DepotAction.SELL; cCarrier.VehicleIsWaitingInDepot(); }
+										if (cEngineLib.IsDepotTile(tile))	{ kind = DepotAction.SELL; cCarrier.VehicleIsWaitingInDepot(); }
 										cCarrier.VehicleSendToDepot(v, kind);
 										AIController.Sleep(74); // give it a day to move
 										}

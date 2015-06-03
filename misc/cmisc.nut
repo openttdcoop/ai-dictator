@@ -85,6 +85,7 @@ function cMisc::ToggleBit(value, bitset)
 function cMisc::CheckBit(value, bitset)
 // return true/false if bit is set in value
 {
+	if (value == null || typeof(value) != "integer")  return false;
 	return ((value & (1 << bitset)) != 0);
 }
 
@@ -145,6 +146,13 @@ function cMisc::ArrayToList(array)
 		list.AddItem(arrayitem[0], arrayitem[1]);
 	}
 	return list;
+}
+
+function cMisc::InArray(the_array, seek_value)
+// return the position of seek_value in the_array, -1 if not found
+{
+	for (local i = 0; i < the_array.len(); i++)	if (the_array[i] == seek_value)	return i;
+	return -1;
 }
 
 function cMisc::ValidInstance(obj)

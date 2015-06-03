@@ -76,10 +76,14 @@ function cTileTools::PurgeBlackListTiles(alist, creation=false)
 // remove all tiles that are blacklist from an AIList and return it
 // if creation is false, don't remove tiles that cannot be use for station creation
 {
-	alist.Valuate(cTileTools.GetTileStationOwner);
-	alist.RemoveAboveValue(0); // remove own tiles
-	alist.RemoveValue(-255); // remove bad tiles
-	if (creation)	{ alist.RemoveValue(-100); } // remove bad spot for station
+    local z = AIList();
+    z.AddList(alist);
+    foreach (tile, _ in z)
+		{
+		local o = cTileTools.GetTileStationOwner(tile);
+		if (o > 0 || o == -255)	alist.RemoveItem(tile);
+		if (creation && o == -100)	alist.RemoveItem(tile);
+		}
 	return alist;
 }
 
@@ -125,6 +129,29 @@ function cTileTools::GetRectangle(tile, width, height)
 			tile_to = tile + AIMap.GetTileIndex(width, height);
 			}
 	if (!AIMap.IsValidTile(tile_to))	return AITileList();
+	local map_x = (AIMap.GetMapSizeX() - 2);
+	local map_y = (AIMap.GetMapSizeY() - 2);
+	local dist = AIMap.DistanceManhattan(tile, tile_to);
+	if (dist > map_x / 2 || dist > map_y / 2)
+			{
+			print("overflow: ");
+			local x_tile = AIMap.GetTileX(tile);
+			local y_tile = AIMap.GetTileY(tile);
+			local x_tile_to = AIMap.GetTileX(tile_to);
+			local y_tile_to = AIMap.GetTileY(tile_to);
+			if (abs(x_tile - x_tile_to) > map_x / 2)
+					{
+					if (map_x - x_tile_to < x_tile_to - 1)	x_tile_to = 1;
+													else	x_tile_to = map_x;
+					}
+			if (abs(y_tile - y_tile_to) > map_y / 2)
+					{
+					if (map_y - y_tile_to < y_tile_to - 1)	y_tile_to = 1;
+													else	y_tile_to = map_y;
+					}
+			tile_to = AIMap.GetTileIndex(x_tile_to, y_tile_to);
+			print("fixed tile_to: "+cMisc.Locate(tile_to));
+            }
 	local t = AITileList();
     t.AddRectangle(tile, tile_to);
     return t;

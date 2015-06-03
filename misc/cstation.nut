@@ -13,39 +13,11 @@
  *
 **/
 
-enum TrainSide
-{
-	IN,
-	OUT,
-	CROSSING,
-	IN_LINK,
-	OUT_LINK,
-	DEPOT
-}
-
-enum	TrainType
-{
-	STATIONBIT,
-	TET,
-	TXT,
-	TED,
-	TXD,
-	START_POINT,
-	END_POINT,
-	DIRECTION,
-	DEPTH,
-	PLATFORM_LEFT,
-	PLATFORM_RIGHT,
-	OWNER,
-	GOODPLATFORM
-}
-
-
 class cStation extends cClass
 {
 	static	stationdatabase = {};
 	static	VirtualAirports = AIList();	// stations in the air network as item, value=towns
-	static	depotlist = []; // saved
+	static	depotlist = []; // add to savegame, n = stationID, n+1= depot
 	static	function GetStationObject(stationID)
 						{
 						return stationID in cStation.stationdatabase ? cStation.stationdatabase[stationID] : null;
@@ -55,14 +27,13 @@ s_ID		    	= null;	// id of station
 s_Type		        = null;	// AIStation.StationType
 s_SubType		    = null;	// Special subtype of station (depend on station), -2 if the station is virtual (own by industry platform...)
 s_Location		    = null;	// Location of station
-s_Depot	    	    = null;	// depot position and id are the same
 s_Size		        = null;	// size of station: road = number of stations, trains=width, airport=width*height
 s_MaxSize		    = null; // maximum size a station could be
 s_CargoProduce	    = null;	// cargos ID produce at station, value = amount waiting
 s_CargoAccept	    = null;	// cargos ID accept at station, value = cargo rating
 s_Radius	    	= null;	// radius of the station
 s_VehicleCount  	= null;	// vehicle using that station
-s_VehicleMax	    = null;	// max vehicle that station could handle. For rail : -1 open, -2 close, >0 pathfinder task # is running
+s_VehicleMax	    = null;	// max vehicle that station could handle.
 s_VehicleCapacity   = null;	// total capacity of all vehicle using the station, item=cargoID, value=capacity
 s_Owner		        = null;	// list routes that own that station
 s_DateLastUpdate	= null;	// record last date we update infos for the station
@@ -82,7 +53,6 @@ constructor()
 	this.s_Type			    = -1;
 	this.s_SubType		    = -1;
 	this.s_Location		    = -1;
-	this.s_Depot		    = -1;
 	this.s_Size			    = 1;
 	this.s_MaxSize		    = 1;
 	this.s_CargoProduce	    = AIList();
@@ -100,45 +70,39 @@ constructor()
 	this.s_TilesOther		= AIList();
 	this.s_DateBuilt		= AIDate.GetCurrentDate();
 	this.s_UpgradeTry		= 3;
-	//this.s_Virtual          = false;
 	}
 }
 
 function cStation::Load(_stationID)
 // Get a station object
-	{
+{
 	local thatstation = cStation.GetStationObject(_stationID);
-	if (thatstation == null)	{ DWarn("Invalid stationID : "+_stationID+" Cannot get object",1); return false; }
-	if (!AIStation.IsValidStation(thatstation.s_ID))
-			{
-			DWarn("Station #"+_stationID+" doesn't exist, but is still in base : ",1);
-			}
+	if (thatstation == null)	{ DWarn("Invalid stationID : " + _stationID + " Cannot get object", 1); return false; }
+	if (!AIStation.IsValidStation(thatstation.s_ID))	DWarn("Station #" + _stationID + " doesn't exist, but is still in base : ", 1);
 	return thatstation;
-	}
+}
 
 function cStation::SetStationDepot(stationID, depotloc)
 {
 	if (!AIStation.IsValidStation(stationID))	return false;
-	if (!cEngineLib.IsDepotTile(depotloc))	return false;
-	local depot = cStation.GetStationDepotIndex(stationID);
-	if (depot == -1)	{ cStation.depotlist.push(stationID); cStation.depotlist.push(depotloc); }
-				else	cStation.depotlist[depot] = depotloc;
-	local station = cStation.Load(stationID);
-	station.s_Depot = depot;
+	local depotidx = cStation.DepotBase_GetDepotIndex(stationID);
+	if (depotidx == -1)	{ cStation.depotlist.push(stationID); cStation.depotlist.push(depotloc); }
+				else	cStation.depotlist[depotidx] = depotloc;
 }
 
-function cStation::GetDepot(stationID)
+function cStation::GetStationDepot(stationID)
 {
 	local depot = cStation.DepotBase_GetDepotIndex(stationID);
 	if (depot != -1)	depot = cStation.depotlist[depot];
+	if (!cEngineLib.IsDepotTile(depot))	depot = -1;
 	return depot;
 }
 
 function cStation::DepotBase_GetDepotIndex(stationID)
 {
-	for (local i = 0; i < cStation.depotlist; i++)
+	for (local i = 0; i < cStation.depotlist.len(); i++)
 		{
-		if (cStation.depotlist[i] == stationID)	return i+1;
+		if (cStation.depotlist[i] == stationID)	return i + 1;
 		i++;
 		}
 	return -1;
@@ -149,7 +113,7 @@ function cStation::DepotBase_ClearBadStation()
 	local n = [];
 	for (local i = 0; i < cStation.depotlist.len(); i++)
 		{
-		if (AIStation.IsValidStation(cStation.depotlist[i]))	{ n.push(cStation.depotlist[i]; n.push(cStation.depotlist[i+1]); }
+		if (AIStation.IsValidStation(cStation.depotlist[i]))	{ n.push(cStation.depotlist[i]); n.push(cStation.depotlist[i+1]); }
 		i++;
 		}
 	cStation.depotlist.clear();
@@ -159,7 +123,7 @@ function cStation::DepotBase_ClearBadStation()
 function cStation::GetStationName(_stationID)
 // Return station name
 	{
-	local thatstation=cStation.Load(_stationID);
+	local thatstation = cStation.Load(_stationID);
 	if (!thatstation)	{ return "invalid StationID(#"+_stationID+")"; }
 	return thatstation.s_Name;
 	}
@@ -290,7 +254,7 @@ function cStation::InitNewStation(stationID)
 				_station.s_Size = _station.s_Tiles.Count();
 				_station.s_SubType = AIAirport.GetAirportType(_Location);
 				_station.s_Radius = AIAirport.GetAirportCoverageRadius(_station.s_SubType);
-				_station.s_Depot = AIAirport.GetHangarOfAirport(_Location);
+				cStation.SetStationDepot(stationID, AIAirport.GetHangarOfAirport(_Location));
 				break;
 			}
 	if (_station == null)	return;
@@ -302,7 +266,7 @@ function cStation::InitNewStation(stationID)
 	_station.s_VehicleMax = 500;
 	_station.Save();
 	cStation.StationClaimTile(_station.s_Tiles, _station.s_ID);
-	if (_station instanceof cStationRail)	{ _station.GetRailStationMiscInfo(); }
+	if (_station instanceof cStationRail)	_station.DetectRailStation();
 	return _station;
 	}
 
@@ -359,14 +323,6 @@ function cStation::UpdateStationInfos()
 	this.UpdateCargos();
 	}
 
-function cStation::IsDepot(tile)
-// return true if we have a depot at tile
-	{
-	if (tile == null)	{ return false; }
-	local isDepot=(AIMarine.IsWaterDepotTile(tile) || AIRoad.IsRoadDepotTile(tile) || AIRail.IsRailDepotTile(tile) || AIAirport.IsHangarTile(tile));
-	return isDepot;
-	}
-
 // private functions
 function cStation::SetStationName()
 // set name of a station
@@ -395,7 +351,7 @@ function cStation::SetStationName()
 	return true;
 	}
 
-function cStation::StationClaimTile(tile, stationID, useEntry = -1)
+function cStation::StationClaimTile(tile, stationID)
 /**
 /* Add a tile or a list of tiles as own by StationID
 /* @param tile : a tile or an AIList of tiles
@@ -409,17 +365,11 @@ function cStation::StationClaimTile(tile, stationID, useEntry = -1)
 	if (cMisc.IsAIList(tile))	{ wlist.AddList(tile); }
 						else	{ wlist.AddItem(tile, 0); }
 	if (wlist.IsEmpty())	{ return; }
-	local value = -1;
-	if (useEntry != -1)
-		{
-		if (useEntry)	{ value = 1; }
-				else	{ value = 0; }
-		}
 	foreach (t, _ in wlist)
 		{
 		cTileTools.BlackListTile(t, stationID);
 		if (AITile.IsStationTile(t))	{ station.s_Tiles.AddItem(t, stationID); }
-								else	{ station.s_TilesOther.AddItem(t, value); }
+								else	{ station.s_TilesOther.AddItem(t, stationID); }
 		}
 	}
 
@@ -573,15 +523,11 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 	thatstation.s_CargoProduce.AddList(test);
 	}
 
-function cStation::GetLocation(stationID=null)
-// avoid errors, return station location
-	{
-	local thatstation=null;
-	if (stationID == null)	{ thatstation=this; }
-					else	{ thatstation=cStation.Load(stationID); }
-	if (!thatstation)	{ return -1; }
-	if (thatstation.s_Type == AIStation.STATION_TRAIN)	{ return thatstation.s_Train[TrainType.START_POINT]; }
-	return AIStation.GetLocation(thatstation.s_ID);
-	}
-
-
+function cStation::UpdateVehicleCount(station_object_or_id)
+{
+	local station = -1;
+	if (cMisc.ValidInstance(station_object_or_id))	station = station_object_or_id;
+											else	station = cStation.Load(station);
+	if (!station)	return;
+	station.s_VehicleCount = AIVehicleList_Station(station.s_ID).Count();
+}

@@ -248,73 +248,72 @@ function cBuilder::CheckRoadHealth(routeUID)
 // we check a route for trouble & try to solve them
 // return true if no problems were found
 	{
-	local repair=cRoute.LoadRoute(routeUID);
-	if (!repair)	{ DInfo("Cannot load that route for a repair, switching to current route.",1); repair=INSTANCE.main.route; }
-	if (typeof(repair.SourceStation) != "instance" || typeof(repair.TargetStation) != "instance")
-			{ DInfo("Cannot repair that route as stations aren't setup.",1); return false; }
+	local repair = cRoute.LoadRoute(routeUID);
+	if (!repair)	{ DInfo("Cannot load that route for a repair, switching to current route.",1); repair = INSTANCE.main.route; }
 	if (repair.VehicleType != AIVehicle.VT_ROAD)	{ return false; } // only check road type
+	if (!cMisc.ValidInstance(repair.SourceStation) || !cMisc.ValidInstance(repair.TargetStation))
+			{ DInfo("Cannot repair that route as stations aren't setup.", 1); return false; }
 	if (!cBuilder.CheckRouteStationStatus(repair.SourceStation.s_ID) || !cBuilder.CheckRouteStationStatus(repair.TargetStation.s_ID))	{ return true; }
 	// the route itself will get destroy by CheckRouteStationStatus returning false, so we return the route is ok.
-	local good=true;
-	repair.Status=RouteStatus.DAMAGE; // on hold
-	local space="        ";
-	local correction=false;
-	local temp=null;
-	local minGood=false;
-	local srcEntries=AIList();
-	local dstEntries=AIList();
-	DInfo("Checking route health of "+repair.Name,1);
+	local good = true;
+	repair.Status = RouteStatus.DAMAGE; // on hold
+	local space = "        ";
+	local correction = false;
+	local temp = null;
+	local minGood = false;
+	local srcEntries = AIList();
+	local dstEntries = AIList();
+	DInfo("Checking route health of " + repair.Name, 1);
 	// check stations for trouble
 	// source station
-	correction=false;
-	local msg="";
-	local error_repair="Fixed !";
-	local error_error="Fail to fix it";
-	temp=repair.SourceStation;
-	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space+" Source Station is invalid !",1); return false; } // critical issue
-										else	{ DInfo(space+"Source station "+temp.s_Name+" is valid",1); }
+	local msg = "";
+	local error_repair = "Fixed !";
+	local error_error = "Fail to fix it";
+	temp = repair.SourceStation;
+	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space + " Source Station is invalid !", 1); return false; } // critical issue
+										else	{ DInfo(space + "Source station " + temp.s_Name +" is valid", 1); }
 	if (good)
 			{
-			DInfo(space+space+"Station size : "+temp.s_Tiles.Count(),1);
+			DInfo(space + space + "Station size : " + temp.s_Tiles.Count(), 1);
 			foreach (tile, front in temp.s_Tiles)
 				{
 				cDebug.PutSign(tile, "S");
 				srcEntries.AddItem(tile, 0);
-				msg=space+space+"Entry "+tile+" is ";
+				msg = space + space + "Entry " + tile + " is ";
 				if (!AIRoad.AreRoadTilesConnected(tile, front))
 						{
-						msg+="NOT usable. ";
-						correction=cBuilder.BuildRoadFrontTile(tile, front, temp.s_ID);
-						if (correction)	{ msg+=error_repair; srcEntries.SetValue(tile, 1); }
-						else	{ msg+=error_error; good=false; srcEntries.SetValue(tile, -1); }
+						msg += "NOT usable. ";
+						correction = cBuilder.BuildRoadFrontTile(tile, front, temp.s_ID);
+						if (correction)	{ msg += error_repair; srcEntries.SetValue(tile, 1); }
+								else	{ msg += error_error; good = false; srcEntries.SetValue(tile, -1); }
 						}
-				else	{ msg+="usable"; srcEntries.SetValue(tile, -1); }
-				DInfo(msg,1);
+				else	{ msg += "usable"; srcEntries.SetValue(tile, -1); }
+				DInfo(msg, 1);
 				}
 			}
 	cDebug.ClearSigns();
 	// target station
-	correction=false;
-	temp=repair.TargetStation;
-	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space+" Destination Station is invalid !",1); return false; } // critical issue
-										else	{ DInfo(space+"Destination station "+temp.s_Name+" is valid",1); }
+	correction = false;
+	temp = repair.TargetStation;
+	if (!AIStation.IsValidStation(temp.s_ID))	{ DInfo(space + " Destination Station is invalid !", 1); return false; } // critical issue
+										else	{ DInfo(space + "Destination station " + temp.s_Name + " is valid", 1); }
 	if (good)
 			{
-			DInfo(space+space+"Station size : "+temp.s_Tiles.Count(),1);
+			DInfo(space + space + "Station size : " + temp.s_Tiles.Count(), 1);
 			foreach (tile, front in temp.s_Tiles)
 				{
 				cDebug.PutSign(tile, "S");
 				dstEntries.AddItem(tile, 0);
-				msg=space+space+"Entry "+tile+" is ";
+				msg = space + space + "Entry " + tile + " is ";
 				if (!AIRoad.AreRoadTilesConnected(tile, front))
 						{
-						msg+="NOT usable. ";
-						correction=cBuilder.BuildRoadFrontTile(tile, front, temp.s_ID);
-						if (correction)	{ msg+=error_repair; dstEntries.SetValue(tile, 1); }
-						else	{ msg+=error_error; good=false; dstEntries.SetValue(tile, -1); }
+						msg += "NOT usable. ";
+						correction = cBuilder.BuildRoadFrontTile(tile, front, temp.s_ID);
+						if (correction)	{ msg += error_repair; dstEntries.SetValue(tile, 1); }
+								else	{ msg += error_error; good = false; dstEntries.SetValue(tile, -1); }
 						}
-				else	{ msg+="usable"; dstEntries.SetValue(tile, -1); }
-				DInfo(msg,1);
+				else	{ msg += "usable"; dstEntries.SetValue(tile, -1); }
+				DInfo(msg, 1);
 				}
 			}
 	cDebug.ClearSigns();
@@ -323,142 +322,146 @@ function cBuilder::CheckRoadHealth(routeUID)
 		{
 		foreach (dtile, dfront in repair.TargetStation.s_Tiles)
 			{
-			msg=space+"Connnection from "+repair.SourceStation.s_Name+" Entry #"+stile+" to "+repair.TargetStation.s_Name+" Entry #"+dtile+" : ";
+			msg = space + "Connnection from " + repair.SourceStation.s_Name + " Entry #" + stile + " to " + repair.TargetStation.s_Name + " Entry #" + dtile + " : ";
 			if (!cBuilder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
 					{
 					// Removing depots that might prevents us from reaching our target
-					cTrack.DestroyDepot(repair.TargetStation.s_Depot);
-					cTrack.DestroyDepot(repair.SourceStation.s_Depot);
-					msg+="Damage & ";
-					cBuilder.BuildRoadROAD(sfront, dfront, repair.SourceStation.s_ID, false);
+					cTrack.DestroyDepot(cStation.GetStationDepot(repair.TargetStation.s_ID));
+					cTrack.DestroyDepot(cStation.GetStationDepot(repair.SourceStation.s_ID));
+					msg += "Damage & ";
+					cBuilder.BuildPath_ROAD_callback(sfront, dfront, repair.SourceStation.s_ID, false);
 					if (!cBuilder.RoadRunner(sfront, dfront, AIVehicle.VT_ROAD))
-							{ msg+=error_error; good=false; }
-					else	{ msg+=error_repair; minGood=true; break; }
-					DInfo(msg,1);
+							{ msg += error_error; good = false; }
+					else	{ msg += error_repair; minGood = true; break; }
+					DInfo(msg, 1);
 					}
-			else	{ DInfo(msg+"Working",1); minGood=true; break; }
+			else	{ DInfo(msg + "Working", 1); minGood = true; break; }
 			}
 		if (minGood)	{ break; }
 		cDebug.ClearSigns();
 		}
 	// the source depot
-	msg=space+"Source Depot "+repair.SourceStation.s_Depot+" is ";
-	if (!AIRoad.IsRoadDepotTile(repair.SourceStation.s_Depot) || !cTileTools.TileIsOur(repair.SourceStation.s_Depot))
+	local source_depot = cStation.GetStationDepot(repair.SourceStation.s_ID);
+	msg = space + "Source Depot " + source_depot + " is ";
+	if (!AIRoad.IsRoadDepotTile(source_depot) || !cTileTools.TileIsOur(source_depot))
 			{
 			msg+="invalid. ";
-			repair.SourceStation.s_Depot = cBuilder.BuildRoadDepotAtTile(repair.SourceStation.GetRoadStationEntry(), repair.SourceStation.s_ID);
-			if (AIRoad.IsRoadDepotTile(repair.SourceStation.s_Depot))	{ msg+=error_repair; }
-																else	{ msg+=error_error; good=false; }
+			source_depot = cBuilder.BuildRoadDepotAtTile(repair.SourceStation.GetRoadStationEntry(), repair.SourceStation.s_ID);
+			if (source_depot != -1)	cStation.SetStationDepot(repair.SourceStation.s_ID, source_depot);
+			if (AIRoad.IsRoadDepotTile(source_depot))	{ msg+=error_repair; }
+												else	{ msg+=error_error; good = false; }
 			}
 	else	{ msg+="valid"; }
 	DInfo(msg,1);
-	local depotfront=AIRoad.GetRoadDepotFrontTile(repair.SourceStation.s_Depot);
+	local depotfront = AIRoad.GetRoadDepotFrontTile(source_depot);
 	if (good)
 			{
-			msg=space+space+"Depot entry is ";
-			if (!AIRoad.AreRoadTilesConnected(repair.SourceStation.s_Depot, depotfront))
+			msg = space + space + "Depot entry is ";
+			if (!AIRoad.AreRoadTilesConnected(source_depot, depotfront))
 					{
-					msg+="not usable. ";
-					correction=cBuilder.BuildRoadFrontTile(repair.SourceStation.s_Depot, depotfront, repair.SourceStation.s_ID);
-					if (correction)	{ msg+=error_repair; }
-							else	{ msg+=error_error; good=false; }
+					msg += "not usable. ";
+					correction = cBuilder.BuildRoadFrontTile(source_depot, depotfront, repair.SourceStation.s_ID);
+					if (correction)	{ msg += error_repair; }
+							else	{ msg += error_error; good=false; }
 					}
-			else	{ msg+="usable"; }
-			DInfo(msg,1);
+			else	{ msg += "usable"; }
+			DInfo(msg, 1);
 			}
 	// the destination depot
-	msg=space+"Destination Depot "+repair.TargetStation.s_Depot+" is ";
-	if (!AIRoad.IsRoadDepotTile(repair.TargetStation.s_Depot) || !cTileTools.TileIsOur(repair.TargetStation.s_Depot))
+	local target_depot = cStation.GetStationDepot(repair.TargetStation.s_ID);
+	msg = space + "Destination Depot " + target_depot + " is ";
+	if (!AIRoad.IsRoadDepotTile(target_depot) || !cTileTools.TileIsOur(target_depot))
 			{
-			msg+="invalid. ";
-			repair.TargetStation.s_Depot = cBuilder.BuildRoadDepotAtTile(repair.TargetStation.GetRoadStationEntry(), repair.TargetStation.s_ID);
-			if (AIRoad.IsRoadDepotTile(repair.TargetStation.s_Depot))	{ msg+=error_repair; }
-			else	{ msg+=error_error; good=false; }
+			msg += "invalid. ";
+			target_depot = cBuilder.BuildRoadDepotAtTile(repair.TargetStation.GetRoadStationEntry(), repair.TargetStation.s_ID);
+			if (target_depot != -1)	cStation.SetStationDepot(repair.TargetStation.s_ID, target_depot);
+			if (AIRoad.IsRoadDepotTile(target_depot))	{ msg += error_repair; }
+												else	{ msg += error_error; good = false; }
 			}
-	else	{ msg+="valid"; }
-	DInfo(msg,1);
-	local depotfront=AIRoad.GetRoadDepotFrontTile(repair.TargetStation.s_Depot);
+	else	{ msg += "valid"; }
+	DInfo(msg, 1);
+	local depotfront = AIRoad.GetRoadDepotFrontTile(target_depot);
 	if (good)
 			{
-			msg=space+space+"Depot entry is ";
-			if (!AIRoad.AreRoadTilesConnected(repair.TargetStation.s_Depot, depotfront))
+			msg = space + space + "Depot entry is ";
+			if (!AIRoad.AreRoadTilesConnected(target_depot, depotfront))
 					{
-					msg+="not usable. ";
-					correction = cBuilder.BuildRoadFrontTile(repair.TargetStation.s_Depot, depotfront, repair.TargetStation.s_ID);
-					if (correction)	{ msg+=error_repair; }
-							else	{ msg+=error_error; good=false; }
+					msg += "not usable. ";
+					correction = cBuilder.BuildRoadFrontTile(target_depot, depotfront, repair.TargetStation.s_ID);
+					if (correction)	{ msg += error_repair; }
+							else	{ msg += error_error; good = false; }
 					}
-			else	{ msg+="usable"; }
-			DInfo(msg,1);
+			else	{ msg += "usable"; }
+			DInfo(msg, 1);
 			}
 	if (good)
 			{
 			// if we are still here, both depots are working as they should
-			local src_depot_front=AIRoad.GetRoadDepotFrontTile(repair.SourceStation.s_Depot);
-			local tgt_depot_front=AIRoad.GetRoadDepotFrontTile(repair.TargetStation.s_Depot);
+			local src_depot_front = AIRoad.GetRoadDepotFrontTile(source_depot);
+			local tgt_depot_front = AIRoad.GetRoadDepotFrontTile(target_depot);
 			// source station validity with its own depot
 			foreach (tile, front in repair.SourceStation.s_Tiles)
 				{
-				msg=space+"Connnection from source station -> Entry "+tile+" to its depot : ";
+				msg = space + "Connnection from source station -> Entry " + tile + " to its depot : ";
 				if (!cBuilder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))
 						{
-						msg+="Damage & ";
-						cBuilder.BuildRoadROAD(front, src_depot_front, repair.SourceStation.s_ID, false);
+						msg += "Damage & ";
+						cBuilder.BuildPath_ROAD_callback(front, src_depot_front, repair.SourceStation.s_ID, false);
 						if (!cBuilder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD)) // source depot cannot be reach
 								{
-								msg+=error_error; good=false;
+								msg += error_error; good = false;
 								local other_depot = -1;
 								if (cBuilder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))	{ other_depot = 1; }
 								// but target depot could be reach
 								srcEntries.SetValue(tile, other_depot);
 								}
-						else	{ msg+=error_repair; srcEntries.SetValue(tile, 1); }
-						DInfo(msg,1);
+						else	{ msg += error_repair; srcEntries.SetValue(tile, 1); }
+						DInfo(msg, 1);
 						}
-				else	{ DInfo(msg+"Working",1); srcEntries.SetValue(tile, 1); }
+				else	{ DInfo(msg + "Working", 1); srcEntries.SetValue(tile, 1); }
 				cDebug.ClearSigns();
 				}
 			// target station validity with its own depot
 			foreach (tile, front in repair.TargetStation.s_Tiles)
 				{
-				msg=space+"Connnection from destination station -> Entry "+tile+" to its depot : ";
+				msg = space + "Connnection from destination station -> Entry " + tile + " to its depot : ";
 				if (!cBuilder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 						{
-						msg+="Damage & ";
-						cBuilder.BuildRoadROAD(front, tgt_depot_front, repair.TargetStation.s_ID, false);
+						msg += "Damage & ";
+						cBuilder.BuildPath_ROAD_callback(front, tgt_depot_front, repair.TargetStation.s_ID, false);
 						if (!cBuilder.RoadRunner(front, tgt_depot_front, AIVehicle.VT_ROAD))
 								{
-								msg+=error_error; good=false;
+								msg += error_error; good = false;
 								local other_depot = -1;
 								if (cBuilder.RoadRunner(front, src_depot_front, AIVehicle.VT_ROAD))	{ other_depot = 1; }
 								dstEntries.SetValue(tile, other_depot);
 								}
-						else	{ msg+=error_repair; dstEntries.SetValue(tile, 1); }
-						DInfo(msg,1);
+						else	{ msg += error_repair; dstEntries.SetValue(tile, 1); }
+						DInfo(msg, 1);
 						}
-				else	{ DInfo(msg+"Working",1); dstEntries.SetValue(tile, 1); }
+				else	{ DInfo(msg + "Working", 1); dstEntries.SetValue(tile, 1); }
 				cDebug.ClearSigns();
 				}
 			}
 	// Now clear out dead station entries
 	srcEntries.KeepValue(-1);
-	DInfo("Source station entries : "+repair.SourceStation.s_Tiles.Count()+" working "+srcEntries.Count()+" dead",1);
+	DInfo("Source station entries : " + repair.SourceStation.s_Tiles.Count() + " working " + srcEntries.Count() + " dead", 1);
 	foreach (tile, _ in srcEntries)
 		{
-		DInfo(space+"Removing dead source station -> Entry "+tile,1);
+		DInfo(space + "Removing dead source station -> Entry " + tile, 1);
 		if (cTileTools.DemolishTile(tile))	{ repair.SourceStation.s_Tiles.RemoveItem(tile); }
 		}
 	dstEntries.KeepValue(-1);
-	DInfo("Destination station entries : "+repair.TargetStation.s_Tiles.Count()+" working "+dstEntries.Count()+" dead",1);
+	DInfo("Destination station entries : " + repair.TargetStation.s_Tiles.Count() + " working " + dstEntries.Count() + " dead", 1);
 	foreach (tile, _ in dstEntries)
 		{
-		DInfo(space+"Removing dead destination station -> Entry "+tile,1);
+		DInfo(space + "Removing dead destination station -> Entry " + tile, 1);
 		if (cTileTools.DemolishTile(tile))	{ repair.TargetStation.s_Tiles.RemoveItem(tile); }
 		}
 	repair.SourceStation.s_Location = AIStation.GetLocation(repair.SourceStation.s_ID);
 	repair.TargetStation.s_Location = AIStation.GetLocation(repair.TargetStation.s_ID);
 	cDebug.ClearSigns();
-	if (minGood || good)	{ repair.Status=RouteStatus.WORKING; }
+	if (minGood || good)	{ repair.Status = RouteStatus.WORKING; }
 	return minGood;
 	}
 
@@ -503,7 +506,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 	else	{ in_town = road.TargetProcess.IsTown; }
 	DInfo("Upgrading road station "+work.s_Name,0);
 	work.s_DateLastUpgrade = AIDate.GetCurrentDate(); // setup the date in case of failure
-	local depot_id=work.s_Depot;
+	local depot_id = cStation.GetStationDepot(work.s_ID);
 	DInfo("Road depot is at "+cMisc.Locate(depot_id),2);
 	// first lookout where is the station, where is its entry, where is the depot, where is the depot entry
 	local sta_pos=work.s_Location;
@@ -610,7 +613,7 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 			{
 			DWarn("Road depot was destroy while upgrading",1);
 			new_dep_pos = cBuilder.BuildRoadDepotAtTile(new_sta_pos, work.s_ID);
-			work.s_Depot = new_dep_pos;
+			cStation.SetStationDepot(work.s_ID, new_dep_pos);
 			cError.ClearError();
 			// Should be more than enough
 			}
@@ -624,12 +627,12 @@ function cBuilder::RoadStationNeedUpgrade(roadidx,start)
 			// Retry connect depot if it was rebuilt
 			if (depotdead)
 				{
-				local dep_front = AIRoad.GetRoadDepotFrontTile(work.s_Depot);
+				local dep_front = AIRoad.GetRoadDepotFrontTile(cStation.GetStationDepot(work.s_ID));
 				foreach (tile, front in work.s_Tiles)
 					{
 					if (!cBuilder.RoadRunner(front, dep_front, AIVehicle.VT_ROAD))
 						{
-						cBuilder.BuildRoadROAD(front, dep_front, work.s_ID, false);
+						cBuilder.BuildPath_ROAD_callback(front, dep_front, work.s_ID, false);
 						}
 					}
 				}
@@ -807,7 +810,7 @@ function cBuilder::RoadRunner(source, target, road_type, distance = null)
 	return result;
 	}
 
-function cBuilder::BuildRoadROAD(head1, head2, stationID, primarylane)
+function cBuilder::BuildPath_ROAD_callback(head1, head2, stationID, primarylane)
 // Pathfind and building the road.
 // cPathfinder will callback us when primarylane is false
 	{

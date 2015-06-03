@@ -157,6 +157,17 @@ function cCarrier::FindClosestHangarForAircraft(veh)
 	return -1;
 	}
 
+function cCarrier::VehicleHaveDepotOrders(veh)
+// return true if the vehicle is going to a depot or if it have orders to going to one
+{
+	if (cEngineLib.VehicleIsGoingToStopInDepot(veh))	return true;
+    for (local i = 0; i < AIOrder.GetOrderCount(veh); i++)
+		{
+		if (AIOrder.IsGotoDepotOrder(veh, i))	return true;
+		}
+	return false;
+}
+
 function cCarrier::TrainSetDepotOrder(veh)
 // Set orders to force a train going to depot
 	{
@@ -175,21 +186,22 @@ function cCarrier::TrainSetDepotOrder(veh)
 	if (!AIRail.IsRailDepotTile(srcDepot))	{ srcDepot = dstDepot; }
 	if (!AIRail.IsRailDepotTile(dstDepot))	{ dstDepot = srcDepot; }
 	if (!AIRail.IsRailDepotTile(srcDepot))	{ DError("Cannot send train to a depot as i cannot find any valid depot where sent it.",1); AIVehicle.SendVehicleToDepot(veh); return false; }
-	if (AIOrder.GetOrderCount(veh) != 2)
+	if (AIOrder.GetOrderCount(veh) < 2)
 			{
 			DWarn("Train "+cCarrier.GetVehicleName(veh)+" doesn't have valid number of orders.",1);
 			cCarrier.VehicleSetOrders(veh);
 			}
 	if (!AIOrder.InsertOrder(veh, 1, srcDepot, AIOrder.OF_STOP_IN_DEPOT))
-			{ DError("Vehicle refuse goto closest airport order",2); }
+			{ DError("Train refuse goto depot order",2); }
 	if (!AIOrder.InsertOrder(veh, 3, dstDepot, AIOrder.OF_STOP_IN_DEPOT))
-			{ DError("Vehicle refuse goto closest airport order",2); }
+			{ DError("Train refuse goto depot order",2); }
 	}
 
 function cCarrier::VehicleSetDepotOrder(veh)
 // set all orders of the vehicle to force it going to a depot
 	{
 	if (veh == null)	{ return; }
+	if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_RAIL)	{ cCarrier.TrainSetDepotOrder(veh); return; }
 	local idx = cCarrier.VehicleFindRouteIndex(veh);
 	local road = cRoute.LoadRoute(idx, true);
 	local homedepot = null;
@@ -199,22 +211,22 @@ function cCarrier::VehicleSetDepotOrder(veh)
 	if (road != false)
 			{
 			homedepot = road.GetDepot(idx);
-			srcValid = (typeof(road.SourceStation) == "instance");
-			dstValid = (typeof(road.TargetStation) == "instance");
+			srcValid = cMisc.ValidInstance(road.SourceStation);
+			dstValid = cMisc.ValidInstance(road.TargetStation);
 			}
 	local prevDest=AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT);
 	AIOrder.UnshareOrders(veh);
 	cEngineLib.VehicleOrderClear(veh);
-	if (homedepot == null || !cStation.IsDepot(homedepot))
+	if (homedepot == null || !cEngineLib.IsDepotTile(homedepot))
 			{
-			local vehloc=AIVehicle.GetLocation(veh);
-			if (AIVehicle.GetVehicleType(veh)==AIVehicle.VT_ROAD)
+			local vehloc = AIVehicle.GetLocation(veh);
+			if (AIVehicle.GetVehicleType(veh) == AIVehicle.VT_ROAD)
 					{
 					cCarrier.StopVehicle(veh);
 					// first stop it from running everywhere
-					vehloc=AIVehicle.GetLocation(veh); // now that the vehicle is stopped
-					local possibleplace=cTileTools.GetTilesAroundPlace(AIVehicle.GetLocation(veh),100);
-					local depottile=AIList();
+					vehloc = AIVehicle.GetLocation(veh); // now that the vehicle is stopped
+					local possibleplace = cTileTools.GetTilesAroundPlace(AIVehicle.GetLocation(veh),100);
+					local depottile = AIList();
 					depottile.AddList(possibleplace);
 					depottile.Valuate(AIRoad.IsRoadDepotTile);
 					depottile.KeepValue(1);
@@ -224,16 +236,16 @@ function cCarrier::VehicleSetDepotOrder(veh)
 							{
 							foreach (depotloc, dummy in depottile)
 							if (cBuilder.RoadRunner(vehloc, depotloc, AIVehicle.VT_ROAD))
-									{ homedepot=depotloc; DInfo("Sending "+cCarrier.GetVehicleName(veh)+" to a backup depot we found near it",1); break; }
+									{ homedepot = depotloc; DInfo("Sending "+cCarrier.GetVehicleName(veh)+" to a backup depot we found near it",1); break; }
 							}
 					else
 							{
 							DInfo("Trying to build a depot to sent "+cCarrier.GetVehicleName(veh)+" there",1);
-							homedepot=cBuilder.BuildRoadDepotAtTile(vehloc, -1);
-							if (homedepot==-1)	{ homedepot==null; }
+							homedepot = cBuilder.BuildRoadDepotAtTile(vehloc, -1);
+							if (homedepot == -1)	{ homedepot == null; }
 							}
-					if (homedepot == null)	{ return; }
 					cCarrier.StartVehicle(veh);
+					if (homedepot == null)	{ return; }
 					}
 			}
 	if (srcValid && !isAircraft)	{ AIOrder.AppendOrder(veh, road.SourceStation.s_Location, AIOrder.OF_NONE); }
@@ -241,10 +253,12 @@ function cCarrier::VehicleSetDepotOrder(veh)
 	if (isAircraft)
 			{
 			local shortpath = cCarrier.FindClosestHangarForAircraft(veh);
-			DInfo("Routing aircraft "+cCarrier.GetVehicleName(veh)+" to the closest airport at "+shortpath,2);
+			DInfo("Routing aircraft " + cCarrier.GetVehicleName(veh) + " to the closest airport at " + shortpath,2);
+			homedepot = shortpath;
 			if (!AIOrder.AppendOrder(veh, shortpath, AIOrder.OF_STOP_IN_DEPOT))
 					{ DError("Vehicle refuse goto closest airport order",2); }
 			}
+	// Adding depot orders 3 time, so we should endup with at least 3 orders minimum to avoid get caught again by orders check
 	if (homedepot != null)
 			{
 			if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
@@ -254,9 +268,12 @@ function cCarrier::VehicleSetDepotOrder(veh)
 			if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
 					{ DError("Vehicle refuse goto source depot order",2); }
 			}
-	// Adding depot orders 3 time, so we should endup with at least 3 orders minimum to avoid get caught again by orders check
-	if (dstValid && cStation.IsDepot(road.TargetStation.s_Depot))	{ homedepot=road.TargetStation.s_Depot; }
-	if (dstValid && !isAircraft)	{ AIOrder.AppendOrder(veh, road.TargetStation.s_Location, AIOrder.OF_NONE); }
+	if (dstValid)
+		{
+		local ddepot = cStation.GetStationDepot(road.TargetStation.s_ID);
+		if (ddepot != -1)	homedepot = ddepot;
+		if (isAircraft)	AIOrder.AppendOrder(veh, road.TargetStation.s_Location, AIOrder.OF_NONE);
+		}
 	if (homedepot != null)
 			{
 			if (!AIOrder.AppendOrder(veh, homedepot, AIOrder.OF_STOP_IN_DEPOT))
@@ -267,7 +284,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 					{ DError("Vehicle refuse goto destination depot order",2); }
 			}
 	if (road != false && !isAircraft)
-		for (local jjj=0; jjj < AIOrder.GetOrderCount(veh); jjj++)
+		for (local jjj = 0; jjj < AIOrder.GetOrderCount(veh); jjj++)
 			// this send vehicle to met dropoff station before its depot
 				{
 				if (!dstValid)	{ break; }
@@ -275,7 +292,7 @@ function cCarrier::VehicleSetDepotOrder(veh)
 						{
 						if (AIOrder.GetOrderDestination(veh, AIOrder.ORDER_CURRENT) != prevDest)
 								{
-								AIOrder.SkipToOrder(veh, jjj+1);
+								AIOrder.SkipToOrder(veh, jjj + 1);
 								}
 						else	{ AIOrder.SkipToOrder(veh, jjj+1); break; }
 						}
@@ -298,34 +315,34 @@ function cCarrier::VehicleSetDepotOrder(veh)
 function cCarrier::VehicleOrderIsValid(vehicle,orderpos)
 // Really check if a vehicle order is valid
 	{
-	local ordercount=AIOrder.GetOrderCount(vehicle);
+	local ordercount = AIOrder.GetOrderCount(vehicle);
 	if (ordercount == 0)	{ return true; }
 	local ordercheck = AIOrder.ResolveOrderPosition(vehicle, orderpos);
-	if (!AIOrder.IsValidVehicleOrder(vehicle, ordercheck)) { print("caught bad order from AIOrder.IsValidOrder"); return false; }
-	local tiletarget=AIOrder.GetOrderDestination(vehicle, ordercheck);
-	local vehicleType=AIVehicle.GetVehicleType(vehicle);
-	local stationID=AIStation.GetStationID(tiletarget);
+	if (!AIOrder.IsValidVehicleOrder(vehicle, ordercheck)) { DInfo("caught bad order from AIOrder.IsValidOrder", 2); return false; }
+	local tiletarget = AIOrder.GetOrderDestination(vehicle, ordercheck);
+	local vehicleType = AIVehicle.GetVehicleType(vehicle);
+	local stationID = AIStation.GetStationID(tiletarget);
 	switch (vehicleType)
 			{
 			case	AIVehicle.VT_RAIL:
-				local is_station=AIStation.HasStationType(stationID,AIStation.STATION_TRAIN);
-				local is_depot=AIRail.IsRailDepotTile(tiletarget);
+				local is_station = AIStation.HasStationType(stationID,AIStation.STATION_TRAIN);
+				local is_depot = AIRail.IsRailDepotTile(tiletarget);
 				if (!is_depot && !is_station) { return false; }
 				break;
 			case	AIVehicle.VT_WATER:
-				local is_station=AIStation.HasStationType(stationID,AIStation.STATION_DOCK);
-				local is_depot=AIMarine.IsWaterDepotTile(tiletarget);
+				local is_station = AIStation.HasStationType(stationID,AIStation.STATION_DOCK);
+				local is_depot = AIMarine.IsWaterDepotTile(tiletarget);
 				if (!is_station && !is_depot) { return false; }
 				break;
 			case	AIVehicle.VT_AIR:
-				local is_station=AIStation.HasStationType(stationID,AIStation.STATION_AIRPORT);
-				local is_depot=AIAirport.GetHangarOfAirport(tiletarget);
+				local is_station = AIStation.HasStationType(stationID,AIStation.STATION_AIRPORT);
+				local is_depot = AIAirport.GetHangarOfAirport(tiletarget);
 				if (!is_station && !is_depot)	{ return false; }
 				break;
 			case	AIVehicle.VT_ROAD:
-				local truckcheck=AIStation.HasStationType(stationID,AIStation.STATION_TRUCK_STOP);
-				local buscheck=AIStation.HasStationType(stationID,AIStation.STATION_BUS_STOP);
-				local depotcheck=AIRoad.IsRoadDepotTile(tiletarget);
+				local truckcheck = AIStation.HasStationType(stationID,AIStation.STATION_TRUCK_STOP);
+				local buscheck = AIStation.HasStationType(stationID,AIStation.STATION_BUS_STOP);
+				local depotcheck = AIRoad.IsRoadDepotTile(tiletarget);
 				if (!truckcheck && !buscheck && !depotcheck) { return false; }
 				break;
 			}

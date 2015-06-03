@@ -125,90 +125,70 @@ function RailFollower::FindRailOwner()
 		// first re-assign trains state to each station (taker, droppper, using entry/exit)
 		local train_list = AIVehicleList_Group(road.GroupID);
 		full_trainlist.RemoveList(train_list);
-		foreach (plat, _ in road.SourceStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Source_RailEntry);
-		foreach (plat, _ in road.TargetStation.s_Platforms)	cBuilder.PlatformConnectors(plat, road.Target_RailEntry);
 		train_list.Valuate(AIVehicle.GetState);
 		foreach (trains, state in train_list)
 			{
-			cRoute.AddTrain(uid, trains);
+			cRoute.AddTrainToRoute(uid, trains);
             // We restart all trains here
 			if (state == AIVehicle.VS_IN_DEPOT || state == AIVehicle.VS_STOPPED)	cCarrier.StartVehicle(trains);
 			cCarrier.HandleTrainStuck(trains);
 			}
 		DInfo("Finding rails for route "+road.Name);
-		if (!road.Primary_RailLink)	{ DInfo("FindRailOwner mark "+road.UID+" undoable",1); road.RouteIsNotDoable(); continue; }
-		local stationID = road.SourceStation.s_ID;
-		local src_target, dst_target, src_link, dst_link = null;
-		if (road.Source_RailEntry)	src_target = road.SourceStation.s_EntrySide[TrainSide.IN];
-                            else	src_target = road.SourceStation.s_ExitSide[TrainSide.IN];
-		if (road.Target_RailEntry)	dst_target = road.TargetStation.s_EntrySide[TrainSide.OUT];
-                            else	dst_target = road.TargetStation.s_ExitSide[TrainSide.OUT];
-		DInfo("src_target="+cMisc.Locate(src_target)+" dst_target="+cMisc.Locate(dst_target),2);
 		local bad = false;
 		local src_tiles = AIList();
 		local dst_tiles = AIList();
-		local test_tiles = AIList();
-		// Find main line tracks (source station -> destination station)
-		src_link = src_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry);
-		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry)
-		src_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
-		bad = (src_tiles.IsEmpty());
-		DInfo("Main line rails : "+src_tiles.Count(), 2);
-		if (!src_tiles.IsEmpty())
+		local forward = cDirection.GetForwardRelativeFromDirection(road.SourceStation.s_Direction);
+		local src_tile, src_link, dst_tile, dst_link;
+		src_tile = road.SourceStation.s_MainLine;
+		src_link = src_tile - forward;
+		dst_tile = road.TargetStation.s_AltLine;
+		dst_link = dst_tile + forward;
+		src_tiles = RailFollower.GetRailPathing([src_tile, src_link], [dst_tile, dst_link]);
+		if (src_tiles.IsEmpty())	bad = true;
+		DInfo("Main line rails: " + src_tiles.Count(), 2);
+		if (!bad)	{
+					forward = cDirection.GetForwardRelativeFromDirection(road.TargetStation.s_Direction);
+					src_tile = road.TargetStation.s_MainLine;
+					src_link = src_tile - forward;
+					dst_tile = road.SourceStation.s_AltLine;
+					dst_link = dst_tile + forward;
+					dst_tiles = RailFollower.GetRailPathing([src_tile, src_link], [dst_tile, dst_link]);
+					}
+		DInfo("Alternate line rails : "+ dst_tiles.Count(), 2);
+		if (!bad)	bad = (dst_tiles.IsEmpty());
+		// Add depot as tile to claims
+		local depot = cStation.GetStationDepot(road.SourceStation.s_ID);
+		if (depot == -1)	bad = true;
+		local depot_front = AIRail.GetRailDepotFrontTile(depot);
+		src_tiles.AddItem(depot, 0);
+		src_tiles.AddItem(depot_front, 0);
+		depot = cStation.GetStationDepot(road.TargetStation.s_ID);
+		if (depot == -1)	bad = true;
+		depot_front = AIRail.GetRailDepotFrontTile(depot);
+		dst_tiles.AddItem(depot, 0);
+		dst_tiles.AddItem(depot_front, 0);
+		// and claims platform front tiles
+		foreach (platidx, _ in road.SourceStation.s_Platforms)
 			{
-			road.SourceStation.SetPrimaryLineBuilt();
-			road.TargetStation.SetPrimaryLineBuilt();
+			if (platidx < 0)	continue;
+			local f = cStationRail.GetPlatformFront(road.SourceStation, platidx);
+			src_tiles.AddItem(f, 0);
 			}
-		local notbad = false; // to find if at least 1 platform is working, else the station is bad/unusable
-		// Find each source station platform tracks
-		foreach (platnum, _ in road.SourceStation.s_Platforms)
+		foreach (platidx, _ in road.TargetStation.s_Platforms)
 			{
-			test_tiles = RailFollower.FindRouteRails(src_target, platnum);
-			if (!notbad)	notbad = (!test_tiles.IsEmpty());
-			src_tiles.AddList(test_tiles);
+			if (platidx < 0)	continue;
+			local f = cStationRail.GetPlatformFront(road.TargetStation, platidx);
+			dst_tiles.AddItem(f, 0);
 			}
-			if (!notbad && !bad)	bad = true;
-			notbad = false;
-		// Find each target station platform tracks
-		foreach (platnum, _ in road.TargetStation.s_Platforms)
-			{
-			test_tiles = RailFollower.FindRouteRails(dst_target, platnum);
-			if (!notbad)	notbad = (!test_tiles.IsEmpty());
-			dst_tiles.AddList(test_tiles);
-			}
-		if (!notbad && !bad)	bad = true;
-		local bad_alt = false;
-		// Find the tracks from source depot -> source station
-		local depot = null;
-		if (road.Source_RailEntry)	depot = road.SourceStation.s_EntrySide[TrainSide.DEPOT];
-                            else	depot = road.SourceStation.s_ExitSide[TrainSide.DEPOT];
-		test_tiles = RailFollower.FindRouteRails(src_target, depot);
-		src_tiles.AddList(test_tiles);
-		// Find the tracks from target depot -> target station
-		if (road.Target_RailEntry)	depot = road.TargetStation.s_EntrySide[TrainSide.DEPOT];
-                            else	depot = road.TargetStation.s_ExitSide[TrainSide.DEPOT];
-		test_tiles = RailFollower.FindRouteRails(dst_target, depot);
-		dst_tiles.AddList(test_tiles);
-		// Find alternate line tracks (target station -> source station)
-		if (road.Source_RailEntry)	dst_target = road.SourceStation.s_EntrySide[TrainSide.OUT];
-                            else	dst_target = road.SourceStation.s_ExitSide[TrainSide.OUT];
-		if (road.Target_RailEntry)	src_target = road.TargetStation.s_EntrySide[TrainSide.IN];
-                            else	src_target = road.TargetStation.s_ExitSide[TrainSide.IN];
-		src_link = src_target + cStationRail.GetRelativeTileBackward(road.TargetStation.s_ID, road.Target_RailEntry);
-		dst_link = dst_target + cStationRail.GetRelativeTileBackward(road.SourceStation.s_ID, road.Source_RailEntry)
-		test_tiles = RailFollower.GetRailPathing([src_target, src_link], [dst_target, dst_link]);
-		DInfo("Alternate line rails : "+test_tiles.Count(), 2);
-		if (!bad_alt)	bad_alt = (test_tiles.IsEmpty());
-		if (!bad_alt)	{ road.SourceStation.SetAlternateLineBuilt(); road.TargetStation.SetAlternateLineBuilt(); }
-		dst_tiles.AddList(test_tiles);
 		// Remove all tiles we found from the "unknown" tiles list
 		cRoute.RouteDamage.RemoveList(src_tiles);
 		cRoute.RouteDamage.RemoveList(dst_tiles);
 		// Now assign tiles to their station, and claim them
-		cStation.StationClaimTile(src_tiles, road.SourceStation.s_ID, road.Source_RailEntry);
-		cStation.StationClaimTile(dst_tiles, road.TargetStation.s_ID, road.Target_RailEntry);
-		road.SourceStation.s_Train[TrainType.OWNER] = road.UID;
-		road.TargetStation.s_Train[TrainType.OWNER] = road.UID;
+		cStation.StationClaimTile(src_tiles, road.SourceStation.s_ID);
+		cStation.StationClaimTile(dst_tiles, road.TargetStation.s_ID);
+		// now setup maxtrain
+		cStationRail.DefineMaxTrain(road.SourceStation);
+		road.TargetStation.s_VehicleMax = road.SourceStation.s_VehicleMax;
 		// Check if founded tiles are of the same railtype type (game saved while we were upgrading them)
 		src_tiles.AddList(dst_tiles);
 		src_tiles.Valuate(AIRail.GetRailType);
@@ -223,34 +203,14 @@ function RailFollower::FindRailOwner()
 						// We must remove orders so they stop trying to reach a station they couldn't reach and goes to depot instead
 						cEngineLib.VehicleOrderClear(trains);
 						cCarrier.VehicleSendToDepot(trains, DepotAction.LINEUPGRADE);
+						cEngineLib.VehicleOrderSkipCurrent(trains);
 						}
 					}
-		local killit = false;
-		if (bad)	killit = true;
-			else	{
-				// Change alternate track state if it doesn't match its real state
-				if (bad_alt)
-							{
-							if (road.Secondary_RailLink)	{ road.Secondary_RailLink = false; road.Route_GroupNameSave(); }
-							local r1, r2 = null;
-							if (road.Source_RailEntry)	r1 = road.SourceStation.s_EntrySide[TrainSide.OUT];
-                                                else	r1 = road.SourceStation.s_ExitSide[TrainSide.OUT];
-							if (road.Target_RailEntry)	r2 = road.TargetStation.s_EntrySide[TrainSide.IN];
-                                                else	r2 = road.TargetStation.s_ExitSide[TrainSide.IN];
-							road.SourceStation.s_TilesOther.AddItem(r1, 0);
-							road.TargetStation.s_TilesOther.AddItem(r2, 0);
-							cRoute.RouteDamage.RemoveItem(r1);
-							cRoute.RouteDamage.RemoveItem(r2);
-							if (road.SourceStation.GetRailStationOUT(road.Source_RailEntry) != -1 && road.TargetStation.GetRailStationIN(road.Target_RailEntry) != -1) cBuilder.RailStationPathfindAltTrack(road); // pre-run pathfinding
-							}
-				if (!road.Secondary_RailLink && !bad_alt)	{ road.Secondary_RailLink = true; road.Route_GroupNameSave(); }
-				}
-		if (killit)
-				{
-				DInfo("FindRailOwner mark "+road.UID+" undoable",1);
-				full_trainlist.AddList(train_list);
-				road.RouteIsNotDoable();
-				}
+		if (bad)	{
+					DInfo("FindRailOwner mark "+road.UID+" undoable",1);
+					full_trainlist.AddList(train_list);
+					road.RouteIsNotDoable();
+					}
 		}
 	cRoute.RouteDamage.Valuate(AITile.IsStationTile);
 	cRoute.RouteDamage.RemoveValue(1);
@@ -266,7 +226,7 @@ function RailFollower::FindRailOwner()
 		cCarrier.VehicleIsWaitingInDepot(false);
 		delay++;
 		}
-	DInfo("Unknown rails remaining : "+cRoute.RouteDamage.Count());
+	DInfo("Unknown rails remaining : " + cRoute.RouteDamage.Count());
 	cTrack.RailCleaner(cRoute.RouteDamage);
 	cRoute.RouteDamage.Clear();
 }
@@ -371,7 +331,7 @@ function RailFollower::TryUpgradeLine(vehicle)
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];
 	foreach (groups, _ in groups_list)	wagon_lost.push(cCarrier.GetTrainBalancingStats(groups, 0, false));
-	AIController.Break("stop");
+//	AIController.Break("stop");
 	foreach (veh, uid in all_vehicle)
             {
 /*            local z = cEngineLib.VehicleGetNumberOfWagons(veh);
@@ -439,3 +399,245 @@ function RailFollower::TryUpgradeLine(vehicle)
 	return 1;
 }
 
+function cBuilder::Path_OptimizerHill(path)
+{
+	if (path == null)	return;
+	cBanker.RaiseFundsBigTime();
+	local p1, p2, p3, p4 = null;
+	local walked = [];
+	cDebug.ClearSigns();
+	while (path != null)
+		{
+		local p0 = path.GetTile();
+		if (p1 != null && AIMap.DistanceManhattan(p0, p1) != 1)
+				{
+				AIController.Break("bridge/tunnel");
+				p1 = null;
+				p2 = null;
+				p3 = null;
+				p4 = null;
+				}
+//		AISign.BuildSign(p0, AITile.GetMinHeight(p0));
+		local slope = AITile.GetSlope(p0);
+		// detect if we have a turn
+			pftask.pathHandler.cost.max_bridge_length = AIGameSettings.GetValue("max_bridge_length");
+			pftask.pathHandler.cost.max_tunnel_length = AIGameSettings.GetValue("max_tunnel_length");
+		// put a limit to tiles to analyze depending on the lowest bridge or tunnel
+		local max_walked = min(AIGameSettings.GetValue("max_bridge_length"), AIGameSettings.GetValue("max_tunnel_length"));
+		local noturn = false;
+		if (p1 != null && slope == AITile.SLOPE_FLAT && walked.len() < 2)	{ walked = []; walked.push(p0); }
+		if (p1 != null && walked.len() > 0 && (AITile.GetMinHeight(walked[0]) != AITile.GetMinHeight(p0) || AITile.GetMaxHeight(walked[0]) != AITile.GetMaxHeight(p0))) walked.push(p0);
+		if (walked.len() > 1 && (slope == AITile.SLOPE_FLAT || p1 == null))
+			{
+			if (p1 != null)	walked.push(p0); // we had it if it's not a bridge/tunnel only
+			local as_list = AIList();
+			local s_x = AIMap.GetTileX(walked[0]);
+			local s_y = AIMap.GetTileY(walked[0]);
+            local min_height = min(AITile.GetMinHeight(walked[0]), AITile.GetMinHeight(walked[walked.len() -1]));
+            local max_height = max(AITile.GetMaxHeight(walked[0]), AITile.GetMaxHeight(walked[walked.len() -1]));
+            // detect if we have a turn between extremities
+			local noturn = true;
+            // detect if we should climb or not
+            local climbing = (AITile.GetMaxHeight(walked[walked.len() -1]) > AITile.GetMaxHeight(walked[0]));
+             // detect a tile higher than the extremities, making
+            local barrier = false;
+            // detect if tiles in between extremities are going up and down
+            local rollercoster = false;
+            // detect if extremities are at the same level
+            local samelevel = (AITile.GetMinHeight(walked[0]) + AITile.GetMaxHeight(walked[0]) == AITile.GetMinHeight(walked[walked.len() -1]) + AITile.GetMaxHeight(walked[walked.len() -1]));
+			for (local i = 0; i < walked.len(); i++)
+					{
+					cDebug.PutSign(walked[i], "i:" + i +"/"+ AITile.GetSlope(walked[i]));
+					as_list.AddItem(walked[i], AITile.GetSlope(walked[i]));
+					if (noturn && AIMap.GetTileX(walked[i]) != s_x && AIMap.GetTileY(walked[i]) != s_y)	noturn = false;
+					if (!barrier && AITile.GetMaxHeight(walked[i]) > max_height)	barrier = true;
+					if (i > 0 && !rollercoster)
+								{
+								if (AITile.GetMaxHeight(walked[i]) < AITile.GetMaxHeight(walked[i - 1]) && climbing)	rollercoster = true;
+								if (AITile.GetMaxHeight(walked[i]) > AITile.GetMaxHeight(walked[i - 1]) && !climbing)	rollercoster = true;
+								}
+					}
+			local terraform = false;
+			if (walked.len() > 2) // could be too low if a bridge/tunnel has force us to run
+				{
+				if (barrier || rollercoster || samelevel)	terraform = true;
+				print("terraform: "+terraform+" min_height: "+min_height+" max_height: "+max_height+" barrier: "+barrier+" coster: "+rollercoster+" noturn: "+noturn+" samelevel: "+samelevel);
+				if (terraform)	{ print("terraforming tiles"); cTerraform.TerraformLevelTiles(as_list, null); }
+				}
+			AIController.Break("walked: "+walked.len());
+			cDebug.ClearSigns();
+			walked = [];
+            }
+		p4 = p3;
+		p3 = p2;
+		p2 = p1;
+		p1 = p0;
+		path = path.GetParent();
+	}
+}
+
+function RailFollower::CanBuildBridge(a, b)
+// true if we can build a bridge from a to b
+{
+	local dist = AIMap.DistanceManhattan(a, b);
+	local bridge_id = cBridge.GetCheapBridgeID(AIVehicle.VT_RAIL, dist, true);
+	print("bridgeid ="+bridge_id + AIBridge.GetName(bridge_id));
+	if (bridge_id == -1)	return false;
+	local test = AITestMode();
+	local c = AIBridge.BuildBridge(AIVehicle.VT_RAIL, bridge_id, a, b);
+	if (c == false) { DError("no bridge build: ",0); }
+	return c;
+}
+
+function RailFollower::CanBuildTunnel(a)
+// return the other tunnel tile if we can build one
+{
+	local test = AITestMode();
+	if (AITunnel.BuildTunnel(AIVehicle.VT_RAIL, a))	return AITunnel.GetOtherTunnelEnd(a);
+	return -1;
+}
+
+function RailFollower::UnSteepSlope(slope)
+// return the slope without the steep part
+{
+	if (slope == AITile.SLOPE_STEEP_N)	return AITile.SLOPE_N;
+	if (slope == AITile.SLOPE_STEEP_E)	return AITile.SLOPE_E;
+	if (slope == AITile.SLOPE_STEEP_S)	return AITile.SLOPE_S;
+	if (slope == AITile.SLOPE_STEEP_W)	return AITile.SLOPE_W;
+	return slope;
+}
+
+function RailFollower::SlopeHaveTwoCorners(slope, aim_slope)
+// return true if by adding each (0, N, E, S, W) we endup with aim_slope
+{
+	local corner_list = [0, AITile.SLOPE_N, AITile.SLOPE_W, AITile.SLOPE_S, AITile.SLOPE_E];
+	foreach (corners in corner_list)	if (slope + corners == aim_slope)	return true;
+	return false;
+}
+
+function cBuilder::Path_Optimizer_MoreBridgeTunnel(p)
+{
+	print("area size: "+p.len());
+	local bridgecheck = AIList();
+	local tunnelcheck = AIList();
+    local tunnel_edge = [AITile.SLOPE_NW, AITile.SLOPE_SE, AITile.SLOPE_SW, AITile.SLOPE_NE];
+    local bad_bridge_edge = [AITile.SLOPE_FLAT, AITile.SLOPE_NWS, AITile.SLOPE_WSE, AITile.SLOPE_SEN, AITile.SLOPE_ENW];
+//    local bridge_edge_NW = [AITile.SLOPE_SE, AITile.SLOPE_S, AITile.SLOPE_E];
+ //   local bridge_edge_NE = [AITile.SLOPE_SW, AITile.SLOPE_S, AITile.SLOPE_W];
+ //   local STEEP_BIT = 16;
+	for (local i = 0; i < p.len(); i++)
+		{
+		local tile = p[i];
+		local tile_slope = RailFollower.UnSteepSlope(AITile.GetSlope(tile));
+		//local tile_min = AITile.GetMinHeight(tile);
+		local tile_max = AITile.GetMaxHeight(tile);
+        if (cMisc.InArray(tunnel_edge, tile_slope) != -1)
+				{
+				local istunnel = RailFollower.CanBuildTunnel(tile);
+				if (istunnel != -1 && cMisc.InArray(p, istunnel) != -1) // we don't want build a tunnel that goes out of path
+						{
+						if (istunnel != tile)	tunnelcheck.AddItem(tile, istunnel);
+										else	tunnelcheck.AddItem(istunnel, tile); // because we found it from other side
+						}
+				}
+		if (cMisc.InArray(bad_bridge_edge, tile_slope) != -1)	continue;
+		local slope_NW = false;
+		local slope_NE = false;
+		if (RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_NW) || RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_SE))	slope_NW = true;
+		if (RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_NE) || RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_SW))	slope_NE = true;
+		if (slope_NW || slope_NE)	bridgecheck.AddItem(tile, -1);
+		foreach (c_tile, c_target in bridgecheck)
+				{
+				if (c_target != -1)	continue; // ignore it, we have the target already
+				if (c_tile == tile)	continue; // ignore it, we have just add it
+				if (tile_max != AITile.GetMaxHeight(c_tile))	continue; // must be at same max height
+				if (AIMap.GetTileX(c_tile) == AIMap.GetTileX(tile))	// going NW_SE
+							{ if (slope_NW)	bridgecheck.SetValue(c_tile, tile); }
+					else	{ if (slope_NE)	bridgecheck.SetValue(c_tile, tile); }
+				}
+		}
+        print("potentials bridge: "+bridgecheck.Count());
+		bridgecheck.RemoveValue(-1); // remove bridge we didnt find a target for
+		print("tunnels: "+tunnelcheck.Count()+" bridge: "+bridgecheck.Count());
+        local buffer = [];
+        local buffering = -1;
+        for (local i = 0; i < p.len(); i++)
+			{
+			local tile = p[i];
+			AISign.BuildSign(tile, "o");
+			if (tile == buffering)	{ buffer.push(tile); buffering = -1; continue; }
+			if (buffering == -1)
+				{
+				// tunnels are better than bridge, you don't need to climb any tile to reach a tunnel entry
+				if (tunnelcheck.HasItem(tile))	{
+				// build side like dock
+												buffer.push(tile);
+												buffering = tunnelcheck.GetValue(tile);
+												AIController.Break("tunnel from " + cMisc.Locate(tile) + " to " + cMisc.Locate(buffering));
+												}
+				if (buffering == -1 && bridgecheck.HasItem(tile))
+						{
+						local target = bridgecheck.GetValue(tile);
+						local dist = AIMap.DistanceManhattan(tile, target);
+						if (dist != 1 && RailFollower.CanBuildBridge(tile, target))
+									{
+									buffer.push(tile);
+									buffering = target;
+									AIController.Break("bridge from " + cMisc.Locate(tile) + " to " + cMisc.Locate(target));
+									}
+							else	{ AIController.Break("terraform from " + cMisc.Locate(tile) + " to " + cMisc.Locate(target)); cTerraform.TerraformLevelTiles(tile, target); }
+						}
+				if (buffering == -1)	buffer.push(tile);
+				}
+			}
+	return buffer;
+}
+
+function cBuilder::Path_Optimizer(path)
+{
+	if (path == null)	return;
+	cBanker.RaiseFundsBigTime();
+	local p1, p2, p3, p4 = null;
+	local min_height, max_height;
+	local tile_counter = 0;
+	local noturn, barrier;
+	local walked = [];
+	local optimize_path = [];
+	cDebug.ClearSigns();
+	local limit = min(AIGameSettings.GetValue("max_bridge_length"), AIGameSettings.GetValue("max_tunnel_length"));
+	while (path != null)
+		{
+		local p0 = path.GetTile();
+		tile_counter++;
+		if (p1 != null && AIMap.DistanceManhattan(p0, p1) != 1)
+				{
+				AIController.Break("bridge/tunnel");
+				p1 = null;
+				optimize_path.push(p0);
+				}
+		if (p1 != null && AITile.GetSlope(p0) == AITile.SLOPE_FLAT && walked.len() == 0)
+				{
+				walked = [];
+				walked.push(p0);
+                noturn = true;
+                max_height = AITile.GetMaxHeight(p0);
+                min_height = AITile.GetMinHeight(p0);
+				}
+		local store = false;
+		if (p1 != null && walked.len() > 0 && p0 != walked[0] && (AIMap.GetTileX(walked[0]) == AIMap.GetTileX(p0) || AIMap.GetTileY(walked[0]) == AIMap.GetTileY(p0)) && AIMap.DistanceManhattan(p0, walked[0]) <= limit)	{ store = true; walked.push(p0); }
+		if (p1 != null && !store && walked.len() > 1)
+					{
+                    walked = cBuilder.Path_Optimizer_MoreBridgeTunnel(walked);
+                    optimize_path.extend(walked);
+                    walked = [];
+					}
+		cDebug.ClearSigns();
+		p1 = p0;
+		path = path.GetParent();
+		}
+	if (walked.len() != 0)	{
+							walked = cBuilder.Path_Optimizer_MoreBridgeTunnel(walked);
+							optimize_path.extend(walked);
+							}
+	AIController.Break("original: " + tile_counter + " optimize: " + optimize_path.len());
+}

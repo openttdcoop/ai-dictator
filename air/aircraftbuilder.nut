@@ -45,14 +45,14 @@ function cCarrier::CreateAirVehicle(routeidx)
 	if (engineID == -1)	{ DWarn("Cannot find any aircraft to transport that cargo "+cCargo.GetCargoLabel(road.CargoID),1); return false; }
 	local srcplace = road.SourceStation.s_Location;
 	local dstplace = road.TargetStation.s_Location;
-	local homedepot = road.SourceStation.s_Depot;
+	local homedepot = cStation.GetStationDepot(road.SourceStation.s_ID);
 	local altplace=(road.Twoway && road.VehicleCount > 0 && road.VehicleCount % 2 != 0);
 	if (road.VehicleType == RouteType.CHOPPER)	altplace=true; // chopper don't have a source airport, but a platform
-	if (altplace)	homedepot = road.TargetStation.s_Depot;
-	if (!cStation.IsDepot(homedepot))
+	if (altplace)	homedepot = cStation.GetStationDepot(road.TargetStation.s_ID);
+	if (!cEngineLib.IsDepotTile(homedepot))
             {
             homedepot = cRoute.GetDepot(routeidx);
-            if (!cStation.IsDepot(homedepot))    return false;
+            if (!cEngineLib.IsDepotTile(homedepot))    return false;
             }
 	local price = AIEngine.GetPrice(engineID);
 	local vehID = cEngineLib.VehicleCreate(homedepot, engineID, -1); // force no refit

@@ -122,6 +122,5 @@ function cMain::CheckAccount()
 		}
 		*/
 //	else print("DEBUG route state : "+dgroute);
-		//AIController.Break("route size="+cRoute.database.len());
 	DWarn("canBuild="+INSTANCE.main.bank.canBuild+" unleash="+INSTANCE.main.bank.unleash_road+" building_main.route."+INSTANCE.main.builder.building_route+" warTreasure="+INSTANCE.main.carrier.warTreasure+" vehicle_cash="+INSTANCE.main.carrier.vehicle_cash+" RemainJobs="+cJobs.jobDoable.Count()+" vehicle_wish="+INSTANCE.main.carrier.vehicle_wishlist.Count()+" mintobuild="+mintobuild,1);
 	}

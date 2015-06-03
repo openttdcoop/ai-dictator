@@ -47,7 +47,7 @@ function cTerraform::IsAreaBuildable(area, max_remove, ignore_list = AIList())
 function cTerraform::IsAreaBuildableAndFlat(area, max_remove, ignore_list = AIList())
 // return true if area is flat and buildable or if we need to remove max_remove to make the area flat and buildable
 {
-	if (!cTerraform.IsAreaFlat(area, ignore_list))	return false;
+	if (!cTerraform.IsAreaFlat(area, ignore_list))	{ return false; }
 	return cTerraform.IsAreaBuildable(area, max_remove, ignore_list);
 }
 
@@ -221,7 +221,7 @@ function cTerraform::TerraformLevelTiles(tileFrom, tileTo)
 			local direction=Solve.GetValue(solution);
 			if (!cBanker.CanBuyThat(prize))
 				{
-				DInfo("Stopping action. We won't have enought money to succeed",4);
+				DInfo("Stopping action. We won't have enough money to succeed",4);
 				cTerraform.terraformCost.AddItem(999999,prize);
 				break;
 				}
