@@ -446,9 +446,9 @@ function cCarrier::VehicleMaintenance_Orders(vehID)
 // try to repair orders for a vehicle, else send it to depot
 {
 	if (cEngineLib.VehicleIsGoingToStopInDepot(vehID))	return; // ignore it
-	local numorders=AIOrder.GetOrderCount(vehID);
-	local name=cCarrier.GetVehicleName(vehID);
-	for (local z=AIOrder.GetOrderCount(vehID)-1; z >=0; z--)
+	local numorders = AIOrder.GetOrderCount(vehID);
+	local name = cCarrier.GetVehicleName(vehID);
+	for (local z = AIOrder.GetOrderCount(vehID) -1; z >= 0;  z--)
 		{ // I check backward to prevent z index gone wrong if an order is remove
 		if (!cCarrier.VehicleOrderIsValid(vehID, z))
 			{
@@ -797,7 +797,7 @@ function cCarrier::VehicleExitDepot(vehID)
 	local road = false;
 	local get_index = -1;
 	if (uid != null)	road = cRoute.LoadRoute(uid);
-	if (road == false)	cCarrier.VehicleSell(vehID); // we won't release something bad
+	if (road == false)	{ cCarrier.VehicleSell(vehID); return; } // we won't release something bad
 	cCarrier.VehicleSetOrders(vehID);
 	local veh_loc = AIVehicle.GetLocation(vehID);
 	local destination = road.SourceStation.s_ID;

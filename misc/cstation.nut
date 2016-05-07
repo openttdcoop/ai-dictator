@@ -525,9 +525,51 @@ function cStation::CheckCargoHandleByStation(stationID=null)
 
 function cStation::UpdateVehicleCount(station_object_or_id)
 {
-	local station = -1;
+	local station = false;
 	if (cMisc.ValidInstance(station_object_or_id))	station = station_object_or_id;
-											else	station = cStation.Load(station);
+											else	station = cStation.Load(station_object_or_id);
 	if (!station)	return;
 	station.s_VehicleCount = AIVehicleList_Station(station.s_ID).Count();
 }
+
+function cStation::GetCoverageTiles(stationID)
+// return all tiles that this station cover with its radius and size
+// empty ailist on error
+{
+	local station_loc = AIStation.GetLocation(stationID);
+	local station_tiles = cTileTools.FindStationTiles(station_loc);
+	if (station_tiles.IsEmpty())	return AIList();
+	local coverage = AIList();
+	local radius = AIStation.GetStationCoverageRadius(stationID);
+	foreach (tile, _ in station_tiles)
+		{
+		local tile_from = tile + AIMap.GetTileIndex(-radius, -radius);
+		local tile_to = tile + AIMap.GetTileIndex(radius, radius);
+		local area = cTileTools.GetRectangle(tile_from, tile_to, null);
+		coverage.AddList(area);
+		}
+	return coverage;
+}
+
+function cStation::GetMaxProduction(stationID, cargoID)
+// Return the maximum production of cargoID this station can get
+// Its the total amount of production of that cargo that industries are producing within that station area
+// -1 on error
+{
+	if (!AIStation.IsValidStation(stationID) || !AICargo.IsValidCargo(cargoID))	return -1;
+	local area = cStation.GetCoverageTiles(stationID);
+	area.Valuate(AIIndustry.GetIndustryID);
+	local total_prod = 0;
+	local industry_list = AIList();
+	local INDUSTRY_INVALID = 65535;
+	foreach (tile, ind_id in area)
+		{
+        if (ind_id != INDUSTRY_INVALID && !industry_list.HasItem(ind_id))
+				{
+				industry_list.AddItem(ind_id, 0);
+				total_prod += AIIndustry.GetLastMonthProduction(ind_id, cargoID);
+				}
+		}
+	return total_prod;
+}
+

@@ -64,9 +64,6 @@ class cPathfinder extends cClass
 
 			function CheckPathCondition();
 			function GetUID(src, tgt);
-			function FiveTileCheck(tile, tile_forward, func, value);
-            function NextToTrackBonus(tile, trackplace, direction) { deprecated(); }
-            function BuildShortPoints(source, target, close_source) { deprecated(); }
             function CheckPathfinderTaskIsRunning(stations);
 			function GetStatus(source, target, stationID, primarylane, useEntry);
             function AdvanceAllTasks();
@@ -81,7 +78,6 @@ class cPathfinder extends cClass
 			function GetTargetX(x);
 			function InfoSign(msg);
 			function CreateNewTask(src, tgt, station, primarylane, entrance);
-			function AddSubTask(mainUID) { deprecated(); }
             function CreateSubTask(mainUID, newSource, newTarget);
 	}
 
@@ -105,7 +101,7 @@ function cPathfinder::CheckPathCondition()
 
 function cPathfinder::Pairing(num1, num2)
 // http://en.wikipedia.org/wiki/Pairing_function
-// not that usable with 32bits integer limit, but still gives enough
+// not that usable with 32bits integer limit, but still enough
 {
 	return (((num1 + num2) * (num1 + num2 + 1)) >> 1) + num2;
 }
@@ -124,49 +120,6 @@ function cPathfinder::GetUID(src, tgt)
 	local y = cPathfinder.Pairing(AIMap.GetTileY(src[0]), AIMap.GetTileY(tgt[1]));
 	return (x + y); // we don't care to revert it
 	}
-
-function cPathfinder::FiveTileCheck(tile, tile_forward, func, value)
-{
-	local zone = AIList();
-	zone.AddItem(tile, 0);
-	zone.AddItem(tile + tile_forward, 1);
-	zone.AddItem(tile + tile_forward + tile_forward, 1);
-	zone.AddItem(tile - tile_forward, 2);
-	zone.AddItem(tile - tile_forward - tile_forward, 2);
-	zone.Valuate(func);
-	zone.KeepValue(value);
-	if (zone.Count() == 5)	return true;
-	return false;
-}
-
-function cPathfinder::NextToTrackBonus(tile, trackplace, direction)
-// gives a value to the tile position, farer from the trackplace, bigger the value
-// but also, lower the value if the tile is on the good side of the track : endup with lowest value, best tile to use
-{
-	local r = AIMap.DistanceSquare(tile, trackplace);
-	local tr_x = AIMap.GetTileX(trackplace);
-	local tr_y = AIMap.GetTileY(trackplace);
-	local ti_x = AIMap.GetTileX(tile);
-	local ti_y = AIMap.GetTileY(tile);
-	local b = 80; // a big malus from being on the wrong side
-	switch (direction)
-			{
-			case	DIR_SE:
-				if (tr_x < ti_x)	b = -10;
-				break;
-			case	DIR_NW:
-				if (tr_x > ti_x)	b = -10;
-				break;
-			case	DIR_NE:
-				if (tr_y < ti_y)	b = -10;
-				break;
-			case	DIR_SW:
-				if (tr_y > ti_y)	b = -10;
-				break;
-			}
-	r += b;
-	return r;
-}
 
 function cPathfinder::CheckPathfinderTaskIsRunning(stations)
 	{
@@ -407,11 +360,13 @@ function cPathfinder::GetTargetX(x)
 function cPathfinder::InfoSign(msg)
 // Update the sign and recreate it if need
 	{
-	local loc=-1;
-	if (AISign.IsValidSign(this.signHandler))	{ loc=AISign.GetLocation(this.signHandler); }
+	local loc = -1;
+	if (AISign.IsValidSign(this.signHandler))	{ loc = AISign.GetLocation(this.signHandler); }
 	if (loc != this.target[1])	{ loc=-1; }
 	if (loc != -1)	{ AISign.SetName(this.signHandler, msg); }
-            else	{ this.signHandler=AISign.BuildSign(this.target[1],msg); }
+            else	{
+					if (DictatorAI.GetSetting("debug_sign"))	this.signHandler = AISign.BuildSign(this.target[1],msg);
+					}
 	}
 
 function cPathfinder::CreateNewTask(src, tgt, station, primarylane, entrance)
@@ -446,59 +401,20 @@ function cPathfinder::CreateNewTask(src, tgt, station, primarylane, entrance)
 	else	  // rail
 			{
             pftask.pathHandler= MyRailPF();
-/*			pftask.pathHandler.cost.bridge_per_tile = 70;//70
-			pftask.pathHandler.cost.tunnel_per_tile = 70;//70
-			pftask.pathHandler.cost.turn = 100;//200*/
+			pftask.pathHandler.cost.bridge_per_tile = 100;//70
+			pftask.pathHandler.cost.tunnel_per_tile = 100;//70
+			pftask.pathHandler.cost.turn = 200;//200*/
 			pftask.pathHandler.cost.max_bridge_length = AIGameSettings.GetValue("max_bridge_length");
 			pftask.pathHandler.cost.max_tunnel_length = AIGameSettings.GetValue("max_tunnel_length");
-/*			pftask.pathHandler.cost.tile=100;
+			pftask.pathHandler.cost.tile=100;
 			pftask.pathHandler.cost.slope=140;//80
-			pftask.pathHandler.cost.coast = 140;
-			pftask.pathHandler.cost.diagonal_tile=100;*/
+			pftask.pathHandler.cost.coast = 100;
+			pftask.pathHandler.cost.diagonal_tile=101;
 			pftask.pathHandler.InitializePath([pftask.source], [pftask.target]);
 			}
 	DInfo("New pathfinder task : "+pftask.UID+" from " + cMisc.Locate(pftask.source[0]) + " to " + cMisc.Locate(pftask.target[1]), 1);
 	cPathfinder.database[pftask.UID] <- pftask;
 	}
-
-function cPathfinder::AddSubTask(mainUID)
-{
-	local point = null;
-	local s1 = null;
-	local s2 = null;
-	local s3 = null;
-	local s4 = null;
-	local roottask = cPathfinder.GetPathfinderObject(mainUID);
-	if (roottask == null)   return;
-	local distance = AITile.GetDistanceManhattanToTile(roottask.source[1], roottask.target[1]);
-	if (distance <= 40)	return; // no split, distance is short
-	point = cPathfinder.BuildShortPoints(roottask.source, roottask.target, true);
-	if (point == -1)	return;
-	s1 = [point[0], point[1]];
-	s4 = [point[2], point[3]];
-	if (distance > 80)
-		{
-		point = cPathfinder.BuildShortPoints(s1[0], s1[1], true);
-		if (point != -1)
-			{
-			s1 = [point[0], point[1]];
-			s2 = [point[2], point[3]];
-			}
-		}
-	if (distance > 80)
-		{
-		point = cPathfinder.BuildShortPoints(s4[0], s4[1], false);
-		if (point != -1)
-			{
-			s3 = [point[0], point[1]];
-			s4 = [point[2], point[3]];
-			}
-		}
-	if (s1 != null)	cPathfinder.CreateSubTask(mainUID, s1[0], s1[1]);
-	if (s2 != null)	cPathfinder.CreateSubTask(mainUID, s2[0], s2[1]);
-	if (s3 != null)	cPathfinder.CreateSubTask(mainUID, s3[0], s3[1]);
-	if (s4 != null)	cPathfinder.CreateSubTask(mainUID, s4[0], s4[1]);
-}
 
 function cPathfinder::CreateSubTask(mainUID, newSource, newTarget)
 // Create a subtask of mainUID task

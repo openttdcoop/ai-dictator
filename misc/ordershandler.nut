@@ -163,7 +163,7 @@ function cCarrier::VehicleHaveDepotOrders(veh)
 	if (cEngineLib.VehicleIsGoingToStopInDepot(veh))	return true;
     for (local i = 0; i < AIOrder.GetOrderCount(veh); i++)
 		{
-		if (AIOrder.IsGotoDepotOrder(veh, i))	return true;
+		if (AIOrder.IsGotoDepotOrder(veh, i) && (AIOrder.GetOrderFlags(veh, i) & AIOrder.OF_STOP_IN_DEPOT) != 0)	return true;
 		}
 	return false;
 }
@@ -195,6 +195,11 @@ function cCarrier::TrainSetDepotOrder(veh)
 			{ DError("Train refuse goto depot order",2); }
 	if (!AIOrder.InsertOrder(veh, 3, dstDepot, AIOrder.OF_STOP_IN_DEPOT))
 			{ DError("Train refuse goto depot order",2); }
+	for (local i = 0; i < AIOrder.GetOrderCount(veh); i++)
+			{
+			local flags = AIOrder.GetOrderFlags(veh, i);
+	        if ((flags & AIOrder.OF_FULL_LOAD_ANY) != 0)	AIOrder.SetOrderFlags(veh, i, (flags ^ AIOrder.OF_FULL_LOAD_ANY));
+	        }
 	}
 
 function cCarrier::VehicleSetDepotOrder(veh)
@@ -405,10 +410,10 @@ function cCarrier::VehicleSetOrders(vehicle_id)
 	if (srcplace == -1 || dstplace == -1) return false;
 	for (local j = AIOrder.GetOrderCount(vehicle_id); j >= 0; j--)	if (AIOrder.IsGotoDepotOrder(vehicle_id, j))	AIOrder.RemoveOrder(vehicle_id, j);
 	DInfo("Setting orders for "+cCarrier.GetVehicleName(vehicle_id)+" twoway="+road.Twoway,2);
-	if (AIOrder.GetOrderCount(vehicle_id) != 2)	cEngineLib.VehicleOrderClear(vehicle_id);
+	cEngineLib.VehicleOrderClear(vehicle_id);
 	if (AIOrder.GetOrderDestination(vehicle_id, 0) != srcplace)
-        if (!AIOrder.AppendOrder(vehicle_id, srcplace, oneorder))	DError("First order refuse : " + cMisc.Locate(srcplace),2);
+        if (!AIOrder.AppendOrder(vehicle_id, srcplace, oneorder))	{ DError("First order refuse : " + cMisc.Locate(srcplace),2); return false; }
 	if (AIOrder.GetOrderDestination(vehicle_id, 1) != dstplace)
-		if (!AIOrder.AppendOrder(vehicle_id, dstplace, twoorder))	DError("Second order refuse : " + cMisc.Locate(dstplace),2);
+		if (!AIOrder.AppendOrder(vehicle_id, dstplace, twoorder))	{ DError("Second order refuse : " + cMisc.Locate(dstplace),2); return false; }
 	return true;
 }

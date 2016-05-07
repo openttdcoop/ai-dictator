@@ -251,7 +251,7 @@ function cCarrier::CheckOneEngine(vehicleID)
 function cCarrier::CheckOneVehicleOrGroup(vehID, doGroup)
 // Add a vehicle to the maintenance pool
 // vehID: the vehicleID to check
-// doGroup: if true, we will add all the vehicles that belong to the vehicleID group
+// doGroup: if true, we will add all the vehicles that belong to the vehID group
 {
 	if (!AIVehicle.IsValidVehicle(vehID))	return false;
 	local vehList = AIList();
@@ -262,7 +262,7 @@ function cCarrier::CheckOneVehicleOrGroup(vehID, doGroup)
 		cCarrier.MaintenancePool.push(vehicle); // allow dup vehicleID in list, this will get clear by cCarrier.VehicleMaintenance()
 }
 
-function cCarrier::CheckOneVehicleOfGroup(doGroup)
+function cCarrier::CheckRandomVehicle(doGroup)
 // Add one vehicle of each vehicle groups we own to maintenance check
 // doGroup: true to also do the whole group add, this mean all vehicles we own
 {
@@ -271,9 +271,11 @@ function cCarrier::CheckOneVehicleOfGroup(doGroup)
 		{
 		local vehlist = AIVehicleList_Group(groupID);
 		if (!doGroup)	{
+						local random_veh = cMisc.GetRandomItemFromAIList(vehlist);
 						vehlist.Valuate(AIVehicle.GetAge);
 						vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
 						vehlist.KeepTop(1);
+						if (random_veh != null)	vehlist.AddItem(random_veh, 0);
 						}
 		foreach (veh, _ in vehlist)	cCarrier.MaintenancePool.push(veh);
 		}
@@ -380,13 +382,13 @@ function cCarrier::VehicleFilterTrain(vehlist, object)
 {
 	//print("before list "+vehlist.Count());
 //    if (!INSTANCE.main.bank.unleash_road)	{ vehlist.Valuate(cBanker.CanBuyThat); vehlist.KeepValue(1); }
-print("trainfilter: engine="+object.engine_id+" cargo="+cCargo.GetCargoLabel(object.cargo_id)+" rt="+object.engine_roadtype+" bypass="+object.bypass+" ename="+cEngineLib.EngineToName(object.engine_id));
+print("trainfilter: engine="+object.engine_id+" cargo="+cCargo.GetCargoLabel(object.cargo_id)+" rt="+object.engine_roadtype+" bypass="+object.bypass+" ename="+cEngineLib.EngineToName(object.engine_id)+ "vehlist: "+vehlist.Count());
 	cEngineLib.EngineFilter(vehlist, object.cargo_id, object.engine_roadtype, object.engine_id, object.bypass);
-	//print("after filter "+vehlist.Count()+" cargo="+object.cargo_id+" rt="+object.engine_roadtype+" engine="+cEngine.GetEngineName(object.engine_id)+" bypass="+object.bypass);
+	print("after filter "+vehlist.Count()+" cargo="+object.cargo_id+" rt="+object.engine_roadtype+" engine="+cEngine.GetEngineName(object.engine_id)+" bypass="+object.bypass);
 	if (AIEngine.IsWagon(vehlist.Begin()))
 			{
 			vehlist.Valuate(cCarrier.GetEngineWagonEfficiency, object.cargo_id);
-			vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+			vehlist.Sort(AIList.SORT_BY_VALUE, AIList.SORT_DESCENDING);
             local i = 0;
             foreach(item, value in vehlist)
 					{
@@ -488,7 +490,6 @@ function cCarrier::Process_VehicleWish()
         engine = cCarrier.GetVehicle(uid);
         amount = INSTANCE.main.carrier.vehicle_wishlist.GetValue(gid);
         if (amount == 0 || amount == 1000)    { INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(gid); continue; }
-        print("engine="+engine);
         if (engine == null || engine == -1) { continue; }
         if (typeof(engine) == "array")
 				{

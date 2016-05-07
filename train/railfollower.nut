@@ -24,6 +24,28 @@
  * A Rail pathfinder for existing rails.
  * Original file from AdmiralAI modified to met my needs
  */
+
+class Path_Converter
+{
+	_tile = null;
+	_parent = null;
+
+	constructor(tile)
+	{
+		this._tile = tile;
+	}
+
+	function GetTile()
+	{
+		return this._tile;
+	}
+
+	function GetParent()
+	{
+		return this._parent;
+	}
+}
+
 class RailFollower extends RailPathFinder
 {
 }
@@ -139,11 +161,14 @@ function RailFollower::FindRailOwner()
 		local dst_tiles = AIList();
 		local forward = cDirection.GetForwardRelativeFromDirection(road.SourceStation.s_Direction);
 		local src_tile, src_link, dst_tile, dst_link;
-		src_tile = road.SourceStation.s_MainLine;
-		src_link = src_tile - forward;
-		dst_tile = road.TargetStation.s_AltLine;
-		dst_link = dst_tile + forward;
-		src_tiles = RailFollower.GetRailPathing([src_tile, src_link], [dst_tile, dst_link]);
+		if (forward != -1)
+				{
+				src_tile = road.SourceStation.s_MainLine;
+				src_link = src_tile - forward;
+				dst_tile = road.TargetStation.s_AltLine;
+				dst_link = dst_tile + forward;
+				src_tiles = RailFollower.GetRailPathing([src_tile, src_link], [dst_tile, dst_link]);
+				}
 		if (src_tiles.IsEmpty())	bad = true;
 		DInfo("Main line rails: " + src_tiles.Count(), 2);
 		if (!bad)	{
@@ -327,24 +352,21 @@ function RailFollower::TryUpgradeLine(vehicle)
 	if (!temp)	return 0; // if all stopped or no vehicle, temp will remain true
 	cBanker.RaiseFundsBigTime();
 	DInfo("Changing "+road.Name+" railtype "+cEngine.GetRailTrackName(road.RailType)+" to "+cEngine.GetRailTrackName(new_railtype),0);
-	local safekeeper = all_vehicle.Begin();
+	local safekeeper = all_vehicle.Begin();  //TODO: why using safekeeper?
 	local safekeeper_depot = AIVehicle.GetLocation(safekeeper);
 	local wagon_lost = [];
 	foreach (groups, _ in groups_list)	wagon_lost.push(cCarrier.GetTrainBalancingStats(groups, 0, false));
-//	AIController.Break("stop");
 	foreach (veh, uid in all_vehicle)
             {
-/*            local z = cEngineLib.VehicleGetNumberOfWagons(veh);
-            wagon_lost.push(z);
-            wagon_lost.push(uid);*/
             if (veh != safekeeper)  {
                                     cCarrier.VehicleSell(veh, false);
                                     if (cCarrier.ToDepotList.HasItem(veh))  cCarrier.ToDepotList.RemoveItem(veh);
                                     }
             }
-	all_rails.RemoveItem(safekeeper_depot);
+	all_rails.RemoveItem(safekeeper_depot); // don't try to convert the depot where the safekeeper is
     foreach (tiles, _ in all_rails)
         {
+        AISign.BuildSign(tiles, "c");
         local err = cTrack.ConvertRailType(tiles, new_railtype);
         if (err == -1)	{
                         foreach (o_uid in savetable)
@@ -411,7 +433,6 @@ function cBuilder::Path_OptimizerHill(path)
 		local p0 = path.GetTile();
 		if (p1 != null && AIMap.DistanceManhattan(p0, p1) != 1)
 				{
-				AIController.Break("bridge/tunnel");
 				p1 = null;
 				p2 = null;
 				p3 = null;
@@ -464,7 +485,6 @@ function cBuilder::Path_OptimizerHill(path)
 				print("terraform: "+terraform+" min_height: "+min_height+" max_height: "+max_height+" barrier: "+barrier+" coster: "+rollercoster+" noturn: "+noturn+" samelevel: "+samelevel);
 				if (terraform)	{ print("terraforming tiles"); cTerraform.TerraformLevelTiles(as_list, null); }
 				}
-			AIController.Break("walked: "+walked.len());
 			cDebug.ClearSigns();
 			walked = [];
             }
@@ -479,19 +499,56 @@ function cBuilder::Path_OptimizerHill(path)
 function RailFollower::CanBuildBridge(a, b)
 // true if we can build a bridge from a to b
 {
-	local dist = AIMap.DistanceManhattan(a, b);
+	local dist = AIMap.DistanceManhattan(a, b) + 1;
 	local bridge_id = cBridge.GetCheapBridgeID(AIVehicle.VT_RAIL, dist, true);
-	print("bridgeid ="+bridge_id + AIBridge.GetName(bridge_id));
+//	print("bridgeid =" + bridge_id + AIBridge.GetName(bridge_id));
 	if (bridge_id == -1)	return false;
 	local test = AITestMode();
 	local c = AIBridge.BuildBridge(AIVehicle.VT_RAIL, bridge_id, a, b);
-	if (c == false) { DError("no bridge build: ",0); }
+	//if (c == false) { DError("no bridge build: from "+cMisc.Locate(a)+" to "+cMisc.Locate(b),0); }
 	return c;
 }
 
-function RailFollower::CanBuildTunnel(a)
-// return the other tunnel tile if we can build one
+function RailFollower::CanBuildTunnel(a, previous_tile)
+// return the other tunnel tile if we can build one, we check that previous_tile is compatible with terraforming
 {
+	local end_side = AITunnel.GetOtherTunnelEnd(a);
+	if (end_side == AIMap.TILE_INVALID)	return -1;
+    local tunnel_direction = cDirection.GetDirection(a, end_side);
+    local path_direction = cDirection.GetDirection(previous_tile, a);
+    local front = cDirection.GetForwardRelativeFromDirection(tunnel_direction);
+    local endslope = AITile.GetSlope(end_side + front);
+    local exitslope = AITile.GetSlope(end_side);
+    local good_slope = -1;
+    local good_slope_end = -1;
+	switch (tunnel_direction)
+		{
+		case DIR_NE:
+			good_slope = AITile.SLOPE_NE;
+			good_slope_end = AITile.SLOPE_SW;
+			break;
+        case DIR_SW:
+			good_slope = AITile.SLOPE_SW;
+			good_slope_end = AITile.SLOPE_NE;
+			break;
+        case DIR_NW:
+			good_slope = AITile.SLOPE_NW;
+			good_slope_end = AITile.SLOPE_SE;
+			break;
+        case DIR_SE:
+			good_slope = AITile.SLOPE_SE;
+			good_slope_end = AITile.SLOPE_SW;
+			break;
+		default :
+			not_reach();
+		}
+	// If one side of tunnel is not ready for tunnel, openttd will genlty terraform it for us
+	// But in order for openttd to succeed we must make sure this side won't be use already by any rails on a "bad" slope.
+	// So if we build a tunnel the same direction as the path (tunnel is in front of it), no check is need, openttd will report failure if it cannot terraform its exit
+	// But if we build a tunnel the opposite direction as the path (tunnel is build after we have walk its entry), openttd will always fail to terraform it if we previously build a rail on it and its slope prevent us from reaching it.
+	// A1->A4 if tunnel entry is at A2 and its exit at A3 : no check need openttd will terraform A3 & A4 for us
+	// A1->A4 if tunnel entry is at A3 and its exit at A2, we must make sure A1 can still reach A2, and A1 will not if its slope is not FLAT or compatible with the future tunnel entry slope (and that compatible slope is the exact opposite of what the slope of A2 will be after openttd has terraform it ; if A2 slope became NE then A1 slope must be SW or FLAT, else building any rails on it will prevent terraforming)
+	if (tunnel_direction != path_direction && exitslope != good_slope_end && endslope != AITile.SLOPE_FLAT && endslope != good_slope)	{ return -1; }
 	local test = AITestMode();
 	if (AITunnel.BuildTunnel(AIVehicle.VT_RAIL, a))	return AITunnel.GetOtherTunnelEnd(a);
 	return -1;
@@ -515,129 +572,319 @@ function RailFollower::SlopeHaveTwoCorners(slope, aim_slope)
 	return false;
 }
 
-function cBuilder::Path_Optimizer_MoreBridgeTunnel(p)
+function RailFollower::Is_Forced_Bridge(a, b)
+// check if the bridge from a->b must be build or not (if we cannot build in between, we are force to build one
+// return true/false
 {
-	print("area size: "+p.len());
-	local bridgecheck = AIList();
+	// get list of tiles to consider
+	local tile_list = RailFollower.Convert_Jump_To_Tiles(a, b);
+	print("force a: "+a+" b: "+b+" tile_list: "+tile_list.len());
+	local from_tile = a;
+	local z = AITestMode();
+	local to_tile;
+	for (local i = 0; i < tile_list.len(); i++)
+        {
+		if (i < tile_list.len() - 1)	to_tile = tile_list[i + 1];
+								else	to_tile = b;
+		if (!AIRail.BuildRail(from_tile, tile_list[i], to_tile))
+			{
+			AILog.Warning("cannot build rail at "+cMisc.Locate(tile_list[i])+" forced bridge");
+			return true;
+			}
+		from_tile = tile_list[i];
+		}
+	return false;
+}
+
+function RailFollower::Count_Tiles_Inside(_array_, a, b)
+// count number of tiles between a & b in _array_
+// return number of tiles
+{
+	local count = 0;
+	local match = false;
+	for (local i = 0; i < _array_.len(); i++)
+		{
+		if (_array_[i] == a)	{ match = true; continue; }
+		if (!match)	continue;
+		if (_array_[i] == b)	break;
+		count++;
+		}
+	return count;
+}
+
+function RailFollower::Convert_Jump_To_Tiles(a, b)
+// convert a jump from tile a->b into all tiles between a & b (a & b exclude), like in bridge or tunnel
+// return an array
+{
+	local direction = cDirection.GetDirection(a, b);
+	//print("a="+a+" b="+cMisc.Locate(b));
+	local front = cDirection.GetForwardRelativeFromDirection(direction);
+	local distance = AITile.GetDistanceManhattanToTile(a, b); // our safeguard
+	local tile_list = [];
+	local start_tile = a;
+//	tile_list.push(a);
+	while (start_tile + front != b && tile_list.len() < distance +1)
+		{
+		start_tile += front;
+		tile_list.push(start_tile);
+        }
+	return tile_list;
+}
+
+function cBuilder::Path_Optimizer_MoreBridgeTunnel(partial_path)
+{
+	print("area size: " + partial_path.len());
+	if (partial_path.len() < 4)	return partial_path; // 1 tile before entry + 2 tile length + 1 tile at exit
+	local bridgecheck = [];
 	local tunnelcheck = AIList();
     local tunnel_edge = [AITile.SLOPE_NW, AITile.SLOPE_SE, AITile.SLOPE_SW, AITile.SLOPE_NE];
-    local bad_bridge_edge = [AITile.SLOPE_FLAT, AITile.SLOPE_NWS, AITile.SLOPE_WSE, AITile.SLOPE_SEN, AITile.SLOPE_ENW];
-//    local bridge_edge_NW = [AITile.SLOPE_SE, AITile.SLOPE_S, AITile.SLOPE_E];
- //   local bridge_edge_NE = [AITile.SLOPE_SW, AITile.SLOPE_S, AITile.SLOPE_W];
- //   local STEEP_BIT = 16;
-	for (local i = 0; i < p.len(); i++)
+    local bad_bridge_edge = [AITile.SLOPE_NWS, AITile.SLOPE_WSE, AITile.SLOPE_SEN, AITile.SLOPE_ENW];
+	local max_bridge_length = AIGameSettings.GetValue("max_bridge_length");
+
+	// no work on first tile and no work on last two tiles
+	for (local i = 1; i < partial_path.len() - 2; i++)
 		{
-		local tile = p[i];
+		local tile = partial_path[i];
 		local tile_slope = RailFollower.UnSteepSlope(AITile.GetSlope(tile));
-		//local tile_min = AITile.GetMinHeight(tile);
-		local tile_max = AITile.GetMaxHeight(tile);
+		local tile_height_max = AITile.GetMaxHeight(tile);
+		local tile_X = AIMap.GetTileX(tile);
+		local tile_Y = AIMap.GetTileY(tile);
+		print(" ");
+		print("tile : "+cMisc.Locate(tile, true)+" XY: "+tile_X+"/"+tile_Y+" h: "+tile_height_max+" slope: "+tile_slope);
+		AISign.BuildSign(tile, tile.tostring());
+		if (!AITile.IsBuildable(tile))	continue;
+		// check tunnels first
         if (cMisc.InArray(tunnel_edge, tile_slope) != -1)
 				{
-				local istunnel = RailFollower.CanBuildTunnel(tile);
-				if (istunnel != -1 && cMisc.InArray(p, istunnel) != -1) // we don't want build a tunnel that goes out of path
+				local istunnel = RailFollower.CanBuildTunnel(tile, partial_path[i - 1]);
+				// check the end of tunnel is in our tiles list, we don't want build a tunnel that goes out of path
+				if (istunnel != -1 && cMisc.InArray(partial_path, istunnel) != -1)
 						{
-						if (istunnel != tile)	tunnelcheck.AddItem(tile, istunnel);
-										else	tunnelcheck.AddItem(istunnel, tile); // because we found it from other side
+						if (!tunnelcheck.HasItem(tile) && !tunnelcheck.HasItem(istunnel))
+							{
+							// we add it both way, as we may use the other side to create it instead, staying blind to tunnel direction
+							tunnelcheck.AddItem(tile, istunnel);
+							tunnelcheck.AddItem(istunnel, tile);
+							continue; // don't let it check for a bridge if we have found a tunnel
+							}
 						}
 				}
+		// now find all possibles bridges we can build for each tiles
+		// we will never be able to build bridge over these slopes
 		if (cMisc.InArray(bad_bridge_edge, tile_slope) != -1)	continue;
-		local slope_NW = false;
-		local slope_NE = false;
-		if (RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_NW) || RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_SE))	slope_NW = true;
-		if (RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_NE) || RailFollower.SlopeHaveTwoCorners(tile_slope, AITile.SLOPE_SW))	slope_NE = true;
-		if (slope_NW || slope_NE)	bridgecheck.AddItem(tile, -1);
-		foreach (c_tile, c_target in bridgecheck)
-				{
-				if (c_target != -1)	continue; // ignore it, we have the target already
-				if (c_tile == tile)	continue; // ignore it, we have just add it
-				if (tile_max != AITile.GetMaxHeight(c_tile))	continue; // must be at same max height
-				if (AIMap.GetTileX(c_tile) == AIMap.GetTileX(tile))	// going NW_SE
-							{ if (slope_NW)	bridgecheck.SetValue(c_tile, tile); }
-					else	{ if (slope_NE)	bridgecheck.SetValue(c_tile, tile); }
-				}
-		}
-        print("potentials bridge: "+bridgecheck.Count());
-		bridgecheck.RemoveValue(-1); // remove bridge we didnt find a target for
-		print("tunnels: "+tunnelcheck.Count()+" bridge: "+bridgecheck.Count());
-        local buffer = [];
-        local buffering = -1;
-        for (local i = 0; i < p.len(); i++)
+		for (local z = i + 1; z  < partial_path.len() - 1; z++)
 			{
-			local tile = p[i];
-			AISign.BuildSign(tile, "o");
-			if (tile == buffering)	{ buffer.push(tile); buffering = -1; continue; }
-			if (buffering == -1)
-				{
-				// tunnels are better than bridge, you don't need to climb any tile to reach a tunnel entry
-				if (tunnelcheck.HasItem(tile))	{
-				// build side like dock
-												buffer.push(tile);
-												buffering = tunnelcheck.GetValue(tile);
-												AIController.Break("tunnel from " + cMisc.Locate(tile) + " to " + cMisc.Locate(buffering));
-												}
-				if (buffering == -1 && bridgecheck.HasItem(tile))
-						{
-						local target = bridgecheck.GetValue(tile);
-						local dist = AIMap.DistanceManhattan(tile, target);
-						if (dist != 1 && RailFollower.CanBuildBridge(tile, target))
-									{
-									buffer.push(tile);
-									buffering = target;
-									AIController.Break("bridge from " + cMisc.Locate(tile) + " to " + cMisc.Locate(target));
-									}
-							else	{ AIController.Break("terraform from " + cMisc.Locate(tile) + " to " + cMisc.Locate(target)); cTerraform.TerraformLevelTiles(tile, target); }
+			local target = partial_path[z];
+            local direction = cDirection.GetDirection(tile, target);
+            local front_tile = cDirection.GetForwardRelativeFromDirection(direction);
+            // check we will have a tile after its end
+            if (partial_path[z + 1] != target + front_tile)	continue;
+            // check we will have a tile before the start
+            if (partial_path[i - 1] != tile - front_tile)	continue;
+            // check if the target is already use for tunnels
+            if (tunnelcheck.HasItem(target))	continue;
+            // check the target tile is in a straight line from tile
+			if (tile_X != AIMap.GetTileX(target) && tile_Y != AIMap.GetTileY(target))	continue;
+			//	{ print("not straight line c_tile X/Y: "+c_tile_X+"/"+c_tile_Y+" tile x/y: "+AIMap.GetTileX(tile)+"/"+AIMap.GetTileY(tile)); continue; }
+			// check start height and end height aren't too big
+			if (abs(tile_height_max - AITile.GetMaxHeight(target)) > 1)	continue;
+            if (!RailFollower.CanBuildBridge(tile, target))	continue;
+            // Check if that bridge is needed or not
+            local force = RailFollower.Is_Forced_Bridge(tile, target);
+            if (force)	{ bridgecheck.push(tile); bridgecheck.push(target); bridgecheck.push(1); bridgecheck.push(AITile.GetDistanceManhattanToTile(tile, target) + 1); }
+				else	{
+						// if we have choice to not build it, look if we have any interrest to build it then
+						local shorter_path = false;
+                        local count = RailFollower.Count_Tiles_Inside(partial_path, tile, target) + 2; // +2 to include tile & target
+                        local distance = AITile.GetDistanceManhattanToTile(tile, target) + 1;
+                        // Taking a shorter path is worth, but using a bridge may let the train climb to reach its start
+                        // I assume the climb penalty is worth if the bridge allow us to jump half its size
+                        local shorter_path = ((distance / 2) > count);
+                        local max_height = -1;
+                        local max_height_target = AITile.GetMaxHeight(target);
+//                        local min_height_target = AITile.GetMinHeight(target);
+                        local start = tile;
+                        local front = cDirection.GetForwardRelativeFromDirection(cDirection.GetDirection(tile, target));
+                        // We look at tiles in between the brige (real tiles, not ones from the path given
+                        // And get what is the highest height found
+                        while (start + front != target)	{
+														local h = AITile.GetMaxHeight(start + front);
+														if (h > max_height)	max_height = h;
+														start += front;
+														}
+						// if our start and end share the height, and it is only a 2 distance, it's a tiny bridge that goes over 2 non flat tiles
+						// as it is better than having vehicle doing down then up at next tile, we allow this to be a shortcut
+						if (count == 2)
+							{
+							if (tile_height_max == max_height_target && tile_slope != AITile.SLOPE_FLAT)	shorter_path = true;
+							max_height = tile_height_max; // if shorter_path isn't set, we will not build that bridge
+							}
+						print("count: "+count+" distance: "+distance+" shorter: "+shorter_path);
+                        print("max height in between = "+max_height+ " start_h:"+tile_height_max+" target_h:"+max_height_target);
+                        // if our start or end tile aren't higher than ones in between, it's not worth except if we get a shorter_path by building it
+                        if ((tile_height_max <= max_height || max_height_target <= max_height) && !shorter_path)	continue;
+                        AIController.Break("********* save bridge from "+cMisc.Locate(tile)+" to "+cMisc.Locate(target));
+						bridgecheck.push(tile);
+						bridgecheck.push(target);
+						bridgecheck.push(0);
+						bridgecheck.push(distance);
+                        }
+			}
+		}
+		print("all bridge list : " + bridgecheck.len() / 4);
+		// now filter bridge to keep only the shortest ones if its target isn't worth
+		local good_bridge = AIList();
+        for (local i = 0; i < bridgecheck.len(); i++)
+			{
+			local s = bridgecheck[i];
+			local e = bridgecheck[i + 1];
+			local f = (bridgecheck[i + 2] == 1);
+			local d = bridgecheck[i + 3];
+			print("from: "+s+" to: "+e+" dist: "+d);
+			i += 3;
+			if (!good_bridge.HasItem(s))	{ good_bridge.AddItem(s, e); continue; }
+			local comp_target = good_bridge.GetValue(s);
+			local comp_dist = AITile.GetDistanceManhattanToTile(s, comp_target) + 1;
+			print("comp_h: "+AITile.GetMaxHeight(comp_target)+" e_h: "+AITile.GetMaxHeight(e)+" comp_dist: "+comp_dist+" e_dist: "+d);
+			if (AITile.GetMaxHeight(comp_target) < AITile.GetMaxHeight(e))
+						{ // if our bridge goes to a higher tile, it will be better (and longer): climb longer bridge and that's all
+						// else it mean climb short bridge/down short bridge/ than climb the higher height tile a little later
+						print("new from "+s+" to "+e);
+						good_bridge.SetValue(s, e);
 						}
-				if (buffering == -1)	buffer.push(tile);
+				else	{
+						if (d < comp_dist)	good_bridge.SetValue(s, e);
+						}
+			}
+		print("filter bridge 2: "+good_bridge.Count());
+		// Now that we have best choice as target, look at best choice as source (the smaller, the better)
+		local b_temp = AIList();
+		b_temp.AddList(good_bridge);
+		foreach (source, target in b_temp)
+			{
+			// resolve tunnels and bridge conflicts ; kill bridge to keep the tunnel
+			if (tunnelcheck.HasItem(source) || tunnelcheck.HasItem(target))    { good_bridge.SetValue(source, -1); continue; }
+			foreach (s, t in good_bridge)
+				{
+				if (t == -1)	continue;
+				if (s == source)	continue;
+				if (t == target)
+					{
+					if (AITile.GetMaxHeight(source) == AITile.GetMaxHeight(s))
+							{
+							if (AIMap.DistanceManhattan(source, target) > AIMap.DistanceManhattan(s, t))	good_bridge.SetValue(source, -1);
+							break;
+							}
+					if (AITile.GetMaxHeight(source) < AITile.GetMaxHeight(s))
+							{
+							good_bridge.SetValue(source, -1);
+							break;
+							}
+					}
+//				if (t == target && AIMap.DistanceManhattan(source, target) > AIMap.DistanceManhattan(s, t))	{ good_bridge.SetValue(source, -1); break; }
 				}
 			}
+		good_bridge.RemoveValue(-1);
+        cDebug.ClearSigns();
+        AIController.Break("final good bridge: "+good_bridge.Count());
+        foreach (c_tile, c_target in good_bridge)	print("p_bridge: "+cMisc.Locate(c_tile)+" target: "+cMisc.Locate(c_target));
+		print("tunnels: "+(tunnelcheck.Count() / 2)+" bridge: "+good_bridge.Count());
+        local buffer = [];
+        local buffering = -1;
+        for (local i = 0; i < partial_path.len(); i++)
+			{
+			local tile = partial_path[i];
+			if (tile == buffering)	{ buffer.push(partial_path[i]); buffering = -1; continue; }
+			if (buffering == -1)
+				{
+				// tunnels are better than bridge, you don't need to climb to reach a tunnel entry
+				if (tunnelcheck.HasItem(tile))	{
+												buffer.push(partial_path[i]);
+												buffering = tunnelcheck.GetValue(tile);
+												AIController.Break("tunnel from " + cMisc.Locate(tile) + " to " + cMisc.Locate(buffering));
+												tunnelcheck.RemoveItem(buffering); // remove the other side of tunnel as we handle it already
+												// if we use these tiles for tunnels, remove any bridge trying to use them
+												//if (good_bridge.HasItem(buffering))	good_bridge.RemoveItem(buffering);
+												//if (good_bridge.HasItem(tile))	good_bridge.RemoveItem(tile);
+												}
+				if (buffering == -1 && good_bridge.HasItem(tile))
+						{
+						buffer.push(partial_path[i]);
+						buffering = good_bridge.GetValue(tile);
+						// Remove any tunnels that wish using these tiles
+						//if (tunnelcheck.HasItem(tile))	tunnelcheck.RemoveItem(tile);
+						//if (tunnelcheck.HasItem(buffering))	tunnelcheck.RemoveItem(buffering);
+						}
+				if (buffering == -1)	buffer.push(partial_path[i]);
+				}
+			}
+	//AIController.Break("end partial path");
 	return buffer;
 }
 
 function cBuilder::Path_Optimizer(path)
 {
-	if (path == null)	return;
+	return path;
+   	if (path == null)	return;
 	cBanker.RaiseFundsBigTime();
-	local p1, p2, p3, p4 = null;
-	local min_height, max_height;
+	local p0, p1;
+	local save_path = path;
 	local tile_counter = 0;
-	local noturn, barrier;
 	local walked = [];
 	local optimize_path = [];
+    local p_first, p_last, o_first, o_last;
 	cDebug.ClearSigns();
-	local limit = min(AIGameSettings.GetValue("max_bridge_length"), AIGameSettings.GetValue("max_tunnel_length"));
 	while (path != null)
 		{
-		local p0 = path.GetTile();
+		p0 = path.GetTile();
+		if (p_first == null)	p_first = p0;
+        p_last = p0;
 		tile_counter++;
-		if (p1 != null && AIMap.DistanceManhattan(p0, p1) != 1)
-				{
-				AIController.Break("bridge/tunnel");
-				p1 = null;
-				optimize_path.push(p0);
-				}
-		if (p1 != null && AITile.GetSlope(p0) == AITile.SLOPE_FLAT && walked.len() == 0)
-				{
-				walked = [];
-				walked.push(p0);
-                noturn = true;
-                max_height = AITile.GetMaxHeight(p0);
-                min_height = AITile.GetMinHeight(p0);
-				}
-		local store = false;
-		if (p1 != null && walked.len() > 0 && p0 != walked[0] && (AIMap.GetTileX(walked[0]) == AIMap.GetTileX(p0) || AIMap.GetTileY(walked[0]) == AIMap.GetTileY(p0)) && AIMap.DistanceManhattan(p0, walked[0]) <= limit)	{ store = true; walked.push(p0); }
-		if (p1 != null && !store && walked.len() > 1)
-					{
-                    walked = cBuilder.Path_Optimizer_MoreBridgeTunnel(walked);
-                    optimize_path.extend(walked);
-                    walked = [];
-					}
-		cDebug.ClearSigns();
+		if (p1 == null)	walked.push(p0); // store first point
+				else	{
+						if (AIMap.DistanceManhattan(p0, p1) != -1)
+								{
+								local z = RailFollower.Convert_Jump_To_Tiles(p1, p0);
+								walked.extend(z);
+								}
+						walked.push(p0);
+						}
 		p1 = p0;
 		path = path.GetParent();
 		}
-	if (walked.len() != 0)	{
-							walked = cBuilder.Path_Optimizer_MoreBridgeTunnel(walked);
-							optimize_path.extend(walked);
-							}
+	optimize_path = cBuilder.Path_Optimizer_MoreBridgeTunnel(walked);
+	AIController.Break("end section");
+	cDebug.ClearSigns();
+	print("path type "+typeof(path));
+	print("savepath type "+typeof(save_path));
 	AIController.Break("original: " + tile_counter + " optimize: " + optimize_path.len());
+	path = save_path; // get original back
+	local _path_rebuild = null;
+	//local _save_parent = _path_rebuild;
+	local _save_parent = null;
+	local first_item = null;
+	local opti_pos = 0;
+	while (path != null && opti_pos < optimize_path.len())
+		{
+		AISign.BuildSign(path.GetTile(), "*");
+		if (o_first == null)	o_first = path.GetTile();
+		o_last = path.GetTile();
+		path = path.GetParent();
+		}
+	for (local i = 0; i < optimize_path.len(); i++)
+		{
+		_path_rebuild = Path_Converter(optimize_path[i]);
+		AISign.BuildSign(optimize_path[i],".");
+		if (first_item == null)	first_item = _path_rebuild;
+		if (_save_parent != null)	{ _save_parent._parent = _path_rebuild; }
+		_save_parent = _path_rebuild;
+		}
+		print("p_first: "+p_first+" p_last: "+p_last);
+		print("o_first: "+o_first+" o_last: "+o_last);
+		print("arfirst: "+optimize_path[0]+" arlast: "+optimize_path[optimize_path.len()-1]);
+
+
+		AIController.Break("End opti");
+    cDebug.ClearSigns();
+    return first_item;
 }

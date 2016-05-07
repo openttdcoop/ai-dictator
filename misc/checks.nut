@@ -35,7 +35,7 @@ function cBuilder::MonthlyChecks()
 	cRoute.VirtualAirNetworkUpdate();
 	cBuilder.RouteNeedRepair();
 	if (INSTANCE.buildDelay > 0)	INSTANCE.buildDelay--; // lower delaying timer
-	cCarrier.CheckOneVehicleOfGroup(false); // add 1 vehicle of each group
+	cCarrier.CheckRandomVehicle(false); // add 1 vehicle of each group
 	cCarrier.VehicleMaintenance();
 	cBuilder.RoadStationsBalancing();
 	cRoute.DutyOnRoute();
@@ -117,7 +117,7 @@ function cBuilder::YearlyChecks()
 	INSTANCE.TwelveMonth=0;
 	DInfo("Yearly checks run...",1);
 	INSTANCE.main.jobs.CheckTownStatue();
-	INSTANCE.main.carrier.CheckOneVehicleOfGroup(true); // send all vehicles to maintenance check
+	INSTANCE.main.carrier.CheckRandomVehicle(true); // send all vehicles to maintenance check
 }
 
 function cBuilder::CheckRouteStationStatus(onlythisone=null)
@@ -426,29 +426,44 @@ function cBuilder::BridgeUpgrader()
 		workBridge.Clear();
 		if (!twice)	{ workBridge.AddList(RoadBridgeList); neededSpeed=INSTANCE.main.carrier.speed_MaxRoad; btype=AIVehicle.VT_ROAD; }
 			else	{ workBridge.AddList(RailBridgeList); neededSpeed=INSTANCE.main.carrier.speed_MaxTrain; btype=AIVehicle.VT_RAIL; }
-		foreach (bridgeUID, speed in workBridge)
+			print("workBridge:"+workBridge.Count());
+			foreach (z, _ in workBridge)	print("index: "+z+" speed: "+_+" needspeed="+neededSpeed+" "+AIBridge.GetName(z));
+		if (!workBridge.IsEmpty())
 			{
-			local thatbridge=cBridge.Load(bridgeUID);
-			if (thatbridge == null || (thatbridge.owner != -1 && thatbridge.owner != weare))	continue;
-			// only upgrade our or town bridge
-			if (thatbridge.owner == -1 && !everyone)	continue;
-			// don't upgrade all bridges in one time, we're kind but we're not l'abbé Pierre!
-			local speederBridge=cBridge.GetCheapBridgeID(btype, thatbridge.length, false);
-			local oldbridge=AIBridge.GetName(thatbridge.bridgeID);
-			if (speederBridge != -1)
+			foreach (bridgeUID, speed in workBridge)
 				{
-				local nbridge=AIBridge.GetName(speederBridge);
-				local nspeed=AIBridge.GetMaxSpeed(speederBridge);
-				cBanker.GetMoney(AIBridge.GetPrice(speederBridge,thatbridge.length));
-				if (AIBridge.BuildBridge(btype, speederBridge, thatbridge.firstside, thatbridge.otherside))
+				local thatbridge=cBridge.Load(bridgeUID);
+				if (thatbridge == null || (thatbridge.owner != -1 && thatbridge.owner != weare))	continue;
+				// only upgrade our or town bridge
+				if (thatbridge.owner == -1 && !everyone)	continue;
+				// don't upgrade all bridges in one time, we're kind but we're not l'abbé Pierre!
+				print("bridge length: "+thatbridge.length);
+				print("bridge at "+cMisc.Locate(thatbridge.firstside));
+				local speederBridge=cBridge.GetCheapBridgeID(btype, thatbridge.length, false);
+				print("speederbridge="+speederBridge);
+				local oldbridge=AIBridge.GetName(thatbridge.bridgeID);
+				if (speederBridge != -1)
 					{
-					DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0);
-					if (thatbridge.owner != weare)	everyone = false;
-					if (!twice)	updateCount++;
+					local nbridge=AIBridge.GetName(speederBridge);
+					local nspeed=AIBridge.GetMaxSpeed(speederBridge);
+					cBanker.GetMoney(AIBridge.GetPrice(speederBridge,thatbridge.length));
+					//if (AIBridge.BuildBridge(btype, speederBridge, thatbridge.firstside, thatbridge.otherside))
+					if (cBridge.UpgradeBridge(thatbridge.firstside, speederBridge))
+						{
+						DInfo("Upgrade "+oldbridge+" to "+nbridge+". We can now handle upto "+nspeed+"km/h",0);
+						if (thatbridge.owner != weare)	everyone = false;
+						if (!twice)	updateCount++;
+						}
+						else
+						{
+						print("fail to upgrade bridge "+oldbridge+" to "+nbridge);
+                        print("side: "+cMisc.Locate(thatbridge.firstside)+" alt: "+cMisc.Locate(thatbridge.otherside));
+						print("lsat error:" +AIError.GetLastErrorString()+ "type:" +btype+ "VT_RAIL:"+AIVehicle.VT_RAIL);
+						}
+					if (updateCount == 3 && !twice)	break;
 					}
-				if (updateCount == 3 && !twice)	break;
 				}
 			}
-		twice=!twice;
+		twice = !twice;
 		} while (twice);
 	}

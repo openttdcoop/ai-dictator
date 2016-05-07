@@ -75,6 +75,7 @@ function cDirection::GetPosRelativeFromDirection(dirswitch, direction)
 			forward=AIMap.GetTileIndex(0,-1);
 			backward=AIMap.GetTileIndex(0,1);
 		break;
+		default:	return -1;
 		}
 	switch (dirswitch)
 		{

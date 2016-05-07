@@ -296,7 +296,7 @@ function DictatorAI::CheckCurrentSettings()
 			spdcheck=AIGameSettings.GetValue("station_spread");
 			if (spdcheck < main.carrier.rail_max)	{ main.carrier.rail_max=spdcheck; }
 			}
-	//use_boat=false; // we will handle boats later
+	use_train = false; // TODO: remove train blocker
 	if (INSTANCE.safeStart > 0)
 			{
 			// Keep only road
@@ -304,12 +304,6 @@ function DictatorAI::CheckCurrentSettings()
 			use_train = false;
 			use_air = false;
 			}
-	// TODO: debug remove block on any other transport systems
-/*	use_boat = false;
-	use_train = true;
-	use_air = false;
-	use_road = false;*/
-
 	}
 
 function DictatorAI::DInfo(putMsg, debugValue=0, func = "Unknown")
@@ -353,3 +347,4 @@ function DictatorAI::MoneyCallBack(money)
 	cBanker.GetMoney(money);
 }
 
+// TODO : pas de station expand si la précédente n'est pas valide, check vehicle le plus vieux + vehicle au hasard, si check pas bon, check le groupe.

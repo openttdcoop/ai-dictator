@@ -187,7 +187,7 @@ function cCarrier::AddWagon(uid)
 	local veh_stats = AIList();
 	local vehlist = AIVehicleList_Group(road.GroupID);
 	vehlist.Valuate(cEngineLib.VehicleGetNumberOfWagons);
-	local _total_new_wagons = 0;
+	local _pending_new_wagons = 0;
 	local processTrains = [];
 	//local usableTrains = AIList();
 	local releaseTrains = AIList();
@@ -217,7 +217,7 @@ function cCarrier::AddWagon(uid)
 				veh_stats.AddItem(veh, cEngineLib.VehicleGetNumberOfWagons(veh));
 				}
 		else	veh_stats.AddItem(veh, num_wagon + value);
-		_total_new_wagons += value;
+		_pending_new_wagons += value;
 		local isfull = cTrain.IsFull(veh);
 		if (isfull && max_wagon_to_full > num_wagon)	{ max_wagon_to_full = num_wagon; }
 		// if not full or if it need more engine, we can use this one
@@ -242,8 +242,9 @@ function cCarrier::AddWagon(uid)
 		_wagons_ask = INSTANCE.main.carrier.vehicle_wishlist.GetValue(road.GroupID);
 		if (_wagons_ask >= 1000)	_wagons_ask -= 1000;
 		}
-	_wagons_ask -= _total_new_wagons;
-	print("_wagons_ask= "+_wagons_ask+" _total_new_wagon= "+_total_new_wagons+" _num_train= "+ _num_trains + " processTrains= "+processTrains.len() + " sample="+cCarrier.GetVehicleName(vehlist.Begin()));
+	print("_wagons_ask= "+_wagons_ask+" _pending_new_wagons= "+_pending_new_wagons+" _num_train= "+ _num_trains + " processTrains= "+processTrains.len() + " sample="+cCarrier.GetVehicleName(vehlist.Begin()));
+	_wagons_ask -= _pending_new_wagons; // remove pending wagons that will be created
+	//if (_wagons_ask < 0)	_wagons_ask = 0;
 	print("BREAK");
     local rawbalance = AIList();
     rawbalance.AddList(veh_stats);
@@ -257,7 +258,7 @@ function cCarrier::AddWagon(uid)
 		if (max_wagon_to_full == -1)	max_wagon_to_full = 50;
 		print("Adjusting new max_wagon_to_full=" + max_wagon_to_full);
 		}
-    if (_wagons_ask > 0) // can only be when a new _wagon_ask number was given the first time
+    if (_wagons_ask > 0) // only > 0 when we process one bigger than _pending_new_wagons
 		{
 		while (_wagons_ask > 0 && !rawbalance.IsEmpty())
 			{
@@ -268,7 +269,7 @@ function cCarrier::AddWagon(uid)
 						vlen++;
 						veh_stats.SetValue(rawbalance.Begin(), vlen);
 						rawbalance.SetValue(rawbalance.Begin(), vlen);
-						_wagons_ask--;
+						_wagons_ask--; _pending_new_wagons++;
 						}
 				else	rawbalance.RemoveItem(rawbalance.Begin());
 			}
@@ -306,13 +307,11 @@ function cCarrier::AddWagon(uid)
 								INSTANCE.main.carrier.speed_MaxTrain=topspeed;
 								}
 						local n_wagon = cEngineLib.VehicleGetNumberOfWagons(tID);
-						//_wagons_need -= n_wagon;
-						_wagons_ask -= n_wagon;
-						veh_stats.AddItem(tID, n_wagon + _wagons_ask); // give it the remain ask wagons
+						veh_stats.AddItem(tID, _wagons_ask); // give it the remain asked wagons
+						_pending_new_wagons += (_wagons_ask - n_wagon); // add them as pending wagons
 						_wagons_ask = 0;
 						vehlist.AddItem(tID, 0);
 						releaseTrains.AddItem(tID, 0);
-						//usableTrains.AddItem(tID, 0);
 						}
 					}
 			if (AIVehicle.IsValidVehicle(tID))
@@ -321,42 +320,49 @@ function cCarrier::AddWagon(uid)
 					local one_need = veh_stats.GetValue(tID) - num_before;
 					//if (veh_stats.HasItem(tID) && veh_stats.GetValue(tID) != 0) one_need = veh_stats.GetValue(tID);
 					DInfo(cCarrier.GetVehicleName(tID) + " is here for " + one_need + " wagons, it have " + num_before,1);
+					print("_wagons_ask="+_wagons_ask+" _pending="+_pending_new_wagons);
 					if (one_need == 0)	continue;
+					_wagons_ask += one_need;
+					_pending_new_wagons -= one_need; // transfert pending query to ask query
 					depotID = AIVehicle.GetLocation(tID);
 					local freightlimit = cCargo.IsFreight(road.CargoID);
+					local need_more_train = (vehlist.Count() == 1);
+					if (need_more_train)	need_more_train = cBanker.CanBuyThat(AIEngine.GetPrice(AIVehicle.GetEngineType(tID)));
+					print("need_more_train: "+need_more_train);
 					if (one_need > 0)
 								{ // add more wagon
-								if (vehlist.Count() > 1 || num_before + one_need < 4)
+								if (!need_more_train || num_before + one_need < 4)
 											{ local res = cCarrier.AddNewTrain(uid, tID, one_need, depotID, stationLen); }
 									else	{
 											DInfo("Forcing a new train", 2);
 											if (cRoute.CanAddTrainToStation(uid))	processTrains.push(-1);
 											veh_stats.SetValue(tID, num_before); // force the train to get no wagons at all
-											_wagons_ask = one_need;
 											continue;
 											}
 								}
 						else    cCarrier.RemoveWagon(tID, abs(one_need)); // remove wagons
 					// restrict length
 					local lost = cEngineLib.VehicleRestrictLength(tID, stationLen);
-					if (lost != -1)	_wagons_ask += lost;
+					print("lost = "+lost);
 					// get new number of wagons after creation and length restriction
 					local num_after = cEngineLib.VehicleGetNumberOfWagons(tID);
 					local n_wagon = (num_after - num_before);
-					//_wagons_need -= n_wagon;
+					_wagons_ask -= n_wagon;
+//					_pending_new_wagons -= n_wagon;
 					print("newwagon = " + n_wagon+" new_size = " + num_after);
+					print("_wagons_ask="+_wagons_ask+" _pending="+_pending_new_wagons);
 					veh_stats.SetValue(tID, num_after);
 					cTrain.TrainUpdate(tID);
 					}
 				} // while processTrains
-			print("_num_trains= " + _num_trains+" vehlist.Count= "+vehlist.Count()+" giveup= "+giveup+" _wagons_ask= "+_wagons_ask);
+			print("_num_trains= " + _num_trains+" vehlist.Count= "+vehlist.Count()+" giveup= "+giveup+" _wagons_ask= "+_wagons_ask+" _pending_new_wagons= "+_pending_new_wagons);
 			if (_num_trains != vehlist.Count() && _num_trains > 0)
 				{ // _num_trains no more == if we have add a new train while looping
 				giveup = -1;
 				// what remain in _wagons_ask are all wagons we couldn't had built (lack money, length restriction...)
-				print("Rebalancing trains ");
-				// and _total_new_wagons are the ones we ask to built but weren't built (train is still running)
-				local balancing = cCarrier.GetTrainBalancingStats(road.GroupID, _wagons_ask + _total_new_wagons, 0);
+				print("Rebalancing trains : "+(_wagons_ask + _pending_new_wagons));
+				// and _pending_new_wagons are the ones we ask to built but weren't built (train is still running)
+				local balancing = cCarrier.GetTrainBalancingStats(road.GroupID, _wagons_ask + _pending_new_wagons, 0);
 				for (local i = 0; i < balancing.len(); i++)
 						{
 						local g_id = balancing[i];
@@ -403,13 +409,19 @@ function cCarrier::AddWagon(uid)
 		//if (cCarrier.ToDepotList.HasItem(veh))	cCarrier.ToDepotList.RemoveItem(veh);
 		local wagon = stats - cEngineLib.VehicleGetNumberOfWagons(veh);
 		if (wagon == 0)	continue;
-		total_ask_now += wagon;
-		if (wagon > 0)	cCarrier.VehicleSendToDepot(veh, DepotAction.ADDWAGON + wagon);
+		local wagon_prize = AIEngine.GetPrice(cEngineLib.VehicleGetRandomWagon(veh));
+		if (wagon > 0)	{ // don't call it if we have no money to buys wagons
+						if (cBanker.CanBuyThat(wagon_prize * wagon))
+								{
+								cCarrier.VehicleSendToDepot(veh, DepotAction.ADDWAGON + wagon);
+								total_ask_now += wagon;
+								}
+						}
 				else	cCarrier.VehicleSendToDepot(veh, DepotAction.REMOVEWAGON + abs(wagon));
 		}
 	INSTANCE.main.carrier.vehicle_wishlist.RemoveItem(road.GroupID);
-	print("_wagons_ask= "+_wagons_ask+" total_ask_now= "+total_ask_now+" new_ask = "+(_wagons_ask + total_ask_now));
-	_wagons_ask += total_ask_now; // add what we didn't built
+	print("_wagons_ask= "+_wagons_ask+" total_ask_now= "+total_ask_now+" new_ask = "+abs(_wagons_ask + total_ask_now));
+	_wagons_ask = abs(_wagons_ask + total_ask_now); // add what we didn't built
 	if (_wagons_ask != 0)	INSTANCE.main.carrier.vehicle_wishlist.AddItem(road.GroupID, 1000 + _wagons_ask);
 	print("BREAK TWO");
 	cRoute.RouteUpdateVehicle(road);

@@ -26,6 +26,7 @@ function cBuilder::DestroyStation(stationid)
 		return false;
 		}
 	local wasnamed = AIStation.GetName(stationid);
+	local station_loc = AIStation.GetLocation(stationid);
 	if (!temp)	exist = false; // A case where a station exist but not in our station base
 	if (exist)
 		{ // check no route still use it
@@ -64,7 +65,8 @@ function cBuilder::DestroyStation(stationid)
 		if (!cStation.DeleteStation(stationid))	{ return false; }
 		if (temp.s_SubType == -2)   { return true; }
 		}
-	local tilelist = cTileTools.FindStationTiles(AIStation.GetLocation(stationid));
+	cTileTools.BlackListTile(station_loc, -100); // mark tile as bad to build a station, if we remove it, sure the place isn't that good
+	local tilelist = cTileTools.FindStationTiles(station_loc);
 	tilelist.Valuate(AITile.GetOwner);
 	tilelist.KeepValue(AICompany.ResolveCompanyID(AICompany.COMPANY_SELF)); // Prevent magic bulldozer destroying platform
 	foreach (tile, dummy in tilelist)	AITile.DemolishTile(tile);

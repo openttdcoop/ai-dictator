@@ -201,11 +201,11 @@ function cMisc::toHex(value)
 	return "0x"+k;
 }
 
-function cMisc::Locate(tile)
+function cMisc::Locate(tile, nosign = false)
 {
 	if (!AIMap.IsValidTile(tile))	{ return "invalid tile "+tile; }
 	local md = AIExecMode();
-	cDebug.PutSign(tile, "X");
+	if (!nosign)	cDebug.PutSign(tile, "X");
 	local z = "0x"+cMisc.toHexString(tile);
 	return "tile="+tile+" "+z+" near "+AITown.GetName(AITile.GetClosestTown(tile));
 }
@@ -219,4 +219,22 @@ function cMisc::MostItemInList(list, item)
 	return list;
 }
 
+function cMisc::GetItemInAIList(ailist, number)
+// Get the item number from an ailist
+{
+	if (!cMisc.IsAIList(ailist))	return null;
+	local i = 0;
+	foreach (item, value in ailist)
+		{
+		if (i == number)	return item;
+		i++;
+		}
+	return null; // out of range
+}
 
+function cMisc::GetRandomItemFromAIList(ailist)
+{
+	if (!cMisc.IsAIList(ailist) || ailist.IsEmpty())	return null;
+	local rnd = AIBase.RandRange(ailist.Count());
+	return cMisc.GetItemInAIList(ailist, rnd);
+}

@@ -333,7 +333,7 @@ function cBuilder::BuildPath_RAIL(head1, head2, stationID, primary, useEntry)
 	if (status == -1 || status == -2)	smallerror = -2; // failure, we have nothing to do if status is already set to failure
 	local path = cPathfinder.GetSolve(head1, head2);
 	if (path == null)	{ smallerror = -2; } // if we couldn't get a valid solve here, there's something wrong then
-	cBuilder.Path_Optimizer(path);
+	path = cBuilder.Path_Optimizer(path);
 	cBanker.RaiseFundsBigTime();
 	local prev = null;
 	local prevprev = null;
@@ -346,9 +346,12 @@ function cBuilder::BuildPath_RAIL(head1, head2, stationID, primary, useEntry)
 					{
 					if (AIMap.DistanceManhattan(prev, path.GetTile()) > 1)
 							{
-							if (AITunnel.GetOtherTunnelEnd(prev) == path.GetTile())
+							local build_side = null;
+							if (AITunnel.GetOtherTunnelEnd(prev) == path.GetTile())	build_side = prev;
+							if (AITunnel.GetOtherTunnelEnd(path.GetTile()) == prev)	build_side = path.GetTile();
+							if (build_side != null)
 									{
-									if (!AITunnel.BuildTunnel(AIVehicle.VT_RAIL, prev))
+									if (!AITunnel.BuildTunnel(AIVehicle.VT_RAIL, build_side))
 											{
 											DInfo("An error occured while I was building the tunnel: " + AIError.GetLastErrorString(),2);
 											smallerror=cBuilder.EasyError(AIError.GetLastError());
@@ -758,17 +761,20 @@ function cBuilder::SignalBuilder(source, target)
 			if (cc >= max_signals_distance)
 					{
 					local ignoreit=false;
-					if (AIRail.GetSignalType(tilesource,tilefront) != AIRail.SIGNALTYPE_NONE)	{ ignoreit=true; }
-					if (cBridge.IsBridgeTile(tilesource) || AITunnel.IsTunnelTile(tilesource))	{ ignoreit=true; }
+					if (AIRail.GetSignalType(tilesource,tilefront) != AIRail.SIGNALTYPE_NONE)	{ ignoreit = true; }
+					if (cBridge.IsBridgeTile(tilesource) || AITunnel.IsTunnelTile(tilesource))	{ ignoreit = true; }
 					if (ignoreit)	{ cc=0; prev=tile; continue; }
-					if (AIRail.BuildSignal(tilesource,tilefront, AIRail.SIGNALTYPE_NORMAL))	{ cc=0; }
+					if (AIRail.BuildSignal(tilesource,tilefront, AIRail.SIGNALTYPE_NORMAL))	{ cc = 0; }
 					else	{
 							cDebug.PutSign(tile,"!");
 							local smallerror=cBuilder.EasyError(AIError.GetLastError());
-							DError("Error building signal ",1);
+							DError("Error building signal "+smallerror,1);
 							//max_signals_distance++;
+							if (smallerror == -2)	{ cError.RaiseError(); return false; }
 							if (smallerror == -1)	{ return false; }
-													{ cError.RaiseError(); return false; }
+							if (smallerror == 0)	{ cc = 0; }
+							// i somehow couldn't find why BuildSignal fail with a 0 error, i think it is because a signal already exist (the pbf one)
+							// it's just i don't get why the ignoreit cannot catch it too (while i think it is that).
 							}
 					}
 			cc++;

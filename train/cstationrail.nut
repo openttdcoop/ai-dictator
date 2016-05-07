@@ -493,7 +493,7 @@ function cStationRail::CreateShortPoints(work_station, help_station, source, tar
 	local point;
 	local distance = AIMap.DistanceManhattan(source[1], target[1]);
 	print("distance = "+distance+" srcdir ="+cDirection.DirectionToString(work_station.s_Direction)+" dstdir ="+cDirection.DirectionToString(help_station.s_Direction));
-	if (distance > 60)	multipoint.push([start[0] + (12 * srcforward), work_station.s_Direction]); // a bit farer the source station
+	//if (distance > 60)	multipoint.push([start[0] + (12 * srcforward), work_station.s_Direction]); // a bit farer the source station
 //	local t1 = abs(AIMap.GetTileX(source[0]) - AIMap.GetTileX(target[0]) * 0.1).tointeger();
 //	local t2 = abs(AIMap.GetTileY(source[0]) - AIMap.GetTileY(target[0]) * 0.1).tointeger();
 //	local t = AIMap.GetTileIndex(AIMap.GetTileX(source[1]) + t1, AIMap.GetTileY(source[1]) + t2);
@@ -503,7 +503,8 @@ function cStationRail::CreateShortPoints(work_station, help_station, source, tar
 						local midY = (AIMap.GetTileY(source[0]) + AIMap.GetTileY(target[0])) / 2;
 						multipoint.push([AIMap.GetTileIndex(midX, midY), -1]);
 						}
-	if (distance > 120 && distance <= 180)
+//	if (distance > 120 && distance <= 180)
+	if (distance > 120)
 						{
                         local midX = (AIMap.GetTileX(target[0]) - AIMap.GetTileX(source[0]));
                         local midY = (AIMap.GetTileY(target[0]) - AIMap.GetTileY(source[0]));
@@ -515,7 +516,7 @@ function cStationRail::CreateShortPoints(work_station, help_station, source, tar
 						multipoint.push([p1, -1]);
 						multipoint.push([p2, -1]);
 						}
-	if (distance > 180)	{
+/*	if (distance > 180)	{
                         local midX = AIMap.GetTileX(target[0]) - AIMap.GetTileX(source[0]);
                         if (midX != 0)	midX = midX / 4;
                         local midY = AIMap.GetTileY(target[0]) - AIMap.GetTileY(source[0]);
@@ -528,8 +529,8 @@ function cStationRail::CreateShortPoints(work_station, help_station, source, tar
 						print("p1 = "+cMisc.Locate(multipoint[1][0]));
 						print("p2 = "+cMisc.Locate(multipoint[2][0]));
 						print("p3 = "+cMisc.Locate(multipoint[3][0]));
-						}
-	if (distance > 60)	multipoint.push([help_station.s_AltLine + (12 * dstforward), work_station.s_Direction]); // bit farer target station
+						}*/
+	//if (distance > 60)	multipoint.push([help_station.s_AltLine + (12 * dstforward), work_station.s_Direction]); // bit farer target station
 	cDebug.ClearSigns();
 	for (local i = 0; i < multipoint.len(); i++)
 		{
@@ -560,8 +561,8 @@ function cStationRail::CreateShortPoints(work_station, help_station, source, tar
 
 	local fwd = cDirection.GetForwardRelativeFromDirection(help_station.s_Direction);
 	// Clean target station alternate rail entrance
-	cTileTools.DemolishTile(help_station.s_AltLine + fwd, false);
-	cTileTools.DemolishTile(help_station.s_AltLine + fwd + fwd, false);
+	//cTileTools.DemolishTile(help_station.s_AltLine + fwd, false);
+	//cTileTools.DemolishTile(help_station.s_AltLine + fwd + fwd, false);
 	// what remains must be pathfind too
 	cPathfinder.CreateSubTask(mainUID, start, target);
 	cDebug.ClearSigns();
@@ -628,6 +629,11 @@ function cStationRail::CreateStationsPath(fromStationObj, toStationObj)
 {
 	local srcStation = fromStationObj;
 	local dstStation = toStationObj;
+	if (!AIStation.IsValidStation(fromStationObj.s_ID) || !AIStation.IsValidStation(toStationObj.s_ID))
+		{
+		cError.RaiseError();
+		return false;
+		}
 	local build_mainline = !cMisc.CheckBit(srcStation.s_LineState, 1);
 	local build_altline = !cMisc.CheckBit(srcStation.s_LineState, 2);
 	local build_mainsignal = !cMisc.CheckBit(srcStation.s_LineState, 3);
@@ -638,13 +644,14 @@ function cStationRail::CreateStationsPath(fromStationObj, toStationObj)
 		{
 		local srcpos = srcStation.s_MainLine;
 		local srclink = srcpos + src_forward;
-		local dstpos = dstStation.s_AltLine;
+		local dstpos = dstStation.s_AltLine + dst_forward + dst_forward;
 		local dstlink = dstpos + dst_forward;
 		local source = [srclink, srcpos];
 		local target = [dstlink, dstpos];
 		DInfo("Calling pathfinder: srcpos="+cMisc.Locate(srcpos)+" srclink="+cMisc.Locate(srclink),2);
 		DInfo("Calling pathfinder: dstpos="+cMisc.Locate(dstpos)+" dstlink="+cMisc.Locate(dstlink),2);
 		local result = cPathfinder.GetStatus(source, target, srcStation.s_ID, true, srcStation.s_UseEntry);
+		print("main line result: "+result);
 		if (srcStation.s_LineState == null)
 				{
 				srcStation.s_LineState = 0; // set it to 0 to work with it
@@ -675,17 +682,22 @@ function cStationRail::CreateStationsPath(fromStationObj, toStationObj)
 		local dstlink = dstpos + dst_forward;
 		local source = [srclink, srcpos];
 		local target = [dstlink, dstpos];
+		local railneed = AIRail.GetRailTracks(srclink);
 		DInfo("Calling pathfinder: srcpos="+cMisc.Locate(srcpos)+" srclink="+cMisc.Locate(srclink),2);
 		DInfo("Calling pathfinder: dstpos="+cMisc.Locate(dstpos)+" dstlink="+cMisc.Locate(dstlink),2);
 		local result = cPathfinder.GetStatus(source, target, dstStation.s_ID, false, srcStation.s_UseEntry);
+		print("alt line result: "+result);
+		if (railneed != AIRail.RAILTRACK_INVALID && result == 0)
+			{
+			cTrack.BuildRailAtTile(railneed, srcpos + src_forward + src_forward, false);
+			cTrack.BuildRailAtTile(railneed, srcpos + src_forward, false);
+			}
+
 		if (typeof(dstStation.s_LineState == "array") && dstStation.s_LineState.len() > 0)
 				{
+				print("station dir: "+cDirection.DirectionToString(srcStation.s_Direction));
+				cDebug.ClearSigns();
 				cStationRail.CreateShortPoints(srcStation, dstStation, source, target);
-				local fwd = cDirection.GetForwardRelativeFromDirection(dstStation.s_Direction);
-				// Clean target station alternate rail entrance
-				cTileTools.DemolishTile(dstStation.s_AltLine - fwd, false);
-				cTileTools.DemolishTile(dstStation.s_AltLine - fwd - fwd, false);
-				AIController.Break("demo");
 				}
 
 		switch (result)
@@ -816,9 +828,9 @@ function cStationRail::CreateAndBuildTrainStation(tilepos, direction, platnum, u
 		local zone = cTileTools.GetRectangle(main_line - forward, alt_line + (4 * forward) - right, null);
 		cTerraform.IsAreaClear(zone, true, false);
 		cTerraform.TerraformLevelTiles(zone, null);
-		print("main_line="+cMisc.Locate(main_line)+" alt_line="+cMisc.Locate(alt_line));
 		station_obj.s_MainLine = main_line + (1 * forward);
 		station_obj.s_AltLine = alt_line + (1 * forward);
+		print("main_line="+cMisc.Locate(station_obj.s_MainLine)+" alt_line="+cMisc.Locate(station_obj.s_AltLine)+" direction: " + cDirection.DirectionToString(station_direction));
 		local all_tiles_main = [0, AIRail.RAILTRACK_NE_SW, forward, AIRail.RAILTRACK_NE_SW, 0, AIRail.RAILTRACK_NW_SW, 0, AIRail.RAILTRACK_NW_NE];
 		local all_tiles_alt  = [0, AIRail.RAILTRACK_NE_SW, forward, AIRail.RAILTRACK_NE_SW, 2 * forward, AIRail.RAILTRACK_NE_SW, 3 * forward, AIRail.RAILTRACK_NE_SW, 0, AIRail.RAILTRACK_SW_SE, 0, AIRail.RAILTRACK_NE_SE, 0, AIRail.RAILTRACK_NW_SW, -right, AIRail.RAILTRACK_NE_SE, 0, AIRail.RAILTRACK_NW_SE];
 		for (local i = 0; i < all_tiles_main.len(); i++)

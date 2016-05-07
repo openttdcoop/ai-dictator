@@ -54,7 +54,7 @@ function cRoute::DutyOnRailsRoute(uid)
 			if (src_wait < dst_wait)	cargowait=src_wait; // keep the lowest cargo amount
                                 else	cargowait=dst_wait;
 			if (src_capacity < dst_capacity)	capacity=dst_capacity; // but keep the highest capacity we have
-                                    else	capacity=src_capacity;
+										else	capacity=src_capacity;
 			DInfo("Source capacity="+src_capacity+" wait="+src_wait+" --- Target capacity="+dst_capacity+" wait="+dst_wait,2);
 			}
 	if (capacity==0)	capacity++; // avoid /0
@@ -65,5 +65,54 @@ function cRoute::DutyOnRailsRoute(uid)
 	if (vehneed > 8)	vehneed=8; // limit to a max 8 wagons per trys
 	DInfo("Route capacity="+capacity+" vehicleneed="+vehneed+" cargowait="+cargowait+" vehicule#="+road.VehicleCount+" firstveh="+firstveh,2);
 	if (vehneed > 0) cCarrier.RouteNeedVehicle(road.GroupID, vehneed);
+			else	{
+					// evaluate if we can use less trains
+					local max_prod = cStation.GetMaxProduction(road.SourceStation.s_ID, road.CargoID);
+					// disable the checks for pass and mail : it will not works with towns
+					if (road.CargoID == cCargo.GetPassengerCargo() || road.CargoID == cCargo.GetMailCargo())	max_prod = 0;
+					if (max_prod != 0 && capacity > max_prod * 2)
+						{
+						local train_list = AIVehicleList_Group(road.GroupID);
+						train_list.Valuate(AIVehicle.GetAgeLeft);
+						train_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+						local kill_train = train_list.Begin();
+						cCarrier.VehicleSendToDepot(kill_train, DepotAction.SELL);
+						DInfo("Removing a train from "+road.UID+" to match production rate",2);
+						}
+					/*
+					print("capacity = "+capacity+" max_prod="+max_prod);
+					local max_to_full = 50;
+					local num_wagons = 0;
+					local potential_wagons = 0;
+					local train_list = AIVehicleList_Group(road.GroupID);
+					train_list.Valuate(AIVehicle.GetAgeLeft);
+					train_list.Sort(AIList.SORT_BY_VALUE, AIList.SORT_ASCENDING);
+					local stationLen = road.SourceStation.s_Depth * 16;
+					local kill_train = train_list.Begin();
+					local tot_capacity = 0;
+					foreach (train, ageleft in train_list)
+						{
+						local nw = cEngineLib.VehicleGetNumberOfWagons(train);
+						num_wagons += nw;
+						print("train: "+cCarrier.GetVehicleName(train)+" wagons: "+nw+ "numwagons="+num_wagons);
+                        if (cTrain.IsFull(train) && max_to_full > nw)
+							{
+							max_to_full = nw;
+							potential_wagons = train_list.Count() * max_to_full;
+							}
+						if (max_to_full == 50)
+							{
+							local eng = [];
+							eng.push(AIVehicle.GetEngineType(train));
+							eng.push(AIVehicle.GetWagonEngineType(train, cEngineLib.VehicleGetRandomWagon(train)));
+							max_to_full = cEngineLib.GetMaxWagons(eng, stationLen, road.CargoID);
+							if (max_to_full == -1)	max_to_full = 4;
+							potential_wagons = train_list.Count() * max_to_full;
+							}
+						}
+					local free_space = potential_wagons - num_wagons - 2; // keep a 2 wagons margin
+					print("num_wagons= "+num_wagons+" potential_wagons= "+potential_wagons+" free_space= "+free_space+" max_to_full= "+max_to_full);
+					if (free_space > max_to_full)	cCarrier.VehicleSendToDepot(kill_train, DepotAction.SELL);*/
+					}
 }
 
