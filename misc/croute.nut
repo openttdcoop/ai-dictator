@@ -726,15 +726,23 @@ function cRoute::DiscoverWorldTiles()
 // look at the map and discover what we own, use after loading
 {
 	DInfo("Looking for our properties, game may get frozen for some times on huge maps, be patient",0);
-	local allmap = AITileList();
-	local maxTile = AIMap.GetTileIndex(AIMap.GetMapSizeX()-2, AIMap.GetMapSizeY()-2);
-	AIController.Sleep(1);
-	allmap.AddRectangle(AIMap.GetTileIndex(1,1), maxTile);
-	AIController.Sleep(1);
-	allmap.Valuate(AITile.GetOwner);
-	AIController.Sleep(1);
 	local weare = AICompany.ResolveCompanyID(AICompany.COMPANY_SELF);
-	allmap.KeepValue(weare);
-	cRoute.RouteDamage.AddList(allmap);
-}
 
+	const tilesPerStep = 100000;
+	local mapWidth = AIMap.GetMapSizeX();
+	local mapHeight = AIMap.GetMapSizeY();
+	local chunkHeight = tilesPerStep / mapWidth;
+
+	for (local y1 = 0; y1 < mapHeight; y1 += chunkHeight)
+	{
+		local y2 = min(y1 + chunkHeight, mapHeight);
+		local chunk = AITileList();
+		AIController.Sleep(1);
+		chunk.AddRectangle(AIMap.GetTileIndex(0, y1), AIMap.GetTileIndex(mapWidth - 1, y2 - 1));
+		AIController.Sleep(1);
+		chunk.Valuate(AITile.GetOwner);
+		AIController.Sleep(1);
+		chunk.KeepValue(weare);
+		cRoute.RouteDamage.AddList(chunk);
+	}
+}
